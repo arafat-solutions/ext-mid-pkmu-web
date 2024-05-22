@@ -1,17 +1,21 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app">
+    <!-- <Radar /> -->
+    <CallSign />
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+// import Radar from './components/RadarVigillance.vue';
+import CallSign from './components/CallSignMultitask.vue';
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    // Radar,
+    CallSign
   }
-}
+};
 </script>
 
 <style>
