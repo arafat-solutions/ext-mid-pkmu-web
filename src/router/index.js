@@ -6,7 +6,12 @@ import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
+import TestCategoryPage from '@/components/TestCategoryPage.vue';
+import CallSignMultitaskMenu from '@/components/CallSignMultitaskMenu.vue';
+import InstrumentMultitaskingMenu from '@/components/InstrumentMultitaskingMenu.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
+import PFDTrackingMenu from '@/components/PFDTrackingMenu.vue';
+import SpatialOrientationMenu from '@/components/SpatialOrientationMenu.vue';
 
 const routes = [
   {
@@ -48,6 +53,31 @@ const routes = [
     path: '/battery-test-5',
     name: 'Spatial Orientation Test',
     component: SpatialOrientation
+  },
+  {
+    path: '/radar-vigilance',
+    name: 'Radar Vigilance Menu',
+    component: TestCategoryPage
+  },
+  {
+    path: '/multitasking-callsign',
+    name: 'Callsign Multitask Menu',
+    component: CallSignMultitaskMenu
+  },
+  {
+    path: '/multitasking-instrument',
+    name: 'Instrument Multitasking Menu',
+    component: InstrumentMultitaskingMenu
+  },
+  {
+    path: '/pfdtracking-menu',
+    name: 'PFD Tracking Menu',
+    component: PFDTrackingMenu
+  },
+  {
+    path: '/spatial-orientation-menu',
+    name: 'Spatial Orientation Menu',
+    component: SpatialOrientationMenu
   },
 ];
 
