@@ -1,21 +1,33 @@
 <template>
   <div id="app">
-    <Navigation v-if="showNavigation" class="navigation" />
-    <div class="content">
-      <router-view />
-    </div>
+    <template v-if="isLoginPage">
+      <LoginPage />
+    </template>
+    <template v-else>
+      <div class="main-container">
+        <Navigation v-if="showNavigation" class="navigation" />
+        <div :class="{'content': showNavigation, 'full-content': !showNavigation}">
+          <router-view />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script>
 import Navigation from './components/NavigationSection.vue';
+import LoginPage from './components/LoginPage.vue';
 
 export default {
   name: 'App',
   components: {
-    Navigation
+    Navigation,
+    LoginPage
   },
   computed: {
+    isLoginPage() {
+      return this.$route.name === 'Login';
+    },
     showNavigation() {
       return this.$route.name !== 'Login' && !this.$route.path.includes('test');
     }
@@ -32,7 +44,14 @@ export default {
   color: #2c3e50;
   height: 100vh;
   display: flex;
+  flex-direction: column;
+}
+
+.main-container {
+  display: flex;
   flex-direction: row;
+  width: 100%;
+  height: 100%;
 }
 
 .navigation {
@@ -46,8 +65,14 @@ export default {
   box-sizing: border-box;
 }
 
+.full-content {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
 @media (max-width: 768px) {
-  #app {
+  .main-container {
     flex-direction: column;
   }
 
@@ -55,7 +80,8 @@ export default {
     width: 100%;
   }
 
-  .content {
+  .content,
+  .full-content {
     width: 100%;
   }
 }

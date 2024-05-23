@@ -57,17 +57,24 @@ export default {
 .navigation {
   background-color: #6f42c1;
   color: white;
-  padding: 20px;
+  padding: 0 20px; /* Remove padding from top, left, and bottom */
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 30%;
+  width: 20%;
+  box-sizing: border-box;
+}
+
+.logo {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
 .logo img {
   width: 100px;
-  margin-bottom: 20px;
 }
 
 .schedule {
