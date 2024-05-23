@@ -1,15 +1,11 @@
 <template>
   <div id="app">
     <Navigation v-if="showNavigation" />
-    <div :class="['main-content', { 'full-width': !showNavigation }]">
-      <router-view />
-    </div>
+    <router-view />
   </div>
 </template>
 
 <script>
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
 import Navigation from './components/NavigationSection.vue';
 
 export default {
@@ -17,32 +13,23 @@ export default {
   components: {
     Navigation
   },
-  setup() {
-    const route = useRoute();
-
-    const showNavigation = computed(() => {
-      return route.path !== '/';
-    });
-
-    return {
-      showNavigation
-    };
+  computed: {
+    showNavigation() {
+      return this.$route.name !== 'Login';
+    }
   }
 };
 </script>
 
 <style>
 #app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  height: 100vh;
   display: flex;
-}
-
-.main-content {
-  flex-grow: 1;
-  padding: 20px;
-}
-
-.main-content.full-width {
-  width: 100%;
-  padding: 20px;
+  flex-direction: row;
 }
 </style>

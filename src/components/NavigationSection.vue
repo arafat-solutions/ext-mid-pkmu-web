@@ -19,12 +19,12 @@
             Baterai Tes 2
           </router-link>
         </li>
-        <!-- <li>
-          <router-link :to="{ name: 'Baterai3' }" class="menu-item" :class="{ active: isActive('Baterai3') }">
+        <li>
+          <router-link :to="{ name: 'Instrument Multitasking Test' }" class="menu-item" :class="{ active: isActive('Baterai3') }">
             Baterai Tes 3
           </router-link>
         </li>
-        <li>
+        <!-- <li>
           <router-link :to="{ name: 'Baterai4' }" class="menu-item" :class="{ active: isActive('Baterai4') }">
             Baterai Tes 4
           </router-link>

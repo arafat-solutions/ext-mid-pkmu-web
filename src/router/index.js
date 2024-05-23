@@ -3,6 +3,7 @@ import LoginPage from '@/components/LoginPage.vue';
 import HomePage from '@/components/HomePage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
 import CallSignMultitask from '@/components/CallSignMultitask.vue';
+import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 
 const routes = [
@@ -31,11 +32,11 @@ const routes = [
     name: 'Call Sign Multitask Test',
     component: CallSignMultitask
   },
-  // {
-  //   path: '/battery-test-3',
-  //   name: 'Radar Vigilance Test',
-  //   component: RadarPage
-  // },
+  {
+    path: '/battery-test-3',
+    name: 'Instrument Multitasking Test',
+    component: InstrumentMultitask
+  },
   // {
   //   path: '/battery-test-4',
   //   name: 'Radar Vigilance Test',
