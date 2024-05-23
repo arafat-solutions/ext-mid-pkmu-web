@@ -1,30 +1,48 @@
 <template>
   <div id="app">
-    <!-- <Radar /> -->
-    <CallSign />
+    <Navigation v-if="showNavigation" />
+    <div :class="['main-content', { 'full-width': !showNavigation }]">
+      <router-view />
+    </div>
   </div>
 </template>
 
 <script>
-// import Radar from './components/RadarVigillance.vue';
-import CallSign from './components/CallSignMultitask.vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import Navigation from './components/NavigationSection.vue';
 
 export default {
   name: 'App',
   components: {
-    // Radar,
-    CallSign
+    Navigation
+  },
+  setup() {
+    const route = useRoute();
+
+    const showNavigation = computed(() => {
+      return route.path !== '/';
+    });
+
+    return {
+      showNavigation
+    };
   }
 };
 </script>
 
 <style>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  display: flex;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.main-content.full-width {
+  width: 100%;
+  padding: 20px;
 }
 </style>
