@@ -4,6 +4,7 @@ import HomePage from '@/components/HomePage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
 import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
+import PFDTracking from '@/components/PFDTracking.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 
 const routes = [
@@ -37,11 +38,11 @@ const routes = [
     name: 'Instrument Multitasking Test',
     component: InstrumentMultitask
   },
-  // {
-  //   path: '/battery-test-4',
-  //   name: 'Radar Vigilance Test',
-  //   component: RadarPage
-  // },
+  {
+    path: '/battery-test-4',
+    name: 'PFD Tracking Test',
+    component: PFDTracking,
+  },
   // {
   //   path: '/battery-test-5',
   //   name: 'Radar Vigilance Test',
