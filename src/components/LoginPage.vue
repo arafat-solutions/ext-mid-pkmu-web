@@ -39,7 +39,7 @@
         // Handle login logic here
         console.log('Email:', this.email);
         console.log('OTP:', this.otp);
-        this.$router.push('/home');
+        this.$router.push('/radar-vigilance');
       }
     }
   };
