@@ -29,11 +29,11 @@
             Baterai Tes 4
           </router-link>
         </li>
-        <!-- <li>
-          <router-link :to="{ name: 'Baterai5' }" class="menu-item" :class="{ active: isActive('Baterai5') }">
+        <li>
+          <router-link :to="{ name: 'Spatial Orientation Test' }" class="menu-item" :class="{ active: isActive('Baterai5') }">
             Baterai Tes 5
           </router-link>
-        </li> -->
+        </li>
       </ul>
     </div>
   </template>
