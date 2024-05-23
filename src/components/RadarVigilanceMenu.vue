@@ -1,8 +1,12 @@
 <template>
   <div class="battery-test-detail">
     <div class="info-box">
-      <h1>Battery Test 1</h1>
-      <p>This is the description for Battery Test 1. This test measures various aspects of battery performance under specific conditions.</p>
+      <h1>Radar Vigiliance Test</h1>
+      <p>Radar  Vigiliance Test adalah tes perhatian dan kewaspadaan jangka panjang yang menggunakan desain tugas beban kerja rendah.</p>
+      <h2>Persiapan dan Tugas</h2>
+      <p>Sebuah radar berputar mendeteksi objek di udara, biasanya ditampilkan sebagai 'kotak' di layar radar. Sebuah respons diperlukan setiap kali 'lingkaran' muncul dilayar. Dalam jangka waktu 15 hingga 30 menit - tes ini dirancang untuk menguji kewaspadaan Anda dalam lingkungan kerja yang terbatas.</p>
+      <h2>Pengoperasion</h2>
+      <p>Tekan tombol spasi secepat mungkin ketika sebuah lingkaran muncul di layar radar. Klik mouse di mana saja di layar adalah opsi respons alternatif.</p>
     </div>
     <div class="test-list-box">
       <h2>Available Tests</h2>
@@ -20,7 +24,7 @@
 
 <script>
 export default {
-  name: 'TestCategoryPage',
+  name: 'RadarVigilanceMenu',
   data() {
     return {
       tests: [

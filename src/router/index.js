@@ -6,7 +6,7 @@ import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
-import TestCategoryPage from '@/components/TestCategoryPage.vue';
+import TestCategoryPage from '@/components/RadarVigilanceMenu.vue';
 import CallSignMultitaskMenu from '@/components/CallSignMultitaskMenu.vue';
 import InstrumentMultitaskingMenu from '@/components/InstrumentMultitaskingMenu.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
