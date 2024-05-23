@@ -24,12 +24,12 @@
             Baterai Tes 3
           </router-link>
         </li>
-        <!-- <li>
-          <router-link :to="{ name: 'Baterai4' }" class="menu-item" :class="{ active: isActive('Baterai4') }">
+        <li>
+          <router-link :to="{ name: 'PFD Tracking Test' }" class="menu-item" :class="{ active: isActive('Baterai4') }">
             Baterai Tes 4
           </router-link>
         </li>
-        <li>
+        <!-- <li>
           <router-link :to="{ name: 'Baterai5' }" class="menu-item" :class="{ active: isActive('Baterai5') }">
             Baterai Tes 5
           </router-link>

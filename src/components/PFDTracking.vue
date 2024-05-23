@@ -13,7 +13,7 @@
         </div>
       </div>
       <div class="bottom-scale-container">
-        <div class="scale horizontal" id="heading">
+        <div class="scale horizontal full-width" id="heading">
           <div class="label">HEADING</div>
           <div class="current" :style="{ left: `${heading}%` }"></div>
           <div class="target" :style="{ left: `${targetHeading}%` }">
@@ -41,7 +41,7 @@
   
   <script>
   export default {
-    name: 'PFDTracking',
+    name: 'PDFTracking',
     data() {
       return {
         altitude: 50,
@@ -55,7 +55,7 @@
     mounted() {
       window.addEventListener('keydown', this.handleKeyPress);
     },
-    beforeUmount() {
+    beforeUnmount() {
       window.removeEventListener('keydown', this.handleKeyPress);
     },
     methods: {
@@ -107,6 +107,7 @@
     align-items: center;
     width: 100%;
     height: 100vh;
+    position: relative;
   }
   .left-scale-container, .right-scale-container {
     width: 100px;
@@ -116,7 +117,11 @@
     justify-content: center;
   }
   .bottom-scale-container {
-    width: 80%;
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    width: 100%;
     height: 100px;
     display: flex;
     align-items: center;
@@ -204,6 +209,9 @@
   }
   .scale-indicators div.green {
     color: green;
+  }
+  .full-width {
+    width: calc(100% - 200px);
   }
   </style>
   
