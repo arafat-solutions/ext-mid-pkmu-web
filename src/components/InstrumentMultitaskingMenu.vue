@@ -1,7 +1,7 @@
 <template>
   <div class="battery-test-detail">
     <div class="info-box">
-      <h1>Battery Test 1</h1>
+      <h1>Multitasking dengan Instrument</h1>
       <p>This is the description for Battery Test 1. This test measures various aspects of battery performance under specific conditions.</p>
     </div>
     <div class="test-list-box">
@@ -24,9 +24,9 @@ export default {
   data() {
     return {
       tests: [
-        { id: 1, name: 'Test 1', link: '/battery-test-1' },
-        { id: 2, name: 'Test 2', link: '/battery-test-1' },
-        { id: 3, name: 'Test 3', link: '/battery-test-1' }
+        { id: 1, name: 'Test 1', link: '/battery-test-3' },
+        { id: 2, name: 'Test 2', link: '/battery-test-3' },
+        { id: 3, name: 'Test 3', link: '/battery-test-3' }
         // Add more tests here if needed
       ]
     };

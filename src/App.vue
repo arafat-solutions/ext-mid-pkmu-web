@@ -17,7 +17,7 @@ export default {
   },
   computed: {
     showNavigation() {
-      return this.$route.name !== 'Login';
+      return this.$route.name !== 'Login' && !this.$route.path.includes('test');
     }
   }
 };
