@@ -7,6 +7,7 @@
       <div class="main-container">
         <Navigation v-if="showNavigation" class="navigation" />
         <div :class="{'content': showNavigation, 'full-content': !showNavigation}">
+          <TopNavigation />
           <router-view />
         </div>
       </div>
@@ -17,12 +18,14 @@
 <script>
 import Navigation from './components/NavigationSection.vue';
 import LoginPage from './components/LoginPage.vue';
+import TopNavigation from './components/TopNavigation.vue';
 
 export default {
   name: 'App',
   components: {
     Navigation,
-    LoginPage
+    LoginPage,
+    TopNavigation
   },
   computed: {
     isLoginPage() {
@@ -36,6 +39,13 @@ export default {
 </script>
 
 <style>
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -45,6 +55,8 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 .main-container {
@@ -52,6 +64,8 @@ export default {
   flex-direction: row;
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .navigation {
@@ -63,6 +77,8 @@ export default {
   width: 80%;
   padding: 20px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .full-content {

@@ -52,14 +52,21 @@ export default {
 <style scoped>
 @import '~@fortawesome/fontawesome-free/css/all.css';
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 .login-container {
   display: flex;
   height: 100vh;
-  background: linear-gradient(to right, #ffffff 50%, #6c5ce7 50%);
+  width: 100vw;
 }
 
 .login-form {
-  flex: 1;
+  width: 55%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -86,13 +93,25 @@ export default {
 }
 
 .header {
-  text-align: center;
+  text-align: left;
   margin-bottom: 20px;
+  color: #555; /* Grey color for text */
+}
+
+.header h2 {
+  color: #000; /* Ensure header is black */
 }
 
 .input-group {
   width: 100%;
   margin-bottom: 15px;
+  text-align: left;
+}
+
+.input-group label {
+  font-weight: bold; /* Bold text for labels */
+  font-size: 16px; /* Larger text size for labels */
+  color: #000; /* Ensure label is black */
 }
 
 input {
@@ -100,7 +119,9 @@ input {
   padding: 10px;
   margin-top: 5px;
   border: 1px solid #ccc;
-  border-radius: 10px;
+  border-radius: 20px; /* More rounded input fields */
+  color: #555; /* Grey color for input text */
+  box-sizing: border-box; /* Ensure the input field fits the full width */
 }
 
 button {
@@ -119,7 +140,7 @@ button:hover {
 }
 
 .welcome-section {
-  flex: 1;
+  width: 45%;
   background-color: #6c5ce7;
   color: #fff;
   display: flex;
