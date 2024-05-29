@@ -1,8 +1,8 @@
 <template>
   <div class="battery-test-detail">
     <div class="info-box">
-      <h1>{{selectedTestTitle}}</h1>
-      <p>{{selectedTestDescription}}</p>
+      <h1>{{ selectedTestTitle }}</h1>
+      <p>{{ selectedTestDescription }}</p>
     </div>
     <div class="test-list-box">
       <h2>Available Tests</h2>
@@ -23,10 +23,11 @@ import EventBus from '@/eventBus';
 
 export default {
   name: 'RadarVigilanceMenu',
-  selectedTestDescription: '',
-  selectedTestTitle: '',
+
   data() {
     return {
+      selectedTestDescription: '',
+      selectedTestTitle: '',
       tests: [
         { id: 1, name: 'Test 1', link: '/battery-test-1' },
         { id: 2, name: 'Test 2', link: '/battery-test-1' },
@@ -35,13 +36,18 @@ export default {
       ]
     };
   },
+  created() {
+    EventBus.$on('testSelected', this.handleTestSelected);
+  },
+  beforeUnmount() {
+    EventBus.$off('testSelected', this.handleTestSelected);
+  },
   methods: {
-    created() {
-    EventBus.$on('testSelected', (test) => {
-      this.selectedTestDescription = test.description;
+    handleTestSelected(test) {
+      console.log(test);
       this.selectedTestTitle = test.name;
-    });
-  }
+      this.selectedTestDescription = test.description;
+    }
   }
 };
 </script>
@@ -53,7 +59,8 @@ export default {
   padding: 20px;
 }
 
-.info-box, .test-list-box {
+.info-box,
+.test-list-box {
   background-color: white;
   border-radius: 12px;
   padding: 20px;
@@ -61,7 +68,8 @@ export default {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.info-box h1, .test-list-box h2 {
+.info-box h1,
+.test-list-box h2 {
   margin-top: 0;
 }
 

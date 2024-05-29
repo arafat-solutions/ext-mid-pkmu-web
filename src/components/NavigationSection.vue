@@ -8,8 +8,8 @@
       <p class="schedule-time">Waktu: {{scheduleData.startHour}}-{{scheduleData.endHour}}</p>
     </div>
     <ul class="menu">
-      <li v-for="test in scheduleData.tests" :key="test.name">
-        <div class="menu-item" :class="{ active: isActive(test.name) }" @click="selectTest(test.name)">
+      <li v-for="test in scheduleData.tests" :key="test.name" @click="selectTest(test)">
+        <div class="menu-item" :class="{ active: isActive(test.name) }">
           {{test.name}}
           <span class="status selesai" v-if="isCompleted(test.name)">Selesai</span>
         </div>
@@ -38,6 +38,7 @@ export default {
       return routeName === 'Baterai1'; // Example: only Baterai1 is completed
     },
     selectTest(test) {
+      console.log('selecting:', test.name)
       EventBus.$emit('testSelected', test);
     }
   }
@@ -101,6 +102,7 @@ export default {
   color: white;
   font-weight: bold;
   transition: background-color 0.3s;
+  cursor: pointer;
 }
 
 .menu-item:hover {
