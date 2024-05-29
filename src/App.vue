@@ -7,7 +7,7 @@
       <div class="main-container">
         <Navigation v-if="showNavigation" class="navigation" />
         <div :class="{'content': showNavigation, 'full-content': !showNavigation}">
-          <TopNavigation />
+          <TopNavigation v-if="showNavigation" />
           <router-view />
         </div>
       </div>
@@ -32,6 +32,7 @@ export default {
       return this.$route.name === 'Login';
     },
     showNavigation() {
+      console.log(this.$route.name !== 'Login' && !this.$route.path.includes('test'), 'showNavigation')
       return this.$route.name !== 'Login' && !this.$route.path.includes('test');
     }
   }

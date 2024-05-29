@@ -4,42 +4,30 @@
       <img src="@/assets/logo.png" alt="Logo" />
     </div>
     <div class="schedule">
-      <p class="schedule-title">Jadwal ABC</p>
-      <p class="schedule-time">Waktu: 09:00-12.00</p>
+      <p class="schedule-title">{{scheduleData.name}}</p>
+      <p class="schedule-time">Waktu: {{scheduleData.startHour}}-{{scheduleData.endHour}}</p>
     </div>
     <ul class="menu">
-      <li>
-        <router-link :to="{ name: 'Radar Vigilance Menu' }" class="menu-item" :class="{ active: isActive('Baterai1') }">
-          Baterai Tes 1
-          <span class="status selesai" v-if="isCompleted('Baterai1')">Selesai</span>
-        </router-link>
-      </li>
-      <li>
-        <router-link :to="{ name: 'Callsign Multitask Menu' }" class="menu-item" :class="{ active: isActive('Baterai2') }">
-          Baterai Tes 2
-        </router-link>
-      </li>
-      <li>
-        <router-link :to="{ name: 'Instrument Multitasking Menu' }" class="menu-item" :class="{ active: isActive('Baterai3') }">
-          Baterai Tes 3
-        </router-link>
-      </li>
-      <li>
-        <router-link :to="{ name: 'PFD Tracking Menu' }" class="menu-item" :class="{ active: isActive('Baterai4') }">
-          Baterai Tes 4
-        </router-link>
-      </li>
-      <li>
-        <router-link :to="{ name: 'Spatial Orientation Menu' }" class="menu-item" :class="{ active: isActive('Baterai5') }">
-          Baterai Tes 5
-        </router-link>
+      <li v-for="test in scheduleData.tests" :key="test.name">
+        <div class="menu-item" :class="{ active: isActive(test.name) }" @click="selectTest(test.name)">
+          {{test.name}}
+          <span class="status selesai" v-if="isCompleted(test.name)">Selesai</span>
+        </div>
       </li>
     </ul>
   </div>
 </template>
 
 <script>
+import EventBus from '@/eventBus';
+
 export default {
+  data() {
+    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+    return {
+      scheduleData
+    };
+  },  
   name: 'NavigationPage',
   methods: {
     isActive(routeName) {
@@ -48,6 +36,9 @@ export default {
     isCompleted(routeName) {
       // Replace with actual logic to determine if the test is completed
       return routeName === 'Baterai1'; // Example: only Baterai1 is completed
+    },
+    selectTest(test) {
+      EventBus.$emit('testSelected', test);
     }
   }
 };

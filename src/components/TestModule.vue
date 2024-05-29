@@ -1,12 +1,8 @@
 <template>
   <div class="battery-test-detail">
     <div class="info-box">
-      <h1>Radar Vigiliance Test</h1>
-      <p>Radar  Vigiliance Test adalah tes perhatian dan kewaspadaan jangka panjang yang menggunakan desain tugas beban kerja rendah.</p>
-      <h2>Persiapan dan Tugas</h2>
-      <p>Sebuah radar berputar mendeteksi objek di udara, biasanya ditampilkan sebagai 'kotak' di layar radar. Sebuah respons diperlukan setiap kali 'lingkaran' muncul dilayar. Dalam jangka waktu 15 hingga 30 menit - tes ini dirancang untuk menguji kewaspadaan Anda dalam lingkungan kerja yang terbatas.</p>
-      <h2>Pengoperasion</h2>
-      <p>Tekan tombol spasi secepat mungkin ketika sebuah lingkaran muncul di layar radar. Klik mouse di mana saja di layar adalah opsi respons alternatif.</p>
+      <h1>{{selectedTestTitle}}</h1>
+      <p>{{selectedTestDescription}}</p>
     </div>
     <div class="test-list-box">
       <h2>Available Tests</h2>
@@ -23,8 +19,12 @@
 </template>
 
 <script>
+import EventBus from '@/eventBus';
+
 export default {
   name: 'RadarVigilanceMenu',
+  selectedTestDescription: '',
+  selectedTestTitle: '',
   data() {
     return {
       tests: [
@@ -34,6 +34,14 @@ export default {
         // Add more tests here if needed
       ]
     };
+  },
+  methods: {
+    created() {
+    EventBus.$on('testSelected', (test) => {
+      this.selectedTestDescription = test.description;
+      this.selectedTestTitle = test.name;
+    });
+  }
   }
 };
 </script>
