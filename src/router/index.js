@@ -7,6 +7,8 @@ import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
 import RotatingMaze from '@/components/RotatingMaze.vue';
 import OperativeMultitasking from '@/components/OperativeMultitasking.vue';
+import MultidimensionalCoordination from '@/components/MultidimensionalCoordination.vue';
+import TimeSharing from '@/components/TimeSharing.vue';
 import TestModule from '@/components/TestModule.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 import ColorMultitask from '@/components/ColorMultitask.vue';
@@ -63,10 +65,21 @@ const routes = [
     component: OperativeMultitasking
   },
   {
+    path: '/multidimensional-coordination-test',
+    name: 'Multidimensional Coordination Test',
+    component: MultidimensionalCoordination
+  },
+  {
     path: '/module',
     name: 'Test Module',
     component: TestModule
   },
+  {
+    path: '/time-sharing-test',
+    name: 'Time Sharing Test',
+    component: TimeSharing
+  },
+  
 ];
 
 const router = createRouter({
