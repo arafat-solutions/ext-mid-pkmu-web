@@ -5,8 +5,11 @@ import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
+import RotatingMaze from '@/components/RotatingMaze.vue';
+import OperativeMultitasking from '@/components/OperativeMultitasking.vue';
 import TestModule from '@/components/TestModule.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
+import ColorMultitask from '@/components/ColorMultitask.vue';
 
 const routes = [
   {
@@ -30,6 +33,11 @@ const routes = [
     component: CallSignMultitask
   },
   {
+    path: '/color-multitask-test',
+    name: 'Color Multitask Test',
+    component: ColorMultitask
+  },
+  {
     path: '/instrument-multitask-test',
     name: 'Instrument Multitasking Test',
     component: InstrumentMultitask
@@ -43,6 +51,16 @@ const routes = [
     path: '/spatial-orientation-test',
     name: 'Spatial Orientation Test',
     component: SpatialOrientation
+  },
+  {
+    path: '/rotating-maze-test',
+    name: 'Rotating Maze',
+    component: RotatingMaze
+  },
+  {
+    path: '/operative-multitasking-test',
+    name: 'Operative Multitasking Test',
+    component: OperativeMultitasking
   },
   {
     path: '/module',
