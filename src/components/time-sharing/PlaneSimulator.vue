@@ -1,8 +1,8 @@
 <template>
     <div class="plane-simulation-container">
       <div class="instructions">Press 'Space bar' to switch tasks</div>
-      <div class="instruments">
-        <div class="instrument" v-for="(instrument, index) in instruments" :key="index">
+      <div class="instruments-left">
+        <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index">
           <div class="circle">
             <div class="needle" :style="{ transform: 'rotate(' + instrument.angle + 'deg)' }"></div>
           </div>
@@ -10,8 +10,16 @@
         </div>
       </div>
       <div class="simulation-box">
-        <div class="obstacle" v-for="obstacle in obstacles" :key="obstacle.id" :style="{ top: obstacle.y + 'px' }"></div>
+        <div class="obstacle" v-for="obstacle in obstacles" :key="obstacle.id" :style="{ top: obstacle.y + 'px', left: obstacle.x + 'px', width: obstacle.width + 'px' }"></div>
         <img src="@/assets/airplane-icon.png" alt="Airplane" :style="planeStyle" class="airplane" />
+      </div>
+      <div class="instruments-right">
+        <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index">
+          <div class="circle">
+            <div class="needle" :style="{ transform: 'rotate(' + instrument.angle + 'deg)' }"></div>
+          </div>
+          <div>{{ instrument.key }}</div>
+        </div>
       </div>
     </div>
   </template>
@@ -22,16 +30,18 @@
     data() {
       return {
         plane: {
-          x: 100,
-          y: 300
+          x: 170,
+          y: 320
         },
         obstacles: [
-          { id: 1, y: 400 },
-          { id: 2, y: 600 }
+          { id: 1, y: 400, x: 50, width: 100 },
+          { id: 2, y: 600, x: 200, width: 100 }
         ],
-        instruments: [
+        instrumentsLeft: [
           { key: 'C', angle: 0 },
-          { key: 'V', angle: 0 },
+          { key: 'V', angle: 0 }
+        ],
+        instrumentsRight: [
           { key: 'N', angle: 0 },
           { key: 'B', angle: 0 }
         ]
@@ -65,7 +75,7 @@
         this.checkCollision();
       },
       handleInstrumentKey(key) {
-        const instrument = this.instruments.find(i => i.key === key);
+        const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
         if (instrument) {
           instrument.angle -= 10; // Adjust as necessary
           if (instrument.angle <= -90) {
@@ -86,8 +96,8 @@
         };
         for (const obstacle of this.obstacles) {
           const obstacleRect = {
-            left: 0,
-            right: 400,
+            left: obstacle.x,
+            right: obstacle.x + obstacle.width,
             top: obstacle.y,
             bottom: obstacle.y + 20
           };
@@ -127,15 +137,24 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
   }
   .instructions {
     margin-bottom: 10px;
   }
-  .instruments {
+  .instruments-left,
+  .instruments-right {
+    position: absolute;
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    width: 100%;
-    margin-bottom: 20px;
+    height: 100%;
+  }
+  .instruments-left {
+    left: 10px;
+  }
+  .instruments-right {
+    right: 10px;
   }
   .instrument {
     display: flex;
@@ -167,7 +186,6 @@
   }
   .obstacle {
     position: absolute;
-    width: 100%;
     height: 20px;
     background: black;
   }
