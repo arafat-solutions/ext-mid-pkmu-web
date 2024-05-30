@@ -8,6 +8,7 @@ import SpatialOrientation from '@/components/SpatialOrientation.vue';
 import RotatingMaze from '@/components/RotatingMaze.vue';
 import OperativeMultitasking from '@/components/OperativeMultitasking.vue';
 import MultidimensionalCoordination from '@/components/MultidimensionalCoordination.vue';
+import ShapeRecognition from '@/components/ShapeRecognition.vue';
 import TimeSharing from '@/components/TimeSharing.vue';
 import TestModule from '@/components/TestModule.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
@@ -78,6 +79,11 @@ const routes = [
     path: '/time-sharing-test',
     name: 'Time Sharing Test',
     component: TimeSharing
+  },
+  {
+    path: '/shape-recognition-test',
+    name: 'Shape Recognition Test',
+    component: ShapeRecognition
   },
   
 ];
