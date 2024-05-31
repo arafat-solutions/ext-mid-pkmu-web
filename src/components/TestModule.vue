@@ -16,16 +16,23 @@
       </ul>
     </div>
   </div>
+  <!-- <div class="parent-container">
+    <button @click="showModal">Show Modal</button>
+    <ModalComponent :visible="isModalVisible" title="Apakah Anda yakin untuk Log Out?"
+      message="Apakah Anda yakin untuk Log Out?" @confirm="handleConfirm" @cancel="handleCancel" />
+  </div> -->
 </template>
 
 <script>
 import EventBus from '@/eventBus';
+import ModalComponent from '@/components/common/ModalComponent.vue';
 
 export default {
   name: 'RadarVigilanceMenu',
 
   data() {
     return {
+      isModalVisible: false,
       selectedTestDescription: '',
       selectedTestTitle: '',
       tests: [
@@ -47,8 +54,8 @@ export default {
       console.log(test);
       this.selectedTestTitle = test.name;
       this.selectedTestDescription = test.description;
-    }
-  }
+    },
+  },
 };
 </script>
 
