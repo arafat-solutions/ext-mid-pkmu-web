@@ -25,7 +25,6 @@
 
 <script>
 import EventBus from '@/eventBus';
-import ModalComponent from '@/components/common/ModalComponent.vue';
 
 export default {
   name: 'RadarVigilanceMenu',

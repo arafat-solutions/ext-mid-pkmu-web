@@ -13,12 +13,18 @@ import TimeSharing from '@/components/TimeSharing.vue';
 import TestModule from '@/components/TestModule.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 import ColorMultitask from '@/components/ColorMultitask.vue';
+import ConfigPage from '@/components/ConfigPage.vue';
 
 const routes = [
   {
     path: '/',
     name: 'Login',
     component: LoginPage
+  },
+  {
+    path: '/config',
+    name: 'Config',
+    component: ConfigPage
   },
   {
     path: '/profile',
