@@ -32,8 +32,8 @@ export default {
       return this.$route.name === 'Login';
     },
     showNavigation() {
-      console.log(this.$route.name !== 'Login' && !this.$route.path.includes('test'), 'showNavigation')
-      return this.$route.name !== 'Login' && !this.$route.path.includes('test');
+      console.log(this.$route.name !== 'Login' && this.$route.name !== 'Config')
+      return (this.$route.name !== 'Login' && this.$route.name !== 'Config') && !this.$route.path.includes('test');
     }
   }
 };
