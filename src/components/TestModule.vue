@@ -10,7 +10,7 @@
         <li v-for="test in tests" :key="test.id" class="test-item">
           <div class="test-content">
             <p>{{ test.name }}</p>
-            <router-link :to="test.link" class="test-button">Start Test</router-link>
+            <router-link :to="this.url" class="test-button">Start Test</router-link>
           </div>
         </li>
       </ul>
@@ -53,6 +53,7 @@ export default {
       console.log(test);
       this.selectedTestTitle = test.name;
       this.selectedTestDescription = test.description;
+      this.url = test.testUrl;
     },
   },
 };
