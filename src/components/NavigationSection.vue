@@ -56,7 +56,9 @@ export default {
   align-items: center;
   width: 20%;
   box-sizing: border-box;
+  overflow: auto;
 }
+
 
 .logo {
   width: 100%;
