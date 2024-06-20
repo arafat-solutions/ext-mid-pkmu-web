@@ -1,8 +1,10 @@
 <template>
-  <div v-if="problem">
-    <p class="arithmethic-text">{{ problem.num1 }} {{ problem.operator }} {{ problem.num2 }}</p>
-    <div class="row">
-      <div v-for="(choice, index) in problem.choices" :key="index" class="col-6">{{ choice }}</div>
+  <div v-if="problem" class="problem-section">
+    <p class="problem">{{ problem.num1 }} {{ problem.operator }} {{ problem.num2 }} = ?</p>
+    <div class="choices">
+      <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
+        <button @click="checkAnswer(choice)">{{ index + 1 }}</button>{{ choice }}
+      </div>
     </div>
   </div>
 </template>
@@ -46,7 +48,7 @@
             num1 = this.getRandomNumber(10, 50);
             num2 = this.getRandomNumber(10, 50);
             break;
-          case 'hard':
+          case 'difficult':
             num1 = this.getRandomNumber(50, this.maxNumber);
             num2 = this.getRandomNumber(50, this.maxNumber);
             break;
@@ -95,8 +97,49 @@
   };
 </script>
 <style scoped>
-  .arithmethic-text {
-    font-size: large;
-    font-weight: bold;
+  .container {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    text-align: center;
+  }
+
+  h1 {
+    color: #333;
+  }
+
+  .control-panel {
+    margin-bottom: 20px;
+  }
+
+  label {
+    margin-right: 10px;
+  }
+
+  select {
+    margin-bottom: 20px;
+  }
+
+  .problem-section {
+    margin-bottom: 20px;
+  }
+
+  .problem {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .choice {
+    margin: 10px;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
   }
 </style>
