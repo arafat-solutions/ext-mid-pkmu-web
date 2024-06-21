@@ -12,17 +12,22 @@
 <script>
   export default {
     name: 'ArithmeticTask',
-    props: {
-      chooseAnswer: Number
-    },
     data() {
       return {
         minNumber: 1,
         maxNumber: 99,
         signRandoms: ['+', '-', ':', 'x'],
         selectedDifficulty: 'easy',
-        problem: null
+        problem: null,
+        result: {
+          correct: 0,
+          wrong: 0,
+          answerTimes: [],
+        },
       };
+    },
+    props: {
+      timeLeft: Number,
     },
     mounted() {
       this.generateProblem();
@@ -34,27 +39,39 @@
       handleKeyPress(event) {
         // Check if the pressed key is '1', '2', '3', or '4'
         if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
-          // Handle key press here
-          console.log(`You pressed ${event.key}`);
-
           // Perform any specific action based on the key pressed
           switch (event.key) {
             case '1':
-              alert('1');
+              this.chooseAnswer(0);
               break;
             case '2':
-              alert('2');
+              this.chooseAnswer(1);
               break;
             case '3':
-              alert('3');
+              this.chooseAnswer(2);
               break;
             case '4':
-              alert('4');
+              this.chooseAnswer(3);
               break;
             default:
               break;
           }
         }
+      },
+      chooseAnswer(index) {
+        if (!this.problem) {
+          return;
+        }
+
+        this.result.answerTimes.push(new Date());
+        if (this.problem.choices[index] === this.problem.correctAnswer) {
+          this.result.correct++;
+        } else {
+          this.result.wrong++;
+        }
+
+        this.generateProblem();
+        console.log(JSON.stringify(this.result))
       },
       getRandomNumber(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

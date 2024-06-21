@@ -1,7 +1,13 @@
 <template>
     <div class="main-view">
+      <div v-if="timeLeft > 0" class="timer">
+        Time Left: {{ formattedTime }}
+      </div>
+      <div v-else class="timer">
+        Time's up!
+      </div>
       <div class="column arithmetic-display">
-        <ArithmeticTask />
+        <ArithmeticTask :timeLeft="timeLeft" />
       </div>
       <div class="column" />
     </div>
@@ -14,6 +20,40 @@
     name: 'MainView',
     components: {
       ArithmeticTask
+    },
+    data() {
+      return {
+        timeLeft: 30, // Countdown time in seconds
+        interval: null
+      };
+    },
+    computed: {
+      formattedTime() {
+        const minutes = Math.floor(this.timeLeft / 60);
+        const seconds = this.timeLeft % 60;
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      }
+    },
+    methods: {
+      startCountdown() {
+        this.interval = setInterval(() => {
+          if (this.timeLeft > 0) {
+            this.timeLeft -= 1;
+          } else {
+            clearInterval(this.interval);
+            this.timeUp();
+          }
+        }, 1000);
+      },
+      timeUp() {
+        console.log("Time's up!");
+      }
+    },
+    mounted() {
+      this.startCountdown();
+    },
+    beforeUnmount() {
+      clearInterval(this.interval);
     }
   };
 </script>
@@ -35,5 +75,11 @@
     position: absolute;
     bottom: 0;
     left: 0;
+  }
+
+  .timer {
+    position: absolute;
+    right: 0;
+    margin-right: 5rem;
   }
 </style>
