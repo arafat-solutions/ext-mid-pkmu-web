@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from '@/components/LoginPage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
 import CallSignMultitask from '@/components/CallSignMultitask.vue';
+import MultiMonitoringTest from '@/components/MultiMonitoringTest.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
@@ -40,6 +41,11 @@ const routes = [
     path: '/call-sign-multitask-test',
     name: 'Call Sign Multitask Test',
     component: CallSignMultitask
+  },
+  {
+    path: '/multi-monitoring-test',
+    name: 'Multi Monitoring Test',
+    component: MultiMonitoringTest
   },
   {
     path: '/color-multitask-test',

@@ -116,6 +116,12 @@ export default {
             config: {},
             testUrl: '/shape-recognition-test'
           },
+          {
+            name: "Multi Monitoring Test",
+            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
+            config: {},
+            testUrl: '/multi-monitoring-test'
+          },
         ]
       };
 
@@ -132,7 +138,8 @@ export default {
 <style scoped>
 @import '~@fortawesome/fontawesome-free/css/all.css';
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -175,11 +182,13 @@ html, body {
 .header {
   text-align: left;
   margin-bottom: 20px;
-  color: #555; /* Grey color for text */
+  color: #555;
+  /* Grey color for text */
 }
 
 .header h2 {
-  color: #000; /* Ensure header is black */
+  color: #000;
+  /* Ensure header is black */
 }
 
 .input-group {
@@ -189,9 +198,12 @@ html, body {
 }
 
 .input-group label {
-  font-weight: bold; /* Bold text for labels */
-  font-size: 16px; /* Larger text size for labels */
-  color: #000; /* Ensure label is black */
+  font-weight: bold;
+  /* Bold text for labels */
+  font-size: 16px;
+  /* Larger text size for labels */
+  color: #000;
+  /* Ensure label is black */
 }
 
 input {
@@ -199,9 +211,12 @@ input {
   padding: 10px;
   margin-top: 5px;
   border: 1px solid #ccc;
-  border-radius: 20px; /* More rounded input fields */
-  color: #555; /* Grey color for input text */
-  box-sizing: border-box; /* Ensure the input field fits the full width */
+  border-radius: 20px;
+  /* More rounded input fields */
+  color: #555;
+  /* Grey color for input text */
+  box-sizing: border-box;
+  /* Ensure the input field fits the full width */
 }
 
 button {
