@@ -1,42 +1,39 @@
 <template>
     <div class="main-view">
-      <div class="row">
-        <div class="col-lg-5">
-          <Horizon />
-          <ArithmeticTask />
-        </div>
-        <div class="col-lg-2">
-          <WarningLights />
-        </div>
-        <div class="col-lg-5">
-          <Gauges />
-        </div>
+      <div class="column arithmetic-display">
+        <ArithmeticTask />
       </div>
+      <div class="column" />
     </div>
   </template>
 
-  <script>
-  import Horizon from './HorizonView.vue';
-  import WarningLights from './WarningLights.vue';
-  import Gauges from './GaugesMeter.vue';
+<script>
   import ArithmeticTask from './ArithmeticTask';
 
   export default {
     name: 'MainView',
     components: {
-      Horizon,
-      WarningLights,
-      Gauges,
       ArithmeticTask
     }
   };
-  </script>
+</script>
 
-  <style scoped>
+<style scoped>
   .main-view {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     gap: 20px;
   }
-  </style>
+
+  .column {
+    float: left;
+    width: 50%;
+  }
+
+  .arithmetic-display {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+</style>

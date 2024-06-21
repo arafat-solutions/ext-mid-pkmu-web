@@ -3,7 +3,7 @@
     <p class="problem">{{ problem.num1 }} {{ problem.operator }} {{ problem.num2 }} = ?</p>
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
-        <button @click="checkAnswer(choice)">{{ index + 1 }}</button>{{ choice }}
+        <button @click="checkAnswer(choice)" class="btn-answer">{{ index + 1 }}</button>{{ choice }}
       </div>
     </div>
   </div>
@@ -126,20 +126,31 @@
   .problem {
     font-size: 24px;
     margin-bottom: 20px;
+    font-weight: bold;
   }
 
   .choices {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: auto auto; /* Two columns */
+    grid-gap: 5px;
+    width: 50%;
+    margin: 0 auto; /* Gap between grid items */
   }
 
   .choice {
-    margin: 10px;
+    /* Adjust styling of individual choices */
+    padding: 10px;
+    border: node;
   }
 
-  button {
+
+
+  .btn-answer {
     padding: 10px 20px;
     font-size: 16px;
+    margin-right: 1rem;
+    border: 0;
+    cursor: pointer;
   }
+
 </style>
