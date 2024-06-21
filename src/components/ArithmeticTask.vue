@@ -3,7 +3,7 @@
     <p class="problem">{{ problem.num1 }} {{ problem.operator }} {{ problem.num2 }} = ?</p>
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
-        <button @click="checkAnswer(choice)" class="btn-answer">{{ index + 1 }}</button>{{ choice }}
+        <button class="btn-answer">{{ index + 1 }}</button>{{ choice }}
       </div>
     </div>
   </div>
@@ -27,7 +27,35 @@
     mounted() {
       this.generateProblem();
     },
+    created() {
+      window.addEventListener('keyup', this.handleKeyPress);
+    },
     methods: {
+      handleKeyPress(event) {
+        // Check if the pressed key is '1', '2', '3', or '4'
+        if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
+          // Handle key press here
+          console.log(`You pressed ${event.key}`);
+
+          // Perform any specific action based on the key pressed
+          switch (event.key) {
+            case '1':
+              alert('1');
+              break;
+            case '2':
+              alert('2');
+              break;
+            case '3':
+              alert('3');
+              break;
+            case '4':
+              alert('4');
+              break;
+            default:
+              break;
+          }
+        }
+      },
       getRandomNumber(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
       },
@@ -150,7 +178,6 @@
     font-size: 16px;
     margin-right: 1rem;
     border: 0;
-    cursor: pointer;
   }
 
 </style>
