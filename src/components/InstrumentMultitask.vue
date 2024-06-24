@@ -33,7 +33,7 @@
         timeLeft: 30, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
-        difficultyArithmetic: 'medium',
+        difficultyArithmetic: 'easy',
         speedAlertLight: 'slow',
       };
     },
