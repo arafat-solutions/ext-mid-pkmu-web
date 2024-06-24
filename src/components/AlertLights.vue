@@ -8,7 +8,7 @@
 
   <script>
   export default {
-    name: 'WarningLights',
+    name: 'AlertLights',
     data() {
       return {
         lights: [
@@ -28,7 +28,7 @@
       };
     },
     props: {
-      selectedDifficulty: String,
+      speed: String,
     },
     mounted() {
       setInterval(this.randomLight, this.getInterval());
@@ -40,15 +40,19 @@
     methods: {
       getInterval() {
         // Adjust ranges based on difficulty level
-        switch (this.selectedDifficulty) {
-          case 'easy':
+        switch (this.speed) {
+          case 'very_slow':
+            return 5000;
+          case 'slow':
             return 4000;
           case 'medium':
             return 3000;
-          case 'difficult':
+          case 'fast':
             return 2000;
+          case 'very_fast':
+            return 1000;
           default:
-            return 2000;
+            return 3000;
         }
       },
       randomLight() {

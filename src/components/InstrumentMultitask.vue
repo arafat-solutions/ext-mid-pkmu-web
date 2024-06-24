@@ -10,7 +10,7 @@
         <ArithmeticTask :timeLeft="timeLeft" :difficulty="difficultyArithmetic" />
       </div>
       <div class="column" v-if="!isTimesUp">
-        <WarningLights :selectedDifficulty="selectedDifficulty" />
+        <AlertLights :speed="speedAlertLight" />
       </div>
       <div class="column" v-if="isTimesUp">
         Detail Result:
@@ -20,13 +20,13 @@
 
 <script>
   import ArithmeticTask from './ArithmeticTask';
-  import WarningLights from './WarningLights';
+  import AlertLights from './AlertLights';
 
   export default {
     name: 'MainView',
     components: {
       ArithmeticTask,
-      WarningLights
+      AlertLights
     },
     data() {
       return {
@@ -34,6 +34,7 @@
         interval: null,
         isTimesUp: false,
         difficultyArithmetic: 'medium',
+        speedAlertLight: 'slow',
       };
     },
     computed: {
