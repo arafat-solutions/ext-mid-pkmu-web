@@ -6,25 +6,34 @@
       <div v-else class="timer">
         Time's up!
       </div>
-      <div class="column arithmetic-display">
-        <ArithmeticTask :timeLeft="timeLeft" />
+      <div class="column arithmetic-display" v-if="!isTimesUp">
+        <ArithmeticTask :timeLeft="timeLeft" :difficulty="difficultyArithmetic" />
       </div>
-      <div class="column" />
+      <div class="column" v-if="!isTimesUp">
+        <WarningLights :selectedDifficulty="selectedDifficulty" />
+      </div>
+      <div class="column" v-if="isTimesUp">
+        Detail Result:
+      </div>
     </div>
   </template>
 
 <script>
   import ArithmeticTask from './ArithmeticTask';
+  import WarningLights from './WarningLights';
 
   export default {
     name: 'MainView',
     components: {
-      ArithmeticTask
+      ArithmeticTask,
+      WarningLights
     },
     data() {
       return {
         timeLeft: 30, // Countdown time in seconds
-        interval: null
+        interval: null,
+        isTimesUp: false,
+        difficultyArithmetic: 'medium',
       };
     },
     computed: {
@@ -46,6 +55,7 @@
         }, 1000);
       },
       timeUp() {
+        this.isTimesUp = true;
         console.log("Time's up!");
       }
     },
@@ -69,12 +79,11 @@
   .column {
     float: left;
     width: 50%;
+    margin-top: 3rem;
   }
 
   .arithmetic-display {
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    margin-top: 40%;
   }
 
   .timer {
