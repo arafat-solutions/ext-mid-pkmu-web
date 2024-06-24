@@ -17,23 +17,26 @@
         minNumber: 1,
         maxNumber: 99,
         signRandoms: ['+', '-', ':', 'x'],
-        selectedDifficulty: 'easy',
         problem: null,
         result: {
           correct: 0,
           wrong: 0,
           answerTimes: [],
+          problems: [],
         },
       };
     },
     props: {
-      timeLeft: Number,
+      difficulty: String,
     },
     mounted() {
       this.generateProblem();
     },
     created() {
       window.addEventListener('keyup', this.handleKeyPress);
+    },
+    beforeUnmount() {
+      window.removeEventListener('keyup', this.handleKeyPress);
     },
     methods: {
       handleKeyPress(event) {
@@ -69,9 +72,9 @@
         } else {
           this.result.wrong++;
         }
-
+        this.result.problems.push(this.problem);
         this.generateProblem();
-        console.log(JSON.stringify(this.result))
+        console.log(JSON.stringify(this.result));
       },
       getRandomNumber(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -84,7 +87,7 @@
         let num1, num2;
 
         // Adjust ranges based on difficulty level
-        switch (this.selectedDifficulty) {
+        switch (this.difficulty) {
           case 'easy':
             num1 = this.getRandomNumber(this.minNumber, 10);
             num2 = this.getRandomNumber(this.minNumber, 10);
@@ -112,8 +115,9 @@
 
         const correctAnswer = this.calculateAnswer(num1, num2, operator);
         const choices = this.generateChoices(correctAnswer);
+        const createdAt = new Date();
 
-        this.problem = { num1, num2, operator, choices, correctAnswer };
+        this.problem = { num1, num2, operator, choices, correctAnswer, createdAt };
       },
       calculateAnswer(num1, num2, operator) {
         switch (operator) {
@@ -195,6 +199,9 @@
     font-size: 16px;
     margin-right: 1rem;
     border: 0;
+    font-weight: bold;
+    background-color: aqua;
+    border-radius: 5px;
   }
 
 </style>
