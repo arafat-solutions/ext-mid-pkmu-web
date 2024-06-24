@@ -56,6 +56,13 @@
         }
       },
       randomLight() {
+        this.lights.forEach(light => (light.color = 'off'));
+        const index = Math.floor(Math.random() * this.lights.length);
+        const color = Math.random() > 0.5 ? 'red' : 'yellow';
+        this.lights[index].color = color;
+        this.result.questionTimes.push(new Date);
+        this.result.colors.push(color);
+
         const indexCheck = this.result.questionTimes.length - 1;
         if (
           indexCheck > 0 &&
@@ -67,22 +74,15 @@
           }
           this.result.answerTimes.push(null);
         }
-        this.lights.forEach(light => (light.color = 'off'));
-        const index = Math.floor(Math.random() * this.lights.length);
-        const color = Math.random() > 0.5 ? 'red' : 'yellow';
-        this.lights[index].color = color;
-        this.result.questionTimes.push(new Date);
-        this.result.colors.push(color);
       },
       turnOffLight(index) {
         this.result.answerTimes.push(new Date);
-        this.lights[index].color = 'off';
         if (this.lights[index].color === 'red') {
           this.result.correct++;
         } else {
           this.result.wrong++;
         }
-
+        this.lights[index].color = 'off';
         console.log(JSON.stringify(this.result));
       },
       handleKeyPress(event) {
