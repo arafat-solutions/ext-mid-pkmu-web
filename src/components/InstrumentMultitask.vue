@@ -58,7 +58,6 @@
       },
       timeUp() {
         this.isTimesUp = true;
-        console.log("Time's up!");
       }
     },
     mounted() {
