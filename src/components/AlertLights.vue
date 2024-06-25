@@ -110,15 +110,18 @@
         }
       },
       turnOffLight(index) {
+        this.lights[index].color = 'off';
         this.result.answerTimes.push(new Date);
         if (this.lights[index].color === 'red') {
           this.result.correct++;
         } else {
           this.result.wrong++;
         }
-        this.lights[index].color = 'off';
       },
       handleKeyPress(event) {
+        if (event.key !== 'r' && event.key !== 's' && event.key !== 't' && event.key !== 'u') {
+          return;
+        }
         const keyMap = { KeyR: 0, KeyS: 1, KeyT: 2, KeyU: 3 };
         if (keyMap[event.code] !== undefined) {
           this.turnOffLight(keyMap[event.code]);
