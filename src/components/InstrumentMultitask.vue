@@ -30,7 +30,7 @@
     },
     data() {
       return {
-        timeLeft: 30, // Countdown time in seconds
+        timeLeft: 0.5 * 60, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
         difficultyArithmetic: 'easy',//easy,medium,difficult
