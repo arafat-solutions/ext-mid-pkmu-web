@@ -25,13 +25,16 @@
           answerTimes: [],
           questionTimes: [],
         },
+        intervalId: null,
       };
     },
     props: {
       speed: String,
+      isTimesUp: Boolean,
+      frequency: String,
     },
     mounted() {
-      setInterval(this.randomLight, this.getInterval());
+      this.intervalId = setInterval(this.randomLight, this.getInterval());
       window.addEventListener('keydown', this.handleKeyPress);
     },
     beforeUnmount() {
@@ -55,18 +58,49 @@
             return 3000;
         }
       },
+      getFrequency() {
+        // Adjust ranges based on difficulty level
+        switch (this.frequency) {
+          case 'very_rarely':
+            return 0.9;
+          case 'rarely':
+            return 0.7;
+          case 'medium':
+            return 0.5;
+          case 'often':
+            return 0.3;
+          case 'very_often':
+            return 0.1;
+          default:
+            return 0.5;
+        }
+      },
       randomLight() {
+        if (this.isTimesUp) {
+          this.checkMissed(true);
+          console.log(JSON.stringify(this.result));
+          clearInterval(this.intervalId);
+          return;
+        }
+
         this.lights.forEach(light => (light.color = 'off'));
         const index = Math.floor(Math.random() * this.lights.length);
-        const color = Math.random() > 0.5 ? 'red' : 'yellow';
+        const frequency = this.getFrequency();
+        const color = Math.random() > frequency ? 'red' : 'yellow';
         this.lights[index].color = color;
         this.result.questionTimes.push(new Date);
         this.result.colors.push(color);
-
-        const indexCheck = this.result.questionTimes.length - 1;
+        this.checkMissed();
+      },
+      checkMissed(isLast = false) {
+        let indexCheck;
+        if (isLast) {
+          indexCheck = this.result.questionTimes.length - 1;
+        } else {
+          indexCheck = this.result.questionTimes.length - 2;
+        }
         if (
-          indexCheck > 0 &&
-          typeof this.result.answerTimes[indexCheck] !== 'undefined'
+          typeof this.result.answerTimes[indexCheck] === 'undefined'
         ) {
           // Check if light is red and user not push R,S,T,U
           if (this.result.colors[indexCheck] === 'red') {
@@ -83,7 +117,6 @@
           this.result.wrong++;
         }
         this.lights[index].color = 'off';
-        console.log(JSON.stringify(this.result));
       },
       handleKeyPress(event) {
         const keyMap = { KeyR: 0, KeyS: 1, KeyT: 2, KeyU: 3 };
