@@ -38,6 +38,22 @@
     beforeUnmount() {
       window.removeEventListener('keyup', this.handleKeyPress);
     },
+    computed: {
+      correctResponse() {
+        return (this.result.correct / this.result.problems.length * 100).toFixed(2);
+      },
+      responseTime() {
+        let totalResponse = 0;
+        for (let i = 0; i < this.result.answerTimes.length; i++) {
+          totalResponse += this.getTimeDifferenceInSeconds(
+            this.result.problems[i].createdAt,
+            this.result.answerTimes[i]
+          )
+        }
+
+        return (totalResponse / this.result.problems.length).toFixed(2);
+      },
+    },
     methods: {
       handleKeyPress(event) {
         // Check if the pressed key is '1', '2', '3', or '4'
@@ -140,6 +156,13 @@
           choices.add(randomChoice);
         }
         return Array.from(choices).sort(() => Math.random() - 0.5);
+      },
+      getTimeDifferenceInSeconds(dateTime1, dateTime2) {
+        let date1 = new Date(dateTime1);
+        let date2 = new Date(dateTime2);
+
+        let differenceInMilliseconds = Math.abs(date2 - date1);
+        return Math.floor(differenceInMilliseconds / 1000);
       }
     }
   };

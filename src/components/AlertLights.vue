@@ -28,6 +28,27 @@
         intervalId: null,
       };
     },
+    computed: {
+      correctResponse() {
+        return (this.result.correct / this.result.colors.filter(color => color === 'red').length * 100).toFixed(2);
+      },
+      responseTime() {
+        let totalResponse = 0;
+        let counter = 0;
+        for (let i = 0; i < this.result.questionTimes.length; i++) {
+          if (!this.result.answerTimes[i]) {
+            continue;
+          }
+          counter++;
+          totalResponse += this.getTimeDifferenceInSeconds(
+            this.result.questionTimes[i],
+            this.result.answerTimes[i]
+          )
+        }
+
+        return (totalResponse / counter).toFixed(2);
+      },
+    },
     props: {
       speed: String,
       isTimesUp: Boolean,
@@ -78,8 +99,9 @@
       randomLight() {
         if (this.isTimesUp) {
           this.checkMissed(true);
-          console.log(JSON.stringify(this.result));
           clearInterval(this.intervalId);
+          // console.log(JSON.stringify(this.result));
+          // console.log(this.correctResponse, this.responseTime);
           return;
         }
 
@@ -110,13 +132,13 @@
         }
       },
       turnOffLight(index) {
-        this.lights[index].color = 'off';
         this.result.answerTimes.push(new Date);
         if (this.lights[index].color === 'red') {
           this.result.correct++;
         } else {
           this.result.wrong++;
         }
+        this.lights[index].color = 'off';
       },
       handleKeyPress(event) {
         if (event.key !== 'r' && event.key !== 's' && event.key !== 't' && event.key !== 'u') {
@@ -126,6 +148,13 @@
         if (keyMap[event.code] !== undefined) {
           this.turnOffLight(keyMap[event.code]);
         }
+      },
+      getTimeDifferenceInSeconds(dateTime1, dateTime2) {
+        let date1 = new Date(dateTime1);
+        let date2 = new Date(dateTime2);
+
+        let differenceInMilliseconds = Math.abs(date2 - date1);
+        return Math.floor(differenceInMilliseconds / 1000);
       }
     }
   };
