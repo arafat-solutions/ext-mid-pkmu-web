@@ -74,7 +74,6 @@
         }
         this.result.problems.push(this.problem);
         this.generateProblem();
-        console.log(JSON.stringify(this.result));
       },
       getRandomNumber(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

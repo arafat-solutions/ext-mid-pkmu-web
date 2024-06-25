@@ -6,13 +6,13 @@
       <div v-else class="timer">
         Time's up!
       </div>
-      <div class="column arithmetic-display" v-if="!isTimesUp">
+      <div class="column arithmetic-display" v-show="!isTimesUp">
         <ArithmeticTask :timeLeft="timeLeft" :difficulty="difficultyArithmetic" />
       </div>
-      <div class="column" v-if="!isTimesUp">
-        <AlertLights :speed="speedAlertLight" />
+      <div class="column" v-show="!isTimesUp">
+        <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight"  />
       </div>
-      <div class="column" v-if="isTimesUp">
+      <div class="column" v-show="isTimesUp">
         Detail Result:
       </div>
     </div>
@@ -33,8 +33,9 @@
         timeLeft: 30, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
-        difficultyArithmetic: 'easy',
-        speedAlertLight: 'slow',
+        difficultyArithmetic: 'easy',//easy,medium,difficult
+        speedAlertLight: 'fast', //very_slow,slow,medium,fast,very_fast
+        frequencyAlertLight: 'very_often', //very_rarely,rarely,medium,often,very_often
       };
     },
     computed: {
