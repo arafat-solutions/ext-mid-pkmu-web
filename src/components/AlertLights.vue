@@ -49,6 +49,20 @@
         return (totalResponse / counter).toFixed(2);
       },
     },
+    watch: {
+      correctResponse(newValue) {
+        this.$emit('getResult', {
+          correctResponse: newValue,
+          responseTime: this.responseTime,
+        });
+      },
+      responseTime(newValue) {
+        this.$emit('getResult', {
+          correctResponse: this.correctResponse,
+          responseTime: newValue,
+        });
+      }
+    },
     props: {
       speed: String,
       isTimesUp: Boolean,
@@ -150,10 +164,7 @@
         }
       },
       getTimeDifferenceInSeconds(dateTime1, dateTime2) {
-        let date1 = new Date(dateTime1);
-        let date2 = new Date(dateTime2);
-
-        let differenceInMilliseconds = Math.abs(date2 - date1);
+        let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
         return Math.floor(differenceInMilliseconds / 1000);
       }
     }

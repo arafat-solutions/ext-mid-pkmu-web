@@ -3,7 +3,7 @@
     <p class="problem">{{ problem.num1 }} {{ problem.operator }} {{ problem.num2 }} = ?</p>
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
-        <button class="btn-answer">{{ index + 1 }}</button>{{ choice }}
+        <button class="btn-answer">{{ index + 1 }}</button><span class="label-choice">{{ choice }}</span>
       </div>
     </div>
   </div>
@@ -28,6 +28,7 @@
     },
     props: {
       difficulty: String,
+      isTimesUp: Boolean,
     },
     mounted() {
       this.generateProblem();
@@ -54,6 +55,20 @@
         return (totalResponse / this.result.problems.length).toFixed(2);
       },
     },
+    watch: {
+      correctResponse(newValue) {
+        this.$emit('getResult', {
+          correctResponse: newValue,
+          responseTime: this.responseTime,
+        });
+      },
+      responseTime(newValue) {
+        this.$emit('getResult', {
+          correctResponse: this.correctResponse,
+          responseTime: newValue,
+        });
+      }
+    },
     methods: {
       handleKeyPress(event) {
         // Check if the pressed key is '1', '2', '3', or '4'
@@ -78,7 +93,7 @@
         }
       },
       chooseAnswer(index) {
-        if (!this.problem) {
+        if (!this.problem || this.isTimesUp) {
           return;
         }
 
@@ -158,10 +173,7 @@
         return Array.from(choices).sort(() => Math.random() - 0.5);
       },
       getTimeDifferenceInSeconds(dateTime1, dateTime2) {
-        let date1 = new Date(dateTime1);
-        let date2 = new Date(dateTime2);
-
-        let differenceInMilliseconds = Math.abs(date2 - date1);
+        let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
         return Math.floor(differenceInMilliseconds / 1000);
       }
     }
@@ -226,4 +238,8 @@
     border-radius: 5px;
   }
 
+  .label-choice {
+    display: inline-block;
+    min-width: 20px;
+  }
 </style>
