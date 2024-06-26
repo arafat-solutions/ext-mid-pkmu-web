@@ -1,12 +1,12 @@
 <template>
+  <div class="timer" style="height: 30px; margin-bottom: 10px;">
+    <strong style="padding: 5px;"> Waktu: {{ config.countdown }} detik </strong>
+  </div>
   <div class="radar-container">
     <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
     <div class="counter">
-      <p>
-        {{ capitalizeFirstLetter(config.suitableObject) }} 
-        terdeteksi: {{ detectedObject }}</p>
-      <p>Klik pengguna: {{ userClickCount }}</p>
-      <p>Waktu tersisa: {{ config.countdown }} detik</p>
+      <p> {{ capitalizeFirstLetter(config.suitableObject) }} terdeteksi: {{ detectedObject }} </p>
+      <p> Klik pengguna: {{ userClickCount }} </p>
     </div>
   </div>
 </template>
@@ -19,19 +19,26 @@ export default {
       height: 500,
       scannerAngle: 0,
       objects: [],
-      circleCount: 0,
       detectedObject: 0,
       userClickCount: 0,
+      responseTimes: [],
+      userTimeResponded: 0,
       radarInterval: null,
       objectInterval: null,
       countdownInterval: null,
+      result: {
+        correctedObject: 0,
+        missedObject: 0,
+        timeResponded: 0,
+        difficulty: 0,
+      },
       config: {
-        result: null,
-        countdown: 60,
-        isClockwise: true,
-        rotationSpeed: 0.05, // from 0.01 to 0.1
+        referenceResponseTime: 2000,
+        countdown: 60, //timer
+        isClockwise: false,
+        rotationSpeed: 'slow', // 'very_slow', 'slow', 'normal', 'fast', 'very_fast'
         objectSpawnInterval: 500,
-        sizeObject: 'normal', //'very_small', 'small', 'normal', 'big', 'very_big'
+        sizeObject: 'very_big', //'very_small', 'small', 'normal', 'big', 'very_big'
         suitableObject: 'triangle', //'circle', 'square', 'triangle'
         objectShowed: ['circle', 'square', 'triangle'], //'circle', 'square', 'triangle'
         maxObjectsInScanner: 'normal' //'very_easy', 'easy', 'normal', 'hard', 'very_hard'
@@ -49,6 +56,28 @@ export default {
     window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
+    calculatedResult() {
+      // Handle user deliberate click
+      if (this.detectedObject > this.userClickCount) {
+        this.result.correctedObject = 0;
+        this.result.missedObject = 100;
+        this.result.timeResponded = 0;
+      } else {
+        this.result.correctedObject = (this.userClickCount / this.detectedObject) * 100;
+        this.result.missedObject = (this.detectedObject - this.userClickCount) / this.detectedObject * 100;
+
+        if (this.userClickCount > 0) {
+          this.result.timeResponded = (this.userTimeResponded / this.userClickCount / this.config.referenceResponseTime) * 100;
+        } else {
+          this.result.timeResponded = 0;
+        }
+      }
+
+      //Hardcode 85%
+      this.result.difficulty = 100
+
+      console.log(this.result);
+    },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.config.countdown > 0) {
@@ -56,9 +85,7 @@ export default {
         } else {
           clearInterval(this.countdownInterval);
           this.stopRadar();
-
-          this.result = `'Object Showed : ${this.detectedObject} and user clicked ${this.userClickCount}'`
-          console.log(this.result, 'result')
+          this.calculatedResult();
         }
       }, 1000);
     },
@@ -79,14 +106,35 @@ export default {
       this.radarInterval = setInterval(this.updateRadar, 100);
       this.objectInterval = setInterval(this.addObject, this.config.objectSpawnInterval);
     },
+    setRotationSpeed() {
+      if (this.config.rotationSpeed) {
+        if (this.config.rotationSpeed === 'very_slow') {
+          return 0.01;
+        }
+        else if (this.config.rotationSpeed === 'slow') {
+          return 0.03;
+        }
+        else if (this.config.rotationSpeed === 'normal') {
+          return 0.05;
+        }
+        else if (this.config.rotationSpeed === 'fast') {
+          return 0.07;
+        }
+        else if (this.config.rotationSpeed === 'very_fast') {
+          return 0.1;
+        }
+      }
+
+      return 0.05;
+    },
     updateRadar() {
       this.clearRadar();
       this.drawRadar();
 
       if (this.config.isClockwise) {
-        this.scannerAngle += this.config.rotationSpeed;
+        this.scannerAngle += this.setRotationSpeed();
       } else {
-        this.scannerAngle -= this.config.rotationSpeed;
+        this.scannerAngle -= this.setRotationSpeed();
       }
 
       if (this.scannerAngle >= 2 * Math.PI) {
@@ -213,7 +261,6 @@ export default {
     detectSuitableObject(type) {
       if (this.config.suitableObject === type) {
         this.detectedObject++;
-        console.log(`Detected object count increased: ${this.detectedObject}`);
       }
     },
     sizeObject(type = null) {
@@ -322,9 +369,16 @@ export default {
     handleKeydown(event) {
       if (event.code === "Space") {
         this.userClickCount++;
-        console.log(`User clicks: ${this.userClickCount}`);
+        this.calculateResponseTime();
       }
-    }
+    },
+    calculateResponseTime() {
+      if (this.responseTimes.length > 0) {
+        const responseTime = Date.now() - this.responseTimes.shift();
+        this.userTimeResponded += responseTime;
+      }
+      this.responseTimes.push(Date.now());
+    },
   }
 };
 </script>
