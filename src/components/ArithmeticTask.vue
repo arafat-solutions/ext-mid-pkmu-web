@@ -29,6 +29,7 @@
     props: {
       difficulty: String,
       isTimesUp: Boolean,
+      minuteTime: Number,
     },
     mounted() {
       this.generateProblem();
@@ -41,7 +42,7 @@
     },
     computed: {
       correctResponse() {
-        return (this.result.correct / this.result.problems.length * 100).toFixed(2);
+        return (this.result.correct / this.minuteTime).toFixed(2);
       },
       responseTime() {
         let totalResponse = 0;

@@ -29,8 +29,11 @@
       };
     },
     computed: {
+      redLength() {
+        return this.result.colors.filter(color => color === 'red').length;
+      },
       correctResponse() {
-        return (this.result.correct / this.result.colors.filter(color => color === 'red').length * 100).toFixed(2);
+        return (this.result.correct / this.redLength  * 100).toFixed(2);
       },
       responseTime() {
         let totalResponse = 0;
@@ -114,8 +117,6 @@
         if (this.isTimesUp) {
           this.checkMissed(true);
           clearInterval(this.intervalId);
-          // console.log(JSON.stringify(this.result));
-          // console.log(this.correctResponse, this.responseTime);
           return;
         }
 
@@ -136,12 +137,14 @@
           indexCheck = this.result.questionTimes.length - 2;
         }
         if (
+          indexCheck >= 0 &&
           typeof this.result.answerTimes[indexCheck] === 'undefined'
         ) {
           // Check if light is red and user not push R,S,T,U
           if (this.result.colors[indexCheck] === 'red') {
             this.result.missed++;
           }
+
           this.result.answerTimes.push(null);
         }
       },
@@ -152,12 +155,16 @@
         } else {
           this.result.wrong++;
         }
-        this.lights[index].color = 'off';
+        this.lights.forEach(light => (light.color = 'off'));
       },
       handleKeyPress(event) {
         if (event.key !== 'r' && event.key !== 's' && event.key !== 't' && event.key !== 'u') {
           return;
         }
+        if (this.lights.filter(light => light.color === 'off').length === 4) {
+          return;
+        }
+
         const keyMap = { KeyR: 0, KeyS: 1, KeyT: 2, KeyU: 3 };
         if (keyMap[event.code] !== undefined) {
           this.turnOffLight(keyMap[event.code]);
