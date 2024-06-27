@@ -4,7 +4,7 @@
         Time Left: {{ formattedTime }}
       </div>
       <div class="column arithmetic-display mt-3" v-show="!isTimesUp">
-        <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" @getResult="arithmeticResult"/>
+        <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" @getResult="arithmeticResult"/>
       </div>
       <div class="column mt-3" v-show="!isTimesUp">
         <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" @getResult="alertLightResult"  />
@@ -45,7 +45,8 @@
     },
     data() {
       return {
-        timeLeft: 0.1 * 60, // Countdown time in seconds
+        minuteTime: 1,
+        timeLeft: this.minuteTime * 60, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
         difficultyArithmetic: 'easy',//easy,medium,difficult
@@ -74,28 +75,28 @@
           return 'n/a';
         }
 
-        return `${this.results.arithmetic.correctResponse} %`
+        return `${this.results.arithmetic.correctResponse}`;
       },
       arithmeticResponseTime() {
         if (!this.results.arithmetic.responseTime) {
           return 'n/a';
         }
 
-        return `${this.results.arithmetic.responseTime} s`
+        return `${this.results.arithmetic.responseTime} s`;
       },
       alertLightCorrectResponse() {
         if (!this.results.alertLight.correctResponse) {
           return 'n/a';
         }
 
-        return `${this.results.alertLight.correctResponse} %`
+        return `${this.results.alertLight.correctResponse} %`;
       },
       alertLightResponseTime() {
-        if (!this.results.alertLight.responseTime) {
+        if (this.results.alertLight.responseTime === 'NaN' || !this.results.alertLight.responseTime) {
           return 'n/a';
         }
 
-        return `${this.results.alertLight.responseTime} s`
+        return `${this.results.alertLight.responseTime} s`;
       }
     },
     methods: {
