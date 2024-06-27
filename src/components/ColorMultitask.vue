@@ -21,6 +21,30 @@
         </div>
       </div>
     </div>
+
+    <div class="horizon-section">
+      <canvas ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 50px; margin-top: -20px"></canvas>
+      
+      <div class="arithmetic">
+        <div class="question-container">
+          <div class="question">
+            <strong> Listen to task and enter your answer </strong>
+          </div>
+          <ul class="options">
+            <div v-for="(light, index) in warningLights" :key="index">
+              <li>
+                  <label>
+                    <button>
+                      {{ (index + 1) }}
+                    </button>
+                    {{ light.key }}
+                  </label>
+              </li>
+            </div>
+          </ul>
+        </div>  
+      </div>
+    </div>
   </div>
 </template>
 
@@ -59,21 +83,31 @@ export default {
         { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 250, x4: 265, y4: 280 },
       ],
       intervalId: null, // Untuk menyimpan ID interval
-      fillingTank: false, 
       emptyTimers: [
         { yellow: 0, green: 0, blue: 0 },
         { blue: 0, yellow: 0, red: 0 },
         { yellow: 0, green: 0, red: 0 },
         { green: 0, blue: 0, red: 0 },
       ],
-      timerInterval: null,
+      timerTankInterval: null,
       config: {
         result: null,
         tank: {
           is_active: true,
-          decreaseSpeed: 'fast' //slow, medium, fast
+          decreaseSpeed: 'slow' //slow, medium, fast
+        },
+        arithmetic: {
+          is_active: true,
         }
-      }
+      },
+      horizonWidth: 400,
+      horizonHeight: 300,
+      warningLights: [
+        { key: '999', active: false },
+        { key: '999', active: false },
+        { key: '999', active: false },
+        { key: '999', active: false }
+      ]
     };
   },
   mounted() {
@@ -89,21 +123,20 @@ export default {
   },
   methods: {
     initTankToEmpty() {
-      this.intervalId = setInterval(this.decreaseTankLevels, this.decreaseSpeed());
+      this.intervalId = setInterval(this.decreaseTankLevels, 1000);
     },
     decreaseSpeed() {
       if (this.config.tank.decreaseSpeed === 'slow') {
-        return 3000;
+        return Math.random() < 0.5 ? 1 : 5;
       } 
       if (this.config.tank.decreaseSpeed === 'medium') {
-        return 2000;
+        return Math.random() < 0.5 ? 5 : 10;
       } 
       if (this.config.tank.decreaseSpeed === 'fast') {
-        return 1000;
+        return Math.random() < 0.5 ? 10 : 15;
       } 
     },
     decreaseTankLevels() {
-      if (this.fillingTank) return;
       for (let i = 0; i < this.lowerTanks.length; i++) {
         const tank = this.lowerTanks[i];
         for (const color in tank) {
@@ -115,7 +148,7 @@ export default {
     },
     decreaseHeight(currentHeight, tankIndex, color) {
       const current = parseFloat(currentHeight.replace('%', ''));
-      const newHeight = Math.max(0, current - 5) + '%';
+      const newHeight = Math.max(0, current - this.decreaseSpeed()) + '%';
 
       if (newHeight === '0%') {
         this.startEmptyTimer();
@@ -126,14 +159,14 @@ export default {
       return newHeight;
     },
     startEmptyTimer() {
-      if (!this.timerInterval) {
-        this.timerInterval = setInterval(() => {
+      if (!this.timerTankInterval) {
+        this.timerTankInterval = setInterval(() => {
           for (let i = 0; i < this.emptyTimers.length; i++) {
             const tank = this.lowerTanks[i];
             for (const color in tank) {
               if (tank[color] === '0%') {
                 this.emptyTimers[i][color]++;
-                console.log(`Tank ${i} with color ${color} has been empty for ${this.emptyTimers[i][color]} seconds.`);
+                // console.log(`Tank ${i} with color ${color} has been empty for ${this.emptyTimers[i][color]} seconds.`);
               }
             }
           }
@@ -153,18 +186,12 @@ export default {
         }
         if (anyTankEmpty) break;
       }
-      if (!anyTankEmpty && this.timerInterval) {
-        clearInterval(this.timerInterval);
-        this.timerInterval = null;
+      if (!anyTankEmpty && this.timerTankInterval) {
+        clearInterval(this.timerTankInterval);
+        this.timerTankInterval = null;
       }
     },
     fillTank(tankIndex, color) {
-      if (this.fillingTank) {
-        return;
-      }
-
-      this.fillingTank = true;
-
       const increment = 10;
       const tank = this.lowerTanks[tankIndex];
       let currentFill = parseFloat(tank[color].replace('%', ''));
@@ -222,7 +249,6 @@ export default {
       }
     },
     handleKeyUp(event) {
-      this.fillingTank = false;
       delete this.keysPressed[event.key.toUpperCase()];
     },
     initLineTank() {
@@ -260,6 +286,22 @@ export default {
 </script>
 
 <style scoped>
+.question-container {
+  border: 2px solid black;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.question {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+.options {
+  list-style-type: none;
+  padding: 0;
+}
+.options li {
+  margin-bottom: 8px;
+}
 .horizon-tank {
   display: flex;
   flex-direction: row;
@@ -281,7 +323,7 @@ export default {
 .upper-tanks, .lower-tanks {
   display: flex;
   flex-direction: row;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 .tank {
   width: 69px;
@@ -307,5 +349,33 @@ export default {
 
 .line canvas {
   border: 0px !important;
+}
+.horizon-section {
+  position: relative;
+}
+canvas {
+  border: 2px solid black;
+}
+
+.arithmetic {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+.warning-light {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: brown;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+  margin-right: 10px;
+}
+.warning-light.active {
+  background-color: red;
 }
 </style>
