@@ -22,7 +22,8 @@ export default {
       detectedObject: 0,
       userClickCount: 0,
       responseTimes: [],
-      userTimeResponded: 0,
+      suitableObjectTimes: [],
+      responseDurations: [],
       radarInterval: null,
       objectInterval: null,
       countdownInterval: null,
@@ -33,11 +34,10 @@ export default {
         difficulty: 0,
       },
       config: {
-        referenceResponseTime: 2000,
         countdown: 60, //timer
         isClockwise: false,
-        rotationSpeed: 'slow', // 'very_slow', 'slow', 'normal', 'fast', 'very_fast'
-        objectSpawnInterval: 500,
+        rotationSpeed: 'normal', // 'very_slow', 'slow', 'normal', 'fast', 'very_fast'
+        objectSpawnInterval: 400,
         sizeObject: 'very_big', //'very_small', 'small', 'normal', 'big', 'very_big'
         suitableObject: 'triangle', //'circle', 'square', 'triangle'
         objectShowed: ['circle', 'square', 'triangle'], //'circle', 'square', 'triangle'
@@ -58,16 +58,20 @@ export default {
   methods: {
     calculatedResult() {
       // Handle user deliberate click
-      if (this.detectedObject > this.userClickCount) {
+      if (this.userClickCount > this.detectedObject) {
         this.result.correctedObject = 0;
         this.result.missedObject = 100;
         this.result.timeResponded = 0;
       } else {
-        this.result.correctedObject = (this.userClickCount / this.detectedObject) * 100;
-        this.result.missedObject = (this.detectedObject - this.userClickCount) / this.detectedObject * 100;
+        const correctedObject = (this.userClickCount / this.detectedObject) * 100;
+        this.result.correctedObject = correctedObject.toFixed(2);
+
+        const missedObject = (this.detectedObject - this.userClickCount) / this.detectedObject * 100
+        this.result.missedObject = missedObject.toFixed(2);
 
         if (this.userClickCount > 0) {
-          this.result.timeResponded = (this.userTimeResponded / this.userClickCount / this.config.referenceResponseTime) * 100;
+          const resultTimeResonded = this.averageResponseTime()
+          this.result.timeResponded = resultTimeResonded.toFixed(2);
         } else {
           this.result.timeResponded = 0;
         }
@@ -79,6 +83,13 @@ export default {
       console.log(this.result);
     },
     startCountdown() {
+      this.result = {
+        correctedObject: 0,
+        missedObject: 0,
+        timeResponded: 0,
+        difficulty: 0,
+      };
+
       this.countdownInterval = setInterval(() => {
         if (this.config.countdown > 0) {
           this.config.countdown--;
@@ -194,7 +205,7 @@ export default {
             ctx.arc(obj.x, obj.y, this.sizeObject(), 0, 2 * Math.PI);
           } 
           
-          else if (obj.type === "triangle") {
+          if (obj.type === "triangle") {
             this.drawTriangle(ctx, obj.x, obj.y, this.sizeObject('triangle'));
           }
 
@@ -261,6 +272,7 @@ export default {
     detectSuitableObject(type) {
       if (this.config.suitableObject === type) {
         this.detectedObject++;
+        this.suitableObjectTimes.push(Date.now());
       }
     },
     sizeObject(type = null) {
@@ -369,16 +381,25 @@ export default {
     handleKeydown(event) {
       if (event.code === "Space") {
         this.userClickCount++;
+        this.responseTimes.push(Date.now());
         this.calculateResponseTime();
       }
     },
     calculateResponseTime() {
-      if (this.responseTimes.length > 0) {
-        const responseTime = Date.now() - this.responseTimes.shift();
-        this.userTimeResponded += responseTime;
+      if (this.suitableObjectTimes.length > 0 && this.responseTimes.length > 0) {
+        const suitableTime = this.suitableObjectTimes[this.suitableObjectTimes.length - 1];
+        const responseTime = this.responseTimes.shift();
+        const responseDuration = responseTime - suitableTime;
+        this.responseDurations.push(responseDuration);
       }
-      this.responseTimes.push(Date.now());
     },
+    averageResponseTime() {
+      if (this.responseDurations.length > 0) {
+        const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
+        return (sum / this.responseDurations.length) / 1000;
+      }
+      return 0;
+    }
   }
 };
 </script>
