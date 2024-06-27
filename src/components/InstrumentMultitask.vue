@@ -46,7 +46,7 @@
     data() {
       return {
         minuteTime: 1,
-        timeLeft: this.minuteTime * 60, // Countdown time in seconds
+        timeLeft: 0, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
         difficultyArithmetic: 'easy',//easy,medium,difficult
@@ -124,6 +124,9 @@
     },
     mounted() {
       this.startCountdown();
+    },
+    created() {
+      this.timeLeft = this.minuteTime * 60; // Initialize timeLeft correctly
     },
     beforeUnmount() {
       clearInterval(this.interval);
