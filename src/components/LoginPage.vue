@@ -49,6 +49,9 @@ export default {
         name: "Schedule ABC",
         startHour: "09:00",
         endHour: "12:00",
+        userId: "794f624d-c8db-44d6-be62-1afd7299e72e",
+        moduleId: "b1b1b1b1-1b1b-1b1b-1b1b-1b1b1b1b1b1b",
+        testSessionId: "ea249ad5-5a68-4b05-a209-abe841ac8f73",
         tests: [
           {
             name: "Radar Vigilance Test",
