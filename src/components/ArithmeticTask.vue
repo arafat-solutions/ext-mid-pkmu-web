@@ -73,7 +73,7 @@
     },
     methods: {
       handleKeyPress(event) {
-        if (this.isPause) {
+        if (this.isPause || this.isTimesUp) {
           return;
         }
 
@@ -99,7 +99,7 @@
         }
       },
       chooseAnswer(index) {
-        if (!this.problem || this.isTimesUp) {
+        if (!this.problem) {
           return;
         }
 
