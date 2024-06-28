@@ -8,7 +8,7 @@
       </div>
       <div class="header">
         <h2>Login</h2>
-        <p>Silakan login menggunakan Email dan OTP yang sudah dikirimkan.</p>
+        <p>Silakan login menggunakan Email dan Kode akses yang sudah dikirimkan.</p>
       </div>
       <form @submit.prevent="login">
         <div class="input-group">
@@ -16,10 +16,13 @@
           <input type="email" id="email" v-model="email" placeholder="Masukkan Email" required />
         </div>
         <div class="input-group">
-          <label for="otp">OTP</label>
-          <input type="text" id="otp" v-model="otp" placeholder="Masukkan OTP" required />
+          <label for="code">Kode Akses</label>
+          <input type="text" id="code" v-model="code" placeholder="Masukkan code" required />
         </div>
-        <button type="submit">Login</button>
+        <button type="submit" :disabled="loading">
+          <span v-if="loading" class="spinner"></span>
+          <span v-else>Login</span>
+        </button>
       </form>
     </div>
     <div class="welcome-section">
@@ -35,98 +38,47 @@ export default {
   data() {
     return {
       email: '',
-      otp: ''
+      code: '',
+      loading: false
     };
   },
   methods: {
-    login() {
-      // Mock login logic
-      console.log('Email:', this.email);
-      console.log('OTP:', this.otp);
+    async login() {
+      this.loading = true;
+      try {
+        // Mock login logic
+        console.log('Email:', this.email);
+        console.log('OTP:', this.code);
+        const res = await fetch("https://walrus-app-bfooa.ondigitalocean.app/api/scheduling/workstation-signin",
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              workstationId: 0,
+              email: this.email,
+              code: this.code
+            })
+          }
+        )
+        if (!res.ok) {
+          throw new Error('Login failed');
+        }
+        const data = await res.json();
+        console.log(data);
 
-      // Mock JSON data
-      const mockData = {
-        name: "Schedule ABC",
-        startHour: "09:00",
-        endHour: "12:00",
-        userId: "794f624d-c8db-44d6-be62-1afd7299e72e",
-        moduleId: "b1b1b1b1-1b1b-1b1b-1b1b-1b1b1b1b1b1b",
-        testSessionId: "ea249ad5-5a68-4b05-a209-abe841ac8f73",
-        tests: [
-          {
-            name: "Radar Vigilance Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/radar-vigilance-test"
-          },
-          {
-            name: "Call Sign Multitask Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/call-sign-multitask-test"
-          },
-          {
-            name: "Color Multitask Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/color-multitask-test"
-          },
-          {
-            name: "Instrument Multitask Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/instrument-multitask-test"
-          },
-          {
-            name: "PFD Tracking Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/pfd-tracking-test"
-          },
-          {
-            name: "Spatial Orientation Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/spatial-orientation-test"
-          },
-          {
-            name: "Rotating Maze Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/rotating-maze-test"
-          },
-          {
-            name: "Operative Multitasking Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: "/operative-multitasking-test"
-          },
-          {
-            name: "Multidimensional Coordination Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: '/multidimensional-coordination-test'
-          },
-          {
-            name: "Time Sharing Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: '/time-sharing-test'
-          },
-          {
-            name: "Shape Recognition Test",
-            description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum",
-            config: {},
-            testUrl: '/shape-recognition-test'
-          },
-        ]
-      };
+        // Save mock data to localStorage
+        localStorage.setItem('scheduleData', JSON.stringify(data));
 
-      // Save mock data to localStorage
-      localStorage.setItem('scheduleData', JSON.stringify(mockData));
-
-      // Redirect to test-module page
-      this.$router.push('/module');
+        // Redirect to test-module page
+        this.$router.push('/module');
+      } catch (error) {
+        console.error(error);
+        alert('Login gagal. Silakan coba lagi.');
+      } finally {
+        this.loading = false;
+      }
     }
   }
 };
@@ -135,7 +87,8 @@ export default {
 <style scoped>
 @import '~@fortawesome/fontawesome-free/css/all.css';
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -178,11 +131,11 @@ html, body {
 .header {
   text-align: left;
   margin-bottom: 20px;
-  color: #555; /* Grey color for text */
+  color: #555;
 }
 
 .header h2 {
-  color: #000; /* Ensure header is black */
+  color: #000;
 }
 
 .input-group {
@@ -192,9 +145,9 @@ html, body {
 }
 
 .input-group label {
-  font-weight: bold; /* Bold text for labels */
-  font-size: 16px; /* Larger text size for labels */
-  color: #000; /* Ensure label is black */
+  font-weight: bold;
+  font-size: 16px;
+  color: #000;
 }
 
 input {
@@ -202,9 +155,9 @@ input {
   padding: 10px;
   margin-top: 5px;
   border: 1px solid #ccc;
-  border-radius: 20px; /* More rounded input fields */
-  color: #555; /* Grey color for input text */
-  box-sizing: border-box; /* Ensure the input field fits the full width */
+  border-radius: 20px;
+  color: #555;
+  box-sizing: border-box;
 }
 
 button {
@@ -216,9 +169,25 @@ button {
   border-radius: 20px;
   cursor: pointer;
   margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-button:hover {
+button:disabled {
+  cursor: not-allowed;
+}
+
+button .spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+button:hover:not(:disabled) {
   background-color: #5b4ac4;
 }
 
@@ -239,5 +208,14 @@ button:hover {
 
 .welcome-section h2 {
   margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
