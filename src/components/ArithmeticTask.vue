@@ -29,6 +29,7 @@
     props: {
       difficulty: String,
       isTimesUp: Boolean,
+      isPause: Boolean,
       minuteTime: Number,
     },
     mounted() {
@@ -72,6 +73,10 @@
     },
     methods: {
       handleKeyPress(event) {
+        if (this.isPause) {
+          return;
+        }
+
         // Check if the pressed key is '1', '2', '3', or '4'
         if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
           // Perform any specific action based on the key pressed
@@ -226,8 +231,6 @@
     padding: 10px;
     border: node;
   }
-
-
 
   .btn-answer {
     padding: 10px 20px;
