@@ -1,13 +1,17 @@
 <template>
     <div class="main-view">
-      <div v-if="timeLeft > 0" class="timer">
-        Time Left: {{ formattedTime }}
+      <div v-if="timeLeft > 0" class="timer-container">
+        Time: {{ formattedTime }}
+        <button v-if="isPause" @click="startAgain" class="ml-6">Start</button>
+        <button v-else @click="pause" class="ml-6">Pause</button>
+        <button @click="exit" class="ml-1">Exit</button>
       </div>
-      <div class="column arithmetic-display mt-3" v-show="!isTimesUp">
-        <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" @getResult="arithmeticResult"/>
+      <div class="column arithmetic-display mt-3" v-show="!isTimesUp && !isPause">
+        <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" :isPause="isPause" @getResult="arithmeticResult"/>
       </div>
-      <div class="column mt-3" v-show="!isTimesUp">
-        <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" @getResult="alertLightResult"  />
+      <div class="column mt-3" v-show="!isTimesUp && !isPause">
+        <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
+        <GaugesMeter />
       </div>
       <div class="column" v-show="isTimesUp">
         <h2 class="title-result">Results:</h2>
@@ -36,12 +40,14 @@
 <script>
   import ArithmeticTask from './ArithmeticTask';
   import AlertLights from './AlertLights';
+  import GaugesMeter from './GaugesMeter';
 
   export default {
     name: 'MainView',
     components: {
       ArithmeticTask,
-      AlertLights
+      AlertLights,
+      GaugesMeter
     },
     data() {
       return {
@@ -49,6 +55,7 @@
         timeLeft: 0, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
+        isPause: false,
         difficultyArithmetic: 'easy',//easy,medium,difficult
         speedAlertLight: 'fast', //very_slow,slow,medium,fast,very_fast
         frequencyAlertLight: 'very_often', //very_rarely,rarely,medium,often,very_often
@@ -120,6 +127,17 @@
       alertLightResult(result) {
         this.results.alertLight.correctResponse = result.correctResponse;
         this.results.alertLight.responseTime = result.responseTime;
+      },
+      pause() {
+        clearInterval(this.interval);
+        this.isPause = true;
+      },
+      startAgain() {
+        this.startCountdown();
+        this.isPause = false;
+      },
+      exit() {
+        this.$router.push('module');
       }
     },
     mounted() {
@@ -150,6 +168,14 @@
     margin-top: 3rem;
   }
 
+  .ml-6 {
+    margin-left: 6rem;
+  }
+
+  .ml-1 {
+    margin-left: 1rem;
+  }
+
   .column {
     float: left;
     width: 50%;
@@ -159,10 +185,26 @@
     margin-top: 30%;
   }
 
-  .timer {
+  .timer-container {
     position: absolute;
     right: 0;
-    margin-right: 5rem;
+    top: 0;
+    background-color: #0349D0;
+    padding: 1rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+
+    button {
+      color: #000000;
+      font-weight: bold;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-radius: 5px;
+      border-color: transparent;
+      min-width: 100px;
+      cursor: pointer;
+    }
   }
 
   .title-result, .label-result {

@@ -64,21 +64,32 @@
           correctResponse: this.correctResponse,
           responseTime: newValue,
         });
+      },
+      isPause(newValue) {
+        if (newValue) {
+          clearInterval(this.intervalId);
+        } else {
+          this.startLights();
+        }
       }
     },
     props: {
       speed: String,
       isTimesUp: Boolean,
       frequency: String,
+      isPause: Boolean,
     },
     mounted() {
-      this.intervalId = setInterval(this.randomLight, this.getInterval());
+      this.startLights();
       window.addEventListener('keydown', this.handleKeyPress);
     },
     beforeUnmount() {
       window.removeEventListener('keydown', this.handleKeyPress);
     },
     methods: {
+      startLights() {
+        this.intervalId = setInterval(this.randomLight, this.getInterval());
+      },
       getInterval() {
         // Adjust ranges based on difficulty level
         switch (this.speed) {
@@ -161,7 +172,12 @@
         if (event.key !== 'r' && event.key !== 's' && event.key !== 't' && event.key !== 'u') {
           return;
         }
+
         if (this.lights.filter(light => light.color === 'off').length === 4) {
+          return;
+        }
+
+        if (this.isPause) {
           return;
         }
 
