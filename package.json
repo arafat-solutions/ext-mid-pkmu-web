@@ -16,7 +16,8 @@
     "serve": "^14.2.3",
     "tiny-emitter": "^2.1.0",
     "vue": "^3.2.13",
-    "vue-router": "^4.3.2"
+    "vue-router": "^4.3.2",
+    "vue-speedometer": "^3.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
