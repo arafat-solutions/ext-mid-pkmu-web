@@ -1,6 +1,15 @@
 <template>
+  <div class="timer" style="height: 30px; margin-bottom: 10px;">
+    <strong style="padding: 5px;"> Waktu : {{ minutes }}:{{ seconds }} </strong>
+  </div>
+
+  <div v-if="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <div class="text">submitting a result</div>
+  </div>
+
   <div class="horizon-tank">
-    <div class="tank-section">
+    <div v-if="config.subtask.color_tank" class="tank-section">
       <div class="upper-tanks">
         <div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }" :id="`upper-tank-${index}`" class="tank">
           <p style="color: black; font-weight: bolder;">{{ uppers[index] }}</p>
@@ -23,21 +32,22 @@
     </div>
 
     <div class="horizon-section">
-      <canvas ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 50px; margin-top: -20px"></canvas>
+      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 50px; margin-top: -20px"></canvas>
       
-      <div class="arithmetic">
+      <div v-if="config.subtask.arithmetics" class="arithmetic">
         <div class="question-container">
           <div class="question">
             <strong> Listen to task and enter your answer </strong>
+            <audio ref="audio" :src="currentAudio"></audio>
           </div>
           <ul class="options">
-            <div v-for="(light, index) in warningLights" :key="index">
+            <div v-for="(option, index) in optionAnswerAudios" :key="index">
               <li>
                   <label>
-                    <button>
+                    <button @click="clickAnswerAudio(option)">
                       {{ (index + 1) }}
                     </button>
-                    {{ light.key }}
+                    {{ option }}
                   </label>
               </li>
             </div>
@@ -52,6 +62,8 @@
 export default {
   data() {
     return {
+      isLoading: false,
+      isPlayAudio: false,
       keysPressed: {},
       colors: ['yellow', 'blue', 'red', 'green'],
       uppers: ['Q', 'W', 'E', 'R'],
@@ -63,24 +75,24 @@ export default {
         { green: '100%', blue: '100%', red: '100%' },
       ],
       lineTankCanvasWidth: 320,
-      lineTankCanvasHeight: 300,
+      lineTankCanvasHeight: 250,
       lines: [
         // Q
         { x1: 13, y1: 10, x2: 13, y2: 280 },
-        { x1: 35, y1: 10, x2: 35, y2: 50, x3: 120, y3: 250, x4: 120, y4: 280 },
-        { x1: 55, y1: 10, x2: 55, y2: 50, x3: 180, y3: 250, x4: 180, y4: 280},
+        { x1: 35, y1: 10, x2: 35, y2: 50, x3: 120, y3: 220, x4: 120, y4: 280 },
+        { x1: 55, y1: 10, x2: 55, y2: 50, x3: 180, y3: 220, x4: 180, y4: 280},
         // W
-        { x1: 100, y1: 10, x2: 100, y2: 50, x3: 60, y3: 250, x4: 60, y4: 280 },
+        { x1: 100, y1: 10, x2: 100, y2: 50, x3: 60, y3: 220, x4: 60, y4: 280 },
         { x1: 120, y1: 10, x2: 95, y2: 280, },
-        { x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 250, x4: 290, y4: 280},
+        { x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 220, x4: 290, y4: 280},
         // E
-        { x1: 185, y1: 10, x2: 185, y2: 50, x3: 145, y3: 250, x4: 145, y4: 280 },
-        { x1: 205, y1: 10, x2: 205, y2: 50, x3: 230, y3: 250, x4: 230, y4: 280 },
-        { x1: 225, y1: 10, x2: 225, y2: 50, x3: 315, y3: 250, x4: 315, y4: 280 },
+        { x1: 185, y1: 10, x2: 185, y2: 50, x3: 145, y3: 220, x4: 145, y4: 280 },
+        { x1: 205, y1: 10, x2: 205, y2: 50, x3: 230, y3: 220, x4: 230, y4: 280 },
+        { x1: 225, y1: 10, x2: 225, y2: 50, x3: 315, y3: 220, x4: 315, y4: 280 },
         // R
-        { x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 250, x4: 35, y4: 280 },
-        { x1: 290, y1: 10, x2: 290, y2: 50, x3: 205, y3: 250, x4: 205, y4: 280 },
-        { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 250, x4: 265, y4: 280 },
+        { x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 220, x4: 35, y4: 280 },
+        { x1: 290, y1: 10, x2: 290, y2: 50, x3: 205, y3: 220, x4: 205, y4: 280 },
+        { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280 },
       ],
       intervalId: null, // Untuk menyimpan ID interval
       emptyTimers: [
@@ -90,29 +102,65 @@ export default {
         { green: 0, blue: 0, red: 0 },
       ],
       timerTankInterval: null,
-      config: {
-        result: null,
-        tank: {
-          is_active: true,
-          decreaseSpeed: 'slow' //slow, medium, fast
-        },
-        arithmetic: {
-          is_active: true,
-        }
-      },
       horizonWidth: 400,
       horizonHeight: 300,
-      warningLights: [
-        { key: '999', active: false },
-        { key: '999', active: false },
-        { key: '999', active: false },
-        { key: '999', active: false }
-      ]
+      
+      config: {
+        subtask: {
+          arithmetics: false,
+          color_tank: false,
+          horizon: false,
+        },
+        arithmetics: {
+          difficulty: null,
+          sound: false
+        },
+        horizon: {
+          speed: null, //slow, medium, false
+        },
+        color_tank: {
+          negative_score: true,
+          speed: 'medium' //slow, medium, fast
+        },
+      },
+      result: {
+        color_tank: {
+
+        },
+        arithmetic: {
+          correctAnswer: 0,
+          question: 0,
+          timeResponded: 0
+        }
+      },
+      resultAritmethic: {
+        totalQuestion: 0,
+        correctAnswers: 0,
+        faultAnswers: 0,
+        timeResponded: 0
+      },
+      audio: null,
+      optionAnswerAudios: [],
     };
   },
-  mounted() {
-    this.initLineTank();
-    this.initTankToEmpty();
+  async mounted() {
+    await this.initConfig();
+
+    // Setup Color Tank
+    // if (this.config.subtask.color_tank) { 
+    //   this.initLineTank();
+    //   this.initTankToEmpty();
+    // }
+
+    // Setup Arithmetic
+    if (this.config.subtask.arithmetics) { 
+      this.generateAudio();
+    }
+
+    // Setup Horizon
+    if (this.config.subtask.horizon) { 
+      //noop
+    }
 
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
@@ -121,20 +169,104 @@ export default {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
   },
+  computed: {
+    currentAudio() {
+      return this.audio;
+    },
+    minutes() {
+      return Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+    },
+    seconds() {
+      return (this.config.duration % 60).toString().padStart(2, '0');
+    }
+  },
   methods: {
+    async initConfig() {
+      try {
+        this.result = {}
+        let config = JSON.parse(localStorage.getItem('scheduleData'));
+
+        for (let i = 0; i < config.tests.length; i++) {
+          if (config.tests[i].testUrl === 'color-multitask-test') {
+            this.config.duration = config.tests[i].config.duration * 60;
+            this.config.batteryTestConfigId = config.tests[i].config.id;
+            this.config.moduleId = config.moduleId;
+            this.config.sessionId = config.sessionId;
+            this.config.userId = config.userId;
+
+            //Color Tank
+            this.config.subtask.color_tank = config.tests[i].config.subtask.color_tank
+            if (this.config.subtask.color_tank) {
+              this.config.color_tank.negative_score = config.tests[i].config.arithmetics.negative_score
+              this.config.color_tank.speed = config.tests[i].config.color_tank.speed
+            }
+
+            //Arithmetic
+            this.config.subtask.arithmetics = config.tests[i].config.subtask.arithmetics
+            if (this.config.subtask.arithmetics) {
+              this.config.color_tank.sound = config.tests[i].config.color_tank.sound
+              this.config.color_tank.difficulty = config.tests[i].config.arithmetics.difficulty
+            }
+
+            //Horizon
+            this.config.subtask.horizon = config.tests[i].config.subtask.horizon
+            if (this.config.subtask.horizon) {
+              this.config.horizon.speed = config.tests[i].config.horizon.speed
+            }
+
+            break;
+          }
+        }
+      } catch (error) {
+        console.log(error, 'error')
+      }
+    },
     initTankToEmpty() {
       this.intervalId = setInterval(this.decreaseTankLevels, 1000);
     },
-    decreaseSpeed() {
-      if (this.config.tank.decreaseSpeed === 'slow') {
-        return Math.random() < 0.5 ? 1 : 5;
-      } 
-      if (this.config.tank.decreaseSpeed === 'medium') {
-        return Math.random() < 0.5 ? 5 : 10;
-      } 
-      if (this.config.tank.decreaseSpeed === 'fast') {
-        return Math.random() < 0.5 ? 10 : 15;
-      } 
+    initLineTank() {
+      const canvas = this.$refs.lineTankCanvas;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, this.lineTankCanvasWidth, this.lineTankCanvasHeight);
+      ctx.save();
+
+      for (let i=0; i < this.lines.length; i++) {
+        this.drawLine(this.lines[i]);
+      }
+    },
+    drawLine(lines) {
+      const canvas = this.$refs.lineTankCanvas;
+      const ctx = canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(lines.x1, lines.y1);
+      ctx.lineTo(lines.x2, lines.y2);
+
+      if (lines.x3 && lines.y3) {
+        ctx.lineTo(lines.x3, lines.y3);
+      }
+      if (lines.x4 && lines.y4) {
+        ctx.lineTo(lines.x4, lines.y4);
+      }
+
+      ctx.strokeStyle = '#574e4e';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    },
+    fillTank(tankIndex, color) {
+      const increment = 10;
+      const tank = this.lowerTanks[tankIndex];
+      let currentFill = parseFloat(tank[color].replace('%', ''));
+
+      if (tank[color] < '100%') {
+        currentFill += increment;
+        tank[color] = currentFill + '%';
+      }
+
+      if (tank[color] >= '100%') {
+        tank[color] = '100%';
+      }
     },
     decreaseTankLevels() {
       for (let i = 0; i < this.lowerTanks.length; i++) {
@@ -145,6 +277,17 @@ export default {
           }
         }
       }
+    },
+    decreaseSpeed() {
+      if (this.config.color_tank.speed === 'slow') {
+        return Math.random() < 0.5 ? 1 : 3;
+      } 
+      if (this.config.color_tank.speed === 'medium') {
+        return Math.random() < 0.5 ? 3 : 5;
+      } 
+      if (this.config.color_tank.speed === 'fast') {
+        return Math.random() < 0.5 ? 5 : 7;
+      } 
     },
     decreaseHeight(currentHeight, tankIndex, color) {
       const current = parseFloat(currentHeight.replace('%', ''));
@@ -191,19 +334,42 @@ export default {
         this.timerTankInterval = null;
       }
     },
-    fillTank(tankIndex, color) {
-      const increment = 10;
-      const tank = this.lowerTanks[tankIndex];
-      let currentFill = parseFloat(tank[color].replace('%', ''));
+    generateAudio() {
+      this.audio = null;
+      this.answerAudio = null;
+      this.optionAnswerAudios = [];
+      this.isPlayAudio = true;
+      
+      let number =  Math.floor(Math.random() * 30) + 1;
+      this.audio = require('@/assets/audio/color-multitask/' + number + '.mp3')
 
-      if (tank[color] < '100%') {
-        currentFill += increment;
-        tank[color] = currentFill + '%';
+      let correctLocationIndex = Math.floor(Math.random() * 5);
+      if (correctLocationIndex >= 4) {
+        correctLocationIndex = 3
       }
 
-      if (tank[color] >= '100%') {
-        tank[color] = '100%';
+      for (var i = 0; i < 4; i++) {
+        if (i === correctLocationIndex) {
+          this.optionAnswerAudios.push(number)
+        } else {
+          this.optionAnswerAudios.push((Math.floor(Math.random() * 30) + 1))
+        }
       }
+    },
+    clickAnswerAudio(value) {
+      if (value === this.audio) {
+        this.resultAritmethic.correctAnswers++
+      } else {
+        this.resultAritmethic.faultAnswers++
+      }
+
+      this.generateAudio();
+    },
+    startPlayback() { 
+      this.resultAritmethic.totalQuestion++
+      setTimeout(() => {
+        this.$refs.audio.play();
+      }, 3000);
     },
     handleKeyDown(event) {
       this.keysPressed[event.key.toUpperCase()] = true;
@@ -247,45 +413,60 @@ export default {
       if (this.keysPressed['R'] && this.keysPressed['F']) {
         this.fillTank(3, 'green');
       }
+
+      if (this.config.subtask.arithmetics && this.audio && this.isPlayAudio) {
+        this.startPlayback()
+        this.isPlayAudio = false;
+      }
     },
     handleKeyUp(event) {
       delete this.keysPressed[event.key.toUpperCase()];
-    },
-    initLineTank() {
-      const canvas = this.$refs.lineTankCanvas;
-      const ctx = canvas.getContext('2d');
-
-      ctx.clearRect(0, 0, this.lineTankCanvasWidth, this.lineTankCanvasHeight);
-      ctx.save();
-
-      for (let i=0; i < this.lines.length; i++) {
-        this.drawLine(this.lines[i]);
-      }
-    },
-    drawLine(lines) {
-      const canvas = this.$refs.lineTankCanvas;
-      const ctx = canvas.getContext('2d');
-      ctx.beginPath();
-      ctx.moveTo(lines.x1, lines.y1);
-      ctx.lineTo(lines.x2, lines.y2);
-
-      if (lines.x3 && lines.y3) {
-        ctx.lineTo(lines.x3, lines.y3);
-      }
-      if (lines.x4 && lines.y4) {
-        ctx.lineTo(lines.x4, lines.y4);
-      }
-
-      ctx.strokeStyle = '#574e4e';
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      ctx.stroke();
     },
   },
 };
 </script>
 
 <style scoped>
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
 .question-container {
   border: 2px solid black;
   padding: 20px;
@@ -308,6 +489,7 @@ export default {
   justify-content: space-around;
   align-items: center;
   height: 100vh;
+  margin-top: -35px;
 }
 .tank-section {
   display: flex;
@@ -341,8 +523,9 @@ export default {
   top: 0%;
   bottom: 0%;
   background-color: white;
+  margin-top: auto;
+  margin-bottom: initial;
 }
-
 .fill-animation {
   transition: height 1s ease; /* Animation for height change */
 }
