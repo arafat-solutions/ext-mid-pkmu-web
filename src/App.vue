@@ -6,7 +6,7 @@
     <template v-else>
       <div class="main-container">
         <Navigation v-if="showNavigation" class="navigation" />
-        <div :class="{'content': showNavigation, 'full-content': !showNavigation}">
+        <div :class="{ 'content': showNavigation, 'full-content': !showNavigation }">
           <TopNavigation v-if="showNavigation" />
           <router-view />
         </div>
@@ -40,7 +40,8 @@ export default {
 </script>
 
 <style>
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -84,7 +85,7 @@ html, body {
 
 .full-content {
   width: 100%;
-  padding: 20px;
+  /* padding: 20px; */
   box-sizing: border-box;
 }
 

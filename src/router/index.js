@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from '@/components/LoginPage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
-import NewCallSignMultitask from '@/components/NewCallSignMultitask.vue';
+import CallSignMultitask from '@/components/CallSignMultitaskingTest/ParentTest.vue'
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
@@ -39,7 +39,7 @@ const routes = [
   {
     path: '/call-sign-multitask-test',
     name: 'Call Sign Multitask Test',
-    component: NewCallSignMultitask
+    component: CallSignMultitask
   },
   {
     path: '/color-multitask-test',
@@ -91,7 +91,7 @@ const routes = [
     name: 'Shape Recognition Test',
     component: ShapeRecognition
   },
-  
+
 ];
 
 const router = createRouter({
