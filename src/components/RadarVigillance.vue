@@ -45,6 +45,7 @@ export default {
       objectInterval: null,
       countdownInterval: null,
       result: {
+        totalObject: 0,
         correctedObject: 0,
         missedObject: 0,
         timeResponded: 0,
@@ -75,6 +76,7 @@ export default {
   methods: {
     initConfig() {
       this.result = {
+        totalObject: 0,
         correctedObject: 0,
         missedObject: 0,
         timeResponded: 0,
@@ -413,6 +415,7 @@ export default {
         const responseTime = this.responseTimes.shift();
         const responseDuration = responseTime - suitableTime;
         this.responseDurations.push(responseDuration);
+        this.suitableObjectTimes = [];
       }
     },
     averageResponseTime() {
@@ -434,6 +437,8 @@ export default {
       }, 1000);
     },
     calculatedResult() {
+      this.result.totalObject = this.detectedObject;
+
       // Handle user deliberate click
       if (this.userClickCount > this.detectedObject) {
         this.result.correctedObject = 0;
@@ -454,7 +459,7 @@ export default {
         }
       }
 
-      // this.submitResult()
+      this.submitResult()
     },
     async submitResult() {
       try {   
