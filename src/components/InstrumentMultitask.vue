@@ -51,7 +51,7 @@
     },
     data() {
       return {
-        minuteTime: 1,
+        minuteTime: 10,
         timeLeft: 0, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
