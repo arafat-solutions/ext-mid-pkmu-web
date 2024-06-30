@@ -15,7 +15,6 @@
         :paddingHorizontal="-20"
         :paddingVertical="-20"
         :needleHeightRatio="0.75"
-        needleTransition="easePolyInOut"
       />
     </div>
   </div>
@@ -171,14 +170,16 @@ export default {
         if (Math.random() <= frequencyConfig) {
           if (speedometer.value >= 7) {
             // Ensure that the value can only increase when it is 7
-            newValue = 7 + Math.random() * 2;
+            newValue = speedometer.value + (Math.random() * (9 - speedometer.value));
+          } else if(speedometer.label === 'A') {
+            newValue = 3;
           } else {
             newValue = this.getRandomValue();
           }
         }
         return {
           ...speedometer,
-          value: newValue > speedometer.value ? newValue : speedometer.value
+          value: newValue
         };
       });
     },
