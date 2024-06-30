@@ -1,53 +1,58 @@
 <template>
-    <div class="main-view">
-      <div v-if="timeLeft > 0" class="timer-container">
-        Time: {{ formattedTime }}
-        <button v-if="isPause" @click="startAgain" class="ml-6">Start</button>
-        <button v-else @click="pause" class="ml-6">Pause</button>
-        <button @click="exit" class="ml-1">Exit</button>
+  <div class="main-view">
+    <div v-if="timeLeft > 0" class="timer-container">
+      Time: {{ formattedTime }}
+      <button v-if="isPause" @click="startAgain" class="ml-6">Start</button>
+      <button v-else @click="pause" class="ml-6">Pause</button>
+      <button @click="exit" class="ml-1">Exit</button>
+    </div>
+    <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
+      <HorizonView />
+      <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" :isPause="isPause" @getResult="arithmeticResult"/>
+    </div>
+    <div class="column-10 mt-3 text-left" v-show="!isTimesUp && !isPause">
+      <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
+    </div>
+    <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
+      <GaugesMeter />
+    </div>
+    <div class="column-50" v-show="isTimesUp">
+      <h2 class="title-result">Results:</h2>
+      <h3 class="title-result">Alert Lights</h3>
+      <div class="column-50 mb-2">
+        <span class="label-result">Correct response:</span>
+        <span class="label-result">Response time:</span>
       </div>
-      <div class="column arithmetic-display mt-3" v-show="!isTimesUp && !isPause">
-        <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" :isPause="isPause" @getResult="arithmeticResult"/>
+      <div class="column-50 mb-2">
+        <span class="value-result">{{ alertLightCorrectResponse }}</span>
+        <span class="value-result">{{ alertLightResponseTime }}</span>
       </div>
-      <div class="column mt-3" v-show="!isTimesUp && !isPause">
-        <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
-        <GaugesMeter />
+      <h3 class="title-result">Mental Arithmetics</h3>
+      <div class="column-50">
+        <span class="label-result">Correct response:</span>
+        <span class="label-result">Response time:</span>
       </div>
-      <div class="column" v-show="isTimesUp">
-        <h2 class="title-result">Results:</h2>
-        <h3 class="title-result">Alert Lights</h3>
-        <div class="column mb-2">
-          <span class="label-result">Correct response:</span>
-          <span class="label-result">Response time:</span>
-        </div>
-        <div class="column mb-2">
-          <span class="value-result">{{ alertLightCorrectResponse }}</span>
-          <span class="value-result">{{ alertLightResponseTime }}</span>
-        </div>
-        <h3 class="title-result">Mental Arithmetics</h3>
-        <div class="column">
-          <span class="label-result">Correct response:</span>
-          <span class="label-result">Response time:</span>
-        </div>
-        <div class="column value-result">
-          <span class="value-result">{{ arithmeticCorrectResponse }}</span>
-          <span class="value-result">{{ arithmeticResponseTime }}</span>
-        </div>
+      <div class="column-50 value-result">
+        <span class="value-result">{{ arithmeticCorrectResponse }}</span>
+        <span class="value-result">{{ arithmeticResponseTime }}</span>
       </div>
     </div>
-  </template>
+  </div>
+</template>
 
 <script>
   import ArithmeticTask from './ArithmeticTask';
   import AlertLights from './AlertLights';
   import GaugesMeter from './GaugesMeter';
+  import HorizonView from './HorizonView';
 
   export default {
     name: 'MainView',
     components: {
       ArithmeticTask,
       AlertLights,
-      GaugesMeter
+      GaugesMeter,
+      HorizonView,
     },
     data() {
       return {
@@ -158,6 +163,8 @@
     justify-content: center;
     align-items: flex-start;
     gap: 20px;
+    width: 1280px;
+    margin: 0 auto;
   }
 
   .mb-2 {
@@ -176,13 +183,19 @@
     margin-left: 1rem;
   }
 
-  .column {
+  .column-50 {
     float: left;
     width: 50%;
   }
 
-  .arithmetic-display {
-    margin-top: 30%;
+  .column-45 {
+    float: left;
+    width: 45%;
+  }
+
+  .column-10 {
+    float: left;
+    width: 10%;
   }
 
   .timer-container {
@@ -190,7 +203,7 @@
     right: 0;
     top: 0;
     background-color: #0349D0;
-    padding: 1rem;
+    padding: 0.75rem;
     color: #ffffff;
     font-weight: bold;
     border-bottom-left-radius: 15px;
@@ -221,5 +234,13 @@
 
   h3 {
     margin-block-end: 0.5rem;
+  }
+
+  .text-left {
+    text-align: left;
+  }
+
+  .horizon-container {
+    margin: 0 auto;
   }
 </style>
