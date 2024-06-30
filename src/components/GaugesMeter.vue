@@ -15,6 +15,7 @@
         :paddingHorizontal="-20"
         :paddingVertical="-20"
         :needleHeightRatio="0.75"
+        needleTransition="easePolyInOut"
       />
     </div>
   </div>
@@ -33,27 +34,27 @@ export default {
       speedometers: [
         {
           label: 'W',
-          value: 1
+          value: 0
         },
         {
           label: 'V',
-          value: 1
+          value: 0
         },
         {
           label: 'X',
-          value: 1
+          value: 0
         },
         {
           label: 'Y',
-          value: 1
+          value: 0
         },
         {
           label: 'Z',
-          value: 1
+          value: 0
         },
         {
           label: 'A',
-          value: 1
+          value: 0
         },
       ],
       startColor: '#33CC33',
@@ -124,11 +125,22 @@ export default {
           fontSize: "14px",
           color: "#000000",
         },
-      ]
+      ],
+      frequency: 'high', // Set the initial frequency level
+      frequencyLevels: {
+        easy: 0.2, // 20% chance of changing
+        normal: 0.5, // 50% chance of changing
+        high: 0.9 // 90% chance of changing
+      },
+      intervalId: null
     };
   },
   mounted() {
     this.modifySVG();
+    this.startUpdating();
+  },
+  beforeDestroy() {
+    clearInterval(this.intervalId);
   },
   methods: {
     // For change position label W,V,X,Y,Z,A
@@ -148,6 +160,31 @@ export default {
         }
       });
     },
+    getRandomValue() {
+      return Math.random() * 7.5;
+    },
+    updateSpeedometers() {
+      const frequencyConfig = this.frequencyLevels[this.frequency] || this.frequencyLevels.normal;
+
+      this.speedometers = this.speedometers.map(speedometer => {
+        let newValue = speedometer.value;
+        if (Math.random() <= frequencyConfig) {
+          if (speedometer.value >= 7) {
+            // Ensure that the value can only increase when it is 7
+            newValue = 7 + Math.random() * 2;
+          } else {
+            newValue = this.getRandomValue();
+          }
+        }
+        return {
+          ...speedometer,
+          value: newValue > speedometer.value ? newValue : speedometer.value
+        };
+      });
+    },
+    startUpdating() {
+      this.intervalId = setInterval(this.updateSpeedometers, 1000);
+    }
   },
 };
 </script>
