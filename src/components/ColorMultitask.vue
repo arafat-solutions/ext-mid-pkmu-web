@@ -32,7 +32,7 @@
     </div>
 
     <div class="horizon-section">
-      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 50px; margin-top: -20px"></canvas>
+      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 20px; margin-top: -20px"></canvas>
       
       <div v-if="config.subtask.arithmetics" class="arithmetic">
         <div class="question-container">
@@ -44,10 +44,10 @@
             <div v-for="(option, index) in optionAnswerAudios" :key="index">
               <li>
                   <label>
-                    <button @click="clickAnswerAudio(option)">
-                      {{ (index + 1) }}
-                    </button>
-                    {{ option }}
+                    <span class="option-answer" @click="clickAnswerAudio(option)">
+                      {{ option.key }}
+                    </span>
+                    {{ option.value }}
                   </label>
               </li>
             </div>
@@ -64,6 +64,12 @@ export default {
     return {
       isLoading: false,
       isPlayAudio: false,
+      isCanChooseAudio: false,
+      timer: {
+        minutes: 0,
+        second: 0
+      },
+      countdownInterval: null,
       keysPressed: {},
       colors: ['yellow', 'blue', 'red', 'green'],
       uppers: ['Q', 'W', 'E', 'R'],
@@ -104,7 +110,6 @@ export default {
       timerTankInterval: null,
       horizonWidth: 400,
       horizonHeight: 300,
-      
       config: {
         subtask: {
           arithmetics: false,
@@ -120,12 +125,12 @@ export default {
         },
         color_tank: {
           negative_score: true,
-          speed: 'medium' //slow, medium, fast
+          speed: null //slow, medium, fast
         },
       },
       result: {
         color_tank: {
-
+          score: 0,
         },
         arithmetic: {
           correctAnswer: 0,
@@ -140,17 +145,22 @@ export default {
         timeResponded: 0
       },
       audio: null,
-      optionAnswerAudios: [],
+      optionAnswerAudios: [
+        { key: 7, value: ''},
+        { key: 8, value: ''},
+        { key: 9, value: ''},
+        { key: 0, value: ''},
+      ],
     };
   },
   async mounted() {
     await this.initConfig();
 
     // Setup Color Tank
-    // if (this.config.subtask.color_tank) { 
-    //   this.initLineTank();
-    //   this.initTankToEmpty();
-    // }
+    if (this.config.subtask.color_tank) { 
+      this.initLineTank();
+      this.initTankToEmpty();
+    }
 
     // Setup Arithmetic
     if (this.config.subtask.arithmetics) { 
@@ -161,6 +171,8 @@ export default {
     if (this.config.subtask.horizon) { 
       //noop
     }
+
+    this.startCountdown();
 
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
@@ -181,6 +193,19 @@ export default {
     }
   },
   methods: {
+    startCountdown() {
+      this.countdownInterval = setInterval(() => {
+        if (this.config.duration > 0) {
+          this.config.duration--;
+        } else {
+          clearInterval(this.countdownInterval);
+          this.calculatedResult();
+        }
+      }, 1000);
+    },
+    calculatedResult() {
+      
+    },
     async initConfig() {
       try {
         this.result = {}
@@ -231,7 +256,7 @@ export default {
       ctx.clearRect(0, 0, this.lineTankCanvasWidth, this.lineTankCanvasHeight);
       ctx.save();
 
-      for (let i=0; i < this.lines.length; i++) {
+      for (let i = 0; i < this.lines.length; i++) {
         this.drawLine(this.lines[i]);
       }
     },
@@ -337,86 +362,115 @@ export default {
     generateAudio() {
       this.audio = null;
       this.answerAudio = null;
-      this.optionAnswerAudios = [];
       this.isPlayAudio = true;
       
       let number =  Math.floor(Math.random() * 30) + 1;
-      this.audio = require('@/assets/audio/color-multitask/' + number + '.mp3')
+      this.audio = require('@/assets/audio/color-multitask/' + number + '.mp3');
 
-      let correctLocationIndex = Math.floor(Math.random() * 5);
-      if (correctLocationIndex >= 4) {
-        correctLocationIndex = 3
+      let correctLocationIndex = Math.floor(Math.random() * 4) + 6;
+      if (correctLocationIndex >= 9) {
+        correctLocationIndex = 9
+      }
+      if (correctLocationIndex <= 7) {
+        correctLocationIndex = 7
       }
 
       for (var i = 0; i < 4; i++) {
-        if (i === correctLocationIndex) {
-          this.optionAnswerAudios.push(number)
+        if (this.optionAnswerAudios[i].key === correctLocationIndex) {
+          this.optionAnswerAudios[i].value = number;
         } else {
-          this.optionAnswerAudios.push((Math.floor(Math.random() * 30) + 1))
+          this.optionAnswerAudios[i].value =  Math.floor(Math.random() * 30) + 1;
         }
       }
     },
-    clickAnswerAudio(value) {
+    pressAnswerAudio(value) {
       if (value === this.audio) {
         this.resultAritmethic.correctAnswers++
       } else {
         this.resultAritmethic.faultAnswers++
       }
 
+      this.isCanChooseAudio = false;
       this.generateAudio();
     },
     startPlayback() { 
       this.resultAritmethic.totalQuestion++
+
       setTimeout(() => {
         this.$refs.audio.play();
-      }, 3000);
+        this.isCanChooseAudio = true;
+      }, 1000);
     },
     handleKeyDown(event) {
       this.keysPressed[event.key.toUpperCase()] = true;
       
-      if (this.keysPressed['Q'] && this.keysPressed['A']) {
-        this.fillTank(0, 'yellow');
-      }
-      if (this.keysPressed['Q'] && this.keysPressed['S']) {
-        this.fillTank(1, 'yellow');
-      }
-      if (this.keysPressed['Q'] && this.keysPressed['D']) {
-        this.fillTank(2, 'yellow');
-      }
+      // Color Tank
+      if (this.config.subtask.color_tank) {
+        if (this.keysPressed['Q'] && this.keysPressed['A']) {
+          this.fillTank(0, 'yellow');
+        }
+        if (this.keysPressed['Q'] && this.keysPressed['S']) {
+          this.fillTank(1, 'yellow');
+        }
+        if (this.keysPressed['Q'] && this.keysPressed['D']) {
+          this.fillTank(2, 'yellow');
+        }
 
-      if (this.keysPressed['W'] && this.keysPressed['A']) {
-        this.fillTank(0, 'blue');
-      }
-      if (this.keysPressed['W'] && this.keysPressed['S']) {
-        this.fillTank(1, 'blue');
-      }
-      if (this.keysPressed['W'] && this.keysPressed['F']) {
-        this.fillTank(3, 'blue');
-      }
+        if (this.keysPressed['W'] && this.keysPressed['A']) {
+          this.fillTank(0, 'blue');
+        }
+        if (this.keysPressed['W'] && this.keysPressed['S']) {
+          this.fillTank(1, 'blue');
+        }
+        if (this.keysPressed['W'] && this.keysPressed['F']) {
+          this.fillTank(3, 'blue');
+        }
 
-      if (this.keysPressed['E'] && this.keysPressed['S']) {
-        this.fillTank(1, 'red');
-      }
-      if (this.keysPressed['E'] && this.keysPressed['D']) {
-        this.fillTank(2, 'red');
-      }
-      if (this.keysPressed['E'] && this.keysPressed['F']) {
-        this.fillTank(3, 'red');
-      }
+        if (this.keysPressed['E'] && this.keysPressed['S']) {
+          this.fillTank(1, 'red');
+        }
+        if (this.keysPressed['E'] && this.keysPressed['D']) {
+          this.fillTank(2, 'red');
+        }
+        if (this.keysPressed['E'] && this.keysPressed['F']) {
+          this.fillTank(3, 'red');
+        }
 
-      if (this.keysPressed['R'] && this.keysPressed['A']) {
-        this.fillTank(0, 'green');
+        if (this.keysPressed['R'] && this.keysPressed['A']) {
+          this.fillTank(0, 'green');
+        }
+        if (this.keysPressed['R'] && this.keysPressed['D']) {
+          this.fillTank(2, 'green');
+        }
+        if (this.keysPressed['R'] && this.keysPressed['F']) {
+          this.fillTank(3, 'green');
+        }
       }
-      if (this.keysPressed['R'] && this.keysPressed['D']) {
-        this.fillTank(2, 'green');
-      }
-      if (this.keysPressed['R'] && this.keysPressed['F']) {
-        this.fillTank(3, 'green');
-      }
+      
+      // Arithmetic
+      if (this.config.subtask.arithmetics) {
+        if (this.isPlayAudio && this.audio) {
+          this.startPlayback();
+          this.isPlayAudio = false;
+        }
 
-      if (this.config.subtask.arithmetics && this.audio && this.isPlayAudio) {
-        this.startPlayback()
-        this.isPlayAudio = false;
+        if (this.isCanChooseAudio) {
+          if (this.keysPressed['7']) {
+            this.pressAnswerAudio(7);
+          }
+
+          if (this.keysPressed['8']) {
+            this.pressAnswerAudio(8);
+          }
+
+          if (this.keysPressed['9']) {
+            this.pressAnswerAudio(9);
+          }
+
+          if (this.keysPressed['0']) {
+            this.pressAnswerAudio(0);
+          }
+        }
       }
     },
     handleKeyUp(event) {
@@ -483,6 +537,11 @@ export default {
 .options li {
   margin-bottom: 8px;
 }
+.option-answer {
+  background-color: grey;
+  padding: 10px;
+  border-radius: 5px;
+}
 .horizon-tank {
   display: flex;
   flex-direction: row;
@@ -490,6 +549,8 @@ export default {
   align-items: center;
   height: 100vh;
   margin-top: -35px;
+  margin-left: 40px;
+  margin-right: 40px;
 }
 .tank-section {
   display: flex;
