@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers">
+  <div class="speedometer-content">
+    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers" class="speedometer-container">
       <vue-speedometer
         :segmentColors="segmentColors"
         :segments="customSegmentLabels.length"
@@ -9,8 +9,8 @@
         :maxValue="customSegmentLabels.length"
         :customSegmentLabels="customSegmentLabels"
         :currentValueText="speedometer.label"
-        :width="250"
-        :height="250"
+        :width="200"
+        :height="200"
         :ringWidth="30"
         :paddingHorizontal="-20"
         :paddingVertical="-20"
@@ -142,7 +142,7 @@ export default {
           if (svgElement) {
             const gElements = svgElement.getElementsByTagName('g');
             if (gElements.length > 2) {
-              gElements[2].setAttribute('transform', 'translate(105, 110)');
+              gElements[2].setAttribute('transform', 'translate(80, 90)');
             }
           }
         }
@@ -153,12 +153,23 @@ export default {
 </script>
 
 <style>
+.speedometer-container {
+  display: inline-block;
+  margin-right: 30px;
+  margin-bottom: 20px;
+}
+
 .speedometer {
   border: 2px solid black;
   border-radius: 50%;
+  box-sizing: border-box;
 }
 
 .current-value {
   margin-top: 2rem;
+}
+
+.speedometer-content {
+  padding-left: 50px;
 }
 </style>

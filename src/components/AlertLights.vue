@@ -196,9 +196,8 @@
 
   <style scoped>
   .lights {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: inline-block;
+    width: 80px;
   }
   .light {
     width: 75px;
@@ -210,6 +209,7 @@
     background-color: gray;
     color: #000000;
     font-weight: bold;
+    margin-bottom: 15px;
   }
   .light.red {
     background-color: red;

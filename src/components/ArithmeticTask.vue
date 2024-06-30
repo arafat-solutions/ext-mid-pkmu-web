@@ -209,6 +209,7 @@
   }
 
   .problem-section {
+    margin-top: 100px;
     margin-bottom: 20px;
   }
 
