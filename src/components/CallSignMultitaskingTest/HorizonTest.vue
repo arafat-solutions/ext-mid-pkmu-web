@@ -1,6 +1,6 @@
 <template>
     <div class="horizon-test">
-        <canvas ref="horizonCanvas"></canvas>
+        <canvas ref="horizonCanvas" @mousemove="handleMouseEnter"></canvas>
     </div>
 </template>
 
@@ -22,17 +22,20 @@ export default {
                 focusY: 300,
                 focusX: 100
             },
+            timerInterval: null
         };
     },
     mounted() {
         this.initializeTest()
     },
     beforeUnmount() {
+        clearInterval(this.timerInterval);
     },
     methods: {
         initializeTest() {
             this.initVisual();
             this.drawVisual();
+            this.changingAngle()
         },
         initVisual() {
             const canvas = this.$refs.horizonCanvas;
@@ -126,6 +129,42 @@ export default {
             ctx.lineWidth = 2;
             ctx.stroke();
         },
+        setAngle() {
+            const change = Math.random() < 0.5 ? -5 : 5; // Randomly choose between -5 and +5
+            const newAngle = this.config.angle + change;
+
+            // Ensure the new angle is within the specified range
+            if (newAngle <= 43 && newAngle >= -45) {
+                this.config.angle = newAngle;
+            } else if (newAngle > 43) {
+                this.config.angle = 43;
+            } else if (newAngle < -45) {
+                this.config.angle = -45;
+            }
+        },
+        changingAngle() {
+            this.timerInterval = setInterval(() => {
+                this.setAngle();
+                this.drawVisual()
+            }, 1000);
+        },
+        stopChangingAngle() {
+            clearInterval(this.timerInterval);
+        },
+        handleMouseEnter(event) {
+            const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
+            let focusX = event.clientX - canvasRect.left;
+            let focusY = event.clientY - canvasRect.top;
+
+            // Ensure focusX and focusY are within the canvas boundaries
+            focusX = Math.max(0, Math.min(focusX, this.$refs.horizonCanvas.width));
+            focusY = Math.max(0, Math.min(focusY, this.$refs.horizonCanvas.height));
+
+            this.config.focusX = focusX;
+            this.config.focusY = focusY;
+
+            this.drawVisual();
+        }
     }
 };
 </script>
