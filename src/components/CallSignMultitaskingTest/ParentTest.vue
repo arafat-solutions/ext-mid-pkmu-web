@@ -41,6 +41,7 @@ export default {
 
 .left-side {
     width: 50%;
+    margin-top: 5px;
 }
 
 .right-side {
