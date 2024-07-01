@@ -53,16 +53,10 @@
       },
     },
     watch: {
-      correctResponse(newValue) {
-        this.$emit('getResult', {
-          correctResponse: newValue,
-          responseTime: this.responseTime,
-        });
-      },
-      responseTime(newValue) {
+      isTimesUp() {
         this.$emit('getResult', {
           correctResponse: this.correctResponse,
-          responseTime: newValue,
+          responseTime: this.responseTime,
         });
       },
       isPause(newValue) {

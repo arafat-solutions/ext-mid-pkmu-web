@@ -14,10 +14,17 @@
       <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
     </div>
     <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
-      <GaugesMeter :frequency="frequencyGaugesMeter" />
+      <GaugesMeter :isTimesUp="isTimesUp" :frequency="frequencyGaugesMeter" @getResult="gaugesMeterResult" />
     </div>
     <div class="column-50" v-show="isTimesUp">
       <h2 class="title-result">Results:</h2>
+      <h3 class="title-result">Horizon</h3>
+      <div class="column-50 mb-2">
+        <span class="label-result">Accuracy:</span>
+      </div>
+      <div class="column-50 mb-2">
+        <span class="value-result">n/a</span>
+      </div>
       <h3 class="title-result">Alert Lights</h3>
       <div class="column-50 mb-2">
         <span class="label-result">Correct response:</span>
@@ -27,12 +34,21 @@
         <span class="value-result">{{ alertLightCorrectResponse }}</span>
         <span class="value-result">{{ alertLightResponseTime }}</span>
       </div>
+      <h3 class="title-result">Instrument</h3>
+      <div class="column-50 mb-2">
+        <span class="label-result">Correct response:</span>
+        <span class="label-result">Response time:</span>
+      </div>
+      <div class="column-50 mb-2">
+        <span class="value-result">{{ gaugesMeterCorrectResponse }}</span>
+        <span class="value-result">{{ gaugesMeterResponseTime }}</span>
+      </div>
       <h3 class="title-result">Mental Arithmetics</h3>
       <div class="column-50">
         <span class="label-result">Correct response:</span>
         <span class="label-result">Response time:</span>
       </div>
-      <div class="column-50 value-result">
+      <div class="column-50 mb-2">
         <span class="value-result">{{ arithmeticCorrectResponse }}</span>
         <span class="value-result">{{ arithmeticResponseTime }}</span>
       </div>
@@ -56,7 +72,7 @@
     },
     data() {
       return {
-        minuteTime: 10,
+        minuteTime: 1,
         timeLeft: 0, // Countdown time in seconds
         interval: null,
         isTimesUp: false,
@@ -71,6 +87,10 @@
             responseTime: null,
           },
           arithmetic: {
+            correctResponse: null,
+            responseTime: null,
+          },
+          gaugesMeter: {
             correctResponse: null,
             responseTime: null,
           },
@@ -110,7 +130,21 @@
         }
 
         return `${this.results.alertLight.responseTime} s`;
-      }
+      },
+      gaugesMeterCorrectResponse() {
+        if (!this.results.gaugesMeter.correctResponse) {
+          return 'n/a';
+        }
+
+        return `${this.results.gaugesMeter.correctResponse} %`;
+      },
+      gaugesMeterResponseTime() {
+        if (!this.results.gaugesMeter.responseTime) {
+          return 'n/a';
+        }
+
+        return `${this.results.gaugesMeter.responseTime} s`;
+      },
     },
     methods: {
       startCountdown() {
@@ -133,6 +167,10 @@
       alertLightResult(result) {
         this.results.alertLight.correctResponse = result.correctResponse;
         this.results.alertLight.responseTime = result.responseTime;
+      },
+      gaugesMeterResult(result) {
+        this.results.gaugesMeter.correctResponse = result.correctResponse;
+        this.results.gaugesMeter.responseTime = result.responseTime;
       },
       pause() {
         clearInterval(this.interval);

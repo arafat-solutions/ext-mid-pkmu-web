@@ -160,15 +160,34 @@ export default {
       return this.resultCorrect + this.result.needPressTimes.length;
     },
     correctResponse() {
+      if (this.totalNeedPress < 1) {
+        return 0;
+      }
+
       return (this.resultCorrect / this.totalNeedPress * 100).toFixed(2);
     },
     responseTime() {
+      if (this.result.differenceTimes.length < 1) {
+        return 0;
+      }
       let sum = this.result.differenceTimes.reduce((accumulator, currentValue) => {
         return accumulator + currentValue;
       }, 0);
 
+      for (const needPressTime of this.result.needPressTimes) {
+        sum += this.getTimeDifferenceInSeconds(new Date, needPressTime.time);
+      }
+
       return (sum / this.totalNeedPress).toFixed(2);
     },
+  },
+  watch: {
+    isTimesUp() {
+      this.$emit('getResult', {
+        correctResponse: this.correctResponse,
+        responseTime: this.responseTime,
+      });
+    }
   },
   methods: {
     // For change position label W,V,X,Y,Z,A
@@ -262,6 +281,7 @@ export default {
       // Find the index of the item with the given label
       const indexNeedPress = this.result.needPressTimes.findIndex(item => item.label === keyPress);
       if (indexNeedPress === -1) {
+        alert('test');
         this.result.wrong++;
         return;
       }
@@ -281,7 +301,6 @@ export default {
         return;
       }
       this.speedometers[indexSpeedometer].value = 0;
-      console.log(JSON.parse(JSON.stringify(this.result.differenceTimes)));
     },
     getTimeDifferenceInSeconds(dateTime1, dateTime2) {
       let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
