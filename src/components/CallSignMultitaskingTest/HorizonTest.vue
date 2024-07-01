@@ -1,6 +1,7 @@
 <template>
     <div class="horizon-test">
         <canvas ref="horizonCanvas" @mousemove="handleMouseEnter"></canvas>
+
     </div>
 </template>
 
@@ -22,6 +23,7 @@ export default {
                 focusY: 300,
                 focusX: 100
             },
+
             timerInterval: null
         };
     },
@@ -47,7 +49,6 @@ export default {
         drawVisual() {
             this.clearCanvas();
             this.drawRectangleBorder();
-            // Draw the rotating inner content
             this.drawHorizon();
         },
         clearCanvas() {
@@ -103,7 +104,68 @@ export default {
             ctx.restore();
 
             this.drawFocusLine()
+            this.drawIndicator()
+        },
+        drawIndicator() {
+            const ctx = this.ctx;
+            const config = this.config
+            const centerX = config.x + config.width / 2;
+            const centerY = config.y + config.height / 2
+            const radius = 60;
 
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 20, radius, 0, Math.PI, true);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 10;
+            ctx.setLineDash([2, 15]);
+            ctx.stroke()
+
+            this.drawTriangle({ x: centerX, y: centerY - 40, width: 20, height: 15 })
+
+            // draw skew line left
+            this.drawSkew({ centerX, centerY, config })
+        },
+        drawSkew({ centerX, centerY, config }) {
+            const ctx = this.ctx
+            ctx.beginPath()
+            ctx.moveTo(centerX - 15, centerY + 20)
+            ctx.lineTo(config.x + 120, centerY + 40);
+            ctx.lineTo(config.x + 130, centerY + 40);
+            ctx.lineTo(centerX - 10, centerY + 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.setLineDash([0, 0]);
+
+            ctx.save();
+
+            // Apply vertical flip transformation
+            ctx.translate(this.config.width + 20, 0);
+            ctx.scale(-1, 1);
+
+            ctx.beginPath()
+            ctx.moveTo(centerX - 15, centerY + 20)
+            ctx.lineTo(config.x + 120, centerY + 40);
+            ctx.lineTo(config.x + 130, centerY + 40);
+            ctx.lineTo(centerX - 10, centerY + 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.setLineDash([0, 0]);
+
+
+            ctx.restore()
+        },
+        drawTriangle({ x, y, width, height }) {
+            const ctx = this.ctx
+            ctx.fillStyle = 'white'
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            ctx.moveTo(0, -height / 2);
+            ctx.lineTo(-width / 2, height / 2);
+            ctx.lineTo(width / 2, height / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
         },
         drawFocusLine() {
             const ctx = this.ctx
@@ -113,6 +175,7 @@ export default {
             ctx.rect(config.x, config.y, config.width, config.height);
             ctx.clip();
 
+            ctx.setLineDash([0, 0]);
             // Draw horizontal yellow line
             ctx.beginPath();
             ctx.moveTo(config.x - (config.width / 2), config.focusY);
