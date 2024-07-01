@@ -9,18 +9,28 @@ export default {
     name: 'CircleTest',
     data() {
         return {
-
+            circleConfig: [
+                { x: 50, y: 100, radius: 40, fillColor: '#b75010', letter: 'T' },
+                { x: 140, y: 100, radius: 40, fillColor: '#b75010', letter: 'Y' },
+                { x: 230, y: 100, radius: 40, fillColor: '#b75010', letter: 'U' },
+                { x: 320, y: 100, radius: 40, fillColor: '#b75010', letter: 'I' }
+            ],
+            indexLight: 0,
+            timerInterval: null,
+            alternateChange: false
         };
     },
     mounted() {
         this.initializeTest()
     },
     beforeUnmount() {
+        clearInterval(this.timerInterval);
     },
     methods: {
         initializeTest() {
             this.initVisual();
             this.drawVisual();
+            this.changeTheLightPosition()
         },
         initVisual() {
             const canvas = this.$refs.circleCanvas;
@@ -31,11 +41,10 @@ export default {
         },
         drawVisual() {
             this.clearCanvas();
-            const brown = '#b75010'
-            this.drawCircle({ x: 50, y: 100, radius: 40, fillColor: 'yellow', letter: 'T' });
-            this.drawCircle({ x: 140, y: 100, radius: 40, fillColor: brown, letter: 'Y' });
-            this.drawCircle({ x: 230, y: 100, radius: 40, fillColor: brown, letter: 'U' });
-            this.drawCircle({ x: 320, y: 100, radius: 40, fillColor: brown, letter: 'I' });
+            this.circleConfig.forEach((circle, i) => {
+                const c = { ...circle, fillColor: i === this.indexLight ? 'yellow' : circle.fillColor }
+                this.drawCircle(c)
+            })
         },
         clearCanvas() {
             const ctx = this.ctx;
@@ -62,6 +71,23 @@ export default {
             ctx.textBaseline = 'middle';
             ctx.fillText(letter, x, y);
         },
+        getRandomNumber() {
+            return Math.floor(Math.random() * 4);
+        },
+        changeTheLightPosition() {
+            this.timerInterval = setInterval(() => {
+                if (this.alternateChange) {
+                    this.indexLight = 5;
+                } else {
+                    this.indexLight = this.getRandomNumber();
+                }
+                this.drawVisual();
+                this.alternateChange = !this.alternateChange;
+            }, 1000);
+        },
+        stopChangingLight() {
+            clearInterval(this.timerInterval);
+        }
     }
 };
 </script>
