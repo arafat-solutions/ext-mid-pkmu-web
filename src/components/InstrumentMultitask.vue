@@ -14,7 +14,7 @@
       <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
     </div>
     <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
-      <GaugesMeter />
+      <GaugesMeter :frequency="frequencyGaugesMeter" />
     </div>
     <div class="column-50" v-show="isTimesUp">
       <h2 class="title-result">Results:</h2>
@@ -64,6 +64,7 @@
         difficultyArithmetic: 'easy',//easy,medium,difficult
         speedAlertLight: 'fast', //very_slow,slow,medium,fast,very_fast
         frequencyAlertLight: 'very_often', //very_rarely,rarely,medium,often,very_often
+        frequencyGaugesMeter: 'high', //easy,medium,high
         results: {
           alertLight: {
             correctResponse: null,

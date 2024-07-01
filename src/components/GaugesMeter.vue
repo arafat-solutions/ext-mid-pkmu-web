@@ -1,6 +1,6 @@
 <template>
   <div class="speedometer-content">
-    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers" class="speedometer-container">
+    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers" class="speedometer-container" :key="index">
       <vue-speedometer
         :segmentColors="segmentColors"
         :segments="customSegmentLabels.length"
@@ -9,8 +9,8 @@
         :maxValue="customSegmentLabels.length"
         :customSegmentLabels="customSegmentLabels"
         :currentValueText="speedometer.label"
-        :width="200"
-        :height="200"
+        :width="250"
+        :height="250"
         :ringWidth="30"
         :paddingHorizontal="-20"
         :paddingVertical="-20"
@@ -27,6 +27,11 @@ export default {
   name: 'GaugesMeter',
   components: {
     VueSpeedometer,
+  },
+  props: {
+    isTimesUp: Boolean,
+    frequency: String,
+    isPause: Boolean,
   },
   data() {
     return {
@@ -125,20 +130,23 @@ export default {
           color: "#000000",
         },
       ],
-      frequency: 'high', // Set the initial frequency level
       frequencyLevels: {
         easy: 0.2, // 20% chance of changing
         normal: 0.5, // 50% chance of changing
         high: 0.9 // 90% chance of changing
       },
-      intervalId: null
+      intervalId: null,
+      result: {
+        needPressTimes: [],
+        speedometers: [],
+      }
     };
   },
   mounted() {
     this.modifySVG();
     this.startUpdating();
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearInterval(this.intervalId);
   },
   methods: {
@@ -153,38 +161,74 @@ export default {
           if (svgElement) {
             const gElements = svgElement.getElementsByTagName('g');
             if (gElements.length > 2) {
-              gElements[2].setAttribute('transform', 'translate(80, 90)');
+              gElements[2].setAttribute('transform', 'translate(105, 115)');
             }
           }
         }
       });
     },
     getRandomValue() {
-      return Math.random() * 7.5;
+      return Math.random() * 2;
+    },
+    getRandomSign() {
+        return Math.random() < 0.5 ? '+' : '-';
     },
     updateSpeedometers() {
       const frequencyConfig = this.frequencyLevels[this.frequency] || this.frequencyLevels.normal;
 
       this.speedometers = this.speedometers.map(speedometer => {
         let newValue = speedometer.value;
-        if (Math.random() <= frequencyConfig) {
-          if (speedometer.value >= 7) {
-            // Ensure that the value can only increase when it is 7
-            newValue = speedometer.value + (Math.random() * (9 - speedometer.value));
-          } else if(speedometer.label === 'A') {
-            newValue = 3;
-          } else {
-            newValue = this.getRandomValue();
-          }
+        if (Math.random() > frequencyConfig) {
+          return {
+            ...speedometer,
+            value: newValue
+          };
         }
+
+        if (speedometer.value >= 7) {
+          // Ensure that the value can only increase when it is 7
+          newValue = speedometer.value + (Math.random() * (9 - speedometer.value));
+
+          // Record time need action
+          this.recordNeedPressTimes(speedometer.label)
+        } else {
+          newValue = this.getRandomValueLessThen7(newValue);
+        }
+
         return {
           ...speedometer,
           value: newValue
         };
       });
+      this.result.speedometers.push(this.speedometers);
     },
     startUpdating() {
       this.intervalId = setInterval(this.updateSpeedometers, 1000);
+    },
+    recordNeedPressTimes(label) {
+      // Check if the label already exists
+      let labelExists = this.result.needPressTimes.some(item => item.label === label);
+
+      if (labelExists) {
+        return;
+      }
+
+      this.result.needPressTimes.push({
+        'label': label,
+        'time': new Date(),
+      });
+    },
+    getRandomValueLessThen7(newValue) {
+      const randomValue = this.getRandomValue();
+      const randomSign = this.getRandomSign();
+      const checkNegativeValue = newValue - randomValue;
+      if (newValue <= 0 || checkNegativeValue <= 0 || randomSign === '+') {
+        newValue += randomValue;
+      } else {
+        newValue -= randomValue;
+      }
+
+      return newValue;
     }
   },
 };

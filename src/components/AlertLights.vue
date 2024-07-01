@@ -197,11 +197,11 @@
   <style scoped>
   .lights {
     display: inline-block;
-    width: 80px;
+    width: 100px;
   }
   .light {
-    width: 75px;
-    height: 75px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -209,7 +209,7 @@
     background-color: gray;
     color: #000000;
     font-weight: bold;
-    margin-bottom: 15px;
+    margin-bottom: 25px;
   }
   .light.red {
     background-color: red;
