@@ -414,7 +414,10 @@ export default {
         const suitableTime = this.suitableObjectTimes[this.suitableObjectTimes.length - 1];
         const responseTime = this.responseTimes.shift();
         const responseDuration = responseTime - suitableTime;
-        this.responseDurations.push(responseDuration);
+
+        if (responseDuration > 0) {
+          this.responseDurations.push(responseDuration);
+        }
         this.suitableObjectTimes = [];
       }
     },
@@ -459,7 +462,9 @@ export default {
         }
       }
 
-      this.submitResult()
+      console.log(this.result, 'lalala')
+
+      // this.submitResult()
     },
     async submitResult() {
       try {   
