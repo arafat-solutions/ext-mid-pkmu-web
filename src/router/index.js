@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from '@/components/LoginPage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
+import VisualMemoryTest from '@/components/VisualMemoryTest.vue';
 import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
@@ -30,6 +31,11 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: ProfilePage
+  },
+  {
+    path: '/visual-memory-test',
+    name: 'Visual Memory Test',
+    component: VisualMemoryTest
   },
   {
     path: '/radar-vigilance-test',
@@ -91,7 +97,7 @@ const routes = [
     name: 'Shape Recognition Test',
     component: ShapeRecognition
   },
-  
+
 ];
 
 const router = createRouter({
