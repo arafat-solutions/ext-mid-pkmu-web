@@ -137,17 +137,38 @@ export default {
       },
       intervalId: null,
       result: {
+        wrong: 0,
+        differenceTimes: [],
         needPressTimes: [],
-        speedometers: [],
       }
     };
   },
   mounted() {
     this.modifySVG();
     this.startUpdating();
+    window.addEventListener('keydown', this.handleKeyPress);
   },
   beforeUnmount() {
     clearInterval(this.intervalId);
+    window.removeEventListener('keydown', this.handleKeyPress);
+  },
+  computed: {
+    resultCorrect() {
+      return this.result.differenceTimes.length;
+    },
+    totalNeedPress() {
+      return this.resultCorrect + this.result.needPressTimes.length;
+    },
+    correctResponse() {
+      return (this.resultCorrect / this.totalNeedPress * 100).toFixed(2);
+    },
+    responseTime() {
+      let sum = this.result.differenceTimes.reduce((accumulator, currentValue) => {
+        return accumulator + currentValue;
+      }, 0);
+
+      return (sum / this.totalNeedPress).toFixed(2);
+    },
   },
   methods: {
     // For change position label W,V,X,Y,Z,A
@@ -192,7 +213,7 @@ export default {
           // Record time need action
           this.recordNeedPressTimes(speedometer.label)
         } else {
-          newValue = this.getRandomValueLessThen7(newValue);
+          newValue = this.getRandomValueWhenNotRed(newValue);
         }
 
         return {
@@ -200,7 +221,6 @@ export default {
           value: newValue
         };
       });
-      this.result.speedometers.push(this.speedometers);
     },
     startUpdating() {
       this.intervalId = setInterval(this.updateSpeedometers, 1000);
@@ -215,10 +235,10 @@ export default {
 
       this.result.needPressTimes.push({
         'label': label,
-        'time': new Date(),
+        'time': new Date,
       });
     },
-    getRandomValueLessThen7(newValue) {
+    getRandomValueWhenNotRed(newValue) {
       const randomValue = this.getRandomValue();
       const randomSign = this.getRandomSign();
       const checkNegativeValue = newValue - randomValue;
@@ -229,6 +249,43 @@ export default {
       }
 
       return newValue;
+    },
+    handleKeyPress(event) {
+      if (event.key !== 'w' && event.key !== 'v' && event.key !== 'x' && event.key !== 'y' && event.key !== 'z' && event.key !== 'a') {
+        return;
+      }
+
+      if (this.isPause) {
+        return;
+      }
+      const keyPress = event.key.toUpperCase();
+      // Find the index of the item with the given label
+      const indexNeedPress = this.result.needPressTimes.findIndex(item => item.label === keyPress);
+      if (indexNeedPress === -1) {
+        this.result.wrong++;
+        return;
+      }
+
+      // Calculate diff
+      const now = new Date;
+      const diff = this.getTimeDifferenceInSeconds(now, this.result.needPressTimes[indexNeedPress].time);
+      this.result.differenceTimes.push(diff);
+
+      // Remove Need Press Times
+      this.result.needPressTimes.splice(indexNeedPress, 1);
+
+      // Update existing speedometer
+      const indexSpeedometer = this.speedometers.findIndex(speedometer => speedometer.label === keyPress);
+
+      if (indexSpeedometer === -1) {
+        return;
+      }
+      this.speedometers[indexSpeedometer].value = 0;
+      console.log(JSON.parse(JSON.stringify(this.result.differenceTimes)));
+    },
+    getTimeDifferenceInSeconds(dateTime1, dateTime2) {
+      let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
+      return differenceInMilliseconds / 1000;
     }
   },
 };

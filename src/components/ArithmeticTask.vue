@@ -180,7 +180,7 @@
       },
       getTimeDifferenceInSeconds(dateTime1, dateTime2) {
         let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
-        return Math.floor(differenceInMilliseconds / 1000);
+        return differenceInMilliseconds / 1000;
       }
     }
   };
