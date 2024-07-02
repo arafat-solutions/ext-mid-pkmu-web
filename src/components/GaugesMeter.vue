@@ -335,6 +335,6 @@ export default {
 }
 
 .speedometer-content {
-  padding-left: 50px;
+  padding-left: 75px;
 }
 </style>

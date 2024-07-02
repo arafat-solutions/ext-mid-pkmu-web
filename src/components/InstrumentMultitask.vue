@@ -1,16 +1,16 @@
 <template>
   <div class="main-view">
-    <div v-if="timeLeft > 0" class="timer-container">
+    <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Time: {{ formattedTime }}
-      <button v-if="isPause" @click="startAgain" class="ml-6">Start</button>
-      <button v-else @click="pause" class="ml-6">Pause</button>
-      <button @click="exit" class="ml-1">Exit</button>
+      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
+      <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
+      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
     <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
       <HorizonView />
       <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" :isPause="isPause" @getResult="arithmeticResult"/>
     </div>
-    <div class="column-10 mt-3 text-left" v-show="!isTimesUp && !isPause">
+    <div class="column-10 mt-3" v-show="!isTimesUp && !isPause">
       <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
     </div>
     <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
@@ -72,10 +72,11 @@
     },
     data() {
       return {
-        minuteTime: 0.2,
+        minuteTime: 5,
         timeLeft: 0, // Countdown time in seconds
         interval: null,
         isPause: false,
+        isTrial: this.$route.query.isTrial ?? false,
         difficultyArithmetic: 'easy',//easy,medium,difficult
         speedAlertLight: 'fast', //very_slow,slow,medium,fast,very_fast
         frequencyAlertLight: 'very_often', //very_rarely,rarely,medium,often,very_often
@@ -201,7 +202,7 @@
     align-items: flex-start;
     gap: 20px;
     width: 1280px;
-    margin: 0 auto;
+    margin: 60px auto;
   }
 
   .mb-2 {
@@ -235,7 +236,7 @@
     width: 10%;
   }
 
-  .timer-container {
+  .timer-container-trial {
     position: absolute;
     right: 0;
     top: 0;
@@ -256,6 +257,21 @@
       cursor: pointer;
     }
   }
+
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+
+
 
   .title-result, .label-result {
     text-align: left;
