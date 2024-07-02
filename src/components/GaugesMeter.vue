@@ -187,6 +187,13 @@ export default {
         correctResponse: this.correctResponse,
         responseTime: this.responseTime,
       });
+    },
+    isPause(newValue) {
+      if (newValue) {
+        clearInterval(this.intervalId);
+      } else {
+        this.startUpdating();
+      }
     }
   },
   methods: {

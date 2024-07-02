@@ -14,7 +14,7 @@
       <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
     </div>
     <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
-      <GaugesMeter :isTimesUp="isTimesUp" :frequency="frequencyGaugesMeter" @getResult="gaugesMeterResult" />
+      <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPause" :frequency="frequencyGaugesMeter" @getResult="gaugesMeterResult" />
     </div>
     <div class="column-50" v-show="isTimesUp">
       <h2 class="title-result">Results:</h2>
