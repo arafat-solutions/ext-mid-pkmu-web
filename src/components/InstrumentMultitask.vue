@@ -72,10 +72,9 @@
     },
     data() {
       return {
-        minuteTime: 1,
+        minuteTime: 0.2,
         timeLeft: 0, // Countdown time in seconds
         interval: null,
-        isTimesUp: false,
         isPause: false,
         difficultyArithmetic: 'easy',//easy,medium,difficult
         speedAlertLight: 'fast', //very_slow,slow,medium,fast,very_fast
@@ -98,6 +97,9 @@
       };
     },
     computed: {
+      isTimesUp() {
+        return this.timeLeft < 1;
+      },
       formattedTime() {
         const minutes = Math.floor(this.timeLeft / 60);
         const seconds = this.timeLeft % 60;
@@ -153,12 +155,8 @@
             this.timeLeft -= 1;
           } else {
             clearInterval(this.interval);
-            this.timeUp();
           }
         }, 1000);
-      },
-      timeUp() {
-        this.isTimesUp = true;
       },
       arithmeticResult(result) {
         this.results.arithmetic.correctResponse = result.correctResponse;
