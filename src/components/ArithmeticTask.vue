@@ -32,6 +32,7 @@
       isPause: Boolean,
       minuteTime: Number,
       isActive: Boolean,
+      useSound: Boolean,
     },
     mounted() {
       this.generateProblem();
