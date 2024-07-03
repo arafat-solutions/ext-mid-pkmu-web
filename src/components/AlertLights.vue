@@ -75,7 +75,9 @@
       isActive: Boolean,
     },
     mounted() {
-      this.startLights();
+      if (this.isActive) {
+        this.startLights();
+      }
       window.addEventListener('keydown', this.handleKeyPress);
     },
     beforeUnmount() {
@@ -173,7 +175,7 @@
           return;
         }
 
-        if (this.isPause) {
+        if (this.isPause || !this.isActive) {
           return;
         }
 

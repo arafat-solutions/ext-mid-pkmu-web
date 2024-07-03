@@ -1,9 +1,9 @@
 <template>
   <div v-if="problem" class="problem-section">
-    <p class="problem">{{ problem.num1 }} {{ problem.operator }} {{ problem.num2 }} = ?</p>
+    <p class="problem">{{ isActive ? problem.num1 : '?' }} {{ problem.operator }} {{ isActive ? problem.num2 : '?' }} = ?</p>
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
-        <button class="btn-answer">{{ index + 1 }}</button><span class="label-choice">{{ choice }}</span>
+        <button class="btn-answer">{{ index + 1 }}</button><span class="label-choice">{{ isActive ? choice : '?' }}</span>
       </div>
     </div>
   </div>
@@ -74,7 +74,7 @@
     },
     methods: {
       handleKeyPress(event) {
-        if (this.isPause || this.isTimesUp) {
+        if (this.isPause || this.isTimesUp || !this.isActive) {
           return;
         }
 

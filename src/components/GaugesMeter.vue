@@ -146,7 +146,9 @@ export default {
   },
   mounted() {
     this.modifySVG();
-    this.startUpdating();
+    if (this.isActive) {
+      this.startUpdating();
+    }
     window.addEventListener('keydown', this.handleKeyPress);
   },
   beforeUnmount() {
@@ -282,7 +284,7 @@ export default {
         return;
       }
 
-      if (this.isPause) {
+      if (this.isPause || !this.isActive) {
         return;
       }
       const keyPress = event.key.toUpperCase();

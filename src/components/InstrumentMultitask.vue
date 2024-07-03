@@ -1,5 +1,5 @@
 <template>
-  <div class="main-view" v-show="isConfigLoaded">
+  <div class="main-view" v-if="isConfigLoaded">
     <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Time: {{ formattedTime }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
