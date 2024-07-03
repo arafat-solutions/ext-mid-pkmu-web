@@ -1,12 +1,14 @@
 <template>
     <div id="parent-callsign-multitask">
         <div class="left-side">
-            <ColorTest />
+            <ColorTest v-if="configBe.subtask.color_tank === true" :color-tank-data="configBe.color_tank" />
         </div>
         <div class="right-side">
-            <CircleTest />
-            <HorizonTest />
-            <CallSignTest />
+            <CircleTest v-if="configBe.subtask.alert_lights === true" :alert-lights-data="configBe.alert_lights" />
+            <div v-else style="height: 160px;"></div>
+            <HorizonTest v-if="configBe.subtask.horizon === true" :horizon-data="configBe.horizon" />
+            <div v-else style="height: 390px;"></div>
+            <CallSignTest v-if="configBe.subtask.callsign === true" :callsign-data="configBe.callsign" />
         </div>
         <div class="timer">
             <p>Waktu:</p>
@@ -26,7 +28,32 @@ export default {
     data() {
         return {
             testTime: 5 * 60,
-            tesInterval: null
+            tesInterval: null,
+            configBe: {
+                alert_lights: {
+                    frequency: 'often',// seldom, medium, often // seberapa sering dia nyala
+                    speed: 'fast'// slow, medium, fast
+                },
+                callsign: {
+                    frequency: 'often',
+                    matches: 'low',
+                    speed: 'slow'
+                },
+                color_tank: {
+                    negative_score: true,
+                    speed: 'slow',
+                    duration: 10
+                },
+                horizon: {
+                    speed: 'slow' // slow, medium, fast
+                },
+                subtask: {
+                    alert_lights: true,
+                    callsign: true,
+                    color_tank: true,
+                    horizon: true
+                }
+            }
         }
     },
     mounted() {
