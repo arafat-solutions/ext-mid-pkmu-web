@@ -1,5 +1,5 @@
 <template>
-  <div class="main-view">
+  <div class="main-view" v-show="isConfigLoaded">
     <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Time: {{ formattedTime }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
@@ -72,14 +72,15 @@
     },
     data() {
       return {
-        minuteTime: 5,
-        timeLeft: 0, // Countdown time in seconds
+        minuteTime: null,
+        timeLeft: null, // Countdown time in seconds
         interval: null,
         isPause: false,
+        isConfigLoaded: false,
         isTrial: this.$route.query.isTrial ?? false,
-        difficultyArithmetic: 'easy',//easy,medium,difficult
-        speedAlertLight: 'fast', //very_slow,slow,medium,fast,very_fast
-        frequencyAlertLight: 'very_often', //very_rarely,rarely,medium,often,very_often
+        difficultyArithmetic: null,//easy,medium,difficult
+        speedAlertLight: null, //very_slow,slow,medium,fast,very_fast
+        frequencyAlertLight: null, //very_rarely,rarely,medium,often,very_often
         frequencyGaugesMeter: 'high', //easy,medium,high
         results: {
           alertLight: {
@@ -150,6 +151,27 @@
       },
     },
     methods: {
+      loadConfig() {
+        const data = localStorage.getItem('scheduleData');
+        if (data) {
+          try {
+            const scheduleData = JSON.parse(data);
+            const instrumentMultitaskConfig = scheduleData.tests.find(test => test.testUrl === 'instrument-multitask-test').config;
+            this.minuteTime = instrumentMultitaskConfig.duration;
+            this.timeLeft = this.minuteTime * 60;
+            this.difficultyArithmetic = instrumentMultitaskConfig.arithmetics.difficulty;
+            this.speedAlertLight = instrumentMultitaskConfig.alert_lights.speed;
+            this.frequencyAlertLight = instrumentMultitaskConfig.alert_lights.frequency;
+            this.isConfigLoaded = true;
+
+            this.startCountdown();
+          } catch (e) {
+            console.error('Error parsing schedule data:', e);
+          }
+        }
+
+        console.warn('No schedule data found in localStorage.');
+      },
       startCountdown() {
         this.interval = setInterval(() => {
           if (this.timeLeft > 0) {
@@ -184,10 +206,7 @@
       }
     },
     mounted() {
-      this.startCountdown();
-    },
-    created() {
-      this.timeLeft = this.minuteTime * 60; // Initialize timeLeft correctly
+      this.loadConfig();
     },
     beforeUnmount() {
       clearInterval(this.interval);
