@@ -31,6 +31,7 @@
       isTimesUp: Boolean,
       isPause: Boolean,
       minuteTime: Number,
+      isActive: Boolean,
     },
     mounted() {
       this.generateProblem();

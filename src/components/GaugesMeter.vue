@@ -32,6 +32,7 @@ export default {
     isTimesUp: Boolean,
     frequency: String,
     isPause: Boolean,
+    isActive: Boolean,
   },
   data() {
     return {
@@ -131,7 +132,7 @@ export default {
         },
       ],
       frequencyLevels: {
-        easy: 0.2, // 20% chance of changing
+        low: 0.2, // 20% chance of changing
         normal: 0.5, // 50% chance of changing
         high: 0.9 // 90% chance of changing
       },

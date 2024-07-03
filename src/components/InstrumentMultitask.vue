@@ -8,13 +8,33 @@
     </div>
     <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
       <HorizonView />
-      <ArithmeticTask :isTimesUp="isTimesUp" :difficulty="difficultyArithmetic" :minuteTime="minuteTime" :isPause="isPause" @getResult="arithmeticResult"/>
+      <ArithmeticTask
+        :isTimesUp="isTimesUp"
+        :difficulty="difficultyArithmetic"
+        :minuteTime="minuteTime"
+        :isPause="isPause"
+        :isActive="activeArithmetic"
+        @getResult="arithmeticResult"
+      />
     </div>
     <div class="column-10 mt-3" v-show="!isTimesUp && !isPause">
-      <AlertLights :speed="speedAlertLight" :isTimesUp="isTimesUp" :frequency="frequencyAlertLight" :isPause="isPause" @getResult="alertLightResult"  />
+      <AlertLights
+        :speed="speedAlertLight"
+        :isTimesUp="isTimesUp"
+        :frequency="frequencyAlertLight"
+        :isPause="isPause"
+        :isActive="activeAlertLight"
+        @getResult="alertLightResult"
+      />
     </div>
     <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
-      <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPause" :frequency="frequencyGaugesMeter" @getResult="gaugesMeterResult" />
+      <GaugesMeter
+        :isTimesUp="isTimesUp"
+        :isPause="isPause"
+        :frequency="frequencyGaugesMeter"
+        :isActive="activeGaugesMeter"
+        @getResult="gaugesMeterResult"
+      />
     </div>
     <div class="column-50" v-show="isTimesUp">
       <h2 class="title-result">Results:</h2>
@@ -79,9 +99,15 @@
         isConfigLoaded: false,
         isTrial: this.$route.query.isTrial ?? false,
         difficultyArithmetic: null,//easy,medium,difficult
+        soundArithmetic: null, //true,false
+        activeArithmetic: null, //true,false
         speedAlertLight: null, //very_slow,slow,medium,fast,very_fast
         frequencyAlertLight: null, //very_rarely,rarely,medium,often,very_often
-        frequencyGaugesMeter: 'high', //easy,medium,high
+        activeAlertLight: null, //true,false
+        frequencyGaugesMeter: 'high', //low,medium,high
+        activeGaugesMeter: true, //true,false
+        speedHorizon: null, //very_slow,slow,medium,fast,very_fast
+        activeHorizon: null, //true,false
         results: {
           alertLight: {
             correctResponse: null,
@@ -160,10 +186,15 @@
             this.minuteTime = instrumentMultitaskConfig.duration;
             this.timeLeft = this.minuteTime * 60;
             this.difficultyArithmetic = instrumentMultitaskConfig.arithmetics.difficulty;
+            this.soundArithmetic = instrumentMultitaskConfig.arithmetics.sound;
             this.speedAlertLight = instrumentMultitaskConfig.alert_lights.speed;
             this.frequencyAlertLight = instrumentMultitaskConfig.alert_lights.frequency;
+            this.activeArithmetic = instrumentMultitaskConfig.subtask.arithmetics;
+            this.activeAlertLight = instrumentMultitaskConfig.subtask.alert_lights;
+            // this.activeGaugesMeter = instrumentMultitaskConfig.subtask
+            this.activeHorizon = instrumentMultitaskConfig.subtask.horizon;
             this.isConfigLoaded = true;
-
+            console.log(instrumentMultitaskConfig);
             this.startCountdown();
           } catch (e) {
             console.error('Error parsing schedule data:', e);

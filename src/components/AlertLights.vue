@@ -72,6 +72,7 @@
       isTimesUp: Boolean,
       frequency: String,
       isPause: Boolean,
+      isActive: Boolean,
     },
     mounted() {
       this.startLights();
