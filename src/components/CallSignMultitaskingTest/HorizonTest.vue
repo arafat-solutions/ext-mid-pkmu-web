@@ -8,6 +8,12 @@
 <script>
 export default {
     name: 'HorizonTest',
+    props: {
+        horizonData: {
+            type: Object,
+            required: true
+        }
+    },
     data() {
         return {
             config: {
@@ -19,25 +25,42 @@ export default {
                 brown: '#b75010',
                 borderColor: 'black',
                 whiteBorderHeight: 5,
-                angle: 0,
                 focusY: 300,
-                focusX: 100
+                focusX: 100,
+                angle: 0,
+                horizonOffsetY: 0,
+                horizonOffsetX: 0
             },
-
-            timerInterval: null
+            horizonFrame: 0,
+            angleFrames: 2, // tetap
+            heightFrames: 3, // tetap
+            heightChangeSize: 0, // config perubahan height
+            widthFrames: 30,
+            animationFrameId: null,
+            lastFrameTime: 0
         };
     },
     mounted() {
         this.initializeTest()
+
     },
     beforeUnmount() {
         clearInterval(this.timerInterval);
     },
     methods: {
         initializeTest() {
+            const { speed } = this.horizonData
+            if (speed === 'slow') {
+                this.heightChangeSize = 2
+            } else if (speed === 'medium') {
+                this.heightChangeSize = 4
+            } else if (speed === 'fast') {
+                this.heightChangeSize = 8
+            }
+
             this.initVisual();
             this.drawVisual();
-            this.changingAngle()
+            this.animate()
         },
         initVisual() {
             const canvas = this.$refs.horizonCanvas;
@@ -48,21 +71,11 @@ export default {
         },
         drawVisual() {
             this.clearCanvas();
-            this.drawRectangleBorder();
             this.drawHorizon();
         },
         clearCanvas() {
             const ctx = this.ctx;
             ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        },
-        drawRectangleBorder() {
-            const ctx = this.ctx;
-            const config = this.config;
-
-            // Draw the black border around the entire rectangle
-            ctx.strokeStyle = config.borderColor;
-            ctx.lineWidth = 6;
-            ctx.strokeRect(config.x, config.y, config.width, config.height);
         },
         drawHorizon() {
             const ctx = this.ctx;
@@ -74,6 +87,9 @@ export default {
             // Define the clipping region
             ctx.beginPath();
             ctx.rect(config.x, config.y, config.width, config.height);
+            ctx.strokeStyle = 'black'
+            ctx.lineWidth = 6;
+            ctx.stroke()
             ctx.clip();
 
             // Convert rotation angle from degrees to radians
@@ -81,6 +97,9 @@ export default {
 
             // Move to the center of the inner content
             ctx.translate(config.x + config.width / 2, config.y + config.height / 2);
+
+            // Apply the vertical offset for the horizon
+            ctx.translate(config.horizonOffsetX, config.horizonOffsetY);
 
             // Rotate the context
             ctx.rotate(angleInRadians);
@@ -90,7 +109,7 @@ export default {
 
             // Draw the extended blue top half
             ctx.fillStyle = config.blue;
-            ctx.fillRect(config.x - (config.width / 2), config.y - config.height / 4, config.width * 2, config.height / 2 + config.height / 4);
+            ctx.fillRect(config.x - (config.width / 2), config.y - config.height, config.width * 2, config.height * 4);
 
             // Draw the extended white border at the bottom of the blue section
             ctx.fillStyle = 'white';
@@ -98,13 +117,14 @@ export default {
 
             // Draw the extended brown bottom half
             ctx.fillStyle = config.brown;
-            ctx.fillRect(config.x - (config.width / 2), config.y + config.height / 2, config.width * 2, config.height / 2 + config.height / 4);
+            ctx.fillRect(config.x - (config.width / 2), config.y + config.height / 2, config.width * 2, config.height * 4);
 
+            // draw indicator traingle
+            this.drawIndicator()
             // Restore the context to its original state
             ctx.restore();
 
             this.drawFocusLine()
-            this.drawIndicator()
         },
         drawIndicator() {
             const ctx = this.ctx;
@@ -114,13 +134,13 @@ export default {
             const radius = 60;
 
             ctx.beginPath();
-            ctx.arc(centerX, centerY - 20, radius, 0, Math.PI, true);
+            ctx.arc(centerX, centerY - 10, radius, 0, Math.PI, true);
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 10;
-            ctx.setLineDash([2, 15]);
+            ctx.setLineDash([2, 24]);
             ctx.stroke()
 
-            this.drawTriangle({ x: centerX, y: centerY - 40, width: 20, height: 15 })
+            this.drawTriangle({ x: centerX, y: centerY - 30, width: 20, height: 15 })
 
             // draw skew line left
             this.drawSkew({ centerX, centerY, config })
@@ -193,26 +213,43 @@ export default {
             ctx.stroke();
         },
         setAngle() {
-            const change = Math.random() < 0.5 ? -5 : 5; // Randomly choose between -5 and +5
-            const newAngle = this.config.angle + change;
+            const change = Math.random() < 0.5 ? -2 : 2
+            let newAngle = this.config.angle + change
+            newAngle = Math.max(-43, Math.min(43, newAngle));
 
-            // Ensure the new angle is within the specified range
-            if (newAngle <= 43 && newAngle >= -45) {
-                this.config.angle = newAngle;
-            } else if (newAngle > 43) {
-                this.config.angle = 43;
-            } else if (newAngle < -45) {
-                this.config.angle = -45;
+            this.config.angle = newAngle;
+        },
+        setHeight() {
+            const change = Math.random() < 0.5 ? -this.heightChangeSize : this.heightChangeSize
+
+            let newY = this.config.horizonOffsetY + change
+            newY = Math.max(-70, Math.min(70, newY));
+            this.config.horizonOffsetY = newY;
+        },
+        setWidth() {
+            const change = Math.random() < 0.5 ? -10 : 10
+
+            let newX = this.config.horizonOffsetX + change
+            newX = Math.max(-70, Math.min(70, newX));
+            this.config.horizonOffsetX = newX;
+        },
+        animate() {
+            this.drawVisual()
+            if (this.horizonFrame % this.angleFrames == 0) {
+                this.setAngle()
             }
-        },
-        changingAngle() {
-            this.timerInterval = setInterval(() => {
-                this.setAngle();
-                this.drawVisual()
-            }, 1000);
-        },
-        stopChangingAngle() {
-            clearInterval(this.timerInterval);
+
+            if (this.horizonFrame % this.heightFrames == 0) {
+                this.setHeight()
+            }
+
+            if (this.horizonFrame % this.widthFrames == 0) {
+                this.setWidth()
+            }
+
+
+            this.horizonFrame += 1
+            requestAnimationFrame(this.animate)
         },
         handleMouseEnter(event) {
             const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
