@@ -10,20 +10,21 @@
       <HorizonView />
       <ArithmeticTask
         :isTimesUp="isTimesUp"
-        :difficulty="difficultyArithmetic"
+        :difficulty="config.arithmetic.difficulty"
         :minuteTime="minuteTime"
         :isPause="isPause"
-        :isActive="activeArithmetic"
+        :isActive="config.arithmetic.isActive"
+        :useSound="config.arithmetic.useSound"
         @getResult="arithmeticResult"
       />
     </div>
     <div class="column-10 mt-3" v-show="!isTimesUp && !isPause">
       <AlertLights
-        :speed="speedAlertLight"
+        :speed="config.alertLight.speed"
         :isTimesUp="isTimesUp"
-        :frequency="frequencyAlertLight"
+        :frequency="config.alertLight.frequency"
         :isPause="isPause"
-        :isActive="activeAlertLight"
+        :isActive="config.alertLight.isActive"
         @getResult="alertLightResult"
       />
     </div>
@@ -31,8 +32,8 @@
       <GaugesMeter
         :isTimesUp="isTimesUp"
         :isPause="isPause"
-        :frequency="frequencyGaugesMeter"
-        :isActive="activeGaugesMeter"
+        :frequency="config.gaugesMeter.frequency"
+        :isActive="config.gaugesMeter.isActive"
         @getResult="gaugesMeterResult"
       />
     </div>
@@ -98,16 +99,26 @@
         isPause: false,
         isConfigLoaded: false,
         isTrial: this.$route.query.isTrial ?? false,
-        difficultyArithmetic: null,//easy,medium,difficult
-        soundArithmetic: null, //true,false
-        activeArithmetic: null, //true,false
-        speedAlertLight: null, //very_slow,slow,medium,fast,very_fast
-        frequencyAlertLight: null, //very_rarely,rarely,medium,often,very_often
-        activeAlertLight: null, //true,false
-        frequencyGaugesMeter: 'high', //low,medium,high
-        activeGaugesMeter: true, //true,false
-        speedHorizon: null, //very_slow,slow,medium,fast,very_fast
-        activeHorizon: null, //true,false
+        config: {
+          alertLight: {
+            speed: null, //very_slow,slow,medium,fast,very_fast
+            frequency: null, //very_rarely,rarely,medium,often,very_often
+            isActive: null, //true,false
+          },
+          arithmetic: {
+            useSound: null, //true,false
+            difficulty: null, //easy,medium,difficult
+            isActive: null, //true,false
+          },
+          gaugesMeter: {
+            frequency: null, //low,medium,high
+            isActive: null, //true,false
+          },
+          horizon: {
+            speed: null, //very_slow,slow,medium,fast,very_fast
+            isActive: null, //true,false
+          },
+        },
         results: {
           alertLight: {
             correctResponse: null,
@@ -185,16 +196,17 @@
             const instrumentMultitaskConfig = scheduleData.tests.find(test => test.testUrl === 'instrument-multitask-test').config;
             this.minuteTime = instrumentMultitaskConfig.duration;
             this.timeLeft = this.minuteTime * 60;
-            this.difficultyArithmetic = instrumentMultitaskConfig.arithmetics.difficulty;
-            this.soundArithmetic = instrumentMultitaskConfig.arithmetics.sound;
-            this.speedAlertLight = instrumentMultitaskConfig.alert_lights.speed;
-            this.frequencyAlertLight = instrumentMultitaskConfig.alert_lights.frequency;
-            this.activeArithmetic = instrumentMultitaskConfig.subtask.arithmetics;
-            this.activeAlertLight = instrumentMultitaskConfig.subtask.alert_lights;
-            // this.activeGaugesMeter = instrumentMultitaskConfig.subtask
-            this.activeHorizon = instrumentMultitaskConfig.subtask.horizon;
+            this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
+            this.config.arithmetic.useSound = instrumentMultitaskConfig.arithmetics.sound;
+            this.config.arithmetic.isActive = instrumentMultitaskConfig.subtask.arithmetics;
+            this.config.alertLight.speed = instrumentMultitaskConfig.alert_lights.speed;
+            this.config.alertLight.frequency = instrumentMultitaskConfig.alert_lights.frequency;
+            this.config.alertLight.isActive = instrumentMultitaskConfig.subtask.alert_lights;
+            this.config.gaugesMeter.frequency = instrumentMultitaskConfig.instruments.frequency;
+            this.config.gaugesMeter.isActive = instrumentMultitaskConfig.subtask.instruments;
+            this.config.horizon.speed = instrumentMultitaskConfig.horizon.speed;
+            this.config.horizon.isActive = instrumentMultitaskConfig.subtask.horizon;
             this.isConfigLoaded = true;
-            console.log(instrumentMultitaskConfig);
             this.startCountdown();
           } catch (e) {
             console.error('Error parsing schedule data:', e);
