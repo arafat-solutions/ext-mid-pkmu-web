@@ -31,30 +31,6 @@
         </div>
       </div>
     </div>
-
-    <div class="horizon-section">
-      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" @mousemove="moveYellowLine" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 20px; margin-top: -20px"></canvas>
-      
-      <div v-if="config.subtask.arithmetics" class="arithmetic">
-        <div class="question-container">
-          <div class="question">
-            <strong> Listen to task and enter your answer </strong>
-          </div>
-          <ul class="options">
-            <div v-for="(option, index) in optionAnswerAudios" :key="index">
-              <li>
-                  <label>
-                    <span class="option-answer" @click="pressAnswerAudio(option)">
-                      {{ option.key }}
-                    </span>
-                    {{ option.value }}
-                  </label>
-              </li>
-            </div>
-          </ul>
-        </div>  
-      </div>
-    </div>
   </div>
 </template>
 
@@ -63,10 +39,7 @@ export default {
   data() {
     return {
       isLoading: false,
-      isPlayAudio: false,
-      isCanChooseAudio: false,
-      isAllTankEmpty: false,
-      isMouseInsideCircle: false,
+      isTankEmpty: true,
       timer: {
         minutes: 0,
         second: 0
@@ -127,8 +100,13 @@ export default {
         { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280 },
       ],
       intervalId: null, // Untuk menyimpan ID interval
-      horizonWidth: 400,
-      horizonHeight: 300,
+      emptyTimers: [
+        { yellow: 0, green: 0, blue: 0 },
+        { blue: 0, yellow: 0, red: 0 },
+        { yellow: 0, green: 0, red: 0 },
+        { green: 0, blue: 0, red: 0 },
+      ],
+      timerTankInterval: null,
       config: {
         duration : 2 * 60,
         subtask: {
@@ -145,7 +123,7 @@ export default {
         },
         color_tank: {
           negative_score: true,
-          speed: 'fast', //slow, medium, fast
+          speed: 'slow', //slow, medium, fast
           startToDecreaseIn: 5000,
           decreaseInterval: 3000,
         },
@@ -166,17 +144,6 @@ export default {
         faultAnswers: 0,
         timeResponded: 0
       },
-      audio: null,
-      optionAnswerAudios: [
-        { key: 7, value: ''},
-        { key: 8, value: ''},
-        { key: 9, value: ''},
-        { key: 0, value: ''},
-      ],
-      tiltAngle: 10,
-      yellowLinePositionY: 0,
-      yellowLinePositionX: 0,
-      circleShiftX: 0,
     };
   },
   async mounted() {
@@ -186,22 +153,6 @@ export default {
     if (this.config.subtask.color_tank) { 
       this.initLineTank();
       this.initTankToEmpty();
-
-      setInterval(() => {
-        if (this.isAllTankEmpty) {
-          this.initTankToEmpty();
-        }
-      }, 2000);
-    }
-
-    // Setup Arithmetic
-    if (this.config.subtask.arithmetics) { 
-      this.generateAudio();
-    }
-
-    // Setup Horizon
-    if (this.config.subtask.horizon) { 
-      this.initHorizon();
     }
 
     this.startCountdown();
@@ -222,174 +173,6 @@ export default {
     }
   },
   methods: {
-    initHorizon() {
-      const canvas = this.$refs.horizonCanvas;
-      this.ctx = canvas.getContext("2d");
-
-      this.yellowLinePositionX = this.horizonWidth / 2;
-      this.yellowLinePositionY = this.horizonHeight / 2;
-
-      this.circleShiftX = 0;
-      this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 10; // Menentukan radius lingkaran
-
-      this.updateHorizon();
-      setInterval(this.randomTilt, 1000);
-      setInterval(this.randomCircleShift, 1000); // Menambahkan interval untuk pergeseran lingkaran acak
-
-      // Menambahkan event listener untuk mouse move
-      canvas.addEventListener('mousemove', this.checkMousePosition);
-    },
-    getRandomShift(maxShift) {
-      // Menghasilkan nilai antara -maxShift dan maxShift
-      return (Math.random() * 2 - 1) * maxShift;
-    },
-    updateHorizon() {
-      const canvas = this.$refs.horizonCanvas;
-      const ctx = canvas.getContext("2d");
-
-      ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
-      ctx.save();
-
-      ctx.translate(this.horizonWidth / 2, this.horizonHeight / 2);
-      ctx.rotate((this.tiltAngle * Math.PI) / 180);
-
-      ctx.fillStyle = '#87CEEB';
-      ctx.fillRect(-this.horizonWidth, -this.horizonHeight, this.horizonWidth * 2, this.horizonHeight);
-
-      ctx.strokeStyle = '#FFFFFF'; 
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-this.horizonWidth, 0);
-      ctx.lineTo(this.horizonWidth, 0);
-      ctx.stroke();
-
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(-this.horizonWidth, 0, this.horizonWidth * 2, this.horizonHeight);
-
-      // Start Garis Atas
-      ctx.moveTo(this.circleShiftX + 50, -this.circleRadius * 1.2 - 15);
-      ctx.lineTo(this.circleShiftX + 40, -this.circleRadius * 1.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX + 25, -this.circleRadius * 1.2 - 20);
-      ctx.lineTo(this.circleShiftX + 20, -this.circleRadius * 1.2 - 9);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.2 - 24);
-      ctx.lineTo(this.circleShiftX, -this.circleRadius * 1.2 - 11);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX - 25, -this.circleRadius * 1.2 - 20);
-      ctx.lineTo(this.circleShiftX - 20, -this.circleRadius * 1.2 - 9);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX - 50, -this.circleRadius * 1.2 - 15);
-      ctx.lineTo(this.circleShiftX - 40, -this.circleRadius * 1.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      // End Garis Atas
-
-      // Menggambar lingkaran di posisi acak di sekitar tengah
-      ctx.beginPath();
-      ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2); // Menggambar lingkaran
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-      ctx.fill();
-
-      // Menggambar segitiga di dalam lingkaran
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.0); // Titik puncak atas (40% dari radius)
-      ctx.lineTo(this.circleShiftX - this.circleRadius + 120 * 0.2, this.circleRadius - 250 * 0.2); // Titik kiri bawah (20% dari radius)
-      ctx.lineTo(this.circleShiftX + this.circleRadius - 120 * 0.2, this.circleRadius - 250 * 0.2); // Titik kanan bawah (20% dari radius)
-      ctx.closePath();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fill();
-
-      // Start Garis Bawah
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX - 10, this.circleRadius - 250 * 0.2 + 30);
-      ctx.lineTo(this.circleShiftX - 40, this.circleRadius - 250 * 0.2 + 300 * 0.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX + 10, this.circleRadius - 250 * 0.2 + 30);
-      ctx.lineTo(this.circleShiftX + 40, this.circleRadius - 250 * 0.2 + 300 * 0.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      // End Garis Bawah
-
-      ctx.restore();
-
-      // Menggambar garis kuning horizontal
-      const lineColor = this.isMouseInsideCircle ? 'green' : 'yellow';
-      ctx.strokeStyle = lineColor;
-
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(0, this.yellowLinePositionY);
-      ctx.lineTo(this.horizonWidth, this.yellowLinePositionY);
-      ctx.stroke();
-
-      // Menggambar garis kuning vertikal
-      ctx.beginPath();
-      ctx.moveTo(this.yellowLinePositionX, 0);
-      ctx.lineTo(this.yellowLinePositionX, this.horizonHeight);
-      ctx.stroke();
-    },
-    randomTilt() {
-      this.tiltAngle = Math.random() * 20 - 10; // Kemiringan acak antara -10 dan 10 derajat
-      this.updateHorizon();
-    },
-    randomCircleShift() {
-      const maxShift = 50; // Maksimum pergeseran untuk lingkaran
-      this.circleShiftX = this.getRandomShift(maxShift); // Menghasilkan pergeseran acak untuk lingkaran
-      this.updateHorizon();
-    },
-    moveYellowLine(event) {
-      const canvas = this.$refs.horizonCanvas;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      this.yellowLinePositionX = x;
-      this.yellowLinePositionY = y;
-
-      this.updateHorizon();
-    },
-    checkMousePosition(event) {
-      const canvas = this.$refs.horizonCanvas;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left - this.horizonWidth / 2;
-      const y = event.clientY - rect.top - this.horizonHeight / 2;
-
-      // Memeriksa apakah mouse berada dalam radius lingkaran
-      const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
-      if (distance <= this.circleRadius) {
-        this.isMouseInsideCircle = true;
-        console.log('Mouse berada di dalam lingkaran');
-      } else {
-        this.isMouseInsideCircle = false;
-        console.log('Mouse berada di luar lingkaran');
-      }
-
-      this.updateHorizon();
-    },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.config.duration > 0) {
@@ -400,7 +183,8 @@ export default {
         }
       }, 1000);
     },
-    calculatedResult() { 
+    calculatedResult() {
+      
     },
     async initConfig() {
       try {
@@ -443,34 +227,13 @@ export default {
       }
     },
     initTankToEmpty() {
-      this.isAllTankEmpty = false;
-      const maxAttempts = 100;
-      let attempts = 0;
-
-      const findTankToEmpty = () => {
-        if (attempts >= maxAttempts) {
-          this.isAllTankEmpty = true;
-          return;
-        }
-
-        attempts++;
-        const tankIndex = Math.floor(Math.random() * 4);
-        const tankItem = Math.floor(Math.random() * 5);
-
-        const selectedTank = this.lowerTanks[tankIndex][tankItem];
-
-        if (selectedTank.height === '100%' && selectedTank.color !== 'black') {
-          setTimeout(() => {
-            this.intervalId = setInterval(() => {
-              this.decreaseTankLevels(tankIndex, tankItem);
-            }, this.config.color_tank.decreaseInterval);
-          }, this.config.color_tank.startToDecreaseIn);
-        } else {
-          findTankToEmpty();
-        }
-      };
-
-      findTankToEmpty();
+      setTimeout(() => {
+        this.intervalId = setInterval(() => {
+          if (this.isTankEmpty) {
+            this.decreaseTankLevels();
+          }
+        }, 1000);
+      }, 3000);
     },
     initLineTank() {
       const canvas = this.$refs.lineTankCanvas;
@@ -517,95 +280,74 @@ export default {
         tank['height'] = '100%';
       }
     },
-    decreaseTankLevels(tankIndex, tankItem) {
-      const tank = this.lowerTanks[tankIndex][tankItem];
-      if (tank['height'] != '0%' && parseFloat(tank['height'].replace('%', '')) > 5) {
-        tank['height'] = this.decreaseHeight(tank['height']);
-      } else {
-        tank['height'] = '5%';
+    decreaseTankLevels() {
 
-        clearInterval(this.intervalId);
-        this.initTankToEmpty()
+      for (let i = 0; i < this.lowerTanks.length; i++) {
+        const tanks = this.lowerTanks[i];
+
+        for (let j = 0; j < tanks.length; j++) {
+          if (tanks[j]['color'] === 'black') {
+            continue;
+          }
+
+          if (tanks[j]['height'] != '0%' && parseFloat(tanks[j]['height'].replace('%', '')) > 5) {
+            tanks[j]['height'] = this.decreaseHeight(tanks[j]['height'], j, tanks[j]['color']);
+          } else {
+            tanks[j]['height'] = '5%';
+          }
+        }
       }
     },
     decreaseSpeed() {
       if (this.config.color_tank.speed === 'slow') {
-        return 5;
+        return Math.random() < 0.5 ? 1 : 3;
       } 
       if (this.config.color_tank.speed === 'medium') {
-        return 10;
+        return Math.random() < 0.5 ? 3 : 5;
       } 
       if (this.config.color_tank.speed === 'fast') {
-        return 20;
+        return Math.random() < 0.5 ? 5 : 7;
       } 
     },
-    decreaseHeight(currentHeight) {
+    // eslint-disable-next-line no-unused-vars
+    decreaseHeight(currentHeight, tankItemIndex, color) {
       const current = parseFloat(currentHeight.replace('%', ''));
       const newHeight = Math.max(0, current - this.decreaseSpeed()) + '%';
   
       return newHeight;
     },
-    generateAudio() {
-      this.audio = null;
-      this.answerAudio = null;
-      this.isPlayAudio = true;
-      
-      this.audio =  Math.floor(Math.random() * 30) + 1;
-
-      let correctLocationIndex = Math.floor(Math.random() * 4) + 6;
-      if (correctLocationIndex >= 9) {
-        correctLocationIndex = 9
-      }
-      if (correctLocationIndex <= 7) {
-        correctLocationIndex = 7
-      }
-
-      for (var i = 0; i < 4; i++) {
-        if (this.optionAnswerAudios[i].key === correctLocationIndex) {
-          this.optionAnswerAudios[i].value = this.audio;
-        } else {
-          this.optionAnswerAudios[i].value =  Math.floor(Math.random() * 30) + 1;
-        }
+    startEmptyTimer() {
+      if (!this.timerTankInterval) {
+        this.timerTankInterval = setInterval(() => {
+          for (let i = 0; i < this.emptyTimers.length; i++) {
+            const tank = this.lowerTanks[i];
+            for (const color in tank) {
+              if (tank[color] === '5%') {
+                this.emptyTimers[i][color]++;
+                // console.log(`Tank ${i} with color ${color} has been empty for ${this.emptyTimers[i][color]} seconds.`);
+              }
+            }
+          }
+        }, 1000);
       }
     },
-    pressAnswerAudio(value) {
-      if (value === this.audio) {
-        this.resultAritmethic.correctAnswers++
-      } else {
-        this.resultAritmethic.faultAnswers++
-      }
-
-      this.isCanChooseAudio = false;
-      this.generateAudio();
-    },
-    startPlayback() { 
-      this.resultAritmethic.totalQuestion++
-
-      setTimeout(() => {
-        if ('speechSynthesis' in window) {
-          let number = this.audio
-          
-          const utterancePart1 = new SpeechSynthesisUtterance("  ");
-          const utterancePart2 = new SpeechSynthesisUtterance(number + " ");
-          utterancePart2.rate = 1;
-          utterancePart2.pitch = 1.2;
-          utterancePart2.volume = 1;
-          utterancePart2.lang = 'id-ID';
-
-          window.speechSynthesis.speak(utterancePart1);
-
-          utterancePart1.onend = () => {
-            setTimeout(() => {
-              window.speechSynthesis.speak(utterancePart2);
-              this.isCanChooseAudio = true;
-            }, 500); // Menunda 500 milidetik sebelum utterance kedua
-          };
-        } else {
-          alert('Sorry, your browser does not support text-to-speech.');
+    stopEmptyTimer(tankIndex, color) {
+      this.emptyTimers[tankIndex][color] = 0;
+      let anyTankEmpty = false;
+      for (let i = 0; i < this.lowerTanks.length; i++) {
+        const tank = this.lowerTanks[i];
+        for (const color in tank) {
+          if (tank[color] === '5%') {
+            anyTankEmpty = true;
+            break;
+          }
         }
-
-        this.isCanChooseAudio = true;
-      }, 1000);
+        if (anyTankEmpty) break;
+      }
+      if (!anyTankEmpty && this.timerTankInterval) {
+        clearInterval(this.timerTankInterval);
+        this.timerTankInterval = null;
+      }
     },
     handleKeyDown(event) {
       this.keysPressed[event.key.toUpperCase()] = true;
@@ -656,10 +398,7 @@ export default {
       // Arithmetic
       if (this.config.subtask.arithmetics) {
         if (this.isPlayAudio && this.audio) {
-          console.log('lellelelele');
-          setTimeout(() => {
-            this.startPlayback();
-          }, 1000);
+          this.startPlayback();
           this.isPlayAudio = false;
         }
 
