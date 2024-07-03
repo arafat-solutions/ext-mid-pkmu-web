@@ -23,8 +23,9 @@
       <div class="lower-tanks">
         <div v-for="(lowerTank, index) in lowerTanks" :key="index" class="tank" :id="`lower-tank-${index}`">
           <p style="z-index: 1; position: absolute; color: black; font-weight: bolder;">{{ lowers[index] }}</p>
-          <div v-for="(tankHeight, color) in lowerTank" :key="color" 
-            :style="{ backgroundColor: color, height: tankHeight }"
+          <div class="horizontal-line"> </div>
+          <div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor" 
+            :style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '1%' : '100%'}"
             class="tank-fill fill-animation">
           </div>
         </div>
@@ -32,19 +33,18 @@
     </div>
 
     <div class="horizon-section">
-      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 20px; margin-top: -20px"></canvas>
+      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" @mousemove="moveYellowLine" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 20px; margin-top: -20px"></canvas>
       
       <div v-if="config.subtask.arithmetics" class="arithmetic">
         <div class="question-container">
           <div class="question">
             <strong> Listen to task and enter your answer </strong>
-            <audio ref="audio" :src="currentAudio"></audio>
           </div>
           <ul class="options">
             <div v-for="(option, index) in optionAnswerAudios" :key="index">
               <li>
                   <label>
-                    <span class="option-answer" @click="clickAnswerAudio(option)">
+                    <span class="option-answer" @click="pressAnswerAudio(option)">
                       {{ option.key }}
                     </span>
                     {{ option.value }}
@@ -65,6 +65,7 @@ export default {
       isLoading: false,
       isPlayAudio: false,
       isCanChooseAudio: false,
+      isAllTankEmpty: false,
       timer: {
         minutes: 0,
         second: 0
@@ -75,10 +76,34 @@ export default {
       uppers: ['Q', 'W', 'E', 'R'],
       lowers: ['A', 'S', 'D', 'F'],
       lowerTanks: [
-        { yellow: '100%', green: '100%', blue: '100%' },
-        { blue: '100%', yellow: '100%', red: '100%' },
-        { yellow: '100%', green: '100%', red: '100%' },
-        { green: '100%', blue: '100%', red: '100%' },
+        [ 
+          {color: 'yellow', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'green', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'blue', height: '100%'}, 
+        ],
+        [ 
+          {color: 'blue', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'yellow', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'red', height: '100%'}, 
+        ],
+        [ 
+          {color: 'yellow', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'green', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'red', height: '100%'}, 
+        ],
+        [ 
+          {color: 'green', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'blue', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'red', height: '100%'}, 
+        ],
       ],
       lineTankCanvasWidth: 320,
       lineTankCanvasHeight: 250,
@@ -101,31 +126,27 @@ export default {
         { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280 },
       ],
       intervalId: null, // Untuk menyimpan ID interval
-      emptyTimers: [
-        { yellow: 0, green: 0, blue: 0 },
-        { blue: 0, yellow: 0, red: 0 },
-        { yellow: 0, green: 0, red: 0 },
-        { green: 0, blue: 0, red: 0 },
-      ],
-      timerTankInterval: null,
       horizonWidth: 400,
       horizonHeight: 300,
       config: {
+        duration : 2 * 60,
         subtask: {
-          arithmetics: false,
-          color_tank: false,
-          horizon: false,
+          arithmetics: true,
+          color_tank: true,
+          horizon: true,
         },
         arithmetics: {
           difficulty: null,
-          sound: false
+          sound: true
         },
         horizon: {
-          speed: null, //slow, medium, false
+          speed: 'slow', //slow, medium, false
         },
         color_tank: {
           negative_score: true,
-          speed: null //slow, medium, fast
+          speed: 'fast', //slow, medium, fast
+          startToDecreaseIn: 5000,
+          decreaseInterval: 3000,
         },
       },
       result: {
@@ -151,15 +172,25 @@ export default {
         { key: 9, value: ''},
         { key: 0, value: ''},
       ],
+      tiltAngle: 10,
+      yellowLinePositionY: 0,
+      yellowLinePositionX: 0,
+      circleShiftX: 0,
     };
   },
   async mounted() {
-    await this.initConfig();
+    // await this.initConfig();
 
     // Setup Color Tank
     if (this.config.subtask.color_tank) { 
       this.initLineTank();
       this.initTankToEmpty();
+
+      setInterval(() => {
+        if (this.isAllTankEmpty) {
+          this.initTankToEmpty();
+        }
+      }, 2000);
     }
 
     // Setup Arithmetic
@@ -169,7 +200,7 @@ export default {
 
     // Setup Horizon
     if (this.config.subtask.horizon) { 
-      //noop
+      this.initHorizon();
     }
 
     this.startCountdown();
@@ -182,9 +213,6 @@ export default {
     window.removeEventListener('keyup', this.handleKeyUp);
   },
   computed: {
-    currentAudio() {
-      return this.audio;
-    },
     minutes() {
       return Math.floor(this.config.duration / 60).toString().padStart(2, '0');
     },
@@ -193,6 +221,109 @@ export default {
     }
   },
   methods: {
+    initHorizon() {
+      const canvas = this.$refs.horizonCanvas;
+      this.ctx = canvas.getContext("2d");
+
+      this.yellowLinePositionX = this.horizonWidth / 2;
+      this.yellowLinePositionY = this.horizonHeight / 2;
+
+      this.circleShiftX = 0;
+      this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 15; // Menentukan radius lingkaran
+
+      this.updateHorizon();
+      setInterval(this.randomTilt, 1000);
+      setInterval(this.randomCircleShift, 1000); // Menambahkan interval untuk pergeseran lingkaran acak
+
+      // Menambahkan event listener untuk mouse move
+      canvas.addEventListener('mousemove', this.checkMousePosition);
+    },
+    getRandomShift(maxShift) {
+      // Menghasilkan nilai antara -maxShift dan maxShift
+      return (Math.random() * 2 - 1) * maxShift;
+    },
+    updateHorizon() {
+      const canvas = this.$refs.horizonCanvas;
+      const ctx = canvas.getContext("2d");
+
+      ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
+      ctx.save();
+
+      ctx.translate(this.horizonWidth / 2, this.horizonHeight / 2);
+      ctx.rotate((this.tiltAngle * Math.PI) / 180);
+
+      ctx.fillStyle = '#87CEEB';
+      ctx.fillRect(-this.horizonWidth, -this.horizonHeight, this.horizonWidth * 2, this.horizonHeight);
+
+      ctx.fillStyle = '#8B4513';
+      ctx.fillRect(-this.horizonWidth, 0, this.horizonWidth * 2, this.horizonHeight);
+
+      // Menggambar lingkaran di posisi acak di sekitar tengah
+      ctx.beginPath();
+      ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2); // Menggambar lingkaran
+      ctx.closePath();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+
+      // Menggambar segitiga di dalam lingkaran
+      ctx.beginPath();
+      ctx.moveTo(this.circleShiftX, -this.circleRadius * 0.4); // Titik puncak atas (40% dari radius)
+      ctx.lineTo(this.circleShiftX - this.circleRadius * 0.2, this.circleRadius * 0.2); // Titik kiri bawah (20% dari radius)
+      ctx.lineTo(this.circleShiftX + this.circleRadius * 0.2, this.circleRadius * 0.2); // Titik kanan bawah (20% dari radius)
+      ctx.closePath();
+      ctx.fillStyle = '#000000'; // Ganti warna jika perlu
+      ctx.fill();
+
+      ctx.restore();
+
+      // Menggambar garis kuning horizontal
+      ctx.strokeStyle = 'yellow';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, this.yellowLinePositionY);
+      ctx.lineTo(this.horizonWidth, this.yellowLinePositionY);
+      ctx.stroke();
+
+      // Menggambar garis kuning vertikal
+      ctx.beginPath();
+      ctx.moveTo(this.yellowLinePositionX, 0);
+      ctx.lineTo(this.yellowLinePositionX, this.horizonHeight);
+      ctx.stroke();
+    },
+    randomTilt() {
+      this.tiltAngle = Math.random() * 20 - 10; // Kemiringan acak antara -10 dan 10 derajat
+      this.updateHorizon();
+    },
+    randomCircleShift() {
+      const maxShift = 50; // Maksimum pergeseran untuk lingkaran
+      this.circleShiftX = this.getRandomShift(maxShift); // Menghasilkan pergeseran acak untuk lingkaran
+      this.updateHorizon();
+    },
+    moveYellowLine(event) {
+      const canvas = this.$refs.horizonCanvas;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      this.yellowLinePositionX = x;
+      this.yellowLinePositionY = y;
+
+      this.updateHorizon();
+    },
+    checkMousePosition(event) {
+      const canvas = this.$refs.horizonCanvas;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left - this.horizonWidth / 2;
+      const y = event.clientY - rect.top - this.horizonHeight / 2;
+
+      // Memeriksa apakah mouse berada dalam radius lingkaran
+      const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
+      if (distance <= this.circleRadius) {
+        console.log('Mouse berada di dalam lingkaran');
+      } else {
+        console.log('Mouse berada di luar lingkaran');
+      }
+    },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.config.duration > 0) {
@@ -203,8 +334,7 @@ export default {
         }
       }, 1000);
     },
-    calculatedResult() {
-      
+    calculatedResult() { 
     },
     async initConfig() {
       try {
@@ -247,7 +377,34 @@ export default {
       }
     },
     initTankToEmpty() {
-      this.intervalId = setInterval(this.decreaseTankLevels, 1000);
+      this.isAllTankEmpty = false;
+      const maxAttempts = 100;
+      let attempts = 0;
+
+      const findTankToEmpty = () => {
+        if (attempts >= maxAttempts) {
+          this.isAllTankEmpty = true;
+          return;
+        }
+
+        attempts++;
+        const tankIndex = Math.floor(Math.random() * 4);
+        const tankItem = Math.floor(Math.random() * 5);
+
+        const selectedTank = this.lowerTanks[tankIndex][tankItem];
+
+        if (selectedTank.height === '100%' && selectedTank.color !== 'black') {
+          setTimeout(() => {
+            this.intervalId = setInterval(() => {
+              this.decreaseTankLevels(tankIndex, tankItem);
+            }, this.config.color_tank.decreaseInterval);
+          }, this.config.color_tank.startToDecreaseIn);
+        } else {
+          findTankToEmpty();
+        }
+      };
+
+      findTankToEmpty();
     },
     initLineTank() {
       const canvas = this.$refs.lineTankCanvas;
@@ -279,93 +436,55 @@ export default {
       ctx.lineCap = 'round';
       ctx.stroke();
     },
-    fillTank(tankIndex, color) {
+    fillTank(tankIndex, tankItem) {
       const increment = 10;
-      const tank = this.lowerTanks[tankIndex];
-      let currentFill = parseFloat(tank[color].replace('%', ''));
+      const tank = this.lowerTanks[tankIndex][tankItem];
 
-      if (tank[color] < '100%') {
+      let currentFill = parseFloat(tank['height'].replace('%', ''));
+
+      if (tank['height'] < '100%') {
         currentFill += increment;
-        tank[color] = currentFill + '%';
+        tank['height'] = currentFill + '%';
       }
 
-      if (tank[color] >= '100%') {
-        tank[color] = '100%';
+      if (tank['height'] >= '100%') {
+        tank['height'] = '100%';
       }
     },
-    decreaseTankLevels() {
-      for (let i = 0; i < this.lowerTanks.length; i++) {
-        const tank = this.lowerTanks[i];
-        for (const color in tank) {
-          if (tank[color] !== '0%') {
-            tank[color] = this.decreaseHeight(tank[color], i, color);
-          }
-        }
+    decreaseTankLevels(tankIndex, tankItem) {
+      const tank = this.lowerTanks[tankIndex][tankItem];
+      if (tank['height'] != '0%' && parseFloat(tank['height'].replace('%', '')) > 5) {
+        tank['height'] = this.decreaseHeight(tank['height']);
+      } else {
+        tank['height'] = '5%';
+
+        clearInterval(this.intervalId);
+        this.initTankToEmpty()
       }
     },
     decreaseSpeed() {
       if (this.config.color_tank.speed === 'slow') {
-        return Math.random() < 0.5 ? 1 : 3;
+        return 5;
       } 
       if (this.config.color_tank.speed === 'medium') {
-        return Math.random() < 0.5 ? 3 : 5;
+        return 10;
       } 
       if (this.config.color_tank.speed === 'fast') {
-        return Math.random() < 0.5 ? 5 : 7;
+        return 20;
       } 
     },
-    decreaseHeight(currentHeight, tankIndex, color) {
+    decreaseHeight(currentHeight) {
       const current = parseFloat(currentHeight.replace('%', ''));
       const newHeight = Math.max(0, current - this.decreaseSpeed()) + '%';
-
-      if (newHeight === '0%') {
-        this.startEmptyTimer();
-      } else {
-        this.stopEmptyTimer(tankIndex, color);
-      }
-    
+  
       return newHeight;
-    },
-    startEmptyTimer() {
-      if (!this.timerTankInterval) {
-        this.timerTankInterval = setInterval(() => {
-          for (let i = 0; i < this.emptyTimers.length; i++) {
-            const tank = this.lowerTanks[i];
-            for (const color in tank) {
-              if (tank[color] === '0%') {
-                this.emptyTimers[i][color]++;
-                // console.log(`Tank ${i} with color ${color} has been empty for ${this.emptyTimers[i][color]} seconds.`);
-              }
-            }
-          }
-        }, 1000);
-      }
-    },
-    stopEmptyTimer(tankIndex, color) {
-      this.emptyTimers[tankIndex][color] = 0;
-      let anyTankEmpty = false;
-      for (let i = 0; i < this.lowerTanks.length; i++) {
-        const tank = this.lowerTanks[i];
-        for (const color in tank) {
-          if (tank[color] === '0%') {
-            anyTankEmpty = true;
-            break;
-          }
-        }
-        if (anyTankEmpty) break;
-      }
-      if (!anyTankEmpty && this.timerTankInterval) {
-        clearInterval(this.timerTankInterval);
-        this.timerTankInterval = null;
-      }
     },
     generateAudio() {
       this.audio = null;
       this.answerAudio = null;
       this.isPlayAudio = true;
       
-      let number =  Math.floor(Math.random() * 30) + 1;
-      this.audio = require('@/assets/audio/color-multitask/' + number + '.mp3');
+      this.audio =  Math.floor(Math.random() * 30) + 1;
 
       let correctLocationIndex = Math.floor(Math.random() * 4) + 6;
       if (correctLocationIndex >= 9) {
@@ -377,7 +496,7 @@ export default {
 
       for (var i = 0; i < 4; i++) {
         if (this.optionAnswerAudios[i].key === correctLocationIndex) {
-          this.optionAnswerAudios[i].value = number;
+          this.optionAnswerAudios[i].value = this.audio;
         } else {
           this.optionAnswerAudios[i].value =  Math.floor(Math.random() * 30) + 1;
         }
@@ -397,7 +516,28 @@ export default {
       this.resultAritmethic.totalQuestion++
 
       setTimeout(() => {
-        this.$refs.audio.play();
+        if ('speechSynthesis' in window) {
+          let number = this.audio
+          
+          const utterancePart1 = new SpeechSynthesisUtterance("  ");
+          const utterancePart2 = new SpeechSynthesisUtterance(number + " ");
+          utterancePart2.rate = 1;
+          utterancePart2.pitch = 1.2;
+          utterancePart2.volume = 1;
+          utterancePart2.lang = 'id-ID';
+
+          window.speechSynthesis.speak(utterancePart1);
+
+          utterancePart1.onend = () => {
+            setTimeout(() => {
+              window.speechSynthesis.speak(utterancePart2);
+              this.isCanChooseAudio = true;
+            }, 500); // Menunda 500 milidetik sebelum utterance kedua
+          };
+        } else {
+          alert('Sorry, your browser does not support text-to-speech.');
+        }
+
         this.isCanChooseAudio = true;
       }, 1000);
     },
@@ -407,50 +547,53 @@ export default {
       // Color Tank
       if (this.config.subtask.color_tank) {
         if (this.keysPressed['Q'] && this.keysPressed['A']) {
-          this.fillTank(0, 'yellow');
+          this.fillTank(0, 0);
         }
         if (this.keysPressed['Q'] && this.keysPressed['S']) {
-          this.fillTank(1, 'yellow');
+          this.fillTank(1, 2);
         }
         if (this.keysPressed['Q'] && this.keysPressed['D']) {
-          this.fillTank(2, 'yellow');
+          this.fillTank(2, 0);
         }
 
         if (this.keysPressed['W'] && this.keysPressed['A']) {
-          this.fillTank(0, 'blue');
+          this.fillTank(0, 4);
         }
         if (this.keysPressed['W'] && this.keysPressed['S']) {
-          this.fillTank(1, 'blue');
+          this.fillTank(1, 0);
         }
         if (this.keysPressed['W'] && this.keysPressed['F']) {
-          this.fillTank(3, 'blue');
+          this.fillTank(3, 2);
         }
 
         if (this.keysPressed['E'] && this.keysPressed['S']) {
-          this.fillTank(1, 'red');
+          this.fillTank(1, 4);
         }
         if (this.keysPressed['E'] && this.keysPressed['D']) {
-          this.fillTank(2, 'red');
+          this.fillTank(2, 4);
         }
         if (this.keysPressed['E'] && this.keysPressed['F']) {
-          this.fillTank(3, 'red');
+          this.fillTank(3, 4);
         }
 
         if (this.keysPressed['R'] && this.keysPressed['A']) {
-          this.fillTank(0, 'green');
+          this.fillTank(0, 2);
         }
         if (this.keysPressed['R'] && this.keysPressed['D']) {
-          this.fillTank(2, 'green');
+          this.fillTank(2, 2);
         }
         if (this.keysPressed['R'] && this.keysPressed['F']) {
-          this.fillTank(3, 'green');
+          this.fillTank(3, 0);
         }
       }
       
       // Arithmetic
       if (this.config.subtask.arithmetics) {
         if (this.isPlayAudio && this.audio) {
-          this.startPlayback();
+          console.log('lellelelele');
+          setTimeout(() => {
+            this.startPlayback();
+          }, 1000);
           this.isPlayAudio = false;
         }
 
@@ -481,6 +624,13 @@ export default {
 </script>
 
 <style scoped>
+.horizontal-line {
+  height: 2px;
+  width: 100%;
+  background-color: black;
+  position: absolute;
+  margin-top: 90px;
+}
 .loading-container {
   /* Add your loading indicator styles here */
   position: absolute;
@@ -541,6 +691,13 @@ export default {
   background-color: grey;
   padding: 10px;
   border-radius: 5px;
+  display: inline-block;
+  padding: 4px 7px;
+  color: white;
+  border: 2px solid black;
+  text-align: center;
+  font-size: 11px;
+  transition: background-color 0.3s ease;
 }
 .horizon-tank {
   display: flex;
