@@ -7,6 +7,12 @@
 <script>
 export default {
     name: 'ColorTest',
+    props: {
+        colorTankData: {
+            type: Object,
+            required: true
+        }
+    },
     data() {
         return {
             rectangles: [
@@ -21,8 +27,16 @@ export default {
                 { x: 280, y: 400, width: 60, height: 100, fillColor: ['green', 'blue', 'red'], letter: "D" },
                 { x: 360, y: 400, width: 60, height: 100, fillColor: ['red', 'yellow', 'green'], letter: "F" },
             ],
-            decreaseSpeed: 0.2,
-            userAnswer: ''
+            userAnswer: '',
+            speed: "slow",
+            duration: 10,
+            decreaseSpeed: 1,
+            currentHeights: [  // Initialize the current heights for each rectangle
+                [100, 100, 100],
+                [100, 100, 100],
+                [100, 100, 100],
+                [100, 100, 100]
+            ]
         };
     },
     mounted() {
@@ -177,6 +191,7 @@ export default {
             // line minimum
             this.drawHorizontalLineMinimum({ x, y, width, height })
         },
+
         startDecreaseAnimation() {
             const index = this.getRandomNumber(4)
             const rectToAnimate = { ...this.rectanglesColorize[index], currentHeight: this.rectanglesColorize[index].height };
@@ -188,7 +203,7 @@ export default {
                 this.clearCanvas();
                 this.drawVisual();
 
-                if (rectToAnimate.currentHeight > 0) {
+                if (rectToAnimate.currentHeight > 4) {
                     rectToAnimate.currentHeight -= this.decreaseSpeed;
                     if (rectToAnimate.currentHeight < 0) rectToAnimate.currentHeight = 0;
 
@@ -219,7 +234,7 @@ export default {
                     this.drawHorizontalLineMinimum({ x: rectToAnimate.x, y: rectToAnimate.y, width: rectToAnimate.width, height: rectToAnimate.height });
                 }
 
-                if (rectToAnimate.currentHeight > 0) {
+                if (rectToAnimate.currentHeight > 4) {
                     requestAnimationFrame(animateDecrease);
                 }
             };
