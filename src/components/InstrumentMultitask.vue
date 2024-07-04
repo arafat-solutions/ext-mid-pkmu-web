@@ -7,7 +7,7 @@
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
     <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
-      <HorizonView />
+      <HorizonTest />
       <ArithmeticTask
         :isTimesUp="isTimesUp"
         :difficulty="config.arithmetic.difficulty"
@@ -81,7 +81,7 @@
   import ArithmeticTask from './ArithmeticTask';
   import AlertLights from './AlertLights';
   import GaugesMeter from './GaugesMeter';
-  import HorizonView from './HorizonView';
+  import HorizonTest from './HorizonTest';
 
   export default {
     name: 'MainView',
@@ -89,7 +89,7 @@
       ArithmeticTask,
       AlertLights,
       GaugesMeter,
-      HorizonView,
+      HorizonTest,
     },
     data() {
       return {
