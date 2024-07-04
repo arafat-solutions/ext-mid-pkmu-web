@@ -4,11 +4,9 @@
             <ColorTest v-if="configBe.subtask.color_tank === true" :color-tank-data="configBe.color_tank" />
         </div>
         <div class="right-side">
-            <CircleTest v-if="configBe.subtask.alert_lights === true" :alert-lights-data="configBe.alert_lights" />
-            <div v-else style="height: 160px;"></div>
-            <HorizonTest v-if="configBe.subtask.horizon === true" :horizon-data="configBe.horizon" />
-            <div v-else style="height: 390px;"></div>
-            <CallSignTest v-if="configBe.subtask.callsign === true" :callsign-data="configBe.callsign" />
+            <CircleTest :alert-lights-data="configBe.alert_lights" />
+            <HorizonTest :horizon-data="configBe.horizon" />
+            <CallSignTest :callsign-data="configBe.callsign" />
         </div>
         <div class="timer">
             <p>Waktu:</p>
@@ -32,26 +30,36 @@ export default {
             configBe: {
                 alert_lights: {
                     frequency: 'often',// seldom, medium, often // seberapa sering dia nyala
-                    speed: 'fast'// slow, medium, fast
+                    speed: 'fast',// slow, medium, fast
+                    play: true
                 },
                 callsign: {
-                    frequency: 'often',
-                    matches: 'low',
-                    speed: 'slow'
+                    frequency: 'often', // seldom, medium, often seberapa sering dia texttospeech nya ngomong
+                    matches: 'high', // low, medium, high = seberapa sering dia dipanggil
+                    speed: 'slow', // 
+                    play: false,
                 },
                 color_tank: {
                     negative_score: true,
                     speed: 'slow',
-                    duration: 10
+                    duration: 10,
+                    play: false
                 },
                 horizon: {
-                    speed: 'slow' // slow, medium, fast
+                    speed: 'slow', // slow, medium, fast
+                    play: true
                 },
                 subtask: {
                     alert_lights: true,
                     callsign: true,
                     color_tank: true,
                     horizon: true
+                }
+            },
+            result: {
+                callsign: {
+                    wrong: 0,
+                    right: 0
                 }
             }
         }
