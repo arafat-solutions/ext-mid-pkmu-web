@@ -1,5 +1,6 @@
 <template>
     <div class="horizon-test">
+        <!-- <p>Correct time: {{ displayCorrectTime }} </p> -->
         <canvas ref="horizonCanvas" @mousemove="handleMouseEnter"></canvas>
     </div>
 </template>
@@ -18,48 +19,40 @@ export default {
             config: {
                 width: 350,
                 height: 350,
-                x: 10, // X position of the rectangle
-                y: 5, // Y position of the rectangle
+                x: 10,
+                y: 5,
                 blue: '#008bd4',
                 brown: '#b75010',
                 borderColor: 'black',
                 whiteBorderHeight: 5,
                 focusY: 300,
                 focusX: 100,
-                angle: -60,
-                horizonOffsetY: -20,
-                horizonOffsetX: -30
+                angle: 0,
+                horizonOffsetY: 0,
+                horizonOffsetX: 0
             },
             horizonFrame: 0,
-            angleFrames: 2, // tetap
-            heightFrames: 3, // tetap
-            heightChangeSize: 0, // config perubahan height
+            angleFrames: 2,
+            heightFrames: 3,
+            heightChangeSize: 0,
             widthFrames: 30,
-            animationFrameId: null,
-            lastFrameTime: 0
+            correct_time: 0,
+            isCurrentlyCorrect: false,
+            lastCorrectStartTime: null,
         };
     },
     mounted() {
-        this.initializeTest()
-    },
-    beforeUnmount() {
-        clearInterval(this.timerInterval);
+        this.initializeTest();
     },
     methods: {
         initializeTest() {
-            const { speed } = this.horizonData
-            if (speed === 'slow') {
-                this.heightChangeSize = 2
-            } else if (speed === 'medium') {
-                this.heightChangeSize = 4
-            } else if (speed === 'fast') {
-                this.heightChangeSize = 8
-            }
+            const { speed } = this.horizonData;
+            this.heightChangeSize = speed === 'slow' ? 2 : speed === 'medium' ? 4 : 8;
 
             this.initVisual();
             this.drawVisual();
-            if (this.horizonData.play === true) {
-                this.animate()
+            if (this.horizonData.play) {
+                this.animate();
             }
         },
         initVisual() {
@@ -67,70 +60,52 @@ export default {
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
             canvas.height = 400;
-            this.ctx = canvas.getContext("2d");
+            this.ctx = canvas.getContext('2d');
         },
         drawVisual() {
             this.clearCanvas();
             this.drawHorizon();
         },
         clearCanvas() {
-            const ctx = this.ctx;
-            ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+            const { width, height } = this.config;
+            this.ctx.clearRect(0, 0, width, height);
         },
         drawHorizon() {
-            const ctx = this.ctx;
-            const config = this.config;
+            const { ctx, config } = this;
 
-            // Save the current context state
             ctx.save();
-
-            // Define the clipping region
             ctx.beginPath();
             ctx.rect(config.x, config.y, config.width, config.height);
-            ctx.strokeStyle = 'black'
+            ctx.strokeStyle = 'black';
             ctx.lineWidth = 6;
-            ctx.stroke()
+            ctx.stroke();
             ctx.clip();
 
-            // Convert rotation angle from degrees to radians
             const angleInRadians = config.angle * Math.PI / 180;
 
-            // Move to the center of the inner content
             ctx.translate(config.x + config.width / 2, config.y + config.height / 2);
-
-            // Apply the vertical offset for the horizon
             ctx.translate(config.horizonOffsetX, config.horizonOffsetY);
-
-            // Rotate the context
             ctx.rotate(angleInRadians);
-
-            // Move back to the top-left corner of the inner content
             ctx.translate(-config.x - config.width / 2, -config.y - config.height / 2);
 
-            // Draw the extended blue top half
             ctx.fillStyle = config.blue;
-            ctx.fillRect(config.x - (config.width / 2), config.y - config.height, config.width * 2, config.height * 4);
+            ctx.fillRect(config.x - config.width / 2, config.y - config.height, config.width * 2, config.height * 4);
 
-            // Draw the extended white border at the bottom of the blue section
             ctx.fillStyle = 'white';
-            ctx.fillRect(config.x - (config.width / 2), config.y + config.height / 2 - config.whiteBorderHeight, config.width * 2, config.whiteBorderHeight + config.height / 4);
+            ctx.fillRect(config.x - config.width / 2, config.y + config.height / 2 - config.whiteBorderHeight, config.width * 2, config.whiteBorderHeight + config.height / 4);
 
-            // Draw the extended brown bottom half
             ctx.fillStyle = config.brown;
-            ctx.fillRect(config.x - (config.width / 2), config.y + config.height / 2, config.width * 2, config.height * 4);
+            ctx.fillRect(config.x - config.width / 2, config.y + config.height / 2, config.width * 2, config.height * 4);
 
-            // draw indicator traingle
-            this.drawIndicator()
-            // Restore the context to its original state
+            this.drawIndicator();
             ctx.restore();
 
-            this.drawFocusLine()
+            this.drawFocusLine();
         },
         drawIndicator() {
-            const ctx = this.ctx;
-            const config = this.config
+            const { ctx, config } = this;
             const centerX = config.x + config.width / 2;
-            const centerY = config.y + config.height / 2
+            const centerY = config.y + config.height / 2;
             const radius = 60;
 
             ctx.beginPath();
@@ -138,45 +113,36 @@ export default {
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 10;
             ctx.setLineDash([2, 24]);
-            ctx.stroke()
+            ctx.stroke();
 
-            this.drawTriangle({ x: centerX, y: centerY - 30, width: 20, height: 15 })
-
-            // draw skew line left
-            this.drawSkew({ centerX, centerY, config })
+            this.drawTriangle({ x: centerX, y: centerY - 30, width: 20, height: 15 });
+            this.drawSkew(centerX, centerY);
         },
-        drawSkew({ centerX, centerY, config }) {
-            const ctx = this.ctx
-            ctx.beginPath()
-            ctx.moveTo(centerX - 15, centerY + 20)
-            ctx.lineTo(config.x + 120, centerY + 40);
-            ctx.lineTo(config.x + 130, centerY + 40);
-            ctx.lineTo(centerX - 10, centerY + 20);
-            ctx.closePath();
-            ctx.fill();
-            ctx.setLineDash([0, 0]);
+        drawSkew(centerX, centerY) {
+            const { ctx, config } = this;
+
+            const drawSkewShape = () => {
+                ctx.beginPath();
+                ctx.moveTo(centerX - 15, centerY + 20);
+                ctx.lineTo(config.x + 120, centerY + 40);
+                ctx.lineTo(config.x + 130, centerY + 40);
+                ctx.lineTo(centerX - 10, centerY + 20);
+                ctx.closePath();
+                ctx.fill();
+                ctx.setLineDash([0, 0]);
+            };
+
+            drawSkewShape();
 
             ctx.save();
-
-            // Apply vertical flip transformation
             ctx.translate(this.config.width + 20, 0);
             ctx.scale(-1, 1);
-
-            ctx.beginPath()
-            ctx.moveTo(centerX - 15, centerY + 20)
-            ctx.lineTo(config.x + 120, centerY + 40);
-            ctx.lineTo(config.x + 130, centerY + 40);
-            ctx.lineTo(centerX - 10, centerY + 20);
-            ctx.closePath();
-            ctx.fill();
-            ctx.setLineDash([0, 0]);
-
-
-            ctx.restore()
+            drawSkewShape();
+            ctx.restore();
         },
         drawTriangle({ x, y, width, height }) {
-            const ctx = this.ctx
-            ctx.fillStyle = 'white'
+            const { ctx } = this;
+            ctx.fillStyle = 'white';
             ctx.save();
             ctx.translate(x, y);
             ctx.beginPath();
@@ -188,125 +154,104 @@ export default {
             ctx.restore();
         },
         drawFocusLine() {
-            const ctx = this.ctx;
-            const config = this.config;
+            const { ctx, config } = this;
+            const { x, y, width, height, focusX, focusY, horizonOffsetX, horizonOffsetY } = config;
 
+            ctx.save();
             ctx.beginPath();
-            ctx.rect(config.x, config.y, config.width, config.height);
+            ctx.rect(x, y, width, height);
             ctx.clip();
 
-            ctx.setLineDash([0, 0]);
+            const centerX = x + width / 2;
+            const centerY = y + height / 2;
 
-            // Calculate the center of the canvas
-            const centerX = config.x + config.width / 2;
-            const centerY = config.y + config.height / 2;
+            const circleX = centerX + horizonOffsetX;
+            const circleY = centerY + horizonOffsetY;
+            const radius = 15;
 
-            // Convert angle to radians
-            const angleInRadians = config.angle * Math.PI / 180;
+            const distanceToCircle = Math.sqrt((focusX - circleX) ** 2 + (focusY - circleY) ** 2);
+            const isWithinRadius = distanceToCircle <= radius;
 
-            // Calculate the rotated and offset position
-            const offsetX = config.horizonOffsetX;
-            const offsetY = config.horizonOffsetY;
+            this.updateCorrectTime(isWithinRadius);
 
-            // Rotate the offset point around the center
-            const rotatedOffsetX = offsetX * Math.cos(angleInRadians) - offsetY * Math.sin(angleInRadians);
-            const rotatedOffsetY = offsetX * Math.sin(angleInRadians) + offsetY * Math.cos(angleInRadians);
-
-            // Calculate the final position of the circle center
-            const circleCenterX = centerX + rotatedOffsetX;
-            const circleCenterY = centerY + rotatedOffsetY;
-
-            // Define the radius for the green zone
-            const radius = 15; // You can adjust this value as needed
-
-            // Calculate the distance from the focus point to the circle center
-            const distanceToCenter = Math.sqrt(
-                Math.pow(config.focusX - circleCenterX, 2) + Math.pow(config.focusY - circleCenterY, 2)
-            );
-
-            // Determine if the focus is within the radius of the center
-            const isWithinRadius = distanceToCenter <= radius;
-
-            // Set line color based on whether it's within the radius of the center
             const lineColor = isWithinRadius ? 'green' : 'yellow';
 
-            // Draw the circle representing the "green zone"
             ctx.beginPath();
-            ctx.arc(circleCenterX, circleCenterY, radius, 0, 2 * Math.PI);
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)'; // Semi-transparent green
+            ctx.arc(circleX, circleY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'transparent';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Draw horizontal line
             ctx.beginPath();
-            ctx.moveTo(config.x, config.focusY);
-            ctx.lineTo(config.x + config.width, config.focusY);
+            ctx.moveTo(x, focusY);
+            ctx.lineTo(x + width, focusY);
             ctx.strokeStyle = lineColor;
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Draw vertical line
             ctx.beginPath();
-            ctx.moveTo(config.focusX, config.y);
-            ctx.lineTo(config.focusX, config.y + config.height);
+            ctx.moveTo(focusX, y);
+            ctx.lineTo(focusX, y + height);
             ctx.strokeStyle = lineColor;
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            ctx.restore();
         },
         setAngle() {
-            const change = Math.random() < 0.5 ? -2 : 2
-            let newAngle = this.config.angle + change
-            newAngle = Math.max(-43, Math.min(43, newAngle));
-
-            this.config.angle = newAngle;
+            const change = Math.random() < 0.5 ? -2 : 2;
+            this.config.angle = Math.max(-43, Math.min(43, this.config.angle + change));
         },
         setHeight() {
-            const change = Math.random() < 0.5 ? -this.heightChangeSize : this.heightChangeSize
-
-            let newY = this.config.horizonOffsetY + change
-            newY = Math.max(-70, Math.min(70, newY));
-            this.config.horizonOffsetY = newY;
+            const change = Math.random() < 0.5 ? -this.heightChangeSize : this.heightChangeSize;
+            this.config.horizonOffsetY = Math.max(-70, Math.min(70, this.config.horizonOffsetY + change));
         },
         setWidth() {
-            const change = Math.random() < 0.5 ? -10 : 10
-
-            let newX = this.config.horizonOffsetX + change
-            newX = Math.max(-70, Math.min(70, newX));
-            this.config.horizonOffsetX = newX;
+            const change = Math.random() < 0.5 ? -10 : 10;
+            this.config.horizonOffsetX = Math.max(-70, Math.min(70, this.config.horizonOffsetX + change));
         },
         animate() {
-            this.drawVisual()
-            if (this.horizonFrame % this.angleFrames == 0) {
-                this.setAngle()
+            this.drawVisual();
+            if (this.horizonFrame % this.angleFrames === 0) {
+                this.setAngle();
             }
-
-            if (this.horizonFrame % this.heightFrames == 0) {
-                this.setHeight()
+            if (this.horizonFrame % this.heightFrames === 0) {
+                this.setHeight();
             }
-
-            if (this.horizonFrame % this.widthFrames == 0) {
-                this.setWidth()
+            if (this.horizonFrame % this.widthFrames === 0) {
+                this.setWidth();
             }
-
-
-            this.horizonFrame += 1
-            requestAnimationFrame(this.animate)
+            this.horizonFrame++;
+            requestAnimationFrame(this.animate);
         },
         handleMouseEnter(event) {
             const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
-            let focusX = event.clientX - canvasRect.left;
-            let focusY = event.clientY - canvasRect.top;
-
-            // Ensure focusX and focusY are within the canvas boundaries
-            focusX = Math.max(0, Math.min(focusX, this.$refs.horizonCanvas.width));
-            focusY = Math.max(0, Math.min(focusY, this.$refs.horizonCanvas.height));
-
-            this.config.focusX = focusX;
-            this.config.focusY = focusY;
-
+            this.config.focusX = Math.max(0, Math.min(event.clientX - canvasRect.left, this.$refs.horizonCanvas.width));
+            this.config.focusY = Math.max(0, Math.min(event.clientY - canvasRect.top, this.$refs.horizonCanvas.height));
             this.drawVisual();
-        }
-    }
+        },
+        updateCorrectTime(isCorrect) {
+            const currentTime = performance.now() / 1000;
+
+            if (isCorrect && !this.isCurrentlyCorrect) {
+                this.isCurrentlyCorrect = true;
+                this.lastCorrectStartTime = currentTime;
+            } else if (!isCorrect && this.isCurrentlyCorrect) {
+                this.isCurrentlyCorrect = false;
+                this.correct_time += currentTime - this.lastCorrectStartTime;
+                this.lastCorrectStartTime = null;
+            }
+        },
+    },
+    computed: {
+        displayCorrectTime() {
+            let time = this.correct_time;
+            if (this.isCurrentlyCorrect) {
+                time += performance.now() / 1000 - this.lastCorrectStartTime;
+            }
+            return time.toFixed(2);
+        },
+    },
 };
 </script>
 
