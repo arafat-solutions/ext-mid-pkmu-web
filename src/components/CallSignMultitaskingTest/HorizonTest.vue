@@ -1,7 +1,6 @@
 <template>
     <div class="horizon-test">
         <canvas ref="horizonCanvas" @mousemove="handleMouseEnter"></canvas>
-
     </div>
 </template>
 
@@ -27,9 +26,9 @@ export default {
                 whiteBorderHeight: 5,
                 focusY: 300,
                 focusX: 100,
-                angle: 0,
-                horizonOffsetY: 0,
-                horizonOffsetX: 0
+                angle: -60,
+                horizonOffsetY: -20,
+                horizonOffsetX: -30
             },
             horizonFrame: 0,
             angleFrames: 2, // tetap
@@ -42,7 +41,6 @@ export default {
     },
     mounted() {
         this.initializeTest()
-
     },
     beforeUnmount() {
         clearInterval(this.timerInterval);
@@ -60,7 +58,9 @@ export default {
 
             this.initVisual();
             this.drawVisual();
-            this.animate()
+            if (this.horizonData.play === true) {
+                this.animate()
+            }
         },
         initVisual() {
             const canvas = this.$refs.horizonCanvas;
@@ -188,7 +188,7 @@ export default {
             ctx.restore();
         },
         drawFocusLine() {
-            const ctx = this.ctx
+            const ctx = this.ctx;
             const config = this.config;
 
             ctx.beginPath();
@@ -196,19 +196,60 @@ export default {
             ctx.clip();
 
             ctx.setLineDash([0, 0]);
-            // Draw horizontal yellow line
+
+            // Calculate the center of the canvas
+            const centerX = config.x + config.width / 2;
+            const centerY = config.y + config.height / 2;
+
+            // Convert angle to radians
+            const angleInRadians = config.angle * Math.PI / 180;
+
+            // Calculate the rotated and offset position
+            const offsetX = config.horizonOffsetX;
+            const offsetY = config.horizonOffsetY;
+
+            // Rotate the offset point around the center
+            const rotatedOffsetX = offsetX * Math.cos(angleInRadians) - offsetY * Math.sin(angleInRadians);
+            const rotatedOffsetY = offsetX * Math.sin(angleInRadians) + offsetY * Math.cos(angleInRadians);
+
+            // Calculate the final position of the circle center
+            const circleCenterX = centerX + rotatedOffsetX;
+            const circleCenterY = centerY + rotatedOffsetY;
+
+            // Define the radius for the green zone
+            const radius = 15; // You can adjust this value as needed
+
+            // Calculate the distance from the focus point to the circle center
+            const distanceToCenter = Math.sqrt(
+                Math.pow(config.focusX - circleCenterX, 2) + Math.pow(config.focusY - circleCenterY, 2)
+            );
+
+            // Determine if the focus is within the radius of the center
+            const isWithinRadius = distanceToCenter <= radius;
+
+            // Set line color based on whether it's within the radius of the center
+            const lineColor = isWithinRadius ? 'green' : 'yellow';
+
+            // Draw the circle representing the "green zone"
             ctx.beginPath();
-            ctx.moveTo(config.x - (config.width / 2), config.focusY);
-            ctx.lineTo(config.x + (config.width * 3 / 2), config.focusY);
-            ctx.strokeStyle = 'yellow';
+            ctx.arc(circleCenterX, circleCenterY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)'; // Semi-transparent green
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Draw vertical yellow line
+            // Draw horizontal line
             ctx.beginPath();
-            ctx.moveTo(config.focusX, config.y - (config.height / 2));
-            ctx.lineTo(config.focusX, config.y + (config.height * 3 / 2));
-            ctx.strokeStyle = 'yellow';
+            ctx.moveTo(config.x, config.focusY);
+            ctx.lineTo(config.x + config.width, config.focusY);
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw vertical line
+            ctx.beginPath();
+            ctx.moveTo(config.focusX, config.y);
+            ctx.lineTo(config.focusX, config.y + config.height);
+            ctx.strokeStyle = lineColor;
             ctx.lineWidth = 2;
             ctx.stroke();
         },
