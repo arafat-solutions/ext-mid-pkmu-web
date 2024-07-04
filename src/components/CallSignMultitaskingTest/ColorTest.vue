@@ -36,7 +36,11 @@ export default {
                 [100, 100, 100],
                 [100, 100, 100],
                 [100, 100, 100]
-            ]
+            ],
+            decreaseInterval: 200, // Time in ms between each decrease animation
+            decreaseDuration: 3000, // Duration of each decrease animation
+            minHeight: 4, // Minimum height before stopping the animation
+            activeAnimations: []
         };
     },
     mounted() {
@@ -57,7 +61,7 @@ export default {
         drawVisual() {
             this.clearCanvas();
             this.rectangles.forEach(rect => this.drawRectangle(rect));
-            this.rectanglesColorize.forEach(rect => this.drawRectangleColorize(rect));
+            this.rectanglesColorize.forEach((rect, index) => this.drawRectangleColorize(rect, index));
         },
         clearCanvas() {
             const ctx = this.ctx;
@@ -165,19 +169,20 @@ export default {
             ctx.lineWidth = 2;
             ctx.stroke();
         },
-        drawRectangleColorize({ x, y, width, height, fillColor, letter }) {
+        drawRectangleColorize({ x, y, width, height, fillColor, letter }, index) {
             const ctx = this.ctx;
             const w = width / 3;
 
             this.drawHorizontalLineMinimum({ x, y, width, height })
             this.drawLine({ x, y: y - height - 20, width, height, short: false });
 
-            fillColor.forEach((color, index) => {
+            fillColor.forEach((color, colorIndex) => {
                 ctx.fillStyle = color;
-                ctx.fillRect(x + index * w, y, w, height);
+                const currentHeight = this.currentHeights[index][colorIndex];
+                ctx.fillRect(x + colorIndex * w, y + height - currentHeight, w, currentHeight);
                 ctx.strokeStyle = 'black';
                 ctx.lineWidth = 2;
-                ctx.strokeRect(x + index * w, y, w, height);
+                ctx.strokeRect(x + colorIndex * w, y, w, height);
             });
 
             const textX = x + width / 2;
@@ -191,55 +196,69 @@ export default {
             // line minimum
             this.drawHorizontalLineMinimum({ x, y, width, height })
         },
-
         startDecreaseAnimation() {
-            const index = this.getRandomNumber(4)
-            const rectToAnimate = { ...this.rectanglesColorize[index], currentHeight: this.rectanglesColorize[index].height };
+            const animate = () => {
+                const rectIndex = this.getRandomNumber(4);
+                const colorIndex = this.getRandomNumber(3);
 
-            // Get a random index for the fillColor array
-            const colorIndex = this.getRandomNumber(3);
+                const startHeight = this.currentHeights[rectIndex][colorIndex];
+                const targetHeight = this.minHeight;
 
-            const animateDecrease = () => {
-                this.clearCanvas();
-                this.drawVisual();
+                const startTime = Date.now();
 
-                if (rectToAnimate.currentHeight > 4) {
-                    rectToAnimate.currentHeight -= this.decreaseSpeed;
-                    if (rectToAnimate.currentHeight < 0) rectToAnimate.currentHeight = 0;
+                const animateDecrease = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / this.decreaseDuration, 1);
 
-                    this.ctx.clearRect(rectToAnimate.x, rectToAnimate.y, rectToAnimate.width, rectToAnimate.height);
-                    const ctx = this.ctx;
-                    const w = rectToAnimate.width / 3;
+                    this.clearCanvas();
+                    this.drawVisual();
 
-                    rectToAnimate.fillColor.forEach((color, index) => {
-                        ctx.fillStyle = color;
-                        if (index === colorIndex) {
-                            ctx.fillRect(rectToAnimate.x + index * w, rectToAnimate.y + rectToAnimate.height - rectToAnimate.currentHeight, w, rectToAnimate.currentHeight);
+                    if (startHeight > this.minHeight) {
+                        const currentHeight = startHeight - (progress * (startHeight - targetHeight));
+                        this.currentHeights[rectIndex][colorIndex] = currentHeight;
+
+                        const rectToAnimate = this.rectanglesColorize[rectIndex];
+                        this.ctx.clearRect(rectToAnimate.x, rectToAnimate.y, rectToAnimate.width, rectToAnimate.height);
+                        const ctx = this.ctx;
+                        const w = rectToAnimate.width / 3;
+
+                        rectToAnimate.fillColor.forEach((color, index) => {
+                            ctx.fillStyle = color;
+                            const height = this.currentHeights[rectIndex][index];
+                            ctx.fillRect(rectToAnimate.x + index * w, rectToAnimate.y + rectToAnimate.height - height, w, height);
+                            ctx.strokeStyle = 'black';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(rectToAnimate.x + index * w, rectToAnimate.y, w, rectToAnimate.height);
+                        });
+
+                        this.drawLetterAndLine(rectToAnimate);
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animateDecrease);
                         } else {
-                            ctx.fillRect(rectToAnimate.x + index * w, rectToAnimate.y, w, rectToAnimate.height);
+                            setTimeout(animate, this.decreaseInterval);
                         }
-                        ctx.strokeStyle = 'black';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(rectToAnimate.x + index * w, rectToAnimate.y, w, rectToAnimate.height);
-                    });
+                    } else {
+                        setTimeout(animate, this.decreaseInterval);
+                    }
+                };
 
-                    const textX = rectToAnimate.x + rectToAnimate.width / 2;
-                    const textY = rectToAnimate.y + rectToAnimate.height + 17;
-                    ctx.fillStyle = 'black';
-                    ctx.font = '18px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(rectToAnimate.letter, textX, textY);
-
-                    this.drawHorizontalLineMinimum({ x: rectToAnimate.x, y: rectToAnimate.y, width: rectToAnimate.width, height: rectToAnimate.height });
-                }
-
-                if (rectToAnimate.currentHeight > 4) {
-                    requestAnimationFrame(animateDecrease);
-                }
+                animateDecrease();
             };
 
-            animateDecrease();
+            animate();
+        },
+        drawLetterAndLine(rect) {
+            const ctx = this.ctx;
+            const textX = rect.x + rect.width / 2;
+            const textY = rect.y + rect.height + 17;
+            ctx.fillStyle = 'black';
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(rect.letter, textX, textY);
+
+            this.drawHorizontalLineMinimum({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
         },
         getRandomNumber(max) {
             return Math.floor(Math.random() * max);
