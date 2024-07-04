@@ -5,34 +5,79 @@
 </template>
 
 <script>
+
+const COLORS = {
+    DEFAULT: '#b75010',
+    YELLOW: 'yellow',
+    RED: 'red'
+};
+
+const SPEED_INTERVALS = {
+    slow: 500,
+    medium: 400,
+    fast: 300
+};
+
+const FREQUENCY_INTERVALS = {
+    seldom: 500,
+    medium: 400,
+    often: 300
+};
+
 export default {
     name: 'CircleTest',
+    props: {
+        alertLightsData: {
+            type: Object,
+            required: true
+        }
+    },
     data() {
         return {
-            circleConfig: [
-                { x: 50, y: 100, radius: 40, fillColor: '#b75010', letter: 'T' },
-                { x: 140, y: 100, radius: 40, fillColor: '#b75010', letter: 'Y' },
-                { x: 230, y: 100, radius: 40, fillColor: '#b75010', letter: 'U' },
-                { x: 320, y: 100, radius: 40, fillColor: '#b75010', letter: 'I' }
-            ],
-            indexLight: 0,
+            circleConfig: [],
+            activeIndex: -1,
             timerInterval: null,
-            alternateChange: false
+            alternateChange: false,
+            setInterval: 0,
+            result: {
+                right: 0,
+                wrong: 0
+            }
         };
     },
     mounted() {
-        this.initializeTest()
+        this.initializeTest();
+        window.addEventListener('keydown', this.handleKeyPress);
     },
     beforeUnmount() {
-        clearInterval(this.timerInterval);
+        this.stopChangingLight();
+        window.removeEventListener('keydown', this.handleKeyPress);
     },
     methods: {
         initializeTest() {
-            this.initVisual();
+            this.calculateInterval();
+            this.initCircleConfig();
+            this.initCanvas();
             this.drawVisual();
-            this.changeTheLightPosition()
+            if (this.alertLightsData.play) {
+                this.startChangingLight();
+            }
         },
-        initVisual() {
+        calculateInterval() {
+            const { speed, frequency } = this.alertLightsData;
+            this.setInterval = SPEED_INTERVALS[speed] + FREQUENCY_INTERVALS[frequency];
+        },
+        initCircleConfig() {
+            const letters = ['T', 'Y', 'U', 'I'];
+            this.circleConfig = letters.map((letter, index) => ({
+                x: 50 + index * 90,
+                y: 100,
+                radius: 40,
+                fillColor: COLORS.DEFAULT,
+                letter
+            }));
+        },
+        initCanvas() {
             const canvas = this.$refs.circleCanvas;
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
@@ -41,52 +86,67 @@ export default {
         },
         drawVisual() {
             this.clearCanvas();
-            this.circleConfig.forEach((circle, i) => {
-                const c = { ...circle, fillColor: i === this.indexLight ? 'yellow' : circle.fillColor }
-                this.drawCircle(c)
-            })
+            this.circleConfig.forEach(this.drawCircle);
         },
         clearCanvas() {
-            const ctx = this.ctx;
-            ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+            const { width, height } = this.$refs.circleCanvas;
+            this.ctx.clearRect(0, 0, width, height);
         },
         drawCircle({ x, y, radius, fillColor, letter }) {
             const ctx = this.ctx;
-
-            // Draw filled circle
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fillStyle = fillColor;
             ctx.fill();
-
-            // Draw border
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 2;
             ctx.stroke();
-
-            // Draw letter in the center
             ctx.fillStyle = 'black';
             ctx.font = 'bold 24px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(letter, x, y);
         },
-        getRandomNumber() {
-            return Math.floor(Math.random() * 4);
+        getRandomColor() {
+            return Math.random() < 0.6 ? COLORS.YELLOW : COLORS.RED;
         },
-        changeTheLightPosition() {
+        changeActiveCircleColor() {
+            if (this.activeIndex !== -1) {
+                this.circleConfig[this.activeIndex].fillColor = COLORS.DEFAULT;
+            }
+            this.activeIndex = this.getRandomIndex();
+            this.circleConfig[this.activeIndex].fillColor = this.getRandomColor();
+        },
+        getRandomIndex() {
+            return Math.floor(Math.random() * this.circleConfig.length);
+        },
+        startChangingLight() {
             this.timerInterval = setInterval(() => {
                 if (this.alternateChange) {
-                    this.indexLight = 5;
+                    if (this.activeIndex !== -1) {
+                        this.circleConfig[this.activeIndex].fillColor = COLORS.DEFAULT;
+                        this.activeIndex = -1;
+                    }
                 } else {
-                    this.indexLight = this.getRandomNumber();
+                    this.changeActiveCircleColor();
                 }
                 this.drawVisual();
                 this.alternateChange = !this.alternateChange;
-            }, 1000);
+            }, this.setInterval);
         },
         stopChangingLight() {
             clearInterval(this.timerInterval);
+        },
+        handleKeyPress(event) {
+            const index = ['t', 'y', 'u', 'i'].indexOf(event.key.toLowerCase());
+            if (index !== -1 && index === this.activeIndex) {
+                const fillColor = this.circleConfig[index].fillColor;
+                if (fillColor === COLORS.RED) {
+                    this.result.right += 1;
+                } else if (fillColor === COLORS.YELLOW) {
+                    this.result.wrong += 1;
+                }
+            }
         }
     }
 };
@@ -94,6 +154,6 @@ export default {
 
 <style scoped>
 canvas {
-    border: none
+    border: none;
 }
 </style>
