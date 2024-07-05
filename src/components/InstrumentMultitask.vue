@@ -7,7 +7,14 @@
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
     <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
-      <HorizonTest />
+      <HorizonTest
+        :speed="config.horizon.speed"
+        :minuteTime="minuteTime"
+        :isTimesUp="isTimesUp"
+        :isPause="isPause"
+        :isActive="config.horizon.isActive"
+        @getResult="horizonResult"
+      />
       <ArithmeticTask
         :isTimesUp="isTimesUp"
         :difficulty="config.arithmetic.difficulty"
@@ -44,7 +51,7 @@
         <span class="label-result">Accuracy:</span>
       </div>
       <div class="column-50 mb-2">
-        <span class="value-result">n/a</span>
+        <span class="value-result">{{ horizonAccuracy }}</span>
       </div>
       <h3 class="title-result">Alert Lights</h3>
       <div class="column-50 mb-2">
@@ -132,6 +139,9 @@
             correctResponse: null,
             responseTime: null,
           },
+          horizon: {
+            accuracy: null,
+          }
         }
       };
     },
@@ -186,6 +196,13 @@
 
         return `${this.results.gaugesMeter.responseTime} s`;
       },
+      horizonAccuracy() {
+        if (!this.results.horizon.accuracy) {
+          return 'n/a';
+        }
+
+        return `${this.results.horizon.accuracy} %`;
+      },
     },
     methods: {
       loadConfig() {
@@ -194,7 +211,7 @@
           try {
             const scheduleData = JSON.parse(data);
             const instrumentMultitaskConfig = scheduleData.tests.find(test => test.testUrl === 'instrument-multitask-test').config;
-            this.minuteTime = instrumentMultitaskConfig.duration;
+            this.minuteTime = 0.5;//instrumentMultitaskConfig.duration;
             this.timeLeft = this.minuteTime * 60;
             this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
             this.config.arithmetic.useSound = instrumentMultitaskConfig.arithmetics.sound;
@@ -235,6 +252,9 @@
       gaugesMeterResult(result) {
         this.results.gaugesMeter.correctResponse = result.correctResponse;
         this.results.gaugesMeter.responseTime = result.responseTime;
+      },
+      horizonResult(result) {
+        this.results.horizon.accuracy = result.accuracy;
       },
       pause() {
         clearInterval(this.interval);

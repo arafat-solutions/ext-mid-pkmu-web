@@ -14,10 +14,42 @@ export default {
       circleShiftX: 0,
       horizonWidth: 400,
       horizonHeight: 300,
+      result: {
+        startTimes: [],
+        endTimes: []
+      }
     };
   },
-  async mounted() {
+  props: {
+    speed: String,
+    minuteTime: Number,
+    isTimesUp: Boolean,
+    isPause: Boolean,
+    isActive: Boolean,
+  },
+  mounted() {
     this.initHorizon();
+  },
+  computed: {
+    accuracy() {
+      let totalSeconds = 0;
+      for (let [index, endTime] of this.result.endTimes.entries()) {
+        totalSeconds += this.getTimeDifferenceInSeconds(endTime, this.result.startTimes[index]);
+      }
+      console.log('totalSeconds', totalSeconds);
+      return Number(((totalSeconds / (this.minuteTime * 60)) * 100).toFixed(2));
+    },
+  },
+  watch: {
+    isTimesUp() {
+      if (this.result.startTimes.length > this.result.endTimes.length) {
+        this.result.endTimes.push(new Date);
+      }
+
+      this.$emit('getResult', {
+        accuracy: this.accuracy,
+      });
+    },
   },
   methods: {
     initHorizon() {
@@ -28,19 +60,22 @@ export default {
       this.yellowLinePositionY = this.horizonHeight / 2;
 
       this.circleShiftX = 0;
-      this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 10; // Menentukan radius lingkaran
-
+      this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 10;
       this.updateHorizon();
-      setInterval(this.randomTilt, 1000);
+      //Random Tilt
+      setInterval(this.randomTilt, this.speedInterval());
+
+      //Random Circle X
+      setInterval(this.randomCircleShiftX, this.speedInterval());
 
       // Menambahkan event listener untuk mouse move
       canvas.addEventListener('mousemove', this.checkMousePosition);
     },
-    getRandomShift(maxShift) {
-      // Menghasilkan nilai antara -maxShift dan maxShift
-      return (Math.random() * 2 - 1) * maxShift;
-    },
     updateHorizon() {
+      if (this.isPause || !this.isActive) {
+        return;
+      }
+
       const canvas = this.$refs.horizonCanvas;
       const ctx = canvas.getContext("2d");
 
@@ -150,7 +185,11 @@ export default {
       ctx.stroke();
     },
     randomTilt() {
-      this.tiltAngle = Math.random() * 20 - 10; // Kemiringan acak antara -10 dan 10 derajat
+      this.tiltAngle = this.smoothRandom(-30, 30); // Kemiringan acak antara -30 dan 30 derajat
+      this.updateHorizon();
+    },
+    randomCircleShiftX() {
+      this.circleShiftX = this.smoothRandom(-125, 125); // Kemiringan acak antara -125 dan 125 x position
       this.updateHorizon();
     },
     moveYellowLine(event) {
@@ -174,8 +213,13 @@ export default {
       const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
       if (distance <= this.circleRadius) {
         this.isMouseInsideCircle = true;
+        this.result.startTimes.push(new Date);
       } else {
         this.isMouseInsideCircle = false;
+
+        if (this.result.endTimes.length < this.result.startTimes.length) {
+          this.result.endTimes.push(new Date);
+        }
       }
 
       this.updateHorizon();
@@ -190,6 +234,37 @@ export default {
         }
       }, 1000);
     },
+    speedInterval() {
+      switch (this.speed) {
+        case 'very_slow':
+          return 1250;
+        case 'slow':
+          return 1000;
+        case 'medium':
+          return 750;
+        case 'fast':
+          return 500;
+        case 'very_fast':
+          return 250;
+        default:
+          return 1000;
+      }
+    },
+    smoothRandom(min, max) {
+      let u = 0, v = 0;
+      while(u === 0) u = Math.random(); // Converting [0,1) to (0,1)
+      while(v === 0) v = Math.random();
+      let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      num = num / 10.0 + 0.5; // Translate to 0 -> 1
+      if (num > 1 || num < 0) return this.smoothRandom(min, max); // Resample between 0 and 1
+      num *= max - min + 1;
+      num += min;
+      return num;
+    },
+    getTimeDifferenceInSeconds(dateTime1, dateTime2) {
+      let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
+      return differenceInMilliseconds / 1000;
+    }
   },
 };
 </script>
