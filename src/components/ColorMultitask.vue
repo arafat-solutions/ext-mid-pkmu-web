@@ -1,848 +1,332 @@
 <template>
-  <div class="timer" style="height: 30px; margin-bottom: 10px;">
-    <strong style="padding: 5px;"> Waktu : {{ minutes }}:{{ seconds }} </strong>
-  </div>
+  <div class="main-view" v-if="isConfigLoaded">
 
-  <div v-if="isLoading" class="loading-container">
-    <div class="spinner"></div>
-    <div class="text">submitting a result</div>
-  </div>
-
-  <div class="horizon-tank">
-    <div v-if="config.subtask.color_tank" class="tank-section">
-      <div class="upper-tanks">
-        <div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }" :id="`upper-tank-${index}`" class="tank">
-          <p style="color: black; font-weight: bolder;">{{ uppers[index] }}</p>
-        </div>
-      </div>
-
-      <div class="line">
-        <canvas ref="lineTankCanvas" :width="lineTankCanvasWidth" :height="lineTankCanvasHeight"></canvas>
-      </div>
-
-      <div class="lower-tanks">
-        <div v-for="(lowerTank, index) in lowerTanks" :key="index" class="tank" :id="`lower-tank-${index}`">
-          <p style="z-index: 1; position: absolute; color: black; font-weight: bolder;">{{ lowers[index] }}</p>
-          <div class="horizontal-line"> </div>
-          <div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor" 
-            :style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '1%' : '100%'}"
-            class="tank-fill fill-animation">
-          </div>
-        </div>
-      </div>
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <div class="text">submitting a result</div>
     </div>
 
-    <div class="horizon-section">
-      <canvas v-if="config.subtask.horizon" ref="horizonCanvas" @mousemove="moveYellowLine" :width="horizonWidth" :height="horizonHeight" style="margin-bottom: 20px; margin-top: -20px"></canvas>
+    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+      Time: {{ formattedTime }}
+      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
+      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
+      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+    </div>
+
+    <div class="horizon-tank">
+      <ColorTank
+        :isTimesUp="isTimesUp"
+        :speed="config.color_tank.speed"
+        :startToDecreaseIn="config.color_tank.start_to_decrease_in"
+        :decreaseInterval="config.color_tank.decrease_interval"
+        :isNegativeScore="config.color_tank.negative_score"
+        :isPause="isPause"
+        :isActive="config.subtask.color_tank"
+        @getResult="colorTankResult"
+      />
       
-      <div v-if="config.subtask.arithmetics" class="arithmetic">
-        <div class="question-container">
-          <div class="question">
-            <strong> Listen to task and enter your answer </strong>
-          </div>
-          <ul class="options">
-            <div v-for="(option, index) in optionAnswerAudios" :key="index">
-              <li>
-                  <label>
-                    <span class="option-answer" @click="pressAnswerAudio(option)">
-                      {{ option.key }}
-                    </span>
-                    {{ option.value }}
-                  </label>
-              </li>
-            </div>
-          </ul>
-        </div>  
+      <div class="horizon-section">
+        <Horizon
+          :isTimesUp="isTimesUp"
+          :speed="config.horizon.speed"
+          :isPause="isPause"
+          :isActive="config.subtask.horizon"
+          @getResult="horizonResult"
+        />
+        
+        <Arithmetics
+          :isTimesUp="isTimesUp"
+          :difficulty="config.arithmetics.difficulty"
+          :duration="config.duration"
+          :isPause="isPause"
+          :isActive="config.subtask.arithmetics"
+          :useSound="config.arithmetics.sound"
+          @getResult="arithmeticResult"
+        />
       </div>
     </div>
+
   </div>
 </template>
 
 <script>
+import Arithmetics from './color-multitask/Arithmetics';
+import ColorTank from './color-multitask/ColorTank';
+import Horizon from './color-multitask/Horizon';
 export default {
+  name: 'MainView',
+  components: {
+    Arithmetics,
+    ColorTank,
+    Horizon,
+  },
   data() {
     return {
       isLoading: false,
-      isPlayAudio: false,
-      isCanChooseAudio: false,
-      isAllTankEmpty: false,
-      isMouseInsideCircle: false,
       timer: {
         minutes: 0,
         second: 0
       },
       countdownInterval: null,
-      keysPressed: {},
-      colors: ['yellow', 'blue', 'red', 'green'],
-      uppers: ['Q', 'W', 'E', 'R'],
-      lowers: ['A', 'S', 'D', 'F'],
-      lowerTanks: [
-        [ 
-          {color: 'yellow', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'green', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'blue', height: '100%'}, 
-        ],
-        [ 
-          {color: 'blue', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'yellow', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'red', height: '100%'}, 
-        ],
-        [ 
-          {color: 'yellow', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'green', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'red', height: '100%'}, 
-        ],
-        [ 
-          {color: 'green', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'blue', height: '100%'}, 
-          {color: 'black', height: '100%'}, 
-          {color: 'red', height: '100%'}, 
-        ],
-      ],
-      lineTankCanvasWidth: 320,
-      lineTankCanvasHeight: 250,
-      lines: [
-        // Q
-        { x1: 13, y1: 10, x2: 13, y2: 280 },
-        { x1: 35, y1: 10, x2: 35, y2: 50, x3: 120, y3: 220, x4: 120, y4: 280 },
-        { x1: 55, y1: 10, x2: 55, y2: 50, x3: 180, y3: 220, x4: 180, y4: 280},
-        // W
-        { x1: 100, y1: 10, x2: 100, y2: 50, x3: 60, y3: 220, x4: 60, y4: 280 },
-        { x1: 120, y1: 10, x2: 95, y2: 280, },
-        { x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 220, x4: 290, y4: 280},
-        // E
-        { x1: 185, y1: 10, x2: 185, y2: 50, x3: 145, y3: 220, x4: 145, y4: 280 },
-        { x1: 205, y1: 10, x2: 205, y2: 50, x3: 230, y3: 220, x4: 230, y4: 280 },
-        { x1: 225, y1: 10, x2: 225, y2: 50, x3: 315, y3: 220, x4: 315, y4: 280 },
-        // R
-        { x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 220, x4: 35, y4: 280 },
-        { x1: 290, y1: 10, x2: 290, y2: 50, x3: 205, y3: 220, x4: 205, y4: 280 },
-        { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280 },
-      ],
-      intervalId: null, // Untuk menyimpan ID interval
-      horizonWidth: 400,
-      horizonHeight: 300,
+      isPause: false,
+      isConfigLoaded: false,
+      isTrial: this.$route.query.isTrial ?? false,
       config: {
-        duration : 2 * 60,
+        duration : null,
         subtask: {
-          arithmetics: true,
-          color_tank: true,
-          horizon: true,
+          arithmetics: null,
+          color_tank: null,
+          horizon: null,
         },
         arithmetics: {
-          difficulty: null,
-          sound: true
+          difficulty: null, //easy, medium, difficult
+          sound: null
         },
         horizon: {
-          speed: 'slow', //slow, medium, false
+          speed: null, //very_slow, slow, medium, fast, very_fast]
         },
         color_tank: {
-          negative_score: true,
-          speed: 'fast', //slow, medium, fast
-          startToDecreaseIn: 5000,
-          decreaseInterval: 3000,
+          negative_score: null,
+          speed: null, //slow, medium, fast
+          start_to_decrease_in: 5000,
+          decrease_interval: 3000,
         },
       },
       result: {
-        color_tank: {
-          score: 0,
+        arithmetics: {
+          total_questions: null,
+          correct_answer: null,
+          avg_response_time: null,
         },
-        arithmetic: {
-          correctAnswer: 0,
-          question: 0,
-          timeResponded: 0
-        }
+        horizon: {
+          correct_time: null, // in seconds
+        },
+        color_tank: {
+          score: null,
+        },
       },
-      resultAritmethic: {
-        totalQuestion: 0,
-        correctAnswers: 0,
-        faultAnswers: 0,
-        timeResponded: 0
-      },
-      audio: null,
-      optionAnswerAudios: [
-        { key: 7, value: ''},
-        { key: 8, value: ''},
-        { key: 9, value: ''},
-        { key: 0, value: ''},
-      ],
-      tiltAngle: 10,
-      yellowLinePositionY: 0,
-      yellowLinePositionX: 0,
-      circleShiftX: 0,
     };
   },
   async mounted() {
-    // await this.initConfig();
-
-    // Setup Color Tank
-    if (this.config.subtask.color_tank) { 
-      this.initLineTank();
-      this.initTankToEmpty();
-
-      setInterval(() => {
-        if (this.isAllTankEmpty) {
-          this.initTankToEmpty();
-        }
-      }, 2000);
-    }
-
-    // Setup Arithmetic
-    if (this.config.subtask.arithmetics) { 
-      this.generateAudio();
-    }
-
-    // Setup Horizon
-    if (this.config.subtask.horizon) { 
-      this.initHorizon();
-    }
-
-    this.startCountdown();
-
-    window.addEventListener('keydown', this.handleKeyDown);
-    window.addEventListener('keyup', this.handleKeyUp);
+    this.initConfig();
   },
   beforeUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
+    clearInterval(this.countdownInterval);
   },
   computed: {
-    minutes() {
-      return Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+    isTimesUp() {
+      return this.config.duration  < 1;
     },
-    seconds() {
-      return (this.config.duration % 60).toString().padStart(2, '0');
-    }
+    formattedTime() {
+      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      return `${minutes}:${seconds}`;
+    },
   },
   methods: {
-    initHorizon() {
-      const canvas = this.$refs.horizonCanvas;
-      this.ctx = canvas.getContext("2d");
-
-      this.yellowLinePositionX = this.horizonWidth / 2;
-      this.yellowLinePositionY = this.horizonHeight / 2;
-
-      this.circleShiftX = 0;
-      this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 10; // Menentukan radius lingkaran
-
-      this.updateHorizon();
-      setInterval(this.randomTilt, 1000);
-      setInterval(this.randomCircleShift, 1000); // Menambahkan interval untuk pergeseran lingkaran acak
-
-      // Menambahkan event listener untuk mouse move
-      canvas.addEventListener('mousemove', this.checkMousePosition);
+    pause() {
+      clearInterval(this.countdownInterval);
+      this.isPause = true;
     },
-    getRandomShift(maxShift) {
-      // Menghasilkan nilai antara -maxShift dan maxShift
-      return (Math.random() * 2 - 1) * maxShift;
+    startAgain() {
+      this.startCountdown();
+      this.isPause = false;
     },
-    updateHorizon() {
-      const canvas = this.$refs.horizonCanvas;
-      const ctx = canvas.getContext("2d");
-
-      ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
-      ctx.save();
-
-      ctx.translate(this.horizonWidth / 2, this.horizonHeight / 2);
-      ctx.rotate((this.tiltAngle * Math.PI) / 180);
-
-      ctx.fillStyle = '#87CEEB';
-      ctx.fillRect(-this.horizonWidth, -this.horizonHeight, this.horizonWidth * 2, this.horizonHeight);
-
-      ctx.strokeStyle = '#FFFFFF'; 
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-this.horizonWidth, 0);
-      ctx.lineTo(this.horizonWidth, 0);
-      ctx.stroke();
-
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(-this.horizonWidth, 0, this.horizonWidth * 2, this.horizonHeight);
-
-      // Start Garis Atas
-      ctx.moveTo(this.circleShiftX + 50, -this.circleRadius * 1.2 - 15);
-      ctx.lineTo(this.circleShiftX + 40, -this.circleRadius * 1.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX + 25, -this.circleRadius * 1.2 - 20);
-      ctx.lineTo(this.circleShiftX + 20, -this.circleRadius * 1.2 - 9);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.2 - 24);
-      ctx.lineTo(this.circleShiftX, -this.circleRadius * 1.2 - 11);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX - 25, -this.circleRadius * 1.2 - 20);
-      ctx.lineTo(this.circleShiftX - 20, -this.circleRadius * 1.2 - 9);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX - 50, -this.circleRadius * 1.2 - 15);
-      ctx.lineTo(this.circleShiftX - 40, -this.circleRadius * 1.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      // End Garis Atas
-
-      // Menggambar lingkaran di posisi acak di sekitar tengah
-      ctx.beginPath();
-      ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2); // Menggambar lingkaran
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-      ctx.fill();
-
-      // Menggambar segitiga di dalam lingkaran
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.0); // Titik puncak atas (40% dari radius)
-      ctx.lineTo(this.circleShiftX - this.circleRadius + 120 * 0.2, this.circleRadius - 250 * 0.2); // Titik kiri bawah (20% dari radius)
-      ctx.lineTo(this.circleShiftX + this.circleRadius - 120 * 0.2, this.circleRadius - 250 * 0.2); // Titik kanan bawah (20% dari radius)
-      ctx.closePath();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fill();
-
-      // Start Garis Bawah
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX - 10, this.circleRadius - 250 * 0.2 + 30);
-      ctx.lineTo(this.circleShiftX - 40, this.circleRadius - 250 * 0.2 + 300 * 0.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(this.circleShiftX + 10, this.circleRadius - 250 * 0.2 + 30);
-      ctx.lineTo(this.circleShiftX + 40, this.circleRadius - 250 * 0.2 + 300 * 0.2);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      // End Garis Bawah
-
-      ctx.restore();
-
-      // Menggambar garis kuning horizontal
-      const lineColor = this.isMouseInsideCircle ? 'green' : 'yellow';
-      ctx.strokeStyle = lineColor;
-
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(0, this.yellowLinePositionY);
-      ctx.lineTo(this.horizonWidth, this.yellowLinePositionY);
-      ctx.stroke();
-
-      // Menggambar garis kuning vertikal
-      ctx.beginPath();
-      ctx.moveTo(this.yellowLinePositionX, 0);
-      ctx.lineTo(this.yellowLinePositionX, this.horizonHeight);
-      ctx.stroke();
-    },
-    randomTilt() {
-      this.tiltAngle = Math.random() * 20 - 10; // Kemiringan acak antara -10 dan 10 derajat
-      this.updateHorizon();
-    },
-    randomCircleShift() {
-      const maxShift = 50; // Maksimum pergeseran untuk lingkaran
-      this.circleShiftX = this.getRandomShift(maxShift); // Menghasilkan pergeseran acak untuk lingkaran
-      this.updateHorizon();
-    },
-    moveYellowLine(event) {
-      const canvas = this.$refs.horizonCanvas;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      this.yellowLinePositionX = x;
-      this.yellowLinePositionY = y;
-
-      this.updateHorizon();
-    },
-    checkMousePosition(event) {
-      const canvas = this.$refs.horizonCanvas;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left - this.horizonWidth / 2;
-      const y = event.clientY - rect.top - this.horizonHeight / 2;
-
-      // Memeriksa apakah mouse berada dalam radius lingkaran
-      const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
-      if (distance <= this.circleRadius) {
-        this.isMouseInsideCircle = true;
-        console.log('Mouse berada di dalam lingkaran');
-      } else {
-        this.isMouseInsideCircle = false;
-        console.log('Mouse berada di luar lingkaran');
-      }
-
-      this.updateHorizon();
+    exit() {
+      this.$router.push('module');
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.config.duration > 0) {
           this.config.duration--;
         } else {
-          clearInterval(this.countdownInterval);
-          this.calculatedResult();
+          // Submit Answer
+          setTimeout(() => {
+            this.submitResult();
+          }, 1000);
         }
       }, 1000);
     },
-    calculatedResult() { 
-    },
-    async initConfig() {
+    initConfig() {
       try {
-        this.result = {}
         let config = JSON.parse(localStorage.getItem('scheduleData'));
 
-        for (let i = 0; i < config.tests.length; i++) {
-          if (config.tests[i].testUrl === 'color-multitask-test') {
-            this.config.duration = config.tests[i].config.duration * 60;
-            this.config.batteryTestConfigId = config.tests[i].config.id;
-            this.config.moduleId = config.moduleId;
-            this.config.sessionId = config.sessionId;
-            this.config.userId = config.userId;
+        if (config) {
+          const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
 
-            //Color Tank
-            this.config.subtask.color_tank = config.tests[i].config.subtask.color_tank
-            if (this.config.subtask.color_tank) {
-              this.config.color_tank.negative_score = config.tests[i].config.arithmetics.negative_score
-              this.config.color_tank.speed = config.tests[i].config.color_tank.speed
-            }
+          this.config.duration = 1 * 60;
 
-            //Arithmetic
-            this.config.subtask.arithmetics = config.tests[i].config.subtask.arithmetics
-            if (this.config.subtask.arithmetics) {
-              this.config.color_tank.sound = config.tests[i].config.color_tank.sound
-              this.config.color_tank.difficulty = config.tests[i].config.arithmetics.difficulty
-            }
+          // this.config.duration = colorMultitask.duration * 60;
+          this.config.batteryTestConfigId = colorMultitask.id;
+          this.config.moduleId = colorMultitask.moduleId;
+          this.config.sessionId = colorMultitask.sessionId;
+          this.config.userId = colorMultitask.userId;
 
-            //Horizon
-            this.config.subtask.horizon = config.tests[i].config.subtask.horizon
-            if (this.config.subtask.horizon) {
-              this.config.horizon.speed = config.tests[i].config.horizon.speed
-            }
-
-            break;
+          // Color Tank
+          this.config.subtask.color_tank = colorMultitask.subtask.color_tank
+          if (this.config.subtask.color_tank) {
+            this.config.color_tank.negative_score = colorMultitask.color_tank.negative_score
+            this.config.color_tank.speed = colorMultitask.color_tank.speed
           }
+
+          // Arithmetic
+          this.config.subtask.arithmetics = colorMultitask.subtask.arithmetics
+          if (this.config.subtask.arithmetics) {
+            this.config.arithmetics.sound = colorMultitask.arithmetics.sound
+            this.config.arithmetics.difficulty = colorMultitask.arithmetics.difficulty
+          }
+
+          // Horizon
+          this.config.subtask.horizon = colorMultitask.subtask.horizon
+          if (this.config.subtask.horizon) {
+            this.config.horizon.speed = colorMultitask.horizon.speed
+          }
+
+          this.isConfigLoaded = true;
+          this.startCountdown();
         }
       } catch (error) {
         console.log(error, 'error')
       }
     },
-    initTankToEmpty() {
-      this.isAllTankEmpty = false;
-      const maxAttempts = 100;
-      let attempts = 0;
-
-      const findTankToEmpty = () => {
-        if (attempts >= maxAttempts) {
-          this.isAllTankEmpty = true;
-          return;
-        }
-
-        attempts++;
-        const tankIndex = Math.floor(Math.random() * 4);
-        const tankItem = Math.floor(Math.random() * 5);
-
-        const selectedTank = this.lowerTanks[tankIndex][tankItem];
-
-        if (selectedTank.height === '100%' && selectedTank.color !== 'black') {
-          setTimeout(() => {
-            this.intervalId = setInterval(() => {
-              this.decreaseTankLevels(tankIndex, tankItem);
-            }, this.config.color_tank.decreaseInterval);
-          }, this.config.color_tank.startToDecreaseIn);
-        } else {
-          findTankToEmpty();
-        }
-      };
-
-      findTankToEmpty();
+    arithmeticResult(result) {
+      this.result.arithmetics.correct_answer = result.correctAnswer;
+      this.result.arithmetics.total_questions = result.totalQuestion;
+      this.result.arithmetics.avg_response_time = result.responseTime;
     },
-    initLineTank() {
-      const canvas = this.$refs.lineTankCanvas;
-      const ctx = canvas.getContext('2d');
-
-      ctx.clearRect(0, 0, this.lineTankCanvasWidth, this.lineTankCanvasHeight);
-      ctx.save();
-
-      for (let i = 0; i < this.lines.length; i++) {
-        this.drawLine(this.lines[i]);
-      }
+    colorTankResult(result) {
+      this.result.color_tank.score = result.score;
     },
-    drawLine(lines) {
-      const canvas = this.$refs.lineTankCanvas;
-      const ctx = canvas.getContext('2d');
-      ctx.beginPath();
-      ctx.moveTo(lines.x1, lines.y1);
-      ctx.lineTo(lines.x2, lines.y2);
-
-      if (lines.x3 && lines.y3) {
-        ctx.lineTo(lines.x3, lines.y3);
-      }
-      if (lines.x4 && lines.y4) {
-        ctx.lineTo(lines.x4, lines.y4);
-      }
-
-      ctx.strokeStyle = '#574e4e';
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      ctx.stroke();
+    horizonResult(result) {
+      this.result.horizon.correct_time = result.correctTime;
     },
-    fillTank(tankIndex, tankItem) {
-      const increment = 10;
-      const tank = this.lowerTanks[tankIndex][tankItem];
+    async submitResult() {
+      try {   
+        this.isLoading = true;
 
-      let currentFill = parseFloat(tank['height'].replace('%', ''));
-
-      if (tank['height'] < '100%') {
-        currentFill += increment;
-        tank['height'] = currentFill + '%';
-      }
-
-      if (tank['height'] >= '100%') {
-        tank['height'] = '100%';
-      }
-    },
-    decreaseTankLevels(tankIndex, tankItem) {
-      const tank = this.lowerTanks[tankIndex][tankItem];
-      if (tank['height'] != '0%' && parseFloat(tank['height'].replace('%', '')) > 5) {
-        tank['height'] = this.decreaseHeight(tank['height']);
-      } else {
-        tank['height'] = '5%';
-
-        clearInterval(this.intervalId);
-        this.initTankToEmpty()
-      }
-    },
-    decreaseSpeed() {
-      if (this.config.color_tank.speed === 'slow') {
-        return 5;
-      } 
-      if (this.config.color_tank.speed === 'medium') {
-        return 10;
-      } 
-      if (this.config.color_tank.speed === 'fast') {
-        return 20;
-      } 
-    },
-    decreaseHeight(currentHeight) {
-      const current = parseFloat(currentHeight.replace('%', ''));
-      const newHeight = Math.max(0, current - this.decreaseSpeed()) + '%';
-  
-      return newHeight;
-    },
-    generateAudio() {
-      this.audio = null;
-      this.answerAudio = null;
-      this.isPlayAudio = true;
-      
-      this.audio =  Math.floor(Math.random() * 30) + 1;
-
-      let correctLocationIndex = Math.floor(Math.random() * 4) + 6;
-      if (correctLocationIndex >= 9) {
-        correctLocationIndex = 9
-      }
-      if (correctLocationIndex <= 7) {
-        correctLocationIndex = 7
-      }
-
-      for (var i = 0; i < 4; i++) {
-        if (this.optionAnswerAudios[i].key === correctLocationIndex) {
-          this.optionAnswerAudios[i].value = this.audio;
-        } else {
-          this.optionAnswerAudios[i].value =  Math.floor(Math.random() * 30) + 1;
-        }
-      }
-    },
-    pressAnswerAudio(value) {
-      if (value === this.audio) {
-        this.resultAritmethic.correctAnswers++
-      } else {
-        this.resultAritmethic.faultAnswers++
-      }
-
-      this.isCanChooseAudio = false;
-      this.generateAudio();
-    },
-    startPlayback() { 
-      this.resultAritmethic.totalQuestion++
-
-      setTimeout(() => {
-        if ('speechSynthesis' in window) {
-          let number = this.audio
-          
-          const utterancePart1 = new SpeechSynthesisUtterance("  ");
-          const utterancePart2 = new SpeechSynthesisUtterance(number + " ");
-          utterancePart2.rate = 1;
-          utterancePart2.pitch = 1.2;
-          utterancePart2.volume = 1;
-          utterancePart2.lang = 'id-ID';
-
-          window.speechSynthesis.speak(utterancePart1);
-
-          utterancePart1.onend = () => {
-            setTimeout(() => {
-              window.speechSynthesis.speak(utterancePart2);
-              this.isCanChooseAudio = true;
-            }, 500); // Menunda 500 milidetik sebelum utterance kedua
-          };
-        } else {
-          alert('Sorry, your browser does not support text-to-speech.');
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = {
+          testSessionId: this.config.sessionId,
+          userId: this.config.userId,
+          moduleId: this.config.moduleId,
+          batteryTestConfigId: this.config.batteryTestConfigId,
+          result: this.result,
         }
 
-        this.isCanChooseAudio = true;
-      }, 1000);
-    },
-    handleKeyDown(event) {
-      this.keysPressed[event.key.toUpperCase()] = true;
-      
-      // Color Tank
-      if (this.config.subtask.color_tank) {
-        if (this.keysPressed['Q'] && this.keysPressed['A']) {
-          this.fillTank(0, 0);
-        }
-        if (this.keysPressed['Q'] && this.keysPressed['S']) {
-          this.fillTank(1, 2);
-        }
-        if (this.keysPressed['Q'] && this.keysPressed['D']) {
-          this.fillTank(2, 0);
-        }
-
-        if (this.keysPressed['W'] && this.keysPressed['A']) {
-          this.fillTank(0, 4);
-        }
-        if (this.keysPressed['W'] && this.keysPressed['S']) {
-          this.fillTank(1, 0);
-        }
-        if (this.keysPressed['W'] && this.keysPressed['F']) {
-          this.fillTank(3, 2);
-        }
-
-        if (this.keysPressed['E'] && this.keysPressed['S']) {
-          this.fillTank(1, 4);
-        }
-        if (this.keysPressed['E'] && this.keysPressed['D']) {
-          this.fillTank(2, 4);
-        }
-        if (this.keysPressed['E'] && this.keysPressed['F']) {
-          this.fillTank(3, 4);
-        }
-
-        if (this.keysPressed['R'] && this.keysPressed['A']) {
-          this.fillTank(0, 2);
-        }
-        if (this.keysPressed['R'] && this.keysPressed['D']) {
-          this.fillTank(2, 2);
-        }
-        if (this.keysPressed['R'] && this.keysPressed['F']) {
-          this.fillTank(3, 0);
-        }
-      }
-      
-      // Arithmetic
-      if (this.config.subtask.arithmetics) {
-        if (this.isPlayAudio && this.audio) {
-          console.log('lellelelele');
-          setTimeout(() => {
-            this.startPlayback();
-          }, 1000);
-          this.isPlayAudio = false;
-        }
-
-        if (this.isCanChooseAudio) {
-          if (this.keysPressed['7']) {
-            this.pressAnswerAudio(7);
+        const res = await fetch(`${API_URL}api/submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
           }
-
-          if (this.keysPressed['8']) {
-            this.pressAnswerAudio(8);
-          }
-
-          if (this.keysPressed['9']) {
-            this.pressAnswerAudio(9);
-          }
-
-          if (this.keysPressed['0']) {
-            this.pressAnswerAudio(0);
-          }
+        )
+        
+        if (!res.ok) {
+          throw new Error('Failed Submit Test');
         }
+      } catch (error) {
+        console.error(error), "error";
+      } finally {
+        this.isLoading = false;
+        this.$router.push('/module');
       }
-    },
-    handleKeyUp(event) {
-      delete this.keysPressed[event.key.toUpperCase()];
-    },
+    }
   },
 };
 </script>
 
 <style scoped>
-.horizontal-line {
-  height: 2px;
-  width: 100%;
-  background-color: black;
-  position: absolute;
-  margin-top: 90px;
-}
-.loading-container {
-  /* Add your loading indicator styles here */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Black background with 80% opacity */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  /* Ensure it is above other content */
-}
-.spinner {
-  border: 8px solid rgba(255, 255, 255, 0.3);
-  /* Light border */
-  border-top: 8px solid #ffffff;
-  /* White border for the spinning part */
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  .main-view {
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 60px auto;
   }
-
-  100% {
-    transform: rotate(360deg);
+  .timer-container-trial {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background-color: #0349D0;
+    padding: 0.75rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
   }
-}
-.text {
-  color: #ffffff;
-  margin-top: 20px;
-  font-size: 1.2em;
-}
-.question-container {
-  border: 2px solid black;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-.question {
-  font-size: 18px;
-  margin-bottom: 10px;
-}
-.options {
-  list-style-type: none;
-  padding: 0;
-}
-.options li {
-  margin-bottom: 8px;
-}
-.option-answer {
-  background-color: grey;
-  padding: 10px;
-  border-radius: 5px;
-  display: inline-block;
-  padding: 4px 7px;
-  color: white;
-  border: 2px solid black;
-  text-align: center;
-  font-size: 11px;
-  transition: background-color 0.3s ease;
-}
-.horizon-tank {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-  height: 100vh;
-  margin-top: -35px;
-  margin-left: 40px;
-  margin-right: 40px;
-}
-.tank-section {
-  display: flex;
-  flex-direction: column;
-}
-.upper-tanks {
-  margin-left: 15px;
-}
-.lower-tanks {
-  margin-left: 15px;
-  margin-top: 10px;
-}
-.upper-tanks, .lower-tanks {
-  display: flex;
-  flex-direction: row;
-  margin-bottom: 10px;
-}
-.tank {
-  width: 69px;
-  height: 100px;
-  border: 3px solid black;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 10px;
-  position: relative; /* Positioning for absolute elements inside */
-}
-.tank-fill {
-  height: 100%;
-  width: 100%;
-  top: 0%;
-  bottom: 0%;
-  background-color: white;
-  margin-top: auto;
-  margin-bottom: initial;
-}
-.fill-animation {
-  transition: height 1s ease; /* Animation for height change */
-}
+  .timer-container-trial button {
+    color: #000000;
+    font-weight: bold;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 5px;
+    border-color: transparent;
+    min-width: 100px;
+    cursor: pointer;
+  }
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
+  .spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  .horizon-tank {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+		align-items: center;
+		height: 92vh;
+		margin-left: 40px;
+		margin-right: 40px;
+	}
 
-.line canvas {
-  border: 0px !important;
-}
-.horizon-section {
-  position: relative;
-}
-canvas {
-  border: 2px solid black;
-}
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
 
-.arithmetic {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  margin-top: 10px;
-}
-.warning-light {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background-color: brown;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  font-weight: bold;
-  margin-right: 10px;
-}
-.warning-light.active {
-  background-color: red;
-}
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
+  .horizon-section {
+    position: relative;
+  }
 </style>
