@@ -185,11 +185,11 @@ export default {
       ctx.stroke();
     },
     randomTilt() {
-      this.tiltAngle = this.smoothRandom(-30, 30); // Kemiringan acak antara -30 dan 30 derajat
+      this.tiltAngle = this.smoothRandom(-80, 80, this.tiltAngle); // Kemiringan acak antara -30 dan 30 derajat
       this.updateHorizon();
     },
     randomCircleShiftX() {
-      this.circleShiftX = this.smoothRandom(-125, 125); // Kemiringan acak antara -125 dan 125 x position
+      this.circleShiftX = this.smoothRandom(-125, 125, this.circleShiftX); // Kemiringan acak antara -125 dan 125 x position
       this.updateHorizon();
     },
     moveYellowLine(event) {
@@ -250,16 +250,20 @@ export default {
           return 1000;
       }
     },
-    smoothRandom(min, max) {
+    smoothRandom(min, max, previousValue, smoothingFactor = 0.75) {
       let u = 0, v = 0;
       while(u === 0) u = Math.random(); // Converting [0,1) to (0,1)
       while(v === 0) v = Math.random();
       let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
       num = num / 10.0 + 0.5; // Translate to 0 -> 1
-      if (num > 1 || num < 0) return this.smoothRandom(min, max); // Resample between 0 and 1
+      if (num > 1 || num < 0) return this.smoothRandom(min, max, smoothingFactor); // Resample between 0 and 1
       num *= max - min + 1;
       num += min;
-      return num;
+
+      // Apply smoothing
+      previousValue = previousValue + smoothingFactor * (num - previousValue);
+
+      return previousValue;
     },
     getTimeDifferenceInSeconds(dateTime1, dateTime2) {
       let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
