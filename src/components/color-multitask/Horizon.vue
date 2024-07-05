@@ -14,7 +14,8 @@
 				yellowLinePositionY: 0,
 				yellowLinePositionX: 0,
 				circleShiftX: 0,
-				correctTime: 0,
+				greenLineStartTime: null,
+        greenLineDuration: 0,
 				intervalRandomTilt: null,
 				intervalRandomCircleShift: null,
 			}
@@ -34,7 +35,7 @@
 				clearInterval(this.intervalRandomCircleShift)
 
         this.$emit('getResult', {
-          score: this.correctTime,
+          correctTime: this.greenLineDuration,
         });
       },
 			isPause() {
@@ -69,7 +70,7 @@
 				this.yellowLinePositionY = this.horizonHeight / 2;
 
 				this.circleShiftX = 0;
-				this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 10; // Set Circle Radius
+				this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 20; // Set Circle Radius
 
 				if (!this.isActive) {
 					this.tiltAngle = 0
@@ -80,6 +81,7 @@
 
 				this.updateHorizon();
 				canvas.addEventListener('mousemove', this.checkMousePosition);
+				this.checkMousePosition();
 			},
 			getRandomShift(maxShift) {
 				return (Math.random() * 2 - 1) * maxShift;
@@ -98,7 +100,7 @@
 				ctx.fillRect(-this.horizonWidth, -this.horizonHeight, this.horizonWidth * 2, this.horizonHeight);
 
 				ctx.strokeStyle = '#FFFFFF'; 
-				ctx.lineWidth = 2;
+				ctx.lineWidth = 6;
 				ctx.beginPath();
 				ctx.moveTo(-this.horizonWidth, 0);
 				ctx.lineTo(this.horizonWidth, 0);
@@ -108,36 +110,51 @@
 				ctx.fillRect(-this.horizonWidth, 0, this.horizonWidth * 2, this.horizonHeight);
 
 				// Start Lines Front
-				ctx.moveTo(this.circleShiftX + 50, -this.circleRadius * 1.2 - 15);
-				ctx.lineTo(this.circleShiftX + 40, -this.circleRadius * 1.2);
+				ctx.beginPath();
+				ctx.moveTo(this.circleShiftX + 65, -this.circleRadius * 1.5 + 15);
+				ctx.lineTo(this.circleShiftX + 50, -this.circleRadius * 1.5 + 15);
 				ctx.strokeStyle = '#FFFFFF';
 				ctx.lineWidth = 3;
 				ctx.stroke();
 
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX + 25, -this.circleRadius * 1.2 - 20);
-				ctx.lineTo(this.circleShiftX + 20, -this.circleRadius * 1.2 - 9);
+				ctx.moveTo(this.circleShiftX + 55, -this.circleRadius * 1.5 - 10);
+				ctx.lineTo(this.circleShiftX + 45, -this.circleRadius * 1.5 - 4);
 				ctx.strokeStyle = '#FFFFFF';
 				ctx.lineWidth = 3;
 				ctx.stroke();
 
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.2 - 24);
-				ctx.lineTo(this.circleShiftX, -this.circleRadius * 1.2 - 11);
+				ctx.moveTo(this.circleShiftX + 35, -this.circleRadius * 1.5 - 30);
+				ctx.lineTo(this.circleShiftX + 25, -this.circleRadius * 1.5 - 20);
 				ctx.strokeStyle = '#FFFFFF';
 				ctx.lineWidth = 3;
 				ctx.stroke();
 
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX - 25, -this.circleRadius * 1.2 - 20);
-				ctx.lineTo(this.circleShiftX - 20, -this.circleRadius * 1.2 - 9);
+				ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.5 - 40);
+				ctx.lineTo(this.circleShiftX, -this.circleRadius * 1.5 - 25);
 				ctx.strokeStyle = '#FFFFFF';
 				ctx.lineWidth = 3;
 				ctx.stroke();
 
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX - 50, -this.circleRadius * 1.2 - 15);
-				ctx.lineTo(this.circleShiftX - 40, -this.circleRadius * 1.2);
+				ctx.moveTo(this.circleShiftX - 35, -this.circleRadius * 1.5 - 30);
+				ctx.lineTo(this.circleShiftX - 25, -this.circleRadius * 1.5 - 20);
+				ctx.strokeStyle = '#FFFFFF';
+				ctx.lineWidth = 3;
+				ctx.stroke();
+
+				ctx.beginPath();
+				ctx.moveTo(this.circleShiftX - 55, -this.circleRadius * 1.5 - 10);
+				ctx.lineTo(this.circleShiftX - 45, -this.circleRadius * 1.5 - 4);
+				ctx.strokeStyle = '#FFFFFF';
+				ctx.lineWidth = 3;
+				ctx.stroke();
+
+				ctx.beginPath();
+				ctx.moveTo(this.circleShiftX - 65, -this.circleRadius * 1.5 + 15);
+				ctx.lineTo(this.circleShiftX - 50, -this.circleRadius * 1.5 + 15);
 				ctx.strokeStyle = '#FFFFFF';
 				ctx.lineWidth = 3;
 				ctx.stroke();
@@ -145,33 +162,33 @@
 
 				// Draw Circle in the Middle
 				ctx.beginPath();
-				ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2); // Menggambar lingkaran
+				ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2);
 				ctx.closePath();
 				ctx.fillStyle = 'rgba(0, 0, 0, 0)';
 				ctx.fill();
 
 				// Draw Triangle
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.0); // Titik puncak atas (40% dari radius)
-				ctx.lineTo(this.circleShiftX - this.circleRadius + 120 * 0.2, this.circleRadius - 250 * 0.2); // Titik kiri bawah (20% dari radius)
-				ctx.lineTo(this.circleShiftX + this.circleRadius - 120 * 0.2, this.circleRadius - 250 * 0.2); // Titik kanan bawah (20% dari radius)
+				ctx.moveTo(this.circleShiftX, -this.circleRadius - (this.circleRadius * 0.8)); 
+				ctx.lineTo(this.circleShiftX - (this.circleRadius * 0.8), -this.circleRadius);
+				ctx.lineTo(this.circleShiftX + (this.circleRadius * 0.8), -this.circleRadius);
 				ctx.closePath();
 				ctx.fillStyle = '#FFFFFF';
 				ctx.fill();
 
 				// Start Bottom Line
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX - 10, this.circleRadius - 250 * 0.2 + 30);
-				ctx.lineTo(this.circleShiftX - 40, this.circleRadius - 250 * 0.2 + 300 * 0.2);
+				ctx.moveTo(this.circleShiftX - 20, this.circleRadius - 250 * 0.2 + 50);
+				ctx.lineTo(this.circleShiftX - 50, this.circleRadius + 20);
 				ctx.strokeStyle = '#FFFFFF';
-				ctx.lineWidth = 3;
+				ctx.lineWidth = 5;
 				ctx.stroke();
 
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX + 10, this.circleRadius - 250 * 0.2 + 30);
-				ctx.lineTo(this.circleShiftX + 40, this.circleRadius - 250 * 0.2 + 300 * 0.2);
+				ctx.moveTo(this.circleShiftX + 20, this.circleRadius - 250 * 0.2 + 50);
+				ctx.lineTo(this.circleShiftX + 50, this.circleRadius + 20);
 				ctx.strokeStyle = '#FFFFFF';
-				ctx.lineWidth = 3;
+				ctx.lineWidth = 5;
 				ctx.stroke();
 				// End Bottom Line
 
@@ -201,6 +218,8 @@
 				const maxShift = 100; // Maximum shift for circle
 				this.circleShiftX = this.getRandomShift(maxShift); // Generates random shifts for circles
 				this.updateHorizon();
+
+				this.checkMousePosition();
 			},
 			moveYellowLine(event) {
 				if (this.isPause || this.isTimesUp || !this.isActive) {
@@ -220,17 +239,31 @@
 			checkMousePosition(event) {
 				const canvas = this.$refs.horizonCanvas;
 				const rect = canvas.getBoundingClientRect();
-				const x = event.clientX - rect.left - this.horizonWidth / 2;
-				const y = event.clientY - rect.top - this.horizonHeight / 2;
+				
+				let x = this.yellowLinePositionX - this.horizonWidth / 2;
+				let y = this.yellowLinePositionY - this.horizonHeight / 2;
+
+				if (event) {
+						x = event.clientX - rect.left - this.horizonWidth / 2;
+						y = event.clientY - rect.top - this.horizonHeight / 2;
+				}
 
 				// Memeriksa apakah mouse berada dalam radius lingkaran
 				const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
 				if (distance <= this.circleRadius) {
+					if (!this.greenLineStartTime) {
+						this.greenLineStartTime = Date.now();
+					}
+
 					this.isMouseInsideCircle = true;
-					console.log('Mouse berada di dalam lingkaran');
 				} else {
+					if (this.greenLineStartTime) {
+						const currentTime = Date.now();
+						this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
+						this.greenLineStartTime = null; // Reset start time when exiting circle
+					}
+
 					this.isMouseInsideCircle = false;
-					console.log('Mouse berada di luar lingkaran');
 				}
 
 				this.updateHorizon();

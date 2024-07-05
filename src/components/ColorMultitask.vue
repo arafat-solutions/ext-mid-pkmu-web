@@ -140,6 +140,8 @@ export default {
         if (this.config.duration > 0) {
           this.config.duration--;
         } else {
+          clearInterval(this.countdownInterval);
+          
           // Submit Answer
           setTimeout(() => {
             this.submitResult();
@@ -201,6 +203,11 @@ export default {
       this.result.horizon.correct_time = result.correctTime;
     },
     async submitResult() {
+
+      console.log(this.result, 'resutl');
+      return;
+      /* eslint-disable */
+
       try {   
         this.isLoading = true;
 
