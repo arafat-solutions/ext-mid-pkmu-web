@@ -167,7 +167,7 @@ export default {
         return 0;
       }
 
-      return (this.resultCorrect / this.totalNeedPress * 100).toFixed(2);
+      return Number((this.resultCorrect / this.totalNeedPress * 100).toFixed(2));
     },
     responseTime() {
       if (this.result.differenceTimes.length < 1) {
@@ -181,7 +181,7 @@ export default {
         sum += this.getTimeDifferenceInSeconds(new Date, needPressTime.time);
       }
 
-      return (sum / this.totalNeedPress).toFixed(2);
+      return Number((sum / this.totalNeedPress).toFixed(2));
     },
   },
   watch: {

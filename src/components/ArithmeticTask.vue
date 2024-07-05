@@ -45,7 +45,7 @@
     },
     computed: {
       correctResponse() {
-        return (this.result.correct / this.minuteTime).toFixed(2);
+        return Number((this.result.correct / this.minuteTime).toFixed(2));
       },
       responseTime() {
         let totalResponse = 0;
@@ -56,22 +56,16 @@
           )
         }
 
-        return (totalResponse / this.result.problems.length).toFixed(2);
+        return Number((totalResponse / this.result.problems.length).toFixed(2));
       },
     },
     watch: {
-      correctResponse(newValue) {
+      isTimesUp() {
         this.$emit('getResult', {
-          correctResponse: newValue,
+          correctResponse: this.correctResponse,
           responseTime: this.responseTime,
         });
       },
-      responseTime(newValue) {
-        this.$emit('getResult', {
-          correctResponse: this.correctResponse,
-          responseTime: newValue,
-        });
-      }
     },
     methods: {
       handleKeyPress(event) {
@@ -156,6 +150,28 @@
         const createdAt = new Date();
 
         this.problem = { num1, num2, operator, choices, correctAnswer, createdAt };
+
+        setTimeout(() => {
+          this.checkSound();
+        }, 3000);
+      },
+      checkSound() {
+        if (!this.useSound) {
+          return;
+        }
+
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance('Hello, world!');
+          // const utterance = new SpeechSynthesisUtterance(`${this.problem.num1} ${this.problem.operator} ${this.problem.num2} =`);
+          utterance.lang = 'en-US';
+          utterance.rate = 1.0; // Atur kecepatan bicara ke nilai yang lebih tinggi jika perlu
+          utterance.pitch = 1.2; // Atur pitch bicara
+          utterance.volume = 1; // Atur volume (maksimal 1.0)
+          window.speechSynthesis.speak(utterance);
+          console.log('test');
+        } else {
+          console.error('Sorry, your browser does not support text-to-speech.');
+        }
       },
       calculateAnswer(num1, num2, operator) {
         switch (operator) {

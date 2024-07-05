@@ -33,7 +33,7 @@
         return this.result.colors.filter(color => color === 'red').length;
       },
       correctResponse() {
-        return (this.result.correct / this.redLength  * 100).toFixed(2);
+        return Number((this.result.correct / this.redLength  * 100).toFixed(2));
       },
       responseTime() {
         let totalResponse = 0;
@@ -49,7 +49,7 @@
           )
         }
 
-        return (totalResponse / counter).toFixed(2);
+        return Number((totalResponse / counter).toFixed(2));
       },
     },
     watch: {
