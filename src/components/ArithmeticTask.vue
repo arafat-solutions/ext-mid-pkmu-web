@@ -150,10 +150,7 @@
         const createdAt = new Date();
 
         this.problem = { num1, num2, operator, choices, correctAnswer, createdAt };
-
-        setTimeout(() => {
-          this.checkSound();
-        }, 3000);
+        this.checkSound();
       },
       checkSound() {
         if (!this.useSound) {
@@ -161,14 +158,12 @@
         }
 
         if ('speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance('Hello, world!');
-          // const utterance = new SpeechSynthesisUtterance(`${this.problem.num1} ${this.problem.operator} ${this.problem.num2} =`);
-          utterance.lang = 'en-US';
+          const utterance = new SpeechSynthesisUtterance(`${this.problem.num1} ${this.getSoundOperator(this.problem.operator)} ${this.problem.num2} =`);
+          utterance.lang = 'id-ID';
           utterance.rate = 1.0; // Atur kecepatan bicara ke nilai yang lebih tinggi jika perlu
           utterance.pitch = 1.2; // Atur pitch bicara
           utterance.volume = 1; // Atur volume (maksimal 1.0)
           window.speechSynthesis.speak(utterance);
-          console.log('test');
         } else {
           console.error('Sorry, your browser does not support text-to-speech.');
         }
@@ -199,6 +194,17 @@
       getTimeDifferenceInSeconds(dateTime1, dateTime2) {
         let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
         return differenceInMilliseconds / 1000;
+      },
+      getSoundOperator(operator) {
+        if (operator === '+') {
+          return 'tambah';
+        } else if (operator === '-') {
+          return 'kurang';
+        } else if (operator === ':') {
+          return 'bagi';
+        }
+
+        return operator;
       }
     }
   };

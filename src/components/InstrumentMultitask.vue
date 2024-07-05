@@ -1,84 +1,94 @@
 <template>
-  <div class="main-view" v-if="isConfigLoaded">
-    <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
-      Time: {{ formattedTime }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+  <div>
+    <div id="fullPageModal" class="modal">
+      <div class="modal-content">
+          <p>Click the button to play sound:</p>
+          <button id="soundButton" class="modal-button" @click="playSound">Play Sound</button>
+      </div>
     </div>
-    <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
-      <HorizonTest
-        :speed="config.horizon.speed"
-        :minuteTime="minuteTime"
-        :isTimesUp="isTimesUp"
-        :isPause="isPause"
-        :isActive="config.horizon.isActive"
-        @getResult="horizonResult"
-      />
-      <ArithmeticTask
-        :isTimesUp="isTimesUp"
-        :difficulty="config.arithmetic.difficulty"
-        :minuteTime="minuteTime"
-        :isPause="isPause"
-        :isActive="config.arithmetic.isActive"
-        :useSound="config.arithmetic.useSound"
-        @getResult="arithmeticResult"
-      />
-    </div>
-    <div class="column-10 mt-3" v-show="!isTimesUp && !isPause">
-      <AlertLights
-        :speed="config.alertLight.speed"
-        :isTimesUp="isTimesUp"
-        :frequency="config.alertLight.frequency"
-        :isPause="isPause"
-        :isActive="config.alertLight.isActive"
-        @getResult="alertLightResult"
-      />
-    </div>
-    <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
-      <GaugesMeter
-        :isTimesUp="isTimesUp"
-        :isPause="isPause"
-        :frequency="config.gaugesMeter.frequency"
-        :isActive="config.gaugesMeter.isActive"
-        @getResult="gaugesMeterResult"
-      />
-    </div>
-    <div class="column-50" v-show="isTimesUp">
-      <h2 class="title-result">Results:</h2>
-      <h3 class="title-result">Horizon</h3>
-      <div class="column-50 mb-2">
-        <span class="label-result">Accuracy:</span>
+    <div class="main-view" v-if="isConfigLoaded">
+      <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+        Time: {{ formattedTime }}
+        <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
+        <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
+        <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
       </div>
-      <div class="column-50 mb-2">
-        <span class="value-result">{{ horizonAccuracy }}</span>
+      <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
+        <HorizonTest
+          :speed="config.horizon.speed"
+          :minuteTime="minuteTime"
+          :isTimesUp="isTimesUp"
+          :isPause="isPause"
+          :isActive="config.horizon.isActive"
+          @getResult="horizonResult"
+        />
+        <ArithmeticTask
+          ref="arithmeticTaskRef"
+          :isTimesUp="isTimesUp"
+          :difficulty="config.arithmetic.difficulty"
+          :minuteTime="minuteTime"
+          :isPause="isPause"
+          :isActive="config.arithmetic.isActive"
+          :useSound="config.arithmetic.useSound"
+          @getResult="arithmeticResult"
+          @startAgain="startAgain"
+        />
       </div>
-      <h3 class="title-result">Alert Lights</h3>
-      <div class="column-50 mb-2">
-        <span class="label-result">Correct response:</span>
-        <span class="label-result">Response time:</span>
+      <div class="column-10 mt-3" v-show="!isTimesUp && !isPause">
+        <AlertLights
+          :speed="config.alertLight.speed"
+          :isTimesUp="isTimesUp"
+          :frequency="config.alertLight.frequency"
+          :isPause="isPause"
+          :isActive="config.alertLight.isActive"
+          @getResult="alertLightResult"
+        />
       </div>
-      <div class="column-50 mb-2">
-        <span class="value-result">{{ alertLightCorrectResponse }}</span>
-        <span class="value-result">{{ alertLightResponseTime }}</span>
+      <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
+        <GaugesMeter
+          :isTimesUp="isTimesUp"
+          :isPause="isPause"
+          :frequency="config.gaugesMeter.frequency"
+          :isActive="config.gaugesMeter.isActive"
+          @getResult="gaugesMeterResult"
+        />
       </div>
-      <h3 class="title-result">Instrument</h3>
-      <div class="column-50 mb-2">
-        <span class="label-result">Correct response:</span>
-        <span class="label-result">Response time:</span>
-      </div>
-      <div class="column-50 mb-2">
-        <span class="value-result">{{ gaugesMeterCorrectResponse }}</span>
-        <span class="value-result">{{ gaugesMeterResponseTime }}</span>
-      </div>
-      <h3 class="title-result">Mental Arithmetics</h3>
-      <div class="column-50">
-        <span class="label-result">Correct response:</span>
-        <span class="label-result">Response time:</span>
-      </div>
-      <div class="column-50 mb-2">
-        <span class="value-result">{{ arithmeticCorrectResponse }}</span>
-        <span class="value-result">{{ arithmeticResponseTime }}</span>
+      <div class="column-50" v-show="isTimesUp">
+        <h2 class="title-result">Results:</h2>
+        <h3 class="title-result">Horizon</h3>
+        <div class="column-50 mb-2">
+          <span class="label-result">Accuracy:</span>
+        </div>
+        <div class="column-50 mb-2">
+          <span class="value-result">{{ horizonAccuracy }}</span>
+        </div>
+        <h3 class="title-result">Alert Lights</h3>
+        <div class="column-50 mb-2">
+          <span class="label-result">Correct response:</span>
+          <span class="label-result">Response time:</span>
+        </div>
+        <div class="column-50 mb-2">
+          <span class="value-result">{{ alertLightCorrectResponse }}</span>
+          <span class="value-result">{{ alertLightResponseTime }}</span>
+        </div>
+        <h3 class="title-result">Instrument</h3>
+        <div class="column-50 mb-2">
+          <span class="label-result">Correct response:</span>
+          <span class="label-result">Response time:</span>
+        </div>
+        <div class="column-50 mb-2">
+          <span class="value-result">{{ gaugesMeterCorrectResponse }}</span>
+          <span class="value-result">{{ gaugesMeterResponseTime }}</span>
+        </div>
+        <h3 class="title-result">Mental Arithmetics</h3>
+        <div class="column-50">
+          <span class="label-result">Correct response:</span>
+          <span class="label-result">Response time:</span>
+        </div>
+        <div class="column-50 mb-2">
+          <span class="value-result">{{ arithmeticCorrectResponse }}</span>
+          <span class="value-result">{{ arithmeticResponseTime }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -215,6 +225,11 @@
             this.timeLeft = this.minuteTime * 60;
             this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
             this.config.arithmetic.useSound = instrumentMultitaskConfig.arithmetics.sound;
+            // Trigger pause after user click button
+            if (this.config.arithmetic.useSound) {
+              this.pause();
+              document.getElementById('fullPageModal').style.display = 'flex';
+            }
             this.config.arithmetic.isActive = instrumentMultitaskConfig.subtask.arithmetics;
             this.config.alertLight.speed = instrumentMultitaskConfig.alert_lights.speed;
             this.config.alertLight.frequency = instrumentMultitaskConfig.alert_lights.frequency;
@@ -233,6 +248,10 @@
         console.warn('No schedule data found in localStorage.');
       },
       startCountdown() {
+        if (this.isPause) {
+          return;
+        }
+
         this.interval = setInterval(() => {
           if (this.timeLeft > 0) {
             this.timeLeft -= 1;
@@ -261,11 +280,16 @@
         this.isPause = true;
       },
       startAgain() {
-        this.startCountdown();
         this.isPause = false;
+        this.startCountdown();
       },
       exit() {
         this.$router.push('module');
+      },
+      playSound() {
+        document.getElementById('fullPageModal').style.display = 'none';
+        this.$refs.arithmeticTaskRef.checkSound();
+        this.startAgain();
       }
     },
     mounted() {
@@ -353,8 +377,6 @@
     border-bottom-right-radius: 15px;
   }
 
-
-
   .title-result, .label-result {
     text-align: left;
   }
@@ -377,5 +399,34 @@
 
   .horizon-container {
     margin: 0 auto;
+  }
+
+  /* Full-page modal styles */
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.8); /* Black with opacity */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+  }
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .modal-button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
   }
 </style>
