@@ -1,23 +1,26 @@
 <template>
-  <div class="timer" style="height: 30px; margin-bottom: 10px;">
-    <strong style="padding: 5px;"> Waktu : {{ minutes }}:{{ seconds }} </strong>
-  </div>
+  <div class="main-view" v-if="isConfigLoaded">
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <div class="text">submitting a result</div>
+    </div>
 
-  <div v-if="isLoading" class="loading-container">
-    <div class="spinner"></div>
-    <div class="text">submitting a result</div>
-  </div>
+    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+      Time: {{ formattedTime }}
+      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
+      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
+      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+    </div>
 
-  <div class="radar-container">
-    <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
-    <div class="counter">
-      <p> Target : 
-        <strong>
-          {{ config.targetShape ? capitalizeFirstLetter(config.targetShape) : '.....' }}
-        </strong>
-      </p>
-      <!-- <p> {{ config.targetShape ? capitalizeFirstLetter(config.targetShape) : '........' }} terdeteksi: {{ detectedObject }} </p>
-      <p> Klik pengguna: {{ userClickCount }} </p> -->
+    <div class="radar-container">
+      <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
+      <div class="counter">
+        <p> Target : 
+          <strong>
+            {{ config.targetShape ? capitalizeFirstLetter(config.targetShape) : '.....' }}
+          </strong>
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -26,18 +29,17 @@
 export default {
   data() {
     return {
+      isConfigLoaded: false,
+      isTrial: this.$route.query.isTrial ?? false,
+      isPause: false,
       isCanClick: false,
       isLoading: false,
-      timer: {
-        minutes: 0,
-        second: 0
-      },
       width: 600,
       height: 500,
       scannerAngle: 0,
-      objects: [],
       detectedObject: 0,
       userClickCount: 0,
+      objects: [],
       responseTimes: [],
       suitableObjectTimes: [],
       responseDurations: [],
@@ -45,14 +47,14 @@ export default {
       objectInterval: null,
       countdownInterval: null,
       result: {
-        totalObject: 0,
-        correctedObject: 0,
-        missedObject: 0,
-        timeResponded: 0,
+        total_object: 0,
+        corrected_object: 0,
+        missed_object: 0,
+        avg_response_time: 0,
       },
       config: {
         direction: null, //clockwise, counter_clockwise
-        duration: 0, //second
+        duration: null, //milisecond
         frequency: null, // very_often, often, sometimes, sheldom, very_seldom
         shapeSize: null, // very_big, big, medium, small, very_small
         shapes: [], //'circle', 'square', 'triangle'
@@ -64,79 +66,74 @@ export default {
   },
   mounted() {
     this.initConfig();
-    this.initRadar();
-    this.startRadar();
-    this.startCountdown();
-    window.addEventListener("keydown", this.handleKeydown);
+  },
+  created() {
+    window.addEventListener('keydown', this.handleKeydown);
   },
   beforeUnmount() {
-    clearInterval(this.countdownInterval);
     window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
+    capitalizeFirstLetter(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    pause() {
+      this.stopRadar();
+      clearInterval(this.countdownInterval);
+      this.isPause = true;
+    },
+    startAgain() {
+      this.startCountdown();
+      this.initRadar();
+      this.isPause = false;
+    },
+    exit() {
+      this.$router.push('module');
+    },
     initConfig() {
-      this.result = {
-        totalObject: 0,
-        correctedObject: 0,
-        missedObject: 0,
-        timeResponded: 0,
-      };
+      try {
+        let config = JSON.parse(localStorage.getItem('scheduleData'));
 
-      let config = JSON.parse(localStorage.getItem('scheduleData'));
-
-      for (let i = 0; i < config.tests.length; i++) {
-        if (config.tests[i].testUrl === 'radar-vigilance-test') {
-          this.config.duration = config.tests[i].config.duration * 60;
-          this.config.direction = config.tests[i].config.direction;
-          this.config.shapeSize = config.tests[i].config.shapeSize;
-          this.config.frequency = config.tests[i].config.frequency;
-          this.config.shapes = this.checkShapeConfig(config.tests[i].config.shapes);
-          this.config.targetShape = config.tests[i].config.targetShape;
-          this.config.speed = config.tests[i].config.speed;
+        if (config) {
+          const radarVigillance = config.tests.find(test => test.testUrl === 'radar-vigilance-test').config;
+          this.config.duration = radarVigillance.duration * 60;
+          this.config.direction = radarVigillance.direction;
+          this.config.shapeSize = radarVigillance.shapeSize;
+          this.config.frequency = radarVigillance.frequency;
+          this.config.shapes = this.setShapeConfig(radarVigillance.shapes);
+          this.config.targetShape = radarVigillance.targetShape;
+          this.config.speed = radarVigillance.speed;
 
           // this.config.density = config.tests[i].density;
           this.config.density = 'medium'
 
-          this.config.batteryTestConfigId = config.tests[i].config.id;
+          this.config.batteryTestConfigId = radarVigillance.id;
           this.config.moduleId = config.moduleId;
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
-          break;
+          this.isConfigLoaded = true;
+          
+          this.initRadar();
+          this.startCountdown();
         }
+      } catch (error) {
+        console.log(error, 'error')
       }
-    },
-    checkShapeConfig(shapes){
-      let result = [];
-
-      if (shapes.circle) {
-        result.push('circle');
-      }
-      if (shapes.rectangle) {
-        result.push('rectangle');
-      }
-      if (shapes.square) {
-        result.push('square');
-      }
-
-      return result;
-    },
-    capitalizeFirstLetter(string) {
-      return string.charAt(0).toUpperCase() + string.slice(1);
     },
     initRadar() {
-      const canvas = this.$refs.radarCanvas;
-      this.ctx = canvas.getContext("2d");
+      this.radarInterval = setInterval(this.updateRadar, 100);
+      this.objectInterval = setInterval(this.addShape, this.setFrequency());
 
       this.isCanClick = true
     },
-    startRadar() {
-      this.radarInterval = setInterval(this.updateRadar, 100);
-      this.objectInterval = setInterval(this.addShape, this.setFrequency());
-    },
     drawRadar() {
-      const ctx = this.ctx;
+      const canvas = this.$refs.radarCanvas;
+      const ctx = canvas.getContext("2d");
       const radius = Math.min(this.width, this.height) / 2;
+      
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, this.width, this.height);
       ctx.strokeStyle = "green";
       ctx.lineWidth = 2;
 
@@ -223,7 +220,6 @@ export default {
       }
     },
     updateRadar() {
-      this.clearRadar();
       this.drawRadar();
 
       if (this.config.direction === 'clockwise') {
@@ -240,10 +236,6 @@ export default {
 
       this.removeUndetectedObjects();
     },
-    clearRadar() {
-      this.ctx.fillStyle = "black";
-      this.ctx.fillRect(0, 0, this.width, this.height);
-    },
     stopRadar() {
       clearInterval(this.radarInterval);
       this.radarInterval = null;
@@ -252,6 +244,21 @@ export default {
       this.objectInterval = null;
 
       this.isCanClick = false;
+    },
+    setShapeConfig(shapes){
+      let result = [];
+
+      if (shapes.circle) {
+        result.push('circle');
+      }
+      if (shapes.rectangle) {
+        result.push('rectangle');
+      }
+      if (shapes.square) {
+        result.push('square');
+      }
+
+      return result;
     },
     setFrequency() {
       if (this.config.frequency === 'very_often') {
@@ -435,36 +442,36 @@ export default {
         } else {
           clearInterval(this.countdownInterval);
           this.stopRadar();
-          this.calculatedResult();
+
+          // Submit Answer
+          setTimeout(() => {
+            this.calculatedResult();
+          }, 1000);
+          
         }
       }, 1000);
     },
     calculatedResult() {
-      this.result.totalObject = this.detectedObject;
+      this.result.total_object = this.detectedObject;
 
       // Handle user deliberate click
       if (this.userClickCount > this.detectedObject) {
-        this.result.correctedObject = 0;
-        this.result.missedObject = 100;
-        this.result.timeResponded = 0;
+        this.result.corrected_object = 0;
+        this.result.missed_object = 100;
+        this.result.avg_response_time = 0;
       } else {
-        const correctedObject = (this.userClickCount / this.detectedObject) * 100;
-        this.result.correctedObject = correctedObject.toFixed(2);
-
-        const missedObject = (this.detectedObject - this.userClickCount) / this.detectedObject * 100
-        this.result.missedObject = missedObject.toFixed(2);
+        this.result.corrected_object = this.userClickCount;
+        this.result.missed_object = this.detectedObject - this.userClickCount
 
         if (this.userClickCount > 0) {
           const resultTimeResonded = this.averageResponseTime()
-          this.result.timeResponded = resultTimeResonded.toFixed(2);
+          this.result.avg_response_time = resultTimeResonded.toFixed(2);
         } else {
-          this.result.timeResponded = 0;
+          this.result.avg_response_time = 0;
         }
       }
 
-      console.log(this.result, 'lalala')
-
-      // this.submitResult()
+      this.submitResult()
     },
     async submitResult() {
       try {   
@@ -501,68 +508,105 @@ export default {
     }
   },
   computed: {
-    minutes() {
-      return Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+    formattedTime() {
+      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      return `${minutes}:${seconds}`;
     },
-    seconds() {
-      return (this.config.duration % 60).toString().padStart(2, '0');
-    }
   },
 };
 </script>
 
 <style scoped>
-.radar-container {
-  display: flex;
-  align-items: center;
-}
-canvas {
-  display: block;
-  margin: 0 auto;
-  background-color: black;
-}
-.counter {
-  margin-left: 20px;
-  color: black;
-}
-.loading-container {
-  /* Add your loading indicator styles here */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Black background with 80% opacity */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  /* Ensure it is above other content */
-}
-.spinner {
-  border: 8px solid rgba(255, 255, 255, 0.3);
-  /* Light border */
-  border-top: 8px solid #ffffff;
-  /* White border for the spinning part */
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  .main-view {
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 60px auto;
   }
+  .timer-container-trial {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background-color: #0349D0;
+    padding: 0.75rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+  }
+  .timer-container-trial button {
+    color: #000000;
+    font-weight: bold;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 5px;
+    border-color: transparent;
+    min-width: 100px;
+    cursor: pointer;
+  }
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+  .radar-container {
+    display: flex;
+    align-items: center;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    background-color: black;
+  }
+  .counter {
+    margin-left: 20px;
+    color: black;
+  }
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
+  .spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
 
-  100% {
-    transform: rotate(360deg);
+    100% {
+      transform: rotate(360deg);
+    }
   }
-}
-.text {
-  color: #ffffff;
-  margin-top: 20px;
-  font-size: 1.2em;
-}
+  .text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
 </style>
