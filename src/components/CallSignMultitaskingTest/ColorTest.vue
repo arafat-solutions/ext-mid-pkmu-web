@@ -28,19 +28,16 @@ export default {
                 { x: 360, y: 400, width: 60, height: 100, fillColor: ['red', 'yellow', 'green'], letter: "F" },
             ],
             userAnswer: '',
-            speed: "slow",
-            duration: 10,
-            decreaseSpeed: 1,
             currentHeights: [  // Initialize the current heights for each rectangle
                 [100, 100, 100],
                 [100, 100, 100],
                 [100, 100, 100],
                 [100, 100, 100]
             ],
-            decreaseInterval: 200, // Time in ms between each decrease animation
+            decreaseInterval: 1000, // Time in ms between each decrease animation
             decreaseDuration: 3000, // Duration of each decrease animation
             minHeight: 4, // Minimum height before stopping the animation
-            activeAnimations: []
+            finishedDecreasing: [],
         };
     },
     mounted() {
@@ -174,7 +171,18 @@ export default {
             const w = width / 3;
 
             this.drawHorizontalLineMinimum({ x, y, width, height })
-            this.drawLine({ x, y: y - height - 20, width, height, short: false });
+
+            const lineY = y - 20;
+            const positions = [x + width / 6, x + width / 2, x + width * 5 / 6];
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#574e4e';
+            positions.forEach((pos) => {
+                ctx.beginPath();
+                ctx.moveTo(pos, lineY);
+                ctx.lineTo(pos, lineY + 20);
+                ctx.stroke();
+            });
+
 
             fillColor.forEach((color, colorIndex) => {
                 ctx.fillStyle = color;
@@ -197,30 +205,49 @@ export default {
             this.drawHorizontalLineMinimum({ x, y, width, height })
         },
         startDecreaseAnimation() {
+            this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
+            this.colorsInProgress = Array.from({ length: 4 }, () => Array(3).fill(false));
+
             const animate = () => {
-                const rectIndex = this.getRandomNumber(4);
-                const colorIndex = this.getRandomNumber(3);
+                if (this.finishedDecreasing.flat().every(Boolean)) {
+                    clearInterval(animationInterval);
+                    return;
+                }
+
+                let rectIndex;
+                let colorIndex;
+
+                // Find a rectangle and color that is not currently in progress and not finished
+                let attempts = 0;
+                do {
+                    rectIndex = this.getRandomNumber(4);
+                    colorIndex = this.getRandomNumber(3);
+                    attempts++;
+                    if (attempts > 100) {
+                        console.warn('Could not find a non-finished and non-in-progress rectangle and color');
+                        return;
+                    }
+                } while (this.colorsInProgress[rectIndex][colorIndex] || this.finishedDecreasing[rectIndex][colorIndex]);
 
                 const startHeight = this.currentHeights[rectIndex][colorIndex];
                 const targetHeight = this.minHeight;
-
                 const startTime = Date.now();
+
+                this.colorsInProgress[rectIndex][colorIndex] = true;
 
                 const animateDecrease = () => {
                     const elapsed = Date.now() - startTime;
                     const progress = Math.min(elapsed / this.decreaseDuration, 1);
 
-                    this.clearCanvas();
-                    this.drawVisual();
-
                     if (startHeight > this.minHeight) {
                         const currentHeight = startHeight - (progress * (startHeight - targetHeight));
                         this.currentHeights[rectIndex][colorIndex] = currentHeight;
 
+                        // Redraw only the affected rectangle
                         const rectToAnimate = this.rectanglesColorize[rectIndex];
-                        this.ctx.clearRect(rectToAnimate.x, rectToAnimate.y, rectToAnimate.width, rectToAnimate.height);
                         const ctx = this.ctx;
                         const w = rectToAnimate.width / 3;
+                        ctx.clearRect(rectToAnimate.x, rectToAnimate.y, rectToAnimate.width, rectToAnimate.height);
 
                         rectToAnimate.fillColor.forEach((color, index) => {
                             ctx.fillStyle = color;
@@ -236,17 +263,19 @@ export default {
                         if (progress < 1) {
                             requestAnimationFrame(animateDecrease);
                         } else {
-                            setTimeout(animate, this.decreaseInterval);
+                            this.finishedDecreasing[rectIndex][colorIndex] = true;
+                            this.colorsInProgress[rectIndex][colorIndex] = false;
                         }
                     } else {
-                        setTimeout(animate, this.decreaseInterval);
+                        this.finishedDecreasing[rectIndex][colorIndex] = true;
+                        this.colorsInProgress[rectIndex][colorIndex] = false;
                     }
                 };
 
                 animateDecrease();
             };
 
-            animate();
+            const animationInterval = setInterval(animate, this.decreaseInterval);
         },
         drawLetterAndLine(rect) {
             const ctx = this.ctx;
