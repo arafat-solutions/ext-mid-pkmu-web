@@ -282,7 +282,6 @@
       },
       horizonResult(result) {
         this.results.horizon = result;
-        console.log(this.results.horizon);
       },
       pause() {
         clearInterval(this.interval);
