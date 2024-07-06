@@ -15,6 +15,12 @@
         </div>
         <div v-if="seeResults" class="results">
             <div class="test">
+                <p class="title">Color </p>
+                <div class="test-result">
+                    <p>negative: {{ results.color_tank.negative_tank }}</p>
+                </div>
+            </div>
+            <div class="test">
                 <p class="title">lights </p>
                 <div class="test-result">
                     <p>wrong: {{ results.alert_lights.wrong_response }}</p>
@@ -69,8 +75,9 @@ export default {
                 },
                 color_tank: {
                     negative_score: true,
-                    speed: 'slow',
-                    duration: 10,
+                    speed: 'fast',
+                    descend_speed: "fast", // slow, medium, fast
+                    colored_lower_tank: true,
                     play: true
                 },
                 horizon: {
@@ -100,11 +107,19 @@ export default {
                     correct_response: 0,
                     total_match_count: 0,
                 },
+                color_tank: {
+                    negative_tank: 0
+                }
             },
+            testId: '',
+            moduleId: '',
+            sessionId: '',
+            userId: '',
             seeResults: true
         }
     },
     mounted() {
+        this.initConfig()
         this.countDownTestTime()
     },
     beforeUnmount() {
@@ -130,6 +145,41 @@ export default {
                     // }
                 }
             }, 1000)
+        },
+        initConfig() {
+            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+            const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').config
+            const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
+
+            this.configBe = {
+                alert_lights: {
+                    frequency: alert_lights.frequency,
+                    speed: alert_lights.speed,
+                    play: subtask.alert_lights
+                },
+                callsign: {
+                    frequency: callsign.frequency,
+                    matches: callsign.matches,
+                    speed: callsign.speed,
+                    play: subtask.callsign
+                },
+                color_tank: {
+                    negative_score: color_tank.negative_score,
+                    speed: color_tank.speed,
+                    descend_speed: color_tank.descend_speed ?? 'slow', // belum dikirim dari be
+                    colored_lower_tank: color_tank.colored_lower_tank ?? true, // belum dikirim dari be
+                    play: subtask.color_tank
+                },
+                horizon: {
+                    speed: horizon.speed,
+                    play: subtask.horizon
+                },
+            }
+            this.testTime = duration * 60
+            this.testId = id
+            this.moduleId = scheduleData.moduleId
+            this.sessionId = scheduleData.sessionId
+            this.userId = scheduleData.userId
         },
         updateResults(component, data) {
             if (Object.hasOwn(this.results, component)) {
@@ -238,5 +288,7 @@ export default {
     justify-content: space-between;
     width: 300px;
     color: white;
+    margin: auto auto;
+    border: 1px solid white;
 }
 </style>
