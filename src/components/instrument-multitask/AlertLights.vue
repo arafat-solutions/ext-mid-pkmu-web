@@ -134,7 +134,7 @@
         const frequency = this.getFrequency();
         const color = Math.random() > frequency ? 'red' : 'yellow';
         this.lights[index].color = color;
-        this.result.questionTimes.push(new Date);
+        this.result.questionTimes.push(Date.now());
         this.result.colors.push(color);
         this.checkMissed();
       },
@@ -158,7 +158,7 @@
         }
       },
       turnOffLight(index) {
-        this.result.answerTimes.push(new Date);
+        this.result.answerTimes.push(Date.now());
         if (this.lights[index].color === 'red') {
           this.result.correct++;
         } else {

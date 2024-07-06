@@ -30,6 +30,7 @@
           :isPause="isPause"
           :isActive="config.arithmetic.isActive"
           :useSound="config.arithmetic.useSound"
+          :allowSound="allowSound"
           @getResult="arithmeticResult"
           @startAgain="startAgain"
         />
@@ -95,10 +96,10 @@
 </template>
 
 <script>
-  import ArithmeticTask from './ArithmeticTask';
-  import AlertLights from './AlertLights';
-  import GaugesMeter from './GaugesMeter';
-  import HorizonTest from './HorizonTest';
+  import ArithmeticTask from './instrument-multitask/ArithmeticTask';
+  import AlertLights from './instrument-multitask/AlertLights';
+  import GaugesMeter from './instrument-multitask/GaugesMeter';
+  import HorizonTest from './instrument-multitask/HorizonTest';
 
   export default {
     name: 'MainView',
@@ -110,12 +111,14 @@
     },
     data() {
       return {
+        loading: false,
         minuteTime: null,
         timeLeft: null, // Countdown time in seconds
         interval: null,
         isPause: false,
         isConfigLoaded: false,
         isTrial: this.$route.query.isTrial ?? false,
+        allowSound: false,
         config: {
           alertLight: {
             speed: null, //very_slow,slow,medium,fast,very_fast
@@ -287,9 +290,41 @@
         this.$router.push('module');
       },
       playSound() {
+        this.allowSound = true;
         document.getElementById('fullPageModal').style.display = 'none';
-        this.$refs.arithmeticTaskRef.checkSound();
+        this.$refs.arithmeticTaskRef.generateProblem();
         this.startAgain();
+      },
+      async submitResult() {
+        try {
+          this.loading = true;
+          const API_URL = process.env.VUE_APP_API_URL;
+          const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+          const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test');
+          const payload = {
+            'testSessionId': scheduleData.sessionId,
+            'userId': scheduleData.userId,
+            'moduleId': scheduleData.moduleId,
+            'batteryTestConfigId': test.config.id,
+            'result': { ...this.result }
+          }
+          const response = await fetch(`${API_URL}api/submission`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+          }
+          this.$router.push('/module');
+        } catch (error) {
+          console.error(error);
+        } finally {
+          this.loading = false; // Set loading to false when the submission is complete
+        }
       }
     },
     mounted() {

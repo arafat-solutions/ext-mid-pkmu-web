@@ -33,9 +33,12 @@
       minuteTime: Number,
       isActive: Boolean,
       useSound: Boolean,
+      allowSound: Boolean,
     },
     mounted() {
-      this.generateProblem();
+      if (!this.useSound || this.allowSound) {
+        this.generateProblem();
+      }
     },
     created() {
       window.addEventListener('keyup', this.handleKeyPress);
@@ -99,7 +102,7 @@
           return;
         }
 
-        this.result.answerTimes.push(new Date());
+        this.result.answerTimes.push(Date.now());
         if (this.problem.choices[index] === this.problem.correctAnswer) {
           this.result.correct++;
         } else {
@@ -147,7 +150,7 @@
 
         const correctAnswer = this.calculateAnswer(num1, num2, operator);
         const choices = this.generateChoices(correctAnswer);
-        const createdAt = new Date();
+        const createdAt = Date.now();
 
         this.problem = { num1, num2, operator, choices, correctAnswer, createdAt };
         this.checkSound();
