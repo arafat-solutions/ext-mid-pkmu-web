@@ -4,8 +4,6 @@
     </div>
 </template>
 
-
-
 <script>
 const DECREASE_SPEED = {
     slow: 3000,
@@ -80,10 +78,6 @@ export default {
         },
         initConfig() {
             // negative_score: true,
-            //         speed: 'slow',
-            //         descend_speed: "slow", // slow, medium, fast
-            //         colored_lower_tank: true,
-            //         play: true
             const { descend_speed, speed } = this.colorTankData;
             this.decreaseDuration = DECREASE_SPEED[descend_speed]
             this.decreaseInterval = DECREASE_INTERVAL[speed]
@@ -272,20 +266,6 @@ export default {
                 this.startAnimationInterval();
             }
         },
-
-
-        drawLetterAndLine(rect) {
-            const ctx = this.ctx;
-            const textX = rect.x + rect.width / 2;
-            const textY = rect.y + rect.height + 17;
-            ctx.fillStyle = 'black';
-            ctx.font = '18px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(rect.letter, textX, textY);
-
-            this.drawHorizontalLineMinimum({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
-        },
         getRandomNumber(max) {
             return Math.floor(Math.random() * max);
         },
@@ -335,7 +315,7 @@ export default {
                 ctx.strokeRect(rect.x + index * w, rect.y, w, rect.height);
             });
 
-            this.drawLetterAndLine(rect);
+            this.drawHorizontalLineMinimum({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
         },
         startDecreaseAnimationForColor(rectIndex, colorIndex) {
             const startHeight = this.currentHeights[rectIndex][colorIndex];
