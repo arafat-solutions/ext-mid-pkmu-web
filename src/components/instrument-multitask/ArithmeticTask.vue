@@ -36,7 +36,7 @@
       allowSound: Boolean,
     },
     mounted() {
-      if (!this.useSound || this.allowSound) {
+      if ((this.useSound && this.allowSound) || (!this.useSound || !this.isActive)) {
         this.generateProblem();
       }
     },
@@ -67,6 +67,8 @@
         this.$emit('getResult', {
           correctResponse: this.correctResponse,
           responseTime: this.responseTime,
+          correctAnswer: this.result.correct,
+          totalQuestion: this.result.problems.length,
         });
       },
     },
