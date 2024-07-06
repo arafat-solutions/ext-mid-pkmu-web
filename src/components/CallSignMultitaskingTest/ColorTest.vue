@@ -222,62 +222,18 @@ export default {
                 let rectIndex;
                 let colorIndex;
 
-                // Find a rectangle and color that is not currently in progress and not finished
                 let attempts = 0;
                 do {
                     rectIndex = this.getRandomNumber(4);
                     colorIndex = this.getRandomNumber(3);
                     attempts++;
                     if (attempts > 100) {
-                        // console.warn('Could not find a non-finished and non-in-progress rectangle and color');
                         return;
                     }
-                } while (this.colorsInProgress[rectIndex][colorIndex] || this.finishedDecreasing[rectIndex][colorIndex]);
+                } while (this.colorsInProgress[rectIndex][colorIndex] ||
+                    (this.finishedDecreasing[rectIndex][colorIndex] && this.currentHeights[rectIndex][colorIndex] <= this.minHeight));
 
-                const startHeight = this.currentHeights[rectIndex][colorIndex];
-                const targetHeight = this.minHeight;
-                const startTime = Date.now();
-
-                this.colorsInProgress[rectIndex][colorIndex] = true;
-
-                const animateDecrease = () => {
-                    const elapsed = Date.now() - startTime;
-                    const progress = Math.min(elapsed / this.decreaseDuration, 1);
-
-                    if (startHeight > this.minHeight) {
-                        const currentHeight = startHeight - (progress * (startHeight - targetHeight));
-                        this.currentHeights[rectIndex][colorIndex] = currentHeight;
-
-                        // Redraw only the affected rectangle
-                        const rectToAnimate = this.rectanglesColorize[rectIndex];
-                        const ctx = this.ctx;
-                        const w = rectToAnimate.width / 3;
-                        ctx.clearRect(rectToAnimate.x, rectToAnimate.y, rectToAnimate.width, rectToAnimate.height);
-
-                        rectToAnimate.fillColor.forEach((color, index) => {
-                            ctx.fillStyle = color;
-                            const height = this.currentHeights[rectIndex][index];
-                            ctx.fillRect(rectToAnimate.x + index * w, rectToAnimate.y + rectToAnimate.height - height, w, height);
-                            ctx.strokeStyle = 'black';
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(rectToAnimate.x + index * w, rectToAnimate.y, w, rectToAnimate.height);
-                        });
-
-                        this.drawLetterAndLine(rectToAnimate);
-
-                        if (progress < 1) {
-                            requestAnimationFrame(animateDecrease);
-                        } else {
-                            this.finishedDecreasing[rectIndex][colorIndex] = true;
-                            this.colorsInProgress[rectIndex][colorIndex] = false;
-                        }
-                    } else {
-                        this.finishedDecreasing[rectIndex][colorIndex] = true;
-                        this.colorsInProgress[rectIndex][colorIndex] = false;
-                    }
-                };
-
-                animateDecrease();
+                this.startDecreaseAnimationForColor(rectIndex, colorIndex);
             };
 
             const animationInterval = setInterval(animate, this.decreaseInterval);
@@ -309,10 +265,77 @@ export default {
             const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === tankLetter);
             const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
 
-            if (colorIndex !== -1 && this.currentHeights[tankIndex][colorIndex] < 100) {
-                this.currentHeights[tankIndex][colorIndex] = Math.min(100, this.currentHeights[tankIndex][colorIndex] + 100);
-                this.drawVisual();
+            if (colorIndex !== -1) {
+                // Cancel any ongoing decrease animation for this color
+                if (this.colorsInProgress[tankIndex][colorIndex]) {
+                    this.colorsInProgress[tankIndex][colorIndex] = false;
+                }
+
+                // Fill the color to 100%
+                this.currentHeights[tankIndex][colorIndex] = 100;
+
+                // Reset the finished state
+                this.finishedDecreasing[tankIndex][colorIndex] = false;
+
+                // Redraw the specific tank
+                this.drawSpecificTank(tankIndex);
             }
+        },
+        drawSpecificTank(tankIndex) {
+            const rect = this.rectanglesColorize[tankIndex];
+            const ctx = this.ctx;
+            const w = rect.width / 3;
+
+            ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+
+            rect.fillColor.forEach((color, index) => {
+                ctx.fillStyle = color;
+                const height = this.currentHeights[tankIndex][index];
+                ctx.fillRect(rect.x + index * w, rect.y + rect.height - height, w, height);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(rect.x + index * w, rect.y, w, rect.height);
+            });
+
+            this.drawLetterAndLine(rect);
+        },
+        startDecreaseAnimationForColor(rectIndex, colorIndex) {
+            const startHeight = this.currentHeights[rectIndex][colorIndex];
+            const targetHeight = this.minHeight;
+            const startTime = Date.now();
+
+            this.colorsInProgress[rectIndex][colorIndex] = true;
+            this.finishedDecreasing[rectIndex][colorIndex] = false;
+
+            const animateDecrease = () => {
+                if (!this.colorsInProgress[rectIndex][colorIndex]) {
+                    return; // Animation was cancelled
+                }
+
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / this.decreaseDuration, 1);
+
+                if (this.currentHeights[rectIndex][colorIndex] > this.minHeight) {
+                    const currentHeight = startHeight - (progress * (startHeight - targetHeight));
+                    this.currentHeights[rectIndex][colorIndex] = Math.max(this.minHeight, currentHeight);
+
+                    this.drawSpecificTank(rectIndex);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateDecrease);
+                    } else {
+                        this.colorsInProgress[rectIndex][colorIndex] = false;
+                        if (this.currentHeights[rectIndex][colorIndex] <= this.minHeight) {
+                            this.finishedDecreasing[rectIndex][colorIndex] = true;
+                        }
+                    }
+                } else {
+                    this.colorsInProgress[rectIndex][colorIndex] = false;
+                    this.finishedDecreasing[rectIndex][colorIndex] = true;
+                }
+            };
+
+            animateDecrease();
         },
     }
 }
