@@ -2,6 +2,7 @@
     <div class="callsign-test">
         <input class="input" v-model="userInput" @keyup.enter="checkAnswer" />
         <canvas ref="callsignCanvas"></canvas>
+        <!-- <p class="result">angle: {{ angle }} right: {{ result.right }} wrong: {{ result.wrong }}</p> -->
     </div>
 </template>
 
@@ -25,7 +26,7 @@ export default {
             ctx: null,
             userInput: '',
             lastSpokenCallsign: '',
-            results: {
+            result: {
                 right: 0,
                 wrong: 0
             }
@@ -44,7 +45,7 @@ export default {
             this.drawVisual();
             if (this.callsignData.play) {
                 this.configureTest();
-                this.startTest();
+                this.initSpeech()
             }
         },
         initVisual() {
@@ -109,9 +110,42 @@ export default {
                 console.warn("Browser doesn't support text-to-speech.");
                 return;
             }
+
+            // Try to resume audio context
+            if (window.speechSynthesis.resume) {
+                window.speechSynthesis.resume();
+            }
+
+            if (window.speechSynthesis.paused) {
+                console.log('Speech synthesis was paused, resuming...');
+                window.speechSynthesis.resume();
+            }
+
             this.lastSpokenCallsign = callsign;
             this.speech = new SpeechSynthesisUtterance(`your callsign is: ${callsign}, and new heading is: ${this.angle}`);
+
             window.speechSynthesis.speak(this.speech);
+
+            // Check if speech actually started
+            setTimeout(() => {
+                if (!window.speechSynthesis.speaking) {
+                    console.warn('Speech did not start, attempting to speak again');
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(this.speech);
+                }
+            }, 1000);  // Check after 1 second
+
+            this.speech.onend = () => {
+                console.log('Speech ended');
+            };
+
+            this.speech.onerror = (event) => {
+                console.error('Speech error:', event);
+                if (event.error === 'not-allowed') {
+                    console.warn('Speech synthesis not allowed. User interaction may be required.');
+                    // Maybe show a message to the user here
+                }
+            };
         },
         startTest() {
             this.intervalId = setInterval(() => {
@@ -132,14 +166,35 @@ export default {
             const isCallsignCorrect = this.callsign === this.lastSpokenCallsign;
 
             if (isAngleCorrect && isCallsignCorrect) {
-                this.results.right++;
+                this.result.right++;
             } else {
-                this.results.wrong++;
+                this.result.wrong++;
             }
 
             this.userInput = ''; // Clear the input field
-            console.log(`Answer checked. Angle: ${isAngleCorrect ? 'Correct' : 'Incorrect'}, Callsign match: ${isCallsignCorrect ? 'Yes' : 'No'}`);
-        }
+        },
+        initSpeech() {
+            if (window.speechSynthesis) {
+                const maxWaitTime = 3000; // 3 seconds
+                const startTime = Date.now();
+
+                const checkVoices = () => {
+                    if (window.speechSynthesis.getVoices().length > 0) {
+                        this.startTest();
+                    } else if (Date.now() - startTime < maxWaitTime) {
+                        setTimeout(checkVoices, 100);
+                    } else {
+                        console.warn('Timed out waiting for voices, starting anyway');
+                        this.startTest();
+                    }
+                };
+
+                window.speechSynthesis.onvoiceschanged = checkVoices;
+                checkVoices(); // Start checking immediately
+            } else {
+                this.startTest();
+            }
+        },
     }
 };
 </script>
@@ -168,5 +223,10 @@ button {
     position: absolute;
     top: -32%;
     right: 0
+}
+
+.result {
+    position: absolute;
+    top: 0
 }
 </style>
