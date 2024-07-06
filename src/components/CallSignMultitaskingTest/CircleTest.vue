@@ -1,7 +1,6 @@
 <template>
     <div class="circle-test">
         <canvas ref="circleCanvas"></canvas>
-        <!-- <p class="result">right: {{ result.right }}, wrong: {{ result.wrong }}</p> -->
     </div>
 </template>
 
@@ -31,7 +30,8 @@ export default {
         alertLightsData: {
             type: Object,
             required: true
-        }
+        },
+        updateResults: Function,
     },
     data() {
         return {
@@ -40,10 +40,6 @@ export default {
             timerInterval: null,
             alternateChange: false,
             setInterval: 0,
-            result: {
-                right: 0,
-                wrong: 0
-            }
         };
     },
     mounted() {
@@ -109,7 +105,14 @@ export default {
             ctx.fillText(letter, x, y);
         },
         getRandomColor() {
-            return Math.random() < 0.6 ? COLORS.YELLOW : COLORS.RED;
+            if (Math.random() < 0.6) {
+                this.updateResults('alert_lights', { total_warning_count: 1 });
+                return COLORS.YELLOW
+            } else {
+                this.updateResults('alert_lights', { total_alert_count: 1 });
+                return COLORS.RED;
+            }
+
         },
         changeActiveCircleColor() {
             if (this.activeIndex !== -1) {
@@ -139,13 +142,23 @@ export default {
             clearInterval(this.timerInterval);
         },
         handleKeyPress(event) {
-            const index = ['t', 'y', 'u', 'i'].indexOf(event.key.toLowerCase());
-            if (index !== -1 && index === this.activeIndex) {
+            const key = event.key.toLowerCase();
+            const letters = ['t', 'y', 'u', 'i']
+
+            if (letters.includes(key)) {
+                const index = letters.indexOf(event.key.toLowerCase());
                 const fillColor = this.circleConfig[index].fillColor;
-                if (fillColor === COLORS.RED) {
-                    this.result.right += 1;
-                } else if (fillColor === COLORS.YELLOW) {
-                    this.result.wrong += 1;
+
+                if (index !== -1 && index === this.activeIndex) {
+                    if (fillColor === COLORS.RED) {
+                        this.updateResults('alert_lights', { correct_response: 1 });
+                    } else if (fillColor === COLORS.YELLOW) {
+                        this.updateResults('alert_lights', { wrong_response: 1 });
+                    }
+                } else {
+                    if (this.activeIndex !== -1) {
+                        this.updateResults('alert_lights', { wrong_response: 1 });
+                    }
                 }
             }
         }

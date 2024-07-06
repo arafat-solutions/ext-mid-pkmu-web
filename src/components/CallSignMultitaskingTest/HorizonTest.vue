@@ -1,6 +1,5 @@
 <template>
     <div class="horizon-test">
-        <!-- <p>Correct time: {{ displayCorrectTime }} </p> -->
         <canvas ref="horizonCanvas" @mousemove="handleMouseEnter"></canvas>
     </div>
 </template>
@@ -12,7 +11,8 @@ export default {
         horizonData: {
             type: Object,
             required: true
-        }
+        },
+        updateResults: Function,
     },
     data() {
         return {
@@ -238,18 +238,10 @@ export default {
                 this.lastCorrectStartTime = currentTime;
             } else if (!isCorrect && this.isCurrentlyCorrect) {
                 this.isCurrentlyCorrect = false;
-                this.correct_time += currentTime - this.lastCorrectStartTime;
+                // this.correct_time += currentTime - this.lastCorrectStartTime;
+                this.updateResults('horizon', { correct_time: currentTime - this.lastCorrectStartTime });
                 this.lastCorrectStartTime = null;
             }
-        },
-    },
-    computed: {
-        displayCorrectTime() {
-            let time = this.correct_time;
-            if (this.isCurrentlyCorrect) {
-                time += performance.now() / 1000 - this.lastCorrectStartTime;
-            }
-            return time.toFixed(2);
         },
     },
 };

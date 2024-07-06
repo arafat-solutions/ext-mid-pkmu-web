@@ -1,6 +1,6 @@
 <template>
     <div class="callsign-test">
-        <input class="input" v-model="userInput" @keyup.enter="checkAnswer" />
+        <input type="number" class="input" v-model="userInput" ref="callsignInput" />
         <canvas ref="callsignCanvas"></canvas>
         <!-- <p class="result">angle: {{ angle }} right: {{ result.right }} wrong: {{ result.wrong }}</p> -->
     </div>
@@ -13,7 +13,8 @@ export default {
         callsignData: {
             type: Object,
             required: true
-        }
+        },
+        updateResults: Function,
     },
     data() {
         return {
@@ -29,14 +30,17 @@ export default {
             result: {
                 right: 0,
                 wrong: 0
-            }
+            },
+            focus: false
         };
     },
     mounted() {
         this.initializeTest()
+        window.addEventListener('keydown', this.checkAnswer);
     },
     beforeUnmount() {
         this.cleanup();
+        window.removeEventListener('keydown', this.checkAnswer);
     },
     methods: {
         initializeTest() {
@@ -54,6 +58,28 @@ export default {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
             this.ctx = canvas.getContext("2d");
+        },
+        initSpeech() {
+            if (window.speechSynthesis) {
+                const maxWaitTime = 3000; // 3 seconds
+                const startTime = Date.now();
+
+                const checkVoices = () => {
+                    if (window.speechSynthesis.getVoices().length > 0) {
+                        this.startTest();
+                    } else if (Date.now() - startTime < maxWaitTime) {
+                        setTimeout(checkVoices, 100);
+                    } else {
+                        console.warn('Timed out waiting for voices, starting anyway');
+                        this.startTest();
+                    }
+                };
+
+                window.speechSynthesis.onvoiceschanged = checkVoices;
+                checkVoices(); // Start checking immediately
+            } else {
+                this.startTest();
+            }
         },
         drawVisual() {
             this.clearCanvas();
@@ -140,7 +166,6 @@ export default {
             };
 
             this.speech.onerror = (event) => {
-                console.error('Speech error:', event);
                 if (event.error === 'not-allowed') {
                     console.warn('Speech synthesis not allowed. User interaction may be required.');
                     // Maybe show a message to the user here
@@ -152,6 +177,9 @@ export default {
                 this.generateAngle();
                 const callsignToSpeak = Math.random() < this.matchesCall ? this.callsign : this.generateCallSign();
                 this.speak(callsignToSpeak);
+                if (this.callsign === callsignToSpeak) {
+                    this.updateResults('call_sign', { total_match_count: 1 });
+                }
             }, this.intervalTime);
         },
         cleanup() {
@@ -160,41 +188,28 @@ export default {
                 clearInterval(this.intervalId);
             }
         },
-        checkAnswer() {
-            const inputAngle = parseInt(this.userInput.trim());
-            const isAngleCorrect = inputAngle === this.angle;
-            const isCallsignCorrect = this.callsign === this.lastSpokenCallsign;
+        checkAnswer(event) {
+            if (event.key === 'Enter') {
+                if (!this.focus) {
+                    this.focus = true
+                    this.$refs.callsignInput.focus()
+                } else {
+                    const isAngleCorrect = this.userInput === this.angle;
+                    const isCallsignCorrect = this.callsign === this.lastSpokenCallsign;
 
-            if (isAngleCorrect && isCallsignCorrect) {
-                this.result.right++;
-            } else {
-                this.result.wrong++;
-            }
-
-            this.userInput = ''; // Clear the input field
-        },
-        initSpeech() {
-            if (window.speechSynthesis) {
-                const maxWaitTime = 3000; // 3 seconds
-                const startTime = Date.now();
-
-                const checkVoices = () => {
-                    if (window.speechSynthesis.getVoices().length > 0) {
-                        this.startTest();
-                    } else if (Date.now() - startTime < maxWaitTime) {
-                        setTimeout(checkVoices, 100);
+                    if (isAngleCorrect && isCallsignCorrect) {
+                        this.updateResults('call_sign', { correct_response: 1 });
                     } else {
-                        console.warn('Timed out waiting for voices, starting anyway');
-                        this.startTest();
+                        this.updateResults('call_sign', { wrong_response: 1 });
                     }
-                };
 
-                window.speechSynthesis.onvoiceschanged = checkVoices;
-                checkVoices(); // Start checking immediately
-            } else {
-                this.startTest();
+                    this.userInput = '';
+                    this.$refs.callsignInput.blur()
+                    this.focus = false
+                }
             }
         },
+
     }
 };
 </script>
@@ -212,6 +227,15 @@ export default {
     height: 24px;
     background-color: white;
     border: 1px solid black;
+    padding-left: 10px;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
 }
 
 canvas {
