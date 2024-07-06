@@ -1,6 +1,7 @@
 <template>
     <div class="circle-test">
         <canvas ref="circleCanvas"></canvas>
+        <!-- <p class="result">right: {{ result.right }}, wrong: {{ result.wrong }}</p> -->
     </div>
 </template>
 
