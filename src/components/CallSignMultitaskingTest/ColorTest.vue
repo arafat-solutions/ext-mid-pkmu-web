@@ -4,7 +4,21 @@
     </div>
 </template>
 
+
+
 <script>
+const DECREASE_SPEED = {
+    slow: 3000,
+    medium: 2000,
+    fast: 1000
+};
+
+const DECREASE_INTERVAL = {
+    slow: 3000,
+    medium: 2000,
+    fast: 1000
+}
+
 export default {
     name: 'ColorTest',
     props: {
@@ -34,11 +48,13 @@ export default {
                 [100, 100, 100]
             ],
             decreaseInterval: 1000, // Time in ms between each decrease animation
-            decreaseDuration: 3000, // Duration of each decrease animation
+            decreaseDuration: 1000, // Duration of each decrease animation
             minHeight: 4, // Minimum height before stopping the animation
             finishedDecreasing: [],
             colorsInProgress: [],
             selectedColor: null,
+            minRefillThreshold: 25,
+            animationInterval: null
         };
     },
     mounted() {
@@ -47,9 +63,11 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('keydown', this.handleKeyPress);
+        clearInterval(this.animationInterval)
     },
     methods: {
         initializeTest() {
+            this.initConfig();
             this.initVisual();
             this.drawVisual();
             if (this.colorTankData.play) {
@@ -59,6 +77,16 @@ export default {
         initVisual() {
             const canvas = this.$refs.colorCanvas;
             this.ctx = canvas.getContext("2d");
+        },
+        initConfig() {
+            // negative_score: true,
+            //         speed: 'slow',
+            //         descend_speed: "slow", // slow, medium, fast
+            //         colored_lower_tank: true,
+            //         play: true
+            const { descend_speed, speed } = this.colorTankData;
+            this.decreaseDuration = DECREASE_SPEED[descend_speed]
+            this.decreaseInterval = DECREASE_INTERVAL[speed]
         },
         drawVisual() {
             this.clearCanvas();
@@ -163,7 +191,7 @@ export default {
         },
         drawHorizontalLineMinimum({ x, y, width, height }) {
             const ctx = this.ctx
-            const lineY = y + (3 * height / 4);
+            const lineY = y + height - (this.minRefillThreshold / 100 * height)
             ctx.beginPath();
             ctx.moveTo(x, lineY);
             ctx.lineTo(x + width, lineY);
@@ -190,7 +218,7 @@ export default {
 
 
             fillColor.forEach((color, colorIndex) => {
-                ctx.fillStyle = color;
+                ctx.fillStyle = this.colorTankData.colored_lower_tank ? color : 'gray';
                 const currentHeight = this.currentHeights[index][colorIndex];
                 ctx.fillRect(x + colorIndex * w, y + height - currentHeight, w, currentHeight);
                 ctx.strokeStyle = 'black';
@@ -212,10 +240,12 @@ export default {
         startDecreaseAnimation() {
             this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
             this.colorsInProgress = Array.from({ length: 4 }, () => Array(3).fill(false));
-
-            const animate = () => {
+            this.startAnimationInterval();
+        },
+        startAnimationInterval() {
+            this.animationInterval = setInterval(() => {
                 if (this.finishedDecreasing.flat().every(Boolean)) {
-                    clearInterval(animationInterval);
+                    clearInterval(this.animationInterval);
                     return;
                 }
 
@@ -234,10 +264,16 @@ export default {
                     (this.finishedDecreasing[rectIndex][colorIndex] && this.currentHeights[rectIndex][colorIndex] <= this.minHeight));
 
                 this.startDecreaseAnimationForColor(rectIndex, colorIndex);
-            };
-
-            const animationInterval = setInterval(animate, this.decreaseInterval);
+            }, this.decreaseInterval);
         },
+        restartDecreaseAnimation() {
+            if (!this.finishedDecreasing.flat().every(Boolean)) {
+                this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
+                this.startAnimationInterval();
+            }
+        },
+
+
         drawLetterAndLine(rect) {
             const ctx = this.ctx;
             const textX = rect.x + rect.width / 2;
@@ -266,7 +302,6 @@ export default {
             const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
 
             if (colorIndex !== -1) {
-                // Cancel any ongoing decrease animation for this color
                 if (this.colorsInProgress[tankIndex][colorIndex]) {
                     this.colorsInProgress[tankIndex][colorIndex] = false;
                 }
@@ -279,6 +314,9 @@ export default {
 
                 // Redraw the specific tank
                 this.drawSpecificTank(tankIndex);
+
+                // Restart the decrease animation if all colors were previously finished
+                this.restartDecreaseAnimation();
             }
         },
         drawSpecificTank(tankIndex) {
@@ -289,7 +327,7 @@ export default {
             ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
 
             rect.fillColor.forEach((color, index) => {
-                ctx.fillStyle = color;
+                ctx.fillStyle = this.colorTankData.colored_lower_tank ? color : 'gray';
                 const height = this.currentHeights[tankIndex][index];
                 ctx.fillRect(rect.x + index * w, rect.y + rect.height - height, w, height);
                 ctx.strokeStyle = 'black';
