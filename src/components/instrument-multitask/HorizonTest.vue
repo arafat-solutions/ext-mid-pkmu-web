@@ -49,8 +49,13 @@ export default {
   },
   watch: {
     isTimesUp() {
-      clearInterval(this.intervalRandomTilt)
-			clearInterval(this.intervalRandomCircleShift)
+      clearInterval(this.intervalRandomTilt);
+			clearInterval(this.intervalRandomCircleShift);
+      if (this.greenLineStartTime) {
+        const currentTime = Date.now();
+        this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
+        this.greenLineStartTime = null; // Reset start time when exiting circle
+      }
 
       this.$emit('getResult', {
         accuracy: this.accuracy,
