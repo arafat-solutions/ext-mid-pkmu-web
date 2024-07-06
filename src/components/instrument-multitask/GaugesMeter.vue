@@ -139,6 +139,7 @@ export default {
       intervalId: null,
       result: {
         wrong: 0,
+        occurance: 0,
         differenceTimes: [],
         needPressTimes: [],
       }
@@ -189,6 +190,8 @@ export default {
       this.$emit('getResult', {
         correctResponse: this.correctResponse,
         responseTime: this.responseTime,
+        correct: this.result.resultCorrect,
+        occurance: this.result.occurance,
       });
     },
     isPause(newValue) {
@@ -261,6 +264,8 @@ export default {
       if (labelExists) {
         return;
       }
+
+      this.result.occurance++;
 
       this.result.needPressTimes.push({
         'label': label,
