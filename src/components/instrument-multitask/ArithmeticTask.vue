@@ -102,6 +102,11 @@
           return;
         }
 
+        // Stop the sound after answer question
+        if (this.useSound) {
+          window.speechSynthesis.cancel();
+        }
+
         this.result.answerTimes.push(Date.now());
         if (this.problem.choices[index] === this.problem.correctAnswer) {
           this.result.correct++;
