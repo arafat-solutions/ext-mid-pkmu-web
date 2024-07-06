@@ -27,7 +27,6 @@ export default {
                 { x: 280, y: 400, width: 60, height: 100, fillColor: ['green', 'blue', 'red'], letter: "D" },
                 { x: 360, y: 400, width: 60, height: 100, fillColor: ['red', 'yellow', 'green'], letter: "F" },
             ],
-            userAnswer: '',
             currentHeights: [  // Initialize the current heights for each rectangle
                 [100, 100, 100],
                 [100, 100, 100],
@@ -38,18 +37,24 @@ export default {
             decreaseDuration: 3000, // Duration of each decrease animation
             minHeight: 4, // Minimum height before stopping the animation
             finishedDecreasing: [],
+            colorsInProgress: [],
+            selectedColor: null,
         };
     },
     mounted() {
         this.initializeTest()
+        window.addEventListener('keydown', this.handleKeyPress);
     },
     beforeUnmount() {
+        window.removeEventListener('keydown', this.handleKeyPress);
     },
     methods: {
         initializeTest() {
             this.initVisual();
             this.drawVisual();
-            this.startDecreaseAnimation()
+            if (this.colorTankData.play) {
+                this.startDecreaseAnimation()
+            }
         },
         initVisual() {
             const canvas = this.$refs.colorCanvas;
@@ -224,7 +229,7 @@ export default {
                     colorIndex = this.getRandomNumber(3);
                     attempts++;
                     if (attempts > 100) {
-                        console.warn('Could not find a non-finished and non-in-progress rectangle and color');
+                        // console.warn('Could not find a non-finished and non-in-progress rectangle and color');
                         return;
                     }
                 } while (this.colorsInProgress[rectIndex][colorIndex] || this.finishedDecreasing[rectIndex][colorIndex]);
@@ -291,6 +296,23 @@ export default {
         },
         getRandomNumber(max) {
             return Math.floor(Math.random() * max);
+        },
+        handleKeyPress(event) {
+            const key = event.key.toUpperCase();
+            if ('QWER'.includes(key)) {
+                this.selectedColor = this.rectangles.find(rect => rect.letter === key).fillColor;
+            } else if ('ASDF'.includes(key) && this.selectedColor) {
+                this.increaseColor(key);
+            }
+        },
+        increaseColor(tankLetter) {
+            const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === tankLetter);
+            const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
+
+            if (colorIndex !== -1 && this.currentHeights[tankIndex][colorIndex] < 100) {
+                this.currentHeights[tankIndex][colorIndex] = Math.min(100, this.currentHeights[tankIndex][colorIndex] + 100);
+                this.drawVisual();
+            }
         },
     }
 }
