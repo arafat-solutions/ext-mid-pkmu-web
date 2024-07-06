@@ -291,7 +291,6 @@ export default {
       // Find the index of the item with the given label
       const indexNeedPress = this.result.needPressTimes.findIndex(item => item.label === keyPress);
       if (indexNeedPress === -1) {
-        alert('test');
         this.result.wrong++;
         return;
       }
