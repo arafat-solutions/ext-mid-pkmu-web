@@ -54,43 +54,6 @@
           @getResult="gaugesMeterResult"
         />
       </div>
-      <div class="column-50" v-show="isTimesUp && !isLoading">
-        <h2 class="title-result">Result:</h2>
-        <h3 class="title-result">Horizon</h3>
-        <div class="column-50 mb-2">
-          <span class="label-result">Accuracy:</span>
-        </div>
-        <div class="column-50 mb-2">
-          <span class="value-result">{{ horizonAccuracy }}</span>
-        </div>
-        <h3 class="title-result">Alert Lights</h3>
-        <div class="column-50 mb-2">
-          <span class="label-result">Correct response:</span>
-          <span class="label-result">Response time:</span>
-        </div>
-        <div class="column-50 mb-2">
-          <span class="value-result">{{ alertLightCorrectResponse }}</span>
-          <span class="value-result">{{ alertLightResponseTime }}</span>
-        </div>
-        <h3 class="title-result">Instrument</h3>
-        <div class="column-50 mb-2">
-          <span class="label-result">Correct response:</span>
-          <span class="label-result">Response time:</span>
-        </div>
-        <div class="column-50 mb-2">
-          <span class="value-result">{{ gaugesMeterCorrectResponse }}</span>
-          <span class="value-result">{{ gaugesMeterResponseTime }}</span>
-        </div>
-        <h3 class="title-result">Mental Arithmetics</h3>
-        <div class="column-50">
-          <span class="label-result">Correct response:</span>
-          <span class="label-result">Response time:</span>
-        </div>
-        <div class="column-50 mb-2">
-          <span class="value-result">{{ arithmeticCorrectResponse }}</span>
-          <span class="value-result">{{ arithmeticResponseTime }}</span>
-        </div>
-      </div>
     </div>
     <div v-if="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
@@ -285,6 +248,7 @@
       },
       gaugesMeterResult(result) {
         this.result.gaugesMeter = result;
+        console.log(this.result.gaugesMeter);
       },
       horizonResult(result) {
         this.result.horizon = result;
@@ -357,7 +321,7 @@
           if (!response.ok) {
             throw new Error(`Error: ${response.statusText}`);
           }
-          // this.$router.push('/module');
+          this.$router.push('/module');
         } catch (error) {
           console.error(error);
         } finally {
@@ -520,7 +484,7 @@
     /* Ensure it is above other content */
 }
 
-.loading-spinner {
+  .loading-spinner {
     border: 8px solid rgba(255, 255, 255, 0.3);
     /* Light border */
     border-top: 8px solid #ffffff;
@@ -529,5 +493,21 @@
     width: 60px;
     height: 60px;
     animation: spin 1s linear infinite;
-}
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
 </style>
