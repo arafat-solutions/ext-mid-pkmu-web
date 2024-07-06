@@ -15,6 +15,8 @@
         :paddingHorizontal="-20"
         :paddingVertical="-20"
         :needleHeightRatio="0.75"
+        :needleTransitionDuration="1500"
+        needleTransition="easeCubicInOut"
       />
     </div>
   </div>
