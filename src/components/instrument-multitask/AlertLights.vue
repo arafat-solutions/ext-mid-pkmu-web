@@ -32,6 +32,9 @@
       redLength() {
         return this.result.colors.filter(color => color === 'red').length;
       },
+      yellowLength() {
+        return this.result.colors.filter(color => color === 'yellow').length;
+      },
       correctResponse() {
         return Number((this.result.correct / this.redLength  * 100).toFixed(2));
       },
@@ -57,6 +60,10 @@
         this.$emit('getResult', {
           correctResponse: this.correctResponse,
           responseTime: this.responseTime,
+          wrong: this.result.wrong,
+          correct: this.result.correct,
+          alertCount: this.redLength,
+          warningCount: this.yellowLength,
         });
       },
       isPause(newValue) {

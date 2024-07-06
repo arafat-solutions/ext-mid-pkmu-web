@@ -54,7 +54,7 @@
           @getResult="gaugesMeterResult"
         />
       </div>
-      <div class="column-50" v-show="isTimesUp">
+      <div class="column-50" v-show="isTimesUp && !isLoading">
         <h2 class="title-result">Results:</h2>
         <h3 class="title-result">Horizon</h3>
         <div class="column-50 mb-2">
@@ -111,7 +111,7 @@
     },
     data() {
       return {
-        loading: false,
+        isLoading: false,
         minuteTime: null,
         timeLeft: null, // Countdown time in seconds
         interval: null,
@@ -143,10 +143,16 @@
           alertLight: {
             correctResponse: null,
             responseTime: null,
+            wrong: null,
+            correct: null,
+            alertCount: null,
+            warningCount: null,
           },
           arithmetic: {
             correctResponse: null,
             responseTime: null,
+            correctAnswer: null,
+            totalQuestion: null,
           },
           gaugesMeter: {
             correctResponse: null,
@@ -154,6 +160,7 @@
           },
           horizon: {
             accuracy: null,
+            correctTime: null,
           }
         }
       };
@@ -228,12 +235,12 @@
             this.timeLeft = this.minuteTime * 60;
             this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
             this.config.arithmetic.useSound = instrumentMultitaskConfig.arithmetics.sound;
+            this.config.arithmetic.isActive = instrumentMultitaskConfig.subtask.arithmetics;
             // Trigger pause after user click button
-            if (this.config.arithmetic.useSound) {
+            if (this.config.arithmetic.useSound && this.config.arithmetic.isActive) {
               this.pause();
               document.getElementById('fullPageModal').style.display = 'flex';
             }
-            this.config.arithmetic.isActive = instrumentMultitaskConfig.subtask.arithmetics;
             this.config.alertLight.speed = instrumentMultitaskConfig.alert_lights.speed;
             this.config.alertLight.frequency = instrumentMultitaskConfig.alert_lights.frequency;
             this.config.alertLight.isActive = instrumentMultitaskConfig.subtask.alert_lights;
@@ -264,19 +271,18 @@
         }, 1000);
       },
       arithmeticResult(result) {
-        this.results.arithmetic.correctResponse = result.correctResponse;
-        this.results.arithmetic.responseTime = result.responseTime;
+        this.results.arithmetic = result;
       },
       alertLightResult(result) {
-        this.results.alertLight.correctResponse = result.correctResponse;
-        this.results.alertLight.responseTime = result.responseTime;
+        this.results.alertLight = result;
       },
       gaugesMeterResult(result) {
         this.results.gaugesMeter.correctResponse = result.correctResponse;
         this.results.gaugesMeter.responseTime = result.responseTime;
       },
       horizonResult(result) {
-        this.results.horizon.accuracy = result.accuracy;
+        this.results.horizon = result;
+        console.log(this.results.horizon);
       },
       pause() {
         clearInterval(this.interval);
@@ -297,7 +303,7 @@
       },
       async submitResult() {
         try {
-          this.loading = true;
+          this.isLoading = true;
           const API_URL = process.env.VUE_APP_API_URL;
           const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
           const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test');
@@ -323,7 +329,7 @@
         } catch (error) {
           console.error(error);
         } finally {
-          this.loading = false; // Set loading to false when the submission is complete
+          this.isLoading = false; // Set isLoading to false when the submission is complete
         }
       }
     },

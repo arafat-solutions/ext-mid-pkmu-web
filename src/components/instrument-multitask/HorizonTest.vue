@@ -54,6 +54,7 @@ export default {
 
       this.$emit('getResult', {
         accuracy: this.accuracy,
+        correctTime: Number(this.greenLineDuration.toFixed(2)),
       });
     },
     isPause() {
@@ -68,16 +69,16 @@ export default {
   },
   methods: {
     runningInterval(type = null) {
-			if (type == 'random-tilt') {
+			if (type === 'random-tilt') {
 				this.intervalRandomTilt = setInterval(() => {
 					this.randomTilt();
 				}, this.speedInterval());
 			}
 
-			if (type == 'circle-shift') {
+			if (type === 'circle-shift') {
 				this.intervalRandomCircleShift = setInterval(() => {
 					this.randomCircleShift();
-				}, 1000);
+				}, this.speedInterval());
 			}
 		},
     initHorizon() {
@@ -88,26 +89,20 @@ export default {
       this.yellowLinePositionY = this.horizonHeight / 2;
 
       this.circleShiftX = 0;
+      this.tiltAngle = 0;
       this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 20;
-      if (!this.isActive) {
-				this.tiltAngle = 0;
-			} else {
+      if (this.isActive) {
 				this.runningInterval('random-tilt');
 				this.runningInterval('circle-shift');
 			}
 
       this.updateHorizon();
-      //Random Tilt
-      setInterval(this.randomTilt, this.speedInterval());
-
-      //Random Circle X
-      setInterval(this.randomCircleShift, this.speedInterval());
 
       // Menambahkan event listener untuk mouse move
       canvas.addEventListener('mousemove', this.checkMousePosition);
     },
     updateHorizon() {
-      if (this.isPause || this.isTimesUp || !this.isActive) {
+      if (this.isPause || this.isTimesUp) {
         return;
       }
 
@@ -235,11 +230,13 @@ export default {
 			ctx.stroke();
     },
     randomTilt() {
-      this.tiltAngle = this.smoothRandom(-80, 80, this.tiltAngle); // Kemiringan acak antara -80 dan 80 derajat
+      this.tiltAngle = this.isActive ? this.smoothRandom(-80, 80, this.tiltAngle) : 0; // Kemiringan acak antara -80 dan 80 derajat
+
       this.updateHorizon();
     },
     randomCircleShift() {
-      this.circleShiftX = this.smoothRandom(-125, 125, this.circleShiftX); // Kemiringan acak antara -125 dan 125 x position
+      this.circleShiftX = this.isActive ? this.smoothRandom(-125, 125, this.circleShiftX) : null; // Kemiringan acak antara -125 dan 125 x position
+
       this.updateHorizon();
 			this.checkMousePosition();
     },
