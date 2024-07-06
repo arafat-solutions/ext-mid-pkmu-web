@@ -178,7 +178,7 @@ export default {
       }, 0);
 
       for (const needPressTime of this.result.needPressTimes) {
-        sum += this.getTimeDifferenceInSeconds(new Date, needPressTime.time);
+        sum += this.getTimeDifferenceInSeconds(Date.now(), needPressTime.time);
       }
 
       return Number((sum / this.totalNeedPress).toFixed(2));
@@ -264,7 +264,7 @@ export default {
 
       this.result.needPressTimes.push({
         'label': label,
-        'time': new Date,
+        'time': Date.now(),
       });
     },
     getRandomValueWhenNotRed(newValue) {
@@ -297,7 +297,7 @@ export default {
       }
 
       // Calculate diff
-      const now = new Date;
+      const now = Date.now();
       const diff = this.getTimeDifferenceInSeconds(now, this.result.needPressTimes[indexNeedPress].time);
       this.result.differenceTimes.push(diff);
 
