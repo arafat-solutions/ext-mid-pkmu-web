@@ -66,8 +66,14 @@ export default {
                     alphanumeric: true,
                     shape: true
                 },
-                questionInterval: 30
+                questionInterval: 30,
+                testId: '',
+                moduleId: '',
+                sessionId: '',
+                userId: ''
             },
+            timerInterval: null,
+            tesInterval: null
         };
     },
     mounted() {
@@ -80,13 +86,31 @@ export default {
             this.ctx = canvas.getContext("2d");
         },
         initializeTest() {
-            this.testTime = this.configBe.duration * 60;
-            this.memoryTime = this.configBe.questionInterval;
+
             this.createRandomQuestion();
+            this.initConfig()
             this.initVisual();
             this.drawVisual();
             this.countDownMemoryTime();
             this.countDownTestTime();
+        },
+        initConfig() {
+            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+            const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').config
+            const { id } = config
+            // console.log(config, "<< config")
+
+            this.configBe = {
+                duration: 5 * 60, // hardcode
+                questionInterval: 30, // hardcode
+                testId: id,
+                moduleId: scheduleData.moduleId,
+                sessionId: scheduleData.sessionId,
+                userId: scheduleData.userId
+            }
+
+            this.testTime = 5 * 60
+            this.memoryTime = 30
         },
         drawVisual() {
             this.clearCanvas();
@@ -230,12 +254,12 @@ export default {
                     this.drawVisual()
                 } else {
                     clearInterval(this.tesInterval);
-                    try {
-                        await this.submitResult();
-                        console.log('Test result submitted successfully');
-                    } catch (error) {
-                        console.error('An error occurred while submitting the test result:', error);
-                    }
+                    // try {
+                    //     await this.submitResult();
+                    //     console.log('Test result submitted successfully');
+                    // } catch (error) {
+                    //     console.error('An error occurred while submitting the test result:', error);
+                    // }
                 }
             }, 1000)
         },
@@ -250,9 +274,8 @@ export default {
                     this.innerConfig[7] = { type: 'shape', shapeName: 'questionMark' }
                     this.canAnswer = true
                     this.drawVisual()
-                    // Optionally handle timer expiration logic here
                 }
-            }, 1000); // Update every second
+            }, 1000);
         },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -443,14 +466,13 @@ export default {
             try {
                 this.loading = true;
                 const API_URL = process.env.VUE_APP_API_URL;
-                const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-                const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test')
+
                 const payload = {
-                    testSessionId: scheduleData.sessionId,
-                    "userId": scheduleData.userId,
-                    "moduleId": scheduleData.moduleId,
-                    "batteryTestConfigId": test.config.id,
-                    "result": { ...this.result }
+                    testSessionId: this.configBe.sessionId,
+                    userId: this.configBe.userId,
+                    moduleId: this.configBe.moduleId,
+                    batteryTestConfigId: this.configBe.testId,
+                    result: { ...this.result }
                 }
                 const response = await fetch(`${API_URL}api/submission`, {
                     method: 'POST',
@@ -473,6 +495,8 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('keydown', this.handleGlobalKeydown);
+        clearInterval(this.tesInterval)
+        clearInterval(this.timerInterval)
     }
 };
 </script>
