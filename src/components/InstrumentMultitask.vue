@@ -305,6 +305,11 @@
       },
       async submitResult() {
         try {
+          if (this.isTrial) {
+            this.$router.push('/module');
+            return;
+          }
+
           this.isLoading = true;
           const API_URL = process.env.VUE_APP_API_URL;
           const payload = this.generatePayloadForSubmit();
