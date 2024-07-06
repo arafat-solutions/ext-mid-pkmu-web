@@ -2,7 +2,6 @@
     <div class="callsign-test">
         <input type="number" class="input" v-model="userInput" ref="callsignInput" />
         <canvas ref="callsignCanvas"></canvas>
-        <!-- <p class="result">angle: {{ angle }} right: {{ result.right }} wrong: {{ result.wrong }}</p> -->
     </div>
 </template>
 
@@ -40,6 +39,9 @@ export default {
     },
     beforeUnmount() {
         this.cleanup();
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
         window.removeEventListener('keydown', this.checkAnswer);
     },
     methods: {
@@ -48,8 +50,8 @@ export default {
             this.callsign = this.generateCallSign();
             this.drawVisual();
             if (this.callsignData.play) {
-                this.configureTest();
-                this.initSpeech()
+                this.initConfig();
+                // this.initSpeech()
             }
         },
         initVisual() {
@@ -101,24 +103,20 @@ export default {
             this.ctx.font = '12px Arial';
             this.ctx.fillText('New heading:', 200, 15);
         },
-        configureTest() {
-            this.setIntervalTime();
-            this.setMatchesCall();
-        },
-        setIntervalTime() {
+        initConfig() {
             const frequencyMap = {
                 'often': 10000,
                 'medium': 20000,
                 'seldom': 30000
             };
-            this.intervalTime = frequencyMap[this.callsignData.frequency] || 20000;
-        },
-        setMatchesCall() {
+
             const matchesMap = {
                 'low': 0.3,
                 'medium': 0.5,
                 'high': 0.7
             };
+
+            this.intervalTime = frequencyMap[this.callsignData.frequency] || 20000;
             this.matchesCall = matchesMap[this.callsignData.matches] || 0.5;
         },
         generateCallSign() {
@@ -161,14 +159,9 @@ export default {
                 }
             }, 1000);  // Check after 1 second
 
-            this.speech.onend = () => {
-                console.log('Speech ended');
-            };
-
             this.speech.onerror = (event) => {
                 if (event.error === 'not-allowed') {
                     console.warn('Speech synthesis not allowed. User interaction may be required.');
-                    // Maybe show a message to the user here
                 }
             };
         },
@@ -186,6 +179,11 @@ export default {
             window.speechSynthesis.cancel();
             if (this.intervalId) {
                 clearInterval(this.intervalId);
+            }
+        },
+        startSpeechTest() {
+            if (this.callsignData.play) {
+                this.initSpeech()
             }
         },
         checkAnswer(event) {

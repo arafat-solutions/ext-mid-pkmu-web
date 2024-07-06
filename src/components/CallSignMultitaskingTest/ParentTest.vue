@@ -1,13 +1,16 @@
 <template>
-
     <div id="parent-callsign-multitask">
+        <div v-if="!startTest" class="start-container">
+            <p>Anda akan melaksanakan Tes Call Sign Multitask. Tekan Tombol Start Test untuk memulai.</p>
+            <button class="start-button" @click="startSpeechTest">Start Test</button>
+        </div>
         <div class="left-side">
-            <ColorTest :color-tank-data="configBe.color_tank" />
+            <ColorTest :color-tank-data="configBe.color_tank" :update-results="updateResults" />
         </div>
         <div class="right-side">
             <CircleTest :alert-lights-data="configBe.alert_lights" :update-results="updateResults" />
             <HorizonTest :horizon-data="configBe.horizon" :update-results="updateResults" />
-            <CallSignTest :callsign-data="configBe.callsign" :update-results="updateResults" />
+            <CallSignTest :callsign-data="configBe.callsign" :update-results="updateResults" ref="callSignTest" />
         </div>
         <div class="timer">
             <p>Waktu:</p>
@@ -58,6 +61,7 @@ export default {
     name: 'CallSignMultitask',
     data() {
         return {
+            startTest: false,
             testTime: 5 * 60,
             tesInterval: null,
             callSignInputFocus: false,
@@ -118,12 +122,8 @@ export default {
             seeResults: true
         }
     },
-    mounted() {
-        this.initConfig()
-        this.countDownTestTime()
-    },
     beforeUnmount() {
-        clearInterval(this.timerInterval);
+        clearInterval(this.tesInterval);
     },
     methods: {
         formatTime(seconds) {
@@ -181,6 +181,11 @@ export default {
             this.sessionId = scheduleData.sessionId
             this.userId = scheduleData.userId
         },
+        startSpeechTest() {
+            this.startTest = true
+            this.countDownTestTime()
+            this.$refs.callSignTest.startSpeechTest()
+        },
         updateResults(component, data) {
             if (Object.hasOwn(this.results, component)) {
                 Object.keys(data).forEach(key => {
@@ -190,7 +195,6 @@ export default {
                 });
             }
         }
-
     },
     components: {
         ColorTest,
@@ -210,6 +214,35 @@ export default {
     max-width: 1000px;
     min-width: 1000px;
     margin: 0 auto;
+}
+
+.start-container {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 33;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.start-button {
+    width: 200px;
+    padding: 10px;
+    background-color: #6c5ce7;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
 }
 
 .left-side {
