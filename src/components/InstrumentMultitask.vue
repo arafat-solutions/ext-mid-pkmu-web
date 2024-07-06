@@ -55,7 +55,7 @@
         />
       </div>
       <div class="column-50" v-show="isTimesUp && !isLoading">
-        <h2 class="title-result">Results:</h2>
+        <h2 class="title-result">Result:</h2>
         <h3 class="title-result">Horizon</h3>
         <div class="column-50 mb-2">
           <span class="label-result">Accuracy:</span>
@@ -91,6 +91,10 @@
           <span class="value-result">{{ arithmeticResponseTime }}</span>
         </div>
       </div>
+    </div>
+    <div v-if="isLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Your result is submitting</div>
     </div>
   </div>
 </template>
@@ -139,7 +143,7 @@
             isActive: null, //true,false
           },
         },
-        results: {
+        result: {
           alertLight: {
             correctResponse: null,
             responseTime: null,
@@ -157,6 +161,8 @@
           gaugesMeter: {
             correctResponse: null,
             responseTime: null,
+            correct: null,
+            occurance: null,
           },
           horizon: {
             accuracy: null,
@@ -175,53 +181,53 @@
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
       },
       arithmeticCorrectResponse() {
-        if (!this.results.arithmetic.correctResponse) {
+        if (!this.result.arithmetic.correctResponse) {
           return 'n/a';
         }
 
-        return `${this.results.arithmetic.correctResponse}`;
+        return `${this.result.arithmetic.correctResponse}`;
       },
       arithmeticResponseTime() {
-        if (!this.results.arithmetic.responseTime) {
+        if (!this.result.arithmetic.responseTime) {
           return 'n/a';
         }
 
-        return `${this.results.arithmetic.responseTime} s`;
+        return `${this.result.arithmetic.responseTime} s`;
       },
       alertLightCorrectResponse() {
-        if (!this.results.alertLight.correctResponse) {
+        if (!this.result.alertLight.correctResponse) {
           return 'n/a';
         }
 
-        return `${this.results.alertLight.correctResponse} %`;
+        return `${this.result.alertLight.correctResponse} %`;
       },
       alertLightResponseTime() {
-        if (this.results.alertLight.responseTime === 'NaN' || !this.results.alertLight.responseTime) {
+        if (this.result.alertLight.responseTime === 'NaN' || !this.result.alertLight.responseTime) {
           return 'n/a';
         }
 
-        return `${this.results.alertLight.responseTime} s`;
+        return `${this.result.alertLight.responseTime} s`;
       },
       gaugesMeterCorrectResponse() {
-        if (!this.results.gaugesMeter.correctResponse) {
+        if (!this.result.gaugesMeter.correctResponse) {
           return 'n/a';
         }
 
-        return `${this.results.gaugesMeter.correctResponse} %`;
+        return `${this.result.gaugesMeter.correctResponse} %`;
       },
       gaugesMeterResponseTime() {
-        if (!this.results.gaugesMeter.responseTime) {
+        if (!this.result.gaugesMeter.responseTime) {
           return 'n/a';
         }
 
-        return `${this.results.gaugesMeter.responseTime} s`;
+        return `${this.result.gaugesMeter.responseTime} s`;
       },
       horizonAccuracy() {
-        if (!this.results.horizon.accuracy) {
+        if (!this.result.horizon.accuracy) {
           return 'n/a';
         }
 
-        return `${this.results.horizon.accuracy} %`;
+        return `${this.result.horizon.accuracy} %`;
       },
     },
     methods: {
@@ -230,8 +236,8 @@
         if (data) {
           try {
             const scheduleData = JSON.parse(data);
-            const instrumentMultitaskConfig = scheduleData.tests.find(test => test.testUrl === 'instrument-multitask-test').config;
-            this.minuteTime = 0.5;//instrumentMultitaskConfig.duration;
+            const instrumentMultitaskConfig = scheduleData.tests.find((t) => t.name === 'Multitasking With Instrument').config;
+            this.minuteTime = instrumentMultitaskConfig.duration;
             this.timeLeft = this.minuteTime * 60;
             this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
             this.config.arithmetic.useSound = instrumentMultitaskConfig.arithmetics.sound;
@@ -266,22 +272,22 @@
           if (this.timeLeft > 0) {
             this.timeLeft -= 1;
           } else {
+            this.submitResult();
             clearInterval(this.interval);
           }
         }, 1000);
       },
       arithmeticResult(result) {
-        this.results.arithmetic = result;
+        this.result.arithmetic = result;
       },
       alertLightResult(result) {
-        this.results.alertLight = result;
+        this.result.alertLight = result;
       },
       gaugesMeterResult(result) {
-        this.results.gaugesMeter.correctResponse = result.correctResponse;
-        this.results.gaugesMeter.responseTime = result.responseTime;
+        this.result.gaugesMeter = result;
       },
       horizonResult(result) {
-        this.results.horizon = result;
+        this.result.horizon = result;
       },
       pause() {
         clearInterval(this.interval);
@@ -300,19 +306,44 @@
         this.$refs.arithmeticTaskRef.generateProblem();
         this.startAgain();
       },
+      generatePayloadForSubmit() {
+        const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+        const test = scheduleData.tests.find((t) => t.name === 'Multitasking With Instrument');
+        const payload = {
+          'testSessionId': scheduleData.sessionId,
+          'userId': scheduleData.userId,
+          'moduleId': scheduleData.moduleId,
+          'batteryTestConfigId': test.config.id,
+          'result': {
+            'arithmetics': {
+              'total_questions': this.result.arithmetic.totalQuestion,
+              'correct_answer': this.result.arithmetic.correctAnswer,
+            },
+            'horizon': {
+              'correct_time': this.result.horizon.correctTime, // in seconds
+            },
+            'alert_lights': {
+              'wrong_response': this.result.alertLight.wrong,
+              'correct_response' : this.result.alertLight.correct,
+              'total_alert_count': this.result.alertLight.alertCount,
+              'total_warning_count': this.result.alertLight.warningCount,
+              'avg_response_time': this.result.alertLight.responseTime
+            },
+            'instrument': {
+              'correct_response': this.result.gaugesMeter.correct,
+              'total_occurence': this.result.gaugesMeter.occurance,
+              'response_time': this.result.gaugesMeter.responseTime // in seconds
+            }
+          }
+        }
+
+        return payload;
+      },
       async submitResult() {
         try {
           this.isLoading = true;
           const API_URL = process.env.VUE_APP_API_URL;
-          const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-          const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test');
-          const payload = {
-            'testSessionId': scheduleData.sessionId,
-            'userId': scheduleData.userId,
-            'moduleId': scheduleData.moduleId,
-            'batteryTestConfigId': test.config.id,
-            'result': { ...this.result }
-          }
+          const payload = this.generatePayloadForSubmit();
           const response = await fetch(`${API_URL}api/submission`, {
             method: 'POST',
             headers: {
@@ -321,10 +352,12 @@
             body: JSON.stringify(payload),
           });
 
+          console.log(response);
+
           if (!response.ok) {
             throw new Error(`Error: ${response.statusText}`);
           }
-          this.$router.push('/module');
+          // this.$router.push('/module');
         } catch (error) {
           console.error(error);
         } finally {
@@ -469,4 +502,32 @@
     border-radius: 5px;
     cursor: pointer;
   }
+
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+}
+
+.loading-spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
 </style>
