@@ -96,10 +96,7 @@ export default {
           this.config.shapes = this.setShapeConfig(radarVigillance.shapes);
           this.config.targetShape = radarVigillance.targetShape;
           this.config.speed = radarVigillance.speed;
-
-          // this.config.density = radarVigillance.density;
-          this.config.density = 'medium'
-
+          this.config.density = radarVigillance.density;
           this.config.batteryTestConfigId = radarVigillance.id;
           this.config.moduleId = config.moduleId;
           this.config.sessionId = config.sessionId;
