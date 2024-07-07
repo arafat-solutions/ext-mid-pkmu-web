@@ -14,13 +14,6 @@
 
     <div class="radar-container">
       <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
-      <div class="counter">
-        <p> Target : 
-          <strong>
-            {{ config.targetShape ? capitalizeFirstLetter(config.targetShape) : '.....' }}
-          </strong>
-        </p>
-      </div>
     </div>
   </div>
 </template>
@@ -104,7 +97,7 @@ export default {
           this.config.targetShape = radarVigillance.targetShape;
           this.config.speed = radarVigillance.speed;
 
-          // this.config.density = config.tests[i].density;
+          // this.config.density = radarVigillance.density;
           this.config.density = 'medium'
 
           this.config.batteryTestConfigId = radarVigillance.id;
@@ -564,10 +557,6 @@ export default {
     display: block;
     margin: 0 auto;
     background-color: black;
-  }
-  .counter {
-    margin-left: 20px;
-    color: black;
   }
   .loading-container {
     /* Add your loading indicator styles here */
