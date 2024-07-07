@@ -143,55 +143,6 @@
         const seconds = this.timeLeft % 60;
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
       },
-      arithmeticCorrectResponse() {
-        if (!this.result.arithmetic.correctResponse) {
-          return 'n/a';
-        }
-
-        return `${this.result.arithmetic.correctResponse}`;
-      },
-      arithmeticResponseTime() {
-        if (!this.result.arithmetic.responseTime) {
-          return 'n/a';
-        }
-
-        return `${this.result.arithmetic.responseTime} s`;
-      },
-      alertLightCorrectResponse() {
-        if (!this.result.alertLight.correctResponse) {
-          return 'n/a';
-        }
-
-        return `${this.result.alertLight.correctResponse} %`;
-      },
-      alertLightResponseTime() {
-        if (this.result.alertLight.responseTime === 'NaN' || !this.result.alertLight.responseTime) {
-          return 'n/a';
-        }
-
-        return `${this.result.alertLight.responseTime} s`;
-      },
-      gaugesMeterCorrectResponse() {
-        if (!this.result.gaugesMeter.correctResponse) {
-          return 'n/a';
-        }
-
-        return `${this.result.gaugesMeter.correctResponse} %`;
-      },
-      gaugesMeterResponseTime() {
-        if (!this.result.gaugesMeter.responseTime) {
-          return 'n/a';
-        }
-
-        return `${this.result.gaugesMeter.responseTime} s`;
-      },
-      horizonAccuracy() {
-        if (!this.result.horizon.accuracy) {
-          return 'n/a';
-        }
-
-        return `${this.result.horizon.accuracy} %`;
-      },
     },
     methods: {
       loadConfig() {
