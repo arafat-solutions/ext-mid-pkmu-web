@@ -1,6 +1,6 @@
 <template>
     <div class="visual-container">
-        <canvas ref="visualCanvas" :width="canvasWidth" :height="canvasHeight"></canvas>
+        <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
         <div class="timer">
             <p>Waktu:</p>
             <p>{{ formatTime(testTime) }}</p>
@@ -18,8 +18,8 @@
 export default {
     data() {
         return {
-            canvasWidth: 1000,
-            canvasHeight: 400,
+            canvasWidth: 0,
+            canvasHeight: 0,
             canvasRect: null,
             timerConfig: {
                 timerPosition: { top: '20px', left: `${this.canvasWidth / 2}px` },
@@ -78,12 +78,16 @@ export default {
         };
     },
     mounted() {
+        this.updateCanvasDimensions();
+        window.addEventListener('resize', this.handleResize);
         this.initializeTest()
         document.addEventListener('keydown', this.handleGlobalKeydown);
-        window.addEventListener('resize', this.handleResize);
-        this.$nextTick(() => {
-            this.updateCanvasRect();
-        });
+    },
+    beforeUnmount() {
+        window.removeEventListener('keydown', this.handleGlobalKeydown);
+        window.removeEventListener('resize', this.handleResize);
+        clearInterval(this.tesInterval)
+        clearInterval(this.timerInterval)
     },
     methods: {
         initVisual() {
@@ -118,7 +122,12 @@ export default {
             }
 
             this.testTime = 5 * 60
-            this.memoryTime = 1
+            this.memoryTime = 30
+        },
+        updateCanvasDimensions() {
+            this.canvasWidth = this.canvasDimensions.width;
+            this.canvasHeight = this.canvasDimensions.height;
+            this.updateCanvasRect();
         },
         drawVisual() {
             this.clearCanvas();
@@ -255,15 +264,18 @@ export default {
 
             const canvasTop = this.canvasRect.top;
             const canvasLeft = this.canvasRect.left;
+            const inputWidth = 100;
+            const inputHeight = 20;
+            const margin = 50;
 
             return {
                 input1: {
-                    top: canvasTop + (this.canvasHeight / 4) - 20,
-                    left: canvasLeft + this.canvasWidth - 150
+                    top: canvasTop + (this.canvasHeight / 4) - (inputHeight / 2),
+                    left: canvasLeft + this.canvasWidth - inputWidth - margin
                 },
                 input2: {
-                    top: canvasTop + (this.canvasHeight) - 120,
-                    left: canvasLeft + this.canvasWidth - 150
+                    top: canvasTop + (this.canvasHeight * 3 / 4) - (inputHeight / 2),
+                    left: canvasLeft + this.canvasWidth - inputWidth - margin
                 }
             };
         },
@@ -494,7 +506,8 @@ export default {
             }
         },
         handleResize() {
-            this.updateCanvasRect();
+            this.updateCanvasDimensions();
+            this.drawVisual();
             if (this.input.input1.visible) {
                 this.drawInput({ input: this.input.input1, inputType: 'input1' });
             }
@@ -534,12 +547,14 @@ export default {
         },
 
     },
-    beforeUnmount() {
-        window.removeEventListener('keydown', this.handleGlobalKeydown);
-        window.removeEventListener('resize', this.handleResize);
-        clearInterval(this.tesInterval)
-        clearInterval(this.timerInterval)
-    }
+    computed: {
+        canvasDimensions() {
+            return {
+                width: Math.min(1000, window.innerWidth * 0.9),
+                height: Math.min(400, window.innerHeight * 0.7)
+            };
+        }
+    },
 };
 </script>
 
