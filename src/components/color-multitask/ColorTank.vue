@@ -15,7 +15,7 @@
 				<p style="z-index: 1; position: absolute; color: black; font-weight: bolder;">{{ lowers[index] }}</p>
 				<div class="horizontal-line"> </div>
 				<div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor" 
-					:style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '1%' : '100%'}"
+					:style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '5%' : '100%'}"
 					class="tank-fill fill-animation">
 				</div>
 			</div>
@@ -38,36 +38,7 @@
 				colors: ['yellow', 'blue', 'red', 'green'],
 				uppers: ['Q', 'W', 'E', 'R'],
 				lowers: ['A', 'S', 'D', 'F'],
-				lowerTanks: [
-					[ 
-						{color: 'yellow', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'green', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'blue', height: '100%'}, 
-					],
-					[ 
-						{color: 'blue', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'yellow', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'red', height: '100%'}, 
-					],
-					[ 
-						{color: 'yellow', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'green', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'red', height: '100%'}, 
-					],
-					[ 
-						{color: 'green', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'blue', height: '100%'}, 
-						{color: 'black', height: '100%'}, 
-						{color: 'red', height: '100%'}, 
-					],
-				],
+				lowerTanks: [],
 				lineTankCanvasWidth: 320,
 				lineTankCanvasHeight: 250,
 				lines: [
@@ -103,9 +74,12 @@
       isNegativeScore: Boolean,
 			startToDecreaseIn: Number,
 			decreaseInterval: Number,
+			coloredLowerTank: Boolean,
+			descendSpeed: String,
     },
 		async mounted() {
 			this.initLineTank();
+			this.initLowerTank();
 
 			if (this.isPause || this.isTimesUp || !this.isActive) {
         return;
@@ -158,6 +132,72 @@
 					this.drawLine(this.lines[i]);
 				}
 			},
+			initLowerTank() {
+				console.log(this.coloredLowerTank, 'coloredLowerTank')
+				if (this.coloredLowerTank) {
+					this.lowerTanks = [
+						[ 
+							{color: 'yellow', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'green', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'blue', height: '100%'}, 
+						],
+						[ 
+							{color: 'blue', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'yellow', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'red', height: '100%'}, 
+						],
+						[ 
+							{color: 'yellow', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'green', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'red', height: '100%'}, 
+						],
+						[ 
+							{color: 'green', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'blue', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'red', height: '100%'}, 
+						],
+					]
+				} else {
+					this.lowerTanks = [
+						[ 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+						],
+						[ 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+						],
+						[ 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+						],
+						[ 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+							{color: 'black', height: '100%'}, 
+							{color: 'grey', height: '100%'}, 
+						],
+					]
+				}
+			},	
 			drawLine(lines) {
 				const canvas = this.$refs.lineTankCanvas;
 				const ctx = canvas.getContext('2d');

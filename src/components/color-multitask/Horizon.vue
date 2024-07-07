@@ -49,6 +49,21 @@
 			},
     },
 		methods: {
+			smoothRandom(min, max, previousValue, smoothingFactor = 1) {
+				let u = 0, v = 0;
+				while(u === 0) u = Math.random(); // Converting [0,1) to (0,1)
+				while(v === 0) v = Math.random();
+				let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+				num = num / 10.0 + 0.5; // Translate to 0 -> 1
+				if (num > 1 || num < 0) return this.smoothRandom(min, max, smoothingFactor); // Resample between 0 and 1
+				num *= max - min + 1;
+				num += min;
+
+				// Apply smoothing
+				previousValue = previousValue + smoothingFactor * (num - previousValue);
+
+				return previousValue;
+			},
 			runningInterval(type = null) {
 				if (type == 'random-tilt') {
 					this.intervalRandomTilt = setInterval(() => {
@@ -211,14 +226,14 @@
 				ctx.stroke();
 			},
 			randomTilt() {
-				this.tiltAngle = Math.random() * 20 - 15; // Slope degrees
+				this.tiltAngle = this.isActive ? this.smoothRandom(-80, 80, this.tiltAngle) : 0; // Kemiringan acak antara -80 dan 80 derajat
+
 				this.updateHorizon();
 			},
 			randomCircleShift() {
-				const maxShift = 100; // Maximum shift for circle
-				this.circleShiftX = this.getRandomShift(maxShift); // Generates random shifts for circles
-				this.updateHorizon();
+				this.circleShiftX = this.isActive ? this.smoothRandom(-125, 125, this.circleShiftX) : null; // Kemiringan acak antara -125 dan 125 x position
 
+				this.updateHorizon();
 				this.checkMousePosition();
 			},
 			moveYellowLine(event) {
