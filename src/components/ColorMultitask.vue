@@ -17,10 +17,9 @@
       <ColorTank
         :isTimesUp="isTimesUp"
         :speed="config.color_tank.speed"
-        :coloredLowerTank="false"
+        :coloredLowerTank="config.color_tank.colored_lower_tank"
         :descendSpeed="config.color_tank.descend_speed"
         :startToDecreaseIn="config.color_tank.start_to_decrease_in"
-        :decreaseInterval="config.color_tank.decrease_interval"
         :isNegativeScore="config.color_tank.negative_score"
         :isPause="isPause"
         :isActive="config.subtask.color_tank"
@@ -89,11 +88,10 @@ export default {
         },
         color_tank: {
           negative_score: null,
-          colored_lower_tank: false,
+          colored_lower_tank: null,
           speed: null, //slow, medium, fast
           descend_speed: null, //slow, medium, fast
-          start_to_decrease_in: 5000,
-          decrease_interval: 3000,
+          start_to_decrease_in: 2000,
         },
       },
       result: {
@@ -159,10 +157,7 @@ export default {
 
         if (config) {
           const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
-
-          this.config.duration = 1 * 60;
-
-          // this.config.duration = colorMultitask.duration * 60;
+          this.config.duration = colorMultitask.duration * 60;
           this.config.batteryTestConfigId = colorMultitask.id;
           this.config.moduleId = colorMultitask.moduleId;
           this.config.sessionId = colorMultitask.sessionId;

@@ -10,14 +10,15 @@
 				isMouseInsideCircle: false,
 				horizonWidth: 400,
 				horizonHeight: 300,
-				tiltAngle: 10,
+				tiltAngle: 0,
 				yellowLinePositionY: 0,
 				yellowLinePositionX: 0,
 				circleShiftX: 0,
 				greenLineStartTime: null,
         greenLineDuration: 0,
-				intervalRandomTilt: null,
-				intervalRandomCircleShift: null,
+				targetTiltAngle: 0,
+				targetCircleShiftX: 0,
+				animationFrame: null,
 			}
 		},
 		props: {
@@ -31,51 +32,22 @@
 		},
 		watch: {
       isTimesUp() {
-				clearInterval(this.intervalRandomTilt)
-				clearInterval(this.intervalRandomCircleShift)
-
         this.$emit('getResult', {
           correctTime: this.greenLineDuration,
         });
       },
 			isPause() {
 				if (this.isPause) {
-					clearInterval(this.intervalRandomTilt)
-					clearInterval(this.intervalRandomCircleShift)
+					cancelAnimationFrame(this.animationFrame);
 				} else {
-					this.runningInterval('random-tilt')
-					this.runningInterval('circle-shift')
+					this.animate();
 				}
 			},
     },
 		methods: {
-			smoothRandom(min, max, previousValue, smoothingFactor = 1) {
-				let u = 0, v = 0;
-				while(u === 0) u = Math.random(); // Converting [0,1) to (0,1)
-				while(v === 0) v = Math.random();
-				let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-				num = num / 10.0 + 0.5; // Translate to 0 -> 1
-				if (num > 1 || num < 0) return this.smoothRandom(min, max, smoothingFactor); // Resample between 0 and 1
-				num *= max - min + 1;
-				num += min;
-
-				// Apply smoothing
-				previousValue = previousValue + smoothingFactor * (num - previousValue);
-
-				return previousValue;
-			},
-			runningInterval(type = null) {
-				if (type == 'random-tilt') {
-					this.intervalRandomTilt = setInterval(() => {
-						this.randomTilt()
-					}, this.setSpeed());
-				}
-
-				if (type == 'circle-shift') {
-					this.intervalRandomCircleShift = setInterval(() => {
-						this.randomCircleShift();
-					}, 1000);
-				}
+			smoothRandom(min, max, previousValue, smoothingFactor = 0.05) {
+				const randomValue = Math.random() * (max - min) + min;
+				return previousValue + smoothingFactor * (randomValue - previousValue);
 			},
 			initHorizon() {
 				const canvas = this.$refs.horizonCanvas;
@@ -87,19 +59,13 @@
 				this.circleShiftX = 0;
 				this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 20; // Set Circle Radius
 
-				if (!this.isActive) {
-					this.tiltAngle = 0
-				} else {
-					this.runningInterval('random-tilt')
-					this.runningInterval('circle-shift')
+				if (this.isActive) {
+					this.animate();
 				}
 
 				this.updateHorizon();
 				canvas.addEventListener('mousemove', this.checkMousePosition);
 				this.checkMousePosition();
-			},
-			getRandomShift(maxShift) {
-				return (Math.random() * 2 - 1) * maxShift;
 			},
 			updateHorizon() {
 				const canvas = this.$refs.horizonCanvas;
@@ -225,13 +191,61 @@
 				ctx.lineTo(this.yellowLinePositionX, this.horizonHeight);
 				ctx.stroke();
 			},
-			randomTilt() {
-				this.tiltAngle = this.isActive ? this.smoothRandom(-80, 80, this.tiltAngle) : 0; // Kemiringan acak antara -80 dan 80 derajat
+			drawLines(ctx) {
+				const positions = [
+					[65, 15],
+					[55, -10],
+					[35, -30],
+					[0, -40],
+					[-35, -30],
+					[-55, -10],
+					[-65, 15],
+				];
 
-				this.updateHorizon();
+				positions.forEach((pos) => {
+					ctx.beginPath();
+					ctx.moveTo(this.circleShiftX + pos[0], -this.circleRadius * 1.5 + pos[1]);
+					ctx.lineTo(this.circleShiftX + pos[0] - 15, -this.circleRadius * 1.5 + pos[1]);
+					ctx.strokeStyle = "#FFFFFF";
+					ctx.lineWidth = 3;
+					ctx.stroke();
+				});
+			},
+			drawBottomLines(ctx) {
+				const bottomPositions = [
+					[-20, 50],
+					[20, 50],
+				];
+
+				bottomPositions.forEach((pos) => {
+					ctx.beginPath();
+					ctx.moveTo(this.circleShiftX + pos[0], this.circleRadius - 250 * 0.2 + pos[1]);
+					ctx.lineTo(this.circleShiftX + pos[0] - 30, this.circleRadius + 20);
+					ctx.strokeStyle = "#FFFFFF";
+					ctx.lineWidth = 5;
+					ctx.stroke();
+				});
+			},
+			randomTilt() {
+				let speed = this.setSpeedTilt();
+
+				this.targetTiltAngle = this.isActive ? this.smoothRandom(speed[0], speed[1], this.tiltAngle) : 0;
 			},
 			randomCircleShift() {
-				this.circleShiftX = this.isActive ? this.smoothRandom(-125, 125, this.circleShiftX) : null; // Kemiringan acak antara -125 dan 125 x position
+				let speed = this.setSpeedCirlceShitf();
+
+				this.targetCircleShiftX = this.isActive ? this.smoothRandom(speed[0], speed[1], this.circleShiftX) : null;
+			},
+			animate() {
+				this.animationFrame = requestAnimationFrame(this.animate);
+
+				if (!this.isPause && this.isActive) {
+					this.randomTilt();
+					this.randomCircleShift();
+				}
+
+				this.tiltAngle += (this.targetTiltAngle - this.tiltAngle) * 0.1;
+				this.circleShiftX += (this.targetCircleShiftX - this.circleShiftX) * 0.1;
 
 				this.updateHorizon();
 				this.checkMousePosition();
@@ -240,7 +254,7 @@
 				if (this.isPause || this.isTimesUp || !this.isActive) {
 					return;
 				}
-				
+
 				const canvas = this.$refs.horizonCanvas;
 				const rect = canvas.getBoundingClientRect();
 				const x = event.clientX - rect.left;
@@ -254,16 +268,15 @@
 			checkMousePosition(event) {
 				const canvas = this.$refs.horizonCanvas;
 				const rect = canvas.getBoundingClientRect();
-				
+
 				let x = this.yellowLinePositionX - this.horizonWidth / 2;
 				let y = this.yellowLinePositionY - this.horizonHeight / 2;
 
 				if (event) {
-						x = event.clientX - rect.left - this.horizonWidth / 2;
-						y = event.clientY - rect.top - this.horizonHeight / 2;
+					x = event.clientX - rect.left - this.horizonWidth / 2;
+					y = event.clientY - rect.top - this.horizonHeight / 2;
 				}
 
-				// Memeriksa apakah mouse berada dalam radius lingkaran
 				const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
 				if (distance <= this.circleRadius) {
 					if (!this.greenLineStartTime) {
@@ -274,8 +287,8 @@
 				} else {
 					if (this.greenLineStartTime) {
 						const currentTime = Date.now();
-						this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
-						this.greenLineStartTime = null; // Reset start time when exiting circle
+						this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000;
+						this.greenLineStartTime = null;
 					}
 
 					this.isMouseInsideCircle = false;
@@ -283,22 +296,27 @@
 
 				this.updateHorizon();
 			},
-			setSpeed() {
-				if (this.speed == 'very_slow') {
-					return 2500;
-				}
-				if (this.speed == 'slow') {
-					return 2000;
-				}
-				if (this.speed == 'medium') {
-					return 1500;
-				}
-				if (this.speed == 'fast') {
-					return 1000;
-				}
-				if (this.speed == 'very_fast') {
-					return 500;
-				}
+			setSpeedTilt() {
+				const speeds = {
+					very_slow: [-100, 100],
+					slow: [-200, 200],
+					medium: [-300, 300],
+					fast: [-400, 400],
+					very_fast: [-500, 500],
+				};
+
+				return speeds[this.speed];
+			},
+			setSpeedCirlceShitf() {
+				const speeds = {
+					very_slow: [-100, 100],
+					slow: [-200, 200],
+					medium: [-400, 400],
+					fast: [-600, 600],
+					very_fast: [-800, 800],
+				};
+
+				return speeds[this.speed];
 			}
 		},
 	};
