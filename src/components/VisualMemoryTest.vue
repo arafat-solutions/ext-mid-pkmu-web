@@ -20,6 +20,7 @@ export default {
         return {
             canvasWidth: 1000,
             canvasHeight: 400,
+            canvasRect: null,
             timerConfig: {
                 timerPosition: { top: '20px', left: `${this.canvasWidth / 2}px` },
             },
@@ -79,6 +80,10 @@ export default {
     mounted() {
         this.initializeTest()
         document.addEventListener('keydown', this.handleGlobalKeydown);
+        window.addEventListener('resize', this.handleResize);
+        this.$nextTick(() => {
+            this.updateCanvasRect();
+        });
     },
     methods: {
         initVisual() {
@@ -86,7 +91,6 @@ export default {
             this.ctx = canvas.getContext("2d");
         },
         initializeTest() {
-
             this.createRandomQuestion();
             this.initConfig()
             this.initVisual();
@@ -106,11 +110,15 @@ export default {
                 testId: id,
                 moduleId: scheduleData.moduleId,
                 sessionId: scheduleData.sessionId,
-                userId: scheduleData.userId
+                userId: scheduleData.userId,
+                display: {
+                    alphanumeric: true,
+                    shape: true
+                },
             }
 
             this.testTime = 5 * 60
-            this.memoryTime = 30
+            this.memoryTime = 1
         },
         drawVisual() {
             this.clearCanvas();
@@ -240,11 +248,38 @@ export default {
             ctx.fill();
             ctx.restore();
         },
-        drawInput({ input, top, left }) {
-            input.style.top = `${top}px`;
-            input.style.left = `${left}px`;
-            input.style.width = `${100}px`
-            input.style.height = `${20}px`
+        calculateInputPositions() {
+            if (!this.canvasRect) {
+                return null;
+            }
+
+            const canvasTop = this.canvasRect.top;
+            const canvasLeft = this.canvasRect.left;
+
+            return {
+                input1: {
+                    top: canvasTop + (this.canvasHeight / 4) - 20,
+                    left: canvasLeft + this.canvasWidth - 150
+                },
+                input2: {
+                    top: canvasTop + (this.canvasHeight) - 120,
+                    left: canvasLeft + this.canvasWidth - 150
+                }
+            };
+        },
+        drawInput({ input, inputType }) {
+            const positions = this.calculateInputPositions();
+            if (!positions) {
+                return;
+            }
+
+            const position = positions[inputType];
+
+            input.style.position = 'fixed';
+            input.style.top = `${position.top}px`;
+            input.style.left = `${position.left}px`;
+            input.style.width = `100px`;
+            input.style.height = `20px`;
             input.visible = true;
         },
         countDownTestTime() {
@@ -285,14 +320,13 @@ export default {
         handleGlobalKeydown(event) {
             if (this.memoryTime === 0 && this.canAnswer) {
                 if (event.key === 'Enter') {
-                    const { canvasWidth, canvasHeight } = this;
                     const input1 = this.input.input1
                     const input2 = this.input.input2
 
                     if (this.renderInput === 0) {
                         this.renderInput = 1
 
-                        this.drawInput({ input: input1, top: (canvasHeight / 2) + 20, left: canvasWidth + 30 })
+                        this.drawInput({ input: this.input.input1, inputType: 'input1' });
 
                         this.$nextTick(() => {
                             if (this.$refs.input1) {
@@ -302,7 +336,7 @@ export default {
                     } else if (this.renderInput === 1) {
                         this.renderInput = 2
 
-                        this.drawInput({ input: input2, top: canvasHeight + 20, left: canvasWidth + 30 })
+                        this.drawInput({ input: this.input.input2, inputType: 'input2' });
 
                         this.$nextTick(() => {
                             if (this.$refs.input2) {
@@ -415,14 +449,6 @@ export default {
             this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
             this.questions = JSON.parse(JSON.stringify(arrQuestion));
         },
-        calculateNumberOfQuestion({ duration, questionInterval }) {
-            // duration in second
-            const dis = duration * 60;
-            // interval plus answer time 20 second
-            const ipat = questionInterval + 20;
-
-            return dis / ipat
-        },
         generateRandomLetters() {
             const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             let result = '';
@@ -462,6 +488,20 @@ export default {
         getRandomAngle() {
             return Math.floor(Math.random() * 361); // Generates a random angle between 0 and 360 (inclusive)
         },
+        updateCanvasRect() {
+            if (this.$refs.visualCanvas) {
+                this.canvasRect = this.$refs.visualCanvas.getBoundingClientRect();
+            }
+        },
+        handleResize() {
+            this.updateCanvasRect();
+            if (this.input.input1.visible) {
+                this.drawInput({ input: this.input.input1, inputType: 'input1' });
+            }
+            if (this.input.input2.visible) {
+                this.drawInput({ input: this.input.input2, inputType: 'input2' });
+            }
+        },
         async submitResult() {
             try {
                 this.loading = true;
@@ -491,10 +531,12 @@ export default {
             } finally {
                 this.loading = false; // Set loading to false when the submission is complete
             }
-        }
+        },
+
     },
     beforeUnmount() {
         window.removeEventListener('keydown', this.handleGlobalKeydown);
+        window.removeEventListener('resize', this.handleResize);
         clearInterval(this.tesInterval)
         clearInterval(this.timerInterval)
     }
