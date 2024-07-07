@@ -6,7 +6,7 @@ import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
-import RotatingMaze from '@/components/RotatingMaze.vue';
+import NewRotatingMaze from '@/components/NewRotatingMaze/Parent.vue';
 import OperativeMultitasking from '@/components/OperativeMultitasking.vue';
 import MultidimensionalCoordination from '@/components/MultidimensionalCoordination.vue';
 import ShapeRecognition from '@/components/ShapeRecognition.vue';
@@ -70,7 +70,7 @@ const routes = [
   {
     path: '/rotating-maze-test',
     name: 'Rotating Maze',
-    component: RotatingMaze
+    component: NewRotatingMaze
   },
   {
     path: '/operative-multitasking-test',
