@@ -26,7 +26,6 @@
 		name: 'ArithmeticsView',
 		data() {
 			return {
-				isPlayAudio: false,
 				audio: null,
 				correctAnswer: 0,
 				totalQuestion: 0,
@@ -50,7 +49,9 @@
       useSound: Boolean,
     },
 		async mounted() {
-			this.generateAudio();
+			if(!this.useSound) {
+				this.generateAudio();
+			}
 		},
 		created() {
       window.addEventListener('keyup', this.handleKeyPress);
@@ -83,7 +84,6 @@
 			generateAudio() {
 				this.audio = null;
 				this.answerAudio = null;
-				this.isPlayAudio = true;
 				this.responseQuestion = 0;
 				this.responseTime = 0;
 				
@@ -120,6 +120,10 @@
 						}
 					}
 				}
+
+				setTimeout(() => {
+					this.startPlayback()
+				}, 1000)
 			},
 			pressAnswerAudio(key) {
 				if (this.isPause || this.isTimesUp || !this.isActive) {
@@ -179,13 +183,6 @@
 				if (this.isPause || this.isTimesUp || !this.isActive) {
           return;
         }
-
-				if (this.isPlayAudio && this.audio) {
-					setTimeout(() => {
-						this.startPlayback();
-					}, 500);
-					this.isPlayAudio = false;
-				}
 				
 				if (this.isCanChooseAudio) {
 					if (event.key.toUpperCase() == 7) {

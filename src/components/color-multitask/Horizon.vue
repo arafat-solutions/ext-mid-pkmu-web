@@ -8,6 +8,7 @@
 		data() {
 			return {
 				isMouseInsideCircle: false,
+				isYellowLineMoved: false,
 				horizonWidth: 400,
 				horizonHeight: 300,
 				tiltAngle: 0,
@@ -18,7 +19,8 @@
         greenLineDuration: 0,
 				targetTiltAngle: 0,
 				targetCircleShiftX: 0,
-				animationFrame: null,
+				currentTilt: 0,
+				currentShiftX: 0,
 			}
 		},
 		props: {
@@ -32,22 +34,42 @@
 		},
 		watch: {
       isTimesUp() {
-        this.$emit('getResult', {
+				clearInterval(this.intervalRandomTilt);
+				clearInterval(this.intervalRandomCircleShift);
+
+				if (this.greenLineStartTime) {
+					const currentTime = Date.now();
+					this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
+					this.greenLineStartTime = null; // Reset start time when exiting circle
+				}
+        
+				this.$emit('getResult', {
           correctTime: this.greenLineDuration,
         });
       },
 			isPause() {
 				if (this.isPause) {
-					cancelAnimationFrame(this.animationFrame);
+					clearInterval(this.intervalRandomTilt);
+					clearInterval(this.intervalRandomCircleShift);
 				} else {
-					this.animate();
+					this.runningInterval('random-tilt');
+					this.runningInterval('circle-shift');
 				}
 			},
     },
 		methods: {
-			smoothRandom(min, max, previousValue, smoothingFactor = 0.05) {
-				const randomValue = Math.random() * (max - min) + min;
-				return previousValue + smoothingFactor * (randomValue - previousValue);
+			runningInterval(type = null) {
+				if (type === 'random-tilt') {
+					this.intervalRandomTilt = setInterval(() => {
+						this.randomTilt();
+					}, this.setSpeed());
+				}
+
+				if (type === 'circle-shift') {
+					this.intervalRandomCircleShift = setInterval(() => {
+						this.randomCircleShift();
+					}, this.setSpeed());
+				}
 			},
 			initHorizon() {
 				const canvas = this.$refs.horizonCanvas;
@@ -59,8 +81,11 @@
 				this.circleShiftX = 0;
 				this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 20; // Set Circle Radius
 
-				if (this.isActive) {
-					this.animate();
+				if (!this.isActive) {
+					this.tiltAngle = 0;
+				} else {
+					this.runningInterval('random-tilt');
+					this.runningInterval('circle-shift');
 				}
 
 				this.updateHorizon();
@@ -69,7 +94,7 @@
 			},
 			updateHorizon() {
 				const canvas = this.$refs.horizonCanvas;
-				const ctx = canvas.getContext("2d");
+				const ctx = canvas.getContext('2d');
 
 				ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
 				ctx.save();
@@ -80,7 +105,7 @@
 				ctx.fillStyle = '#87CEEB';
 				ctx.fillRect(-this.horizonWidth, -this.horizonHeight, this.horizonWidth * 2, this.horizonHeight);
 
-				ctx.strokeStyle = '#FFFFFF'; 
+				ctx.strokeStyle = '#FFFFFF';
 				ctx.lineWidth = 6;
 				ctx.beginPath();
 				ctx.moveTo(-this.horizonWidth, 0);
@@ -150,9 +175,9 @@
 
 				// Draw Triangle
 				ctx.beginPath();
-				ctx.moveTo(this.circleShiftX, -this.circleRadius - (this.circleRadius * 0.8)); 
-				ctx.lineTo(this.circleShiftX - (this.circleRadius * 0.8), -this.circleRadius);
-				ctx.lineTo(this.circleShiftX + (this.circleRadius * 0.8), -this.circleRadius);
+				ctx.moveTo(this.circleShiftX, -this.circleRadius - this.circleRadius * 0.8);
+				ctx.lineTo(this.circleShiftX - this.circleRadius * 0.8, -this.circleRadius);
+				ctx.lineTo(this.circleShiftX + this.circleRadius * 0.8, -this.circleRadius);
 				ctx.closePath();
 				ctx.fillStyle = '#FFFFFF';
 				ctx.fill();
@@ -191,69 +216,47 @@
 				ctx.lineTo(this.yellowLinePositionX, this.horizonHeight);
 				ctx.stroke();
 			},
-			drawLines(ctx) {
-				const positions = [
-					[65, 15],
-					[55, -10],
-					[35, -30],
-					[0, -40],
-					[-35, -30],
-					[-55, -10],
-					[-65, 15],
-				];
-
-				positions.forEach((pos) => {
-					ctx.beginPath();
-					ctx.moveTo(this.circleShiftX + pos[0], -this.circleRadius * 1.5 + pos[1]);
-					ctx.lineTo(this.circleShiftX + pos[0] - 15, -this.circleRadius * 1.5 + pos[1]);
-					ctx.strokeStyle = "#FFFFFF";
-					ctx.lineWidth = 3;
-					ctx.stroke();
-				});
-			},
-			drawBottomLines(ctx) {
-				const bottomPositions = [
-					[-20, 50],
-					[20, 50],
-				];
-
-				bottomPositions.forEach((pos) => {
-					ctx.beginPath();
-					ctx.moveTo(this.circleShiftX + pos[0], this.circleRadius - 250 * 0.2 + pos[1]);
-					ctx.lineTo(this.circleShiftX + pos[0] - 30, this.circleRadius + 20);
-					ctx.strokeStyle = "#FFFFFF";
-					ctx.lineWidth = 5;
-					ctx.stroke();
-				});
-			},
 			randomTilt() {
-				let speed = this.setSpeedTilt();
-
-				this.targetTiltAngle = this.isActive ? this.smoothRandom(speed[0], speed[1], this.tiltAngle) : 0;
+				const targetTilt = this.isActive ? this.getRandom(-80, 80) : 0;
+				this.animateValue(this.currentTilt, targetTilt, this.setSpeed(), (value) => {
+					this.currentTilt = value;
+					this.tiltAngle = value;
+					this.updateHorizon();
+				});
 			},
 			randomCircleShift() {
-				let speed = this.setSpeedCirlceShitf();
+				const targetShift = this.isActive ? this.getRandom(-125, 125) : 0;
+				this.animateValue(this.currentShiftX, targetShift, this.setSpeed(), (value) => {
+					this.currentShiftX = value;
+					this.circleShiftX = value;
+					this.updateHorizon();
+				});
 
-				this.targetCircleShiftX = this.isActive ? this.smoothRandom(speed[0], speed[1], this.circleShiftX) : null;
-			},
-			animate() {
-				this.animationFrame = requestAnimationFrame(this.animate);
-
-				if (!this.isPause && this.isActive) {
-					this.randomTilt();
-					this.randomCircleShift();
-				}
-
-				this.tiltAngle += (this.targetTiltAngle - this.tiltAngle) * 0.1;
-				this.circleShiftX += (this.targetCircleShiftX - this.circleShiftX) * 0.1;
-
-				this.updateHorizon();
 				this.checkMousePosition();
+			},
+			setSpeed() {
+				if (this.speed === 'very_slow') {
+					return 6000;
+				}
+				if (this.speed === 'slow') {
+					return 5000;
+				}
+				if (this.speed === 'medium') {
+					return 4000;
+				}
+				if (this.speed === 'fast') {
+					return 3000;
+				}
+				if (this.speed === 'very_fast') {
+					return 2000;
+				}
 			},
 			moveYellowLine(event) {
 				if (this.isPause || this.isTimesUp || !this.isActive) {
 					return;
 				}
+
+				this.isYellowLineMoved = true;
 
 				const canvas = this.$refs.horizonCanvas;
 				const rect = canvas.getBoundingClientRect();
@@ -265,59 +268,71 @@
 
 				this.updateHorizon();
 			},
-			checkMousePosition(event) {
+			checkMousePosition(event = null) {
+				if (!this.isYellowLineMoved) {
+					return;
+				}
+
 				const canvas = this.$refs.horizonCanvas;
 				const rect = canvas.getBoundingClientRect();
 
-				let x = this.yellowLinePositionX - this.horizonWidth / 2;
-				let y = this.yellowLinePositionY - this.horizonHeight / 2;
+				let mouseX = this.yellowLinePositionX - this.horizonWidth / 2;
+				let mouseY = this.yellowLinePositionY - this.horizonHeight / 2;
 
 				if (event) {
-					x = event.clientX - rect.left - this.horizonWidth / 2;
-					y = event.clientY - rect.top - this.horizonHeight / 2;
+						mouseX = event.clientX - rect.left - this.horizonWidth / 2;
+						mouseY = event.clientY - rect.top - this.horizonHeight / 2;
 				}
 
-				const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
+				// Apply inverse rotation to mouse coordinates to account for canvas rotation
+				const angle = (-this.tiltAngle * Math.PI) / 180;
+				const rotatedX = mouseX * Math.cos(angle) - mouseY * Math.sin(angle);
+				const rotatedY = mouseX * Math.sin(angle) + mouseY * Math.cos(angle);
+
+				const distance = Math.sqrt(
+					Math.pow(rotatedX - this.circleShiftX, 2) + Math.pow(rotatedY, 2)
+				);
+
 				if (distance <= this.circleRadius) {
 					if (!this.greenLineStartTime) {
 						this.greenLineStartTime = Date.now();
 					}
-
-					this.isMouseInsideCircle = true;
+						this.isMouseInsideCircle = true;
 				} else {
 					if (this.greenLineStartTime) {
 						const currentTime = Date.now();
 						this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000;
 						this.greenLineStartTime = null;
 					}
-
 					this.isMouseInsideCircle = false;
 				}
 
 				this.updateHorizon();
 			},
-			setSpeedTilt() {
-				const speeds = {
-					very_slow: [-100, 100],
-					slow: [-200, 200],
-					medium: [-300, 300],
-					fast: [-400, 400],
-					very_fast: [-500, 500],
-				};
-
-				return speeds[this.speed];
+			getRandom(min, max) {
+				return Math.random() * (max - min) + min;
 			},
-			setSpeedCirlceShitf() {
-				const speeds = {
-					very_slow: [-100, 100],
-					slow: [-200, 200],
-					medium: [-400, 400],
-					fast: [-600, 600],
-					very_fast: [-800, 800],
+			animateValue(start, end, duration, callback) {
+				const startTime = performance.now();
+
+				const step = (currentTime) => {
+					const elapsedTime = currentTime - startTime;
+					const progress = Math.min(elapsedTime / duration, 1);
+					const easedProgress = this.easeInOutCubic(progress);
+
+					const value = start + (end - start) * easedProgress;
+					callback(value);
+
+					if (progress < 1) {
+						requestAnimationFrame(step);
+					}
 				};
 
-				return speeds[this.speed];
-			}
+				requestAnimationFrame(step);
+			},
+			easeInOutCubic(t) {
+				return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+			},
 		},
 	};
 </script>

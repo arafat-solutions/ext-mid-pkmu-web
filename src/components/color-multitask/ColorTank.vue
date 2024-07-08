@@ -1,9 +1,7 @@
 <template>
 	<div class="tank-section">
 		<div class="upper-tanks">
-			<div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }" :id="`upper-tank-${index}`" class="tank">
-				<p style="color: black; font-weight: bolder;">{{ uppers[index] }}</p>
-			</div>
+			<div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }" :id="`upper-tank-${index}`" class="tank"></div>
 		</div>
 
 		<div class="line">
@@ -12,7 +10,6 @@
 
 		<div class="lower-tanks">
 			<div v-for="(lowerTank, index) in lowerTanks" :key="index" class="tank" :id="`lower-tank-${index}`">
-				<p style="z-index: 1; position: absolute; color: black; font-weight: bolder;">{{ lowers[index] }}</p>
 				<div class="horizontal-line"> </div>
 				<div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor" 
 					:style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '5%' : '100%'}"
@@ -36,28 +33,26 @@
 				finalScore: 120,
 				keysPressed: {},
 				colors: ['yellow', 'blue', 'red', 'green'],
-				uppers: ['Q', 'W', 'E', 'R'],
-				lowers: ['A', 'S', 'D', 'F'],
 				lowerTanks: [],
 				lineTankCanvasWidth: 320,
 				lineTankCanvasHeight: 250,
 				lines: [
 					// Q
 					{ x1: 13, y1: 10, x2: 13, y2: 280 },
-					{ x1: 35, y1: 10, x2: 35, y2: 50, x3: 120, y3: 220, x4: 120, y4: 280 },
+					{ x1: 35, y1: 25, x2: 35, y2: 50, x3: 120, y3: 220, x4: 120, y4: 230, startText: 'Q', endText: 'S', },
 					{ x1: 55, y1: 10, x2: 55, y2: 50, x3: 180, y3: 220, x4: 180, y4: 280},
 					// W
 					{ x1: 100, y1: 10, x2: 100, y2: 50, x3: 60, y3: 220, x4: 60, y4: 280 },
-					{ x1: 120, y1: 10, x2: 95, y2: 280, },
-					{ x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 220, x4: 290, y4: 280},
+					{ x1: 120, y1: 25, x2: 95, y2: 260, startText: 'W'},
+					{ x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 220, x4: 290, y4: 230, endText: 'F'},
 					// E
 					{ x1: 185, y1: 10, x2: 185, y2: 50, x3: 145, y3: 220, x4: 145, y4: 280 },
-					{ x1: 205, y1: 10, x2: 205, y2: 50, x3: 230, y3: 220, x4: 230, y4: 280 },
+					{ x1: 205, y1: 25, x2: 205, y2: 50, x3: 230, y3: 220, x4: 230, y4: 260, startText: 'E'},
 					{ x1: 225, y1: 10, x2: 225, y2: 50, x3: 315, y3: 220, x4: 315, y4: 280 },
 					// R
-					{ x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 220, x4: 35, y4: 280 },
-					{ x1: 290, y1: 10, x2: 290, y2: 50, x3: 205, y3: 220, x4: 205, y4: 280 },
-					{ x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280 },
+					{ x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 220, x4: 35, y4: 230, endText: 'A' },
+					{ x1: 290, y1: 25, x2: 290, y2: 50, x3: 205, y3: 220, x4: 205, y4: 230, startText: 'R', endText: 'D'},
+					{ x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280, },
 				],
 				intervalCheckFullyTank: null,
 				intervalCheckEmptyTank: null,
@@ -155,32 +150,32 @@
 				if (this.coloredLowerTank) {
 					this.lowerTanks = [
 						[ 
-							{color: 'yellow', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'green', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'blue', height: '100%', status: 'run', minimum_height: '70%'}, 
+							{color: 'yellow', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'green', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'blue', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
 						],
 						[ 
-							{color: 'blue', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'yellow', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'red', height: '100%', status: 'run', minimum_height: '70%'}, 
+							{color: 'blue', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'yellow', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'red', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
 						],
 						[ 
-							{color: 'yellow', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'green', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'red', height: '100%', status: 'run', minimum_height: '70%'}, 
+							{color: 'yellow', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'green', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'red', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
 						],
 						[ 
-							{color: 'green', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'blue', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'black', height: '100%', status: 'run', minimum_height: '70%'}, 
-							{color: 'red', height: '100%', status: 'run', minimum_height: '70%'}, 
+							{color: 'green', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'blue', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'black', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
+							{color: 'red', height: '100%', status: 'run', minimum_height: this.setMinimumHeight()}, 
 						],
 					]
 				} else {
@@ -220,7 +215,7 @@
 				this.checkStopStatus()
 			},	
 			setMinimumHeight() {
-				return Math.floor(Math.random() * 21) + '%';
+				return Math.floor(Math.random() * (50 - 20 + 1)) + 20 + '%';
 			},
 			drawLine(lines) {
 				const canvas = this.$refs.lineTankCanvas;
@@ -240,6 +235,27 @@
 				ctx.lineWidth = 4;
 				ctx.lineCap = 'round';
 				ctx.stroke();
+
+				// Add text at the beginning and end of the line
+				if (lines.startText) {
+					ctx.font = 'bold 16px Arial';
+					ctx.fillStyle = 'black';
+					ctx.fillText(lines.startText, lines.x1 - 6, lines.y1 - 5);
+				}
+
+				if (lines.endText) {
+					ctx.font = 'bold 16px Arial';
+					ctx.fillStyle = 'black';
+
+					if (lines.x4) {
+						ctx.fillText(lines.endText, lines.x4 - 5, lines.y4 + 20);
+					} else if (lines.x3) {
+						ctx.fillText(lines.endText, lines.x3 - 5, lines.y3 + 20);
+					} else if (lines.x2) {	
+						ctx.fillText(lines.endText, lines.x2 - 5, lines.y2 + 20);
+					}
+				}
+				// Add text at the beginning and end of the line	
 			},
 			startEmptyTank() {
 				this.isAllTankEmpty = false;

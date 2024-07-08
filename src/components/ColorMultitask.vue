@@ -1,6 +1,16 @@
 <template>
-  <div class="main-view" v-if="isConfigLoaded">
+    <div v-if="isShowModal" class="modal-overlay">
+      <div class="modal-content">
+        <p>
+          <strong>
+            Apakah Anda Yakin <br>akan memulai test Multitasking with Color?
+          </strong>
+          </p>
+        <button @click="closeModal">Ya</button>
+      </div>
+    </div>
 
+  <div class="main-view" v-if="isConfigLoaded">
     <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
       <div class="text">submitting a result</div>
@@ -36,6 +46,7 @@
         />
         
         <Arithmetics
+          ref="arithmeticsRef"
           :isTimesUp="isTimesUp"
           :difficulty="config.arithmetics.difficulty"
           :duration="config.duration"
@@ -63,6 +74,7 @@ export default {
   },
   data() {
     return {
+      isShowModal: false,
       isLoading: false,
       timer: {
         minutes: 0,
@@ -126,6 +138,15 @@ export default {
     },
   },
   methods: {
+    closeModal() {
+      this.isShowModal = false;
+      this.isConfigLoaded = true;
+      this.startCountdown();
+
+      setTimeout(() => {	
+        this.$refs.arithmeticsRef.generateAudio();
+			}, 2000)
+    },
     pause() {
       clearInterval(this.countdownInterval);
       this.isPause = true;
@@ -185,8 +206,12 @@ export default {
             this.config.horizon.speed = colorMultitask.horizon.speed
           }
 
-          this.isConfigLoaded = true;
-          this.startCountdown();
+          if (this.config.subtask.arithmetics) {
+            this.isShowModal = true;
+          } else {
+            this.isConfigLoaded = true;
+            this.startCountdown();
+          }
         }
       } catch (error) {
         console.log(error, 'error')
@@ -252,6 +277,43 @@ export default {
     gap: 20px;
     margin: 60px auto;
   }
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+  }
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+
+  .modal-content button {
+    background-color: #6200ee;
+    color:white;
+    padding: 20px;
+    border-radius: 10px;
+    border: none;
+    padding: 10px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background-color: #5e37a6;
+  }
+
   .timer-container-trial {
     position: absolute;
     right: 0;
