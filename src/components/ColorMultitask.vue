@@ -97,7 +97,7 @@ export default {
           sound: null
         },
         horizon: {
-          speed: null, //very_slow, slow, medium, fast, very_fast]
+          speed: null, //very_slow, slow, medium, fast, very_fast
         },
         color_tank: {
           negative_score: null,
