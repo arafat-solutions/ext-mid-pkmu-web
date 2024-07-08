@@ -1,6 +1,9 @@
 <template>
     <div class="callsign-test">
-        <input type="number" class="input" v-model="userInput" ref="callsignInput" />
+        <div class="input-group">
+            <input type="number" v-model="userInput" ref="callsignInput" />
+            <p>↵</p>
+        </div>
         <canvas ref="callsignCanvas"></canvas>
     </div>
 </template>
@@ -147,6 +150,9 @@ export default {
 
             this.lastSpokenCallsign = callsign;
             this.speech = new SpeechSynthesisUtterance(`your callsign is: ${callsign}, and new heading is: ${this.angle}`);
+            if (this.callsign === callsign) {
+                this.updateResults('call_sign', { total_match_count: 1 });
+            }
 
             window.speechSynthesis.speak(this.speech);
 
@@ -217,15 +223,23 @@ export default {
     position: relative;
 }
 
-.input {
+.input-group {
     position: absolute;
-    top: -32%;
-    right: 28%;
+    top: -50%;
+    right: 20%;
+    padding-left: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.input-group p {
+    font-size: 24px;
+}
+
+input {
     width: 70px;
     height: 24px;
-    background-color: white;
-    border: 1px solid black;
-    padding-left: 10px;
+    margin-right: 10px;
 }
 
 input[type=number]::-webkit-inner-spin-button,
