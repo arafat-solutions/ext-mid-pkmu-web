@@ -6,7 +6,8 @@
             Apakah Anda Yakin <br>akan memulai test Multitasking with Color?
           </strong>
           </p>
-        <button @click="closeModal">Ya</button>
+        <button @click="exit()" style="margin-right: 20px;">Batal</button>
+        <button @click="closeModal()">Ya</button>
       </div>
     </div>
 
@@ -103,7 +104,7 @@ export default {
           colored_lower_tank: null,
           speed: null, //slow, medium, fast
           descend_speed: null, //slow, medium, fast
-          start_to_decrease_in: 2000,
+          start_to_decrease_in: 3000,
         },
       },
       result: {
@@ -143,8 +144,6 @@ export default {
       this.isConfigLoaded = true;
       this.startCountdown();
 
-      console.log(this.config, 'lalalla');
-
       setTimeout(() => {
         this.$refs.arithmeticsRef.generateAudio();
 			}, 2000)
@@ -180,7 +179,7 @@ export default {
 
         if (config) {
           const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
-          this.config.duration = config.duration * 60;
+          this.config.duration = colorMultitask.duration * 60;
           this.config.batteryTestConfigId = colorMultitask.id;
           this.config.moduleId = config.moduleId;
           this.config.sessionId = config.sessionId;
@@ -222,6 +221,7 @@ export default {
     arithmeticResult(result) {
       this.result.arithmetics.correct_answer = result.correctAnswer;
       this.result.arithmetics.total_questions = result.totalQuestion;
+      this.result.arithmetics.avg_response_time = result.responseTime;
     },
     colorTankResult(result) {
       this.result.color_tank.final_score = result.score;

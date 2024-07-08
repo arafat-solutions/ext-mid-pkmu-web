@@ -14,13 +14,6 @@
 
     <div class="radar-container">
       <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
-      <div class="counter">
-        <p> Target : 
-          <strong>
-            {{ config.targetShape ? capitalizeFirstLetter(config.targetShape) : '.....' }}
-          </strong>
-        </p>
-      </div>
     </div>
   </div>
 </template>
@@ -96,24 +89,23 @@ export default {
 
         if (config) {
           const radarVigillance = config.tests.find(test => test.testUrl === 'radar-vigilance-test').config;
+
           this.config.duration = radarVigillance.duration * 60;
+          this.config.batteryTestConfigId = radarVigillance.id;
+          this.config.moduleId = config.moduleId;
+          this.config.sessionId = config.sessionId;
+          this.config.userId = config.userId;
+
           this.config.direction = radarVigillance.direction;
           this.config.shapeSize = radarVigillance.shapeSize;
           this.config.frequency = radarVigillance.frequency;
           this.config.shapes = this.setShapeConfig(radarVigillance.shapes);
           this.config.targetShape = radarVigillance.targetShape;
           this.config.speed = radarVigillance.speed;
-
-          // this.config.density = config.tests[i].density;
-          this.config.density = 'medium'
-
-          this.config.batteryTestConfigId = radarVigillance.id;
-          this.config.moduleId = config.moduleId;
-          this.config.sessionId = config.sessionId;
-          this.config.userId = config.userId;
+          this.config.density = radarVigillance.density;
 
           this.isConfigLoaded = true;
-          
+
           this.initRadar();
           this.startCountdown();
         }
@@ -131,7 +123,7 @@ export default {
       const canvas = this.$refs.radarCanvas;
       const ctx = canvas.getContext("2d");
       const radius = Math.min(this.width, this.height) / 2;
-      
+
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, this.width, this.height);
       ctx.strokeStyle = "green";
@@ -174,8 +166,8 @@ export default {
           // Set Size Objcet
           if (obj.type === "circle" || obj.type === "square") {
             ctx.arc(obj.x, obj.y, this.setShapeSize(), 0, 2 * Math.PI);
-          } 
-          
+          }
+
           if (obj.type === "triangle") {
             this.drawTriangle(ctx, obj.x, obj.y, this.setShapeSize('triangle'));
           }
@@ -185,16 +177,16 @@ export default {
 
           if (obj.type === "circle") {
             ctx.fill();
-            
+
             //Check Detected Object
             if (!obj.detected) {
-              obj.detected = true;              
+              obj.detected = true;
               this.detectTargetShape("circle")
             }
             obj.sweepCount = 0;
           } else if (obj.type === "square") {
             ctx.fillRect(obj.x - 5, obj.y - 5, this.setShapeSize('square'), this.setShapeSize('square'));
-            
+
             //Check Detected Object
             if (!obj.detected) {
               obj.detected = true;
@@ -363,7 +355,7 @@ export default {
       if (this.config.shapeSize === 'very_big') {
         return 11;
       }
-    },    
+    },
     detectTargetShape(type) {
       if (this.config.targetShape === type) {
         this.detectedObject++;
@@ -389,7 +381,7 @@ export default {
       const distance = Math.random() * radius;
       const x = this.width / 2 + distance * Math.cos(angle);
       const y = this.height / 2 + distance * Math.sin(angle);
-      
+
       //Set Object Showed
       const type = this.config.shapes[Math.floor(Math.random() * this.config.shapes.length)];
 
@@ -447,7 +439,7 @@ export default {
           setTimeout(() => {
             this.calculatedResult();
           }, 1000);
-          
+
         }
       }, 1000);
     },
@@ -474,7 +466,7 @@ export default {
       this.submitResult()
     },
     async submitResult() {
-      try {   
+      try {
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
@@ -495,7 +487,7 @@ export default {
             body: JSON.stringify(payload)
           }
         )
-        
+
         if (!res.ok) {
           throw new Error('Failed Submit Test');
         }
@@ -561,13 +553,10 @@ export default {
     align-items: center;
   }
   canvas {
+    margin-top: 15px !important;
     display: block;
     margin: 0 auto;
     background-color: black;
-  }
-  .counter {
-    margin-left: 20px;
-    color: black;
   }
   .loading-container {
     /* Add your loading indicator styles here */
