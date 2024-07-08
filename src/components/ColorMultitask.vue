@@ -35,7 +35,7 @@
         :isActive="config.subtask.color_tank"
         @getResult="colorTankResult"
       />
-      
+
       <div class="horizon-section">
         <Horizon
           :isTimesUp="isTimesUp"
@@ -44,7 +44,7 @@
           :isActive="config.subtask.horizon"
           @getResult="horizonResult"
         />
-        
+
         <Arithmetics
           ref="arithmeticsRef"
           :isTimesUp="isTimesUp"
@@ -116,7 +116,7 @@ export default {
           correct_time: null, // in seconds
         },
         color_tank: {
-          score: null,
+          final_score: null,
         },
       },
     };
@@ -143,7 +143,9 @@ export default {
       this.isConfigLoaded = true;
       this.startCountdown();
 
-      setTimeout(() => {	
+      console.log(this.config, 'lalalla');
+
+      setTimeout(() => {
         this.$refs.arithmeticsRef.generateAudio();
 			}, 2000)
     },
@@ -164,7 +166,7 @@ export default {
           this.config.duration--;
         } else {
           clearInterval(this.countdownInterval);
-          
+
           // Submit Answer
           setTimeout(() => {
             this.submitResult();
@@ -178,11 +180,11 @@ export default {
 
         if (config) {
           const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
-          this.config.duration = colorMultitask.duration * 60;
+          this.config.duration = config.duration * 60;
           this.config.batteryTestConfigId = colorMultitask.id;
-          this.config.moduleId = colorMultitask.moduleId;
-          this.config.sessionId = colorMultitask.sessionId;
-          this.config.userId = colorMultitask.userId;
+          this.config.moduleId = config.moduleId;
+          this.config.sessionId = config.sessionId;
+          this.config.userId = config.userId;
 
           // Color Tank
           this.config.subtask.color_tank = colorMultitask.subtask.color_tank
@@ -220,21 +222,15 @@ export default {
     arithmeticResult(result) {
       this.result.arithmetics.correct_answer = result.correctAnswer;
       this.result.arithmetics.total_questions = result.totalQuestion;
-      this.result.arithmetics.avg_response_time = result.responseTime;
     },
     colorTankResult(result) {
-      this.result.color_tank.score = result.score;
+      this.result.color_tank.final_score = result.score;
     },
     horizonResult(result) {
       this.result.horizon.correct_time = result.correctTime;
     },
     async submitResult() {
-
-      console.log(this.result, 'resutl');
-      return;
-      /* eslint-disable */
-
-      try {   
+      try {
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
@@ -255,7 +251,7 @@ export default {
             body: JSON.stringify(payload)
           }
         )
-        
+
         if (!res.ok) {
           throw new Error('Failed Submit Test');
         }
