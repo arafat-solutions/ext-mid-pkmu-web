@@ -69,7 +69,6 @@
   import HorizonTest from './instrument-multitask/HorizonTest';
 
   export default {
-    name: 'MainView',
     components: {
       ArithmeticTask,
       AlertLights,
