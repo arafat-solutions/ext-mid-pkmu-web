@@ -32,6 +32,7 @@ export default {
             required: true
         },
         updateResults: Function,
+        updateResultLightAvgTime: Function
     },
     data() {
         return {
@@ -40,6 +41,8 @@ export default {
             timerInterval: null,
             alternateChange: false,
             setInterval: 0,
+            redStartTime: null,
+            correctResponseTimes: [],
         };
     },
     mounted() {
@@ -119,7 +122,14 @@ export default {
                 this.circleConfig[this.activeIndex].fillColor = COLORS.DEFAULT;
             }
             this.activeIndex = this.getRandomIndex();
-            this.circleConfig[this.activeIndex].fillColor = this.getRandomColor();
+            const newColor = this.getRandomColor()
+            this.circleConfig[this.activeIndex].fillColor = newColor;
+
+            if (newColor === COLORS.RED) {
+                this.redStartTime = performance.now()
+            } else {
+                this.redStartTime = null
+            }
         },
         getRandomIndex() {
             return Math.floor(Math.random() * this.circleConfig.length);
@@ -152,6 +162,12 @@ export default {
                 if (index !== -1 && index === this.activeIndex) {
                     if (fillColor === COLORS.RED) {
                         this.updateResults('alert_lights', { correct_response: 1 });
+                        // tracking the time just when user is right
+                        if (this.redStartTime !== null) {
+                            const responseTime = performance.now() - this.redStartTime
+                            this.correctResponseTimes.push(responseTime)
+                            this.updateAverageResponseTime();
+                        }
                     } else if (fillColor === COLORS.YELLOW) {
                         this.updateResults('alert_lights', { wrong_response: 1 });
                     }
@@ -161,7 +177,19 @@ export default {
                     }
                 }
             }
-        }
+        },
+        updateAverageResponseTime() {
+            const avgTime = this.getAverageResponseTime();
+            this.updateResultLightAvgTime(avgTime);
+        },
+        getAverageResponseTime() {
+            if (this.correctResponseTimes.length === 0) {
+                return 0;
+            }
+            const sum = this.correctResponseTimes.reduce((a, b) => a + b, 0);
+            const avg = (sum / this.correctResponseTimes.length) / 1000;
+            return Number(avg.toFixed(2))
+        },
     }
 };
 </script>
