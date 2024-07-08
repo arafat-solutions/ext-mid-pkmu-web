@@ -15,6 +15,7 @@ import TestModule from '@/components/TestModule.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 import ColorMultitask from '@/components/ColorMultitask.vue';
 import ConfigPage from '@/components/ConfigPage.vue';
+import AccousticMemory from '@/components/AccousticMemory.vue';
 
 const routes = [
   {
@@ -97,7 +98,11 @@ const routes = [
     name: 'Shape Recognition Test',
     component: ShapeRecognition
   },
-
+  {
+    path: '/accoustic-memory-test',
+    name: 'Accoustic Memory Test',
+    component: AccousticMemory
+  },
 ];
 
 const router = createRouter({

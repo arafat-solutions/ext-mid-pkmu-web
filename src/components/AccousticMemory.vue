@@ -1,5 +1,13 @@
 <template>
   <div class="main-view">
+    <div class="choices" v-for="row in 1" :key="row">
+      <div class="choice" v-for="choices in choicesLength" :key="choices">
+        <span>{{ String.fromCharCode(96 + choices) }})</span>
+        <div v-for="indexCheckbox in this.stringSizeLength" :key="indexCheckbox" class="input-box">
+          <input type="checkbox" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -17,17 +25,23 @@ export default {
       isTrial: this.$route.query.isTrial ?? false,
       isLoading: false,
       problem: null,
+      choicesLength: 4,
       dashInterval: 1000, //in ms
       choicesInterval: 3000, //in ms
     }
   },
+  computed: {
+    stringSizeLength() {
+      return this.stringSize.split('-').length;
+    },
+  },
   methods: {
     generateProblem() {
-      const randomString = generateRandomString(this.stringSize, true, true);
-      const choices = generateChoices(randomString, this.stringSize, true, true);
-      const answers = getCurrentAnswer(randomString, choices);
+      const randomString = this.generateRandomString(this.stringSize, this.includeDigits, this.excludeVowels);
+      const choices = this.generateChoices(randomString, this.stringSize, this.includeDigits, this.excludeVowels);
+      const answers = this.getCurrentAnswer(randomString, choices);
 
-      this.problem = {question, choices, answers};
+      this.problem = {randomString, choices, answers};
 
       // Read the question
       this.readQuestion();
@@ -63,12 +77,11 @@ export default {
       return format.split('-').map(segment => segment.replace(/[^A-Z0-9]/g, ''));
     },
     generateChoices(mainString, format, includeDigits, excludeVowels) {
-      const segments = getSegments(format);
-      const numChoices = 4;
+      const segments = this.getSegments(format);
       const choices = [];
       const mainSegments = mainString.split('-');
 
-      while (choices.length < numChoices) {
+      while (choices.length < this.choicesLength) {
           let choice = '';
           let segmentsToMatch = new Set();
 
@@ -77,7 +90,7 @@ export default {
                   choice += mainSegments[i];
                   segmentsToMatch.add(i);
               } else {
-                  choice += generateRandomString(segments[i], includeDigits, excludeVowels);
+                  choice += this.generateRandomString(segments[i], includeDigits, excludeVowels);
               }
               if (i < segments.length - 1) {
                   choice += '-';
@@ -122,7 +135,7 @@ export default {
     async readChoices() {
       for (const choice of this.problem.choices) {
         await this.spellOutString(choice);
-        await delay(this.choicesInterval);
+        await this.delay(this.choicesInterval);
       }
     },
     setupSound() {
@@ -156,7 +169,7 @@ export default {
       (async () => {
           for (let char of text) {
               if (char === '-') {
-                  await delay(this.dashInterval);
+                  await this.delay(this.dashInterval);
               } else {
                   await spellOut(char, 500); // Default interval between letters
               }
@@ -169,3 +182,31 @@ export default {
   }
 }
 </script>
+<style scoped>
+  .main-view {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    width: 1280px;
+    margin: 60px auto;
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+  }
+  .choice {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .choice label {
+    margin-right: 10px;
+  }
+  .input-box {
+    display: inline-block;
+  }
+</style>
