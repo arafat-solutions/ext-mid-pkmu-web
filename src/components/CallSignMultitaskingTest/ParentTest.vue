@@ -8,7 +8,8 @@
             <ColorTest :color-tank-data="configBe.color_tank" :update-results="updateResults" />
         </div>
         <div class="right-side">
-            <CircleTest :alert-lights-data="configBe.alert_lights" :update-results="updateResults" />
+            <CircleTest :alert-lights-data="configBe.alert_lights" :update-results="updateResults"
+                :update-result-light-avg-time="updateResultLightAvgTime" />
             <HorizonTest :horizon-data="configBe.horizon" :update-results="updateResults" />
             <CallSignTest :callsign-data="configBe.callsign" :update-results="updateResults" ref="callSignTest" />
         </div>
@@ -85,7 +86,7 @@ export default {
                     play: true
                 },
                 horizon: {
-                    speed: 'slow', // slow, medium, fast
+                    speed: 'fast', // slow, medium, fast
                     play: true
                 },
                 subtask: {
@@ -194,6 +195,9 @@ export default {
                     }
                 });
             }
+        },
+        updateResultLightAvgTime(time) {
+            this.results.alert_lights.avg_response_time = time
         }
     },
     components: {
