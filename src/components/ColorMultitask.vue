@@ -66,6 +66,8 @@
 import Arithmetics from './color-multitask/Arithmetics';
 import ColorTank from './color-multitask/ColorTank';
 import Horizon from './color-multitask/Horizon';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+
 export default {
   name: 'MainView',
   components: {
@@ -260,8 +262,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        //Call Utils Remove Test from Local Storage
-
+        removeTestByNameAndUpdateLocalStorage('Multi Tasking With Color')
         this.$router.push('/module');
       }
     },

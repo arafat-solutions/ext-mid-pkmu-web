@@ -19,6 +19,8 @@
 </template>
 
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+
 export default {
   data() {
     return {
@@ -496,8 +498,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        //Call Utils Remove Test from Local Storage
-
+        removeTestByNameAndUpdateLocalStorage('Radar Vigilance Test')
         this.$router.push('/module');
       }
     },
