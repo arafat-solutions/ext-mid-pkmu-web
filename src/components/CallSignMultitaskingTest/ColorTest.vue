@@ -5,17 +5,7 @@
 </template>
 
 <script>
-const DECREASE_SPEED = {
-    slow: 3000,
-    medium: 2000,
-    fast: 1000
-};
 
-const DECREASE_INTERVAL = {
-    slow: 3000,
-    medium: 2000,
-    fast: 1000
-}
 
 export default {
     name: 'ColorTest',
@@ -23,7 +13,8 @@ export default {
         colorTankData: {
             type: Object,
             required: true
-        }
+        },
+        updateResults: Function
     },
     data() {
         return {
@@ -52,7 +43,7 @@ export default {
             colorsInProgress: [],
             selectedColor: null,
             minRefillThreshold: 25,
-            animationInterval: null
+            animationInterval: null,
         };
     },
     mounted() {
@@ -77,7 +68,16 @@ export default {
             this.ctx = canvas.getContext("2d");
         },
         initConfig() {
-            // negative_score: true,
+            const DECREASE_SPEED = {
+                slow: 8000,
+                medium: 6000,
+                fast: 4000
+            };
+            const DECREASE_INTERVAL = {
+                slow: 2000,
+                medium: 2000,
+                fast: 2000
+            }
             const { descend_speed, speed } = this.colorTankData;
             this.decreaseDuration = DECREASE_SPEED[descend_speed]
             this.decreaseInterval = DECREASE_INTERVAL[speed]
@@ -245,19 +245,23 @@ export default {
 
                 let rectIndex;
                 let colorIndex;
+                let found = false;
 
-                let attempts = 0;
-                do {
+                for (let attempts = 0; attempts < 100 && !found; attempts++) {
                     rectIndex = this.getRandomNumber(4);
                     colorIndex = this.getRandomNumber(3);
-                    attempts++;
-                    if (attempts > 100) {
-                        return;
-                    }
-                } while (this.colorsInProgress[rectIndex][colorIndex] ||
-                    (this.finishedDecreasing[rectIndex][colorIndex] && this.currentHeights[rectIndex][colorIndex] <= this.minHeight));
 
-                this.startDecreaseAnimationForColor(rectIndex, colorIndex);
+                    if (!this.colorsInProgress[rectIndex][colorIndex] &&
+                        !this.finishedDecreasing[rectIndex][colorIndex] &&
+                        this.currentHeights[rectIndex][colorIndex] === 100) {
+                        found = true;
+                    }
+                }
+
+                if (found) {
+                    this.updateResults('color_tank', { total_occurrences: 1 });
+                    this.startDecreaseAnimationForColor(rectIndex, colorIndex);
+                }
             }, this.decreaseInterval);
         },
         restartDecreaseAnimation() {
@@ -274,7 +278,29 @@ export default {
             if ('QWER'.includes(key)) {
                 this.selectedColor = this.rectangles.find(rect => rect.letter === key).fillColor;
             } else if ('ASDF'.includes(key) && this.selectedColor) {
-                this.increaseColor(key);
+
+                const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
+                const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
+
+                if (colorIndex !== -1) {
+                    const currentHeight = this.currentHeights[tankIndex][colorIndex];
+                    const minRefillHeight = this.minRefillThreshold / 100 * 100; // Assuming 100 is the max height
+
+                    // Check if the current height is below 100 and increase correct_button_combination
+                    if (currentHeight < 100) {
+                        // this.correct_button_combination++;
+                        this.updateResults('color_tank', { correct_button_combination: 1 });
+                    }
+
+                    // Check if the current height is below the minimum refill line
+                    if (currentHeight < minRefillHeight) {
+                        this.updateResults('color_tank', { below_line_responses: 1 });
+                        // this.below_line_responses++;
+                    }
+
+                    this.increaseColor(key);
+                }
+
             }
         },
         increaseColor(tankLetter) {
@@ -318,6 +344,7 @@ export default {
             this.drawHorizontalLineMinimum({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
         },
         startDecreaseAnimationForColor(rectIndex, colorIndex) {
+
             const startHeight = this.currentHeights[rectIndex][colorIndex];
             const targetHeight = this.minHeight;
             const startTime = Date.now();
@@ -327,7 +354,7 @@ export default {
 
             const animateDecrease = () => {
                 if (!this.colorsInProgress[rectIndex][colorIndex]) {
-                    return; // Animation was cancelled
+                    return;
                 }
 
                 const elapsed = Date.now() - startTime;
@@ -354,7 +381,7 @@ export default {
             };
 
             animateDecrease();
-        },
+        }
     }
 }
 </script>
