@@ -108,9 +108,9 @@ export default {
         },
         initConfig() {
             const frequencyMap = {
-                'often': 10000,
-                'medium': 20000,
-                'seldom': 30000
+                'often': 60000,
+                'medium': 80000,
+                'seldom': 100000
             };
 
             const matchesMap = {
