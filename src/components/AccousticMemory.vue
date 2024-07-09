@@ -1,5 +1,16 @@
 <template>
-  <div class="main-view">
+  <div v-if="isShowModal" class="modal-overlay">
+    <div class="modal-content">
+      <p>
+        <strong>
+          Apakah Anda Yakin <br>akan memulai test Accoustic Memory?
+        </strong>
+        </p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal()">Ya</button>
+    </div>
+  </div>
+  <div class="main-view" v-if="isConfigLoaded">
     <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Task: {{ currentTask }} / {{ numberOfTask }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
@@ -7,12 +18,18 @@
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
     <div class="checkbox-grid">
-      <div v-for="row in 10" :key="row" class="checkbox-row">
-        <div v-for="col in (choicesLength * stringSizeLength)" :key="col" class="checkbox-item">
-          <label :for="`checkbox-${row}-${col}`" v-if="(col % 3) === 1" class="mr-2">{{ String.fromCharCode(96 + Math.ceil(col / 3)) }})</label>
+      <div v-for="(row, rowIndex) in totalRow" :key="rowIndex" class="checkbox-row">
+        <div v-for="(col, colIndex) in totalColumn" :key="colIndex" class="checkbox-item">
+          <label :for="`checkbox-${rowIndex}-${colIndex}`" v-if="(col % this.stringSizeLength) === 1" class="mr-2">{{ String.fromCharCode(96 + Math.ceil(col / this.stringSizeLength)) }})</label>
           <div class="checkbox-wrapper">
             <label class="checkbox">
-              <input class="checkbox__trigger visuallyhidden" type="checkbox" :id="`checkbox-${row}-${col}`" :disabled="row > currentTask" />
+              <input
+                class="checkbox__trigger visuallyhidden"
+                type="checkbox"
+                :id="`checkbox-${rowIndex}-${colIndex}`"
+                :disabled="row !== (currentTask % numberOfTask)"
+                v-model="checkboxValues[rowIndex][colIndex]"
+              />
               <span class="checkbox__symbol">
                 <svg aria-hidden="true" class="icon-checkbox" width="28px" height="28px" viewBox="0 0 28 28" version="1" xmlns="http://www.w3.org/2000/svg">
                   <path d="M4 14l8 7L24 7"></path>
@@ -30,9 +47,11 @@
 export default {
   data() {
     return {
+      isShowModal: false,
       page: 1,
       currentTask: 1,
       numberOfTask: 3, //positive number
+      totalRow: 10,
       stringSize: 'ABC-DE-FG', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: true, //true or false
       excludeVowels: true, //true or false
@@ -43,17 +62,33 @@ export default {
       isLoading: false,
       problem: null,
       choicesLength: 4,
-      dashInterval: 1000, //in ms
+      dashInterval: 2000, //in ms
       choicesInterval: 3000, //in ms
+      charInterval: 1000, //in ms
+      checkboxValues: []
     }
   },
   computed: {
     stringSizeLength() {
       return this.stringSize.split('-').length;
     },
+    totalColumn() {
+      return this.choicesLength * this.stringSizeLength;
+    },
+  },
+  mounted() {
+    this.initiateCheckboxValues();
   },
   methods: {
-    generateProblem() {
+    initiateCheckboxValues() {
+      this.checkboxValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
+      this.isConfigLoaded = true;
+      this.isShowModal = true;
+    },
+    currentRow(row) {
+      return this.page * row;
+    },
+    async generateProblem() {
       const randomString = this.generateRandomString(this.stringSize, this.includeDigits, this.excludeVowels);
       const choices = this.generateChoices(randomString, this.stringSize, this.includeDigits, this.excludeVowels);
       const answers = this.getCurrentAnswer(randomString, choices);
@@ -61,10 +96,10 @@ export default {
       this.problem = {randomString, choices, answers};
 
       // Read the question
-      this.readQuestion();
+      await this.readQuestion();
 
       // Read the choices
-      this.readChoices();
+      await this.readChoices();
     },
     generateRandomString(format, includeDigits = true, excludeVowels = false) {
       const vowels = 'AEIOU';
@@ -126,28 +161,38 @@ export default {
       const answers = [];
 
       choices.forEach(choice => {
-          const choiceSegments = choice.split('-');
-          const matchIndices = [];
+        const choiceSegments = choice.split('-');
+        const matchIndices = [];
 
-          for (let i = 0; i < mainSegments.length; i++) {
-              if (mainSegments[i] === choiceSegments[i]) {
-                  matchIndices.push(i);
-              }
-          }
+        for (let i = 0; i < mainSegments.length; i++) {
+            if (mainSegments[i] === choiceSegments[i]) {
+                matchIndices.push(i);
+            }
+        }
 
-          answers.push(matchIndices);
+        answers.push(matchIndices);
       });
 
       return answers;
     },
-    readQuestion() {
+    async readQuestion() {
       const synth = window.speechSynthesis;
       const utterance = this.setupSound();
       utterance.text = 'The reference letter';
-      synth.speak(utterance);
-      this.spellOutString(this.problem.randomString);
+      // Wrap speechSynthesis.speak in a promise
+      await new Promise((resolve, reject) => {
+        utterance.onend = resolve;
+        utterance.onerror = reject;
+        synth.speak(utterance);
+      });
+      await this.spellOutString(this.problem.randomString);
       utterance.text = 'is introduces. The query letter strings read out are:';
-      synth.speak(utterance);
+      // Wrap speechSynthesis.speak in a promise
+      await new Promise((resolve, reject) => {
+        utterance.onend = resolve;
+        utterance.onerror = reject;
+        synth.speak(utterance);
+      });
     },
     async readChoices() {
       for (const choice of this.problem.choices) {
@@ -170,27 +215,28 @@ export default {
       return utterance;
     },
     spellOutString(text) {
+      console.log(text);
       const synth = window.speechSynthesis;
       const utterance = this.setupSound();
 
       const spellOut = (letter, delay) => {
-          return new Promise((resolve) => {
-              utterance.text = letter;
-              synth.speak(utterance);
-              setTimeout(() => {
-                  resolve();
-              }, delay);
-          });
+        return new Promise((resolve) => {
+          utterance.text = letter;
+          synth.speak(utterance);
+          setTimeout(() => {
+            resolve();
+          }, delay);
+        });
       };
 
-      (async () => {
-          for (let char of text) {
-              if (char === '-') {
-                  await this.delay(this.dashInterval);
-              } else {
-                  await spellOut(char, 500); // Default interval between letters
-              }
+      return (async () => { // Return the promise chain
+        for (let char of text) {
+          if (char === '-') {
+            await this.delay(this.dashInterval);
+          } else {
+            await spellOut(char, this.charInterval); // Default interval between letters
           }
+        }
       })();
     },
     delay(ms) {
@@ -206,6 +252,10 @@ export default {
     },
     exit() {
       this.$router.push('module');
+    },
+    closeModal() {
+      this.isShowModal = false;
+      this.generateProblem();
     },
   }
 }
@@ -259,7 +309,7 @@ export default {
     --t-fast: 0.2s;
     --e-in: ease-in;
     --e-out: cubic-bezier(.11, .29, .18, .98);
-    --c-disabled-bg: #d3d3d3; /* Light gray background for disabled checkboxes */
+    --c-disabled-bg: #d3d3d3; /* Light gray background for disabledValues */
     --c-disabled-border: #a9a9a9; /* Dark gray border for disabled checkboxes */
   }
 
@@ -410,5 +460,42 @@ export default {
     font-weight: bold;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
+  }
+
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+  }
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+
+  .modal-content button {
+    background-color: #6200ee;
+    color:white;
+    padding: 20px;
+    border-radius: 10px;
+    border: none;
+    padding: 10px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background-color: #5e37a6;
   }
 </style>
