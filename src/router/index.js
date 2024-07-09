@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from '@/components/LoginPage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
+import CallSignMultitask from '@/components/CallSignMultitaskingTest/ParentTest.vue'
 import VisualMemoryTest from '@/components/VisualMemoryTest.vue';
-import CallSignMultitask from '@/components/CallSignMultitask.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';

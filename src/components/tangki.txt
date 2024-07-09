@@ -1,0 +1,587 @@
+<template>
+  <div class="timer" style="height: 30px; margin-bottom: 10px;">
+    <strong style="padding: 5px;"> Waktu : {{ minutes }}:{{ seconds }} </strong>
+  </div>
+
+  <div v-if="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <div class="text">submitting a result</div>
+  </div>
+
+  <div class="horizon-tank">
+    <div v-if="config.subtask.color_tank" class="tank-section">
+      <div class="upper-tanks">
+        <div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }" :id="`upper-tank-${index}`" class="tank">
+          <p style="color: black; font-weight: bolder;">{{ uppers[index] }}</p>
+        </div>
+      </div>
+
+      <div class="line">
+        <canvas ref="lineTankCanvas" :width="lineTankCanvasWidth" :height="lineTankCanvasHeight"></canvas>
+      </div>
+
+      <div class="lower-tanks">
+        <div v-for="(lowerTank, index) in lowerTanks" :key="index" class="tank" :id="`lower-tank-${index}`">
+          <p style="z-index: 1; position: absolute; color: black; font-weight: bolder;">{{ lowers[index] }}</p>
+          <div class="horizontal-line"> </div>
+          <div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor" 
+            :style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '1%' : '100%'}"
+            class="tank-fill fill-animation">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      isLoading: false,
+      isTankEmpty: true,
+      timer: {
+        minutes: 0,
+        second: 0
+      },
+      countdownInterval: null,
+      keysPressed: {},
+      colors: ['yellow', 'blue', 'red', 'green'],
+      uppers: ['Q', 'W', 'E', 'R'],
+      lowers: ['A', 'S', 'D', 'F'],
+      lowerTanks: [
+        [ 
+          {color: 'yellow', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'green', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'blue', height: '100%'}, 
+        ],
+        [ 
+          {color: 'blue', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'yellow', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'red', height: '100%'}, 
+        ],
+        [ 
+          {color: 'yellow', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'green', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'red', height: '100%'}, 
+        ],
+        [ 
+          {color: 'green', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'blue', height: '100%'}, 
+          {color: 'black', height: '100%'}, 
+          {color: 'red', height: '100%'}, 
+        ],
+      ],
+      lineTankCanvasWidth: 320,
+      lineTankCanvasHeight: 250,
+      lines: [
+        // Q
+        { x1: 13, y1: 10, x2: 13, y2: 280 },
+        { x1: 35, y1: 10, x2: 35, y2: 50, x3: 120, y3: 220, x4: 120, y4: 280 },
+        { x1: 55, y1: 10, x2: 55, y2: 50, x3: 180, y3: 220, x4: 180, y4: 280},
+        // W
+        { x1: 100, y1: 10, x2: 100, y2: 50, x3: 60, y3: 220, x4: 60, y4: 280 },
+        { x1: 120, y1: 10, x2: 95, y2: 280, },
+        { x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 220, x4: 290, y4: 280},
+        // E
+        { x1: 185, y1: 10, x2: 185, y2: 50, x3: 145, y3: 220, x4: 145, y4: 280 },
+        { x1: 205, y1: 10, x2: 205, y2: 50, x3: 230, y3: 220, x4: 230, y4: 280 },
+        { x1: 225, y1: 10, x2: 225, y2: 50, x3: 315, y3: 220, x4: 315, y4: 280 },
+        // R
+        { x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 220, x4: 35, y4: 280 },
+        { x1: 290, y1: 10, x2: 290, y2: 50, x3: 205, y3: 220, x4: 205, y4: 280 },
+        { x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280 },
+      ],
+      intervalId: null, // Untuk menyimpan ID interval
+      emptyTimers: [
+        { yellow: 0, green: 0, blue: 0 },
+        { blue: 0, yellow: 0, red: 0 },
+        { yellow: 0, green: 0, red: 0 },
+        { green: 0, blue: 0, red: 0 },
+      ],
+      timerTankInterval: null,
+      config: {
+        duration : 2 * 60,
+        subtask: {
+          arithmetics: true,
+          color_tank: true,
+          horizon: true,
+        },
+        arithmetics: {
+          difficulty: null,
+          sound: true
+        },
+        horizon: {
+          speed: 'slow', //slow, medium, false
+        },
+        color_tank: {
+          negative_score: true,
+          speed: 'slow', //slow, medium, fast
+          startToDecreaseIn: 5000,
+          decreaseInterval: 3000,
+        },
+      },
+      result: {
+        color_tank: {
+          score: 0,
+        },
+        arithmetic: {
+          correctAnswer: 0,
+          question: 0,
+          timeResponded: 0
+        }
+      },
+      resultAritmethic: {
+        totalQuestion: 0,
+        correctAnswers: 0,
+        faultAnswers: 0,
+        timeResponded: 0
+      },
+    };
+  },
+  async mounted() {
+    // await this.initConfig();
+
+    // Setup Color Tank
+    if (this.config.subtask.color_tank) { 
+      this.initLineTank();
+      this.initTankToEmpty();
+    }
+
+    this.startCountdown();
+
+    window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keyup', this.handleKeyUp);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleKeyUp);
+  },
+  computed: {
+    minutes() {
+      return Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+    },
+    seconds() {
+      return (this.config.duration % 60).toString().padStart(2, '0');
+    }
+  },
+  methods: {
+    startCountdown() {
+      this.countdownInterval = setInterval(() => {
+        if (this.config.duration > 0) {
+          this.config.duration--;
+        } else {
+          clearInterval(this.countdownInterval);
+          this.calculatedResult();
+        }
+      }, 1000);
+    },
+    calculatedResult() {
+      
+    },
+    async initConfig() {
+      try {
+        this.result = {}
+        let config = JSON.parse(localStorage.getItem('scheduleData'));
+
+        for (let i = 0; i < config.tests.length; i++) {
+          if (config.tests[i].testUrl === 'color-multitask-test') {
+            this.config.duration = config.tests[i].config.duration * 60;
+            this.config.batteryTestConfigId = config.tests[i].config.id;
+            this.config.moduleId = config.moduleId;
+            this.config.sessionId = config.sessionId;
+            this.config.userId = config.userId;
+
+            //Color Tank
+            this.config.subtask.color_tank = config.tests[i].config.subtask.color_tank
+            if (this.config.subtask.color_tank) {
+              this.config.color_tank.negative_score = config.tests[i].config.arithmetics.negative_score
+              this.config.color_tank.speed = config.tests[i].config.color_tank.speed
+            }
+
+            //Arithmetic
+            this.config.subtask.arithmetics = config.tests[i].config.subtask.arithmetics
+            if (this.config.subtask.arithmetics) {
+              this.config.color_tank.sound = config.tests[i].config.color_tank.sound
+              this.config.color_tank.difficulty = config.tests[i].config.arithmetics.difficulty
+            }
+
+            //Horizon
+            this.config.subtask.horizon = config.tests[i].config.subtask.horizon
+            if (this.config.subtask.horizon) {
+              this.config.horizon.speed = config.tests[i].config.horizon.speed
+            }
+
+            break;
+          }
+        }
+      } catch (error) {
+        console.log(error, 'error')
+      }
+    },
+    initTankToEmpty() {
+      setTimeout(() => {
+        this.intervalId = setInterval(() => {
+          if (this.isTankEmpty) {
+            this.decreaseTankLevels();
+          }
+        }, 1000);
+      }, 3000);
+    },
+    initLineTank() {
+      const canvas = this.$refs.lineTankCanvas;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, this.lineTankCanvasWidth, this.lineTankCanvasHeight);
+      ctx.save();
+
+      for (let i = 0; i < this.lines.length; i++) {
+        this.drawLine(this.lines[i]);
+      }
+    },
+    drawLine(lines) {
+      const canvas = this.$refs.lineTankCanvas;
+      const ctx = canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo(lines.x1, lines.y1);
+      ctx.lineTo(lines.x2, lines.y2);
+
+      if (lines.x3 && lines.y3) {
+        ctx.lineTo(lines.x3, lines.y3);
+      }
+      if (lines.x4 && lines.y4) {
+        ctx.lineTo(lines.x4, lines.y4);
+      }
+
+      ctx.strokeStyle = '#574e4e';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    },
+    fillTank(tankIndex, tankItem) {
+      const increment = 10;
+      const tank = this.lowerTanks[tankIndex][tankItem];
+
+      let currentFill = parseFloat(tank['height'].replace('%', ''));
+
+      if (tank['height'] < '100%') {
+        currentFill += increment;
+        tank['height'] = currentFill + '%';
+      }
+
+      if (tank['height'] >= '100%') {
+        tank['height'] = '100%';
+      }
+    },
+    decreaseTankLevels() {
+
+      for (let i = 0; i < this.lowerTanks.length; i++) {
+        const tanks = this.lowerTanks[i];
+
+        for (let j = 0; j < tanks.length; j++) {
+          if (tanks[j]['color'] === 'black') {
+            continue;
+          }
+
+          if (tanks[j]['height'] != '0%' && parseFloat(tanks[j]['height'].replace('%', '')) > 5) {
+            tanks[j]['height'] = this.decreaseHeight(tanks[j]['height'], j, tanks[j]['color']);
+          } else {
+            tanks[j]['height'] = '5%';
+          }
+        }
+      }
+    },
+    decreaseSpeed() {
+      if (this.config.color_tank.speed === 'slow') {
+        return Math.random() < 0.5 ? 1 : 3;
+      } 
+      if (this.config.color_tank.speed === 'medium') {
+        return Math.random() < 0.5 ? 3 : 5;
+      } 
+      if (this.config.color_tank.speed === 'fast') {
+        return Math.random() < 0.5 ? 5 : 7;
+      } 
+    },
+    // eslint-disable-next-line no-unused-vars
+    decreaseHeight(currentHeight, tankItemIndex, color) {
+      const current = parseFloat(currentHeight.replace('%', ''));
+      const newHeight = Math.max(0, current - this.decreaseSpeed()) + '%';
+  
+      return newHeight;
+    },
+    startEmptyTimer() {
+      if (!this.timerTankInterval) {
+        this.timerTankInterval = setInterval(() => {
+          for (let i = 0; i < this.emptyTimers.length; i++) {
+            const tank = this.lowerTanks[i];
+            for (const color in tank) {
+              if (tank[color] === '5%') {
+                this.emptyTimers[i][color]++;
+                // console.log(`Tank ${i} with color ${color} has been empty for ${this.emptyTimers[i][color]} seconds.`);
+              }
+            }
+          }
+        }, 1000);
+      }
+    },
+    stopEmptyTimer(tankIndex, color) {
+      this.emptyTimers[tankIndex][color] = 0;
+      let anyTankEmpty = false;
+      for (let i = 0; i < this.lowerTanks.length; i++) {
+        const tank = this.lowerTanks[i];
+        for (const color in tank) {
+          if (tank[color] === '5%') {
+            anyTankEmpty = true;
+            break;
+          }
+        }
+        if (anyTankEmpty) break;
+      }
+      if (!anyTankEmpty && this.timerTankInterval) {
+        clearInterval(this.timerTankInterval);
+        this.timerTankInterval = null;
+      }
+    },
+    handleKeyDown(event) {
+      this.keysPressed[event.key.toUpperCase()] = true;
+      
+      // Color Tank
+      if (this.config.subtask.color_tank) {
+        if (this.keysPressed['Q'] && this.keysPressed['A']) {
+          this.fillTank(0, 0);
+        }
+        if (this.keysPressed['Q'] && this.keysPressed['S']) {
+          this.fillTank(1, 2);
+        }
+        if (this.keysPressed['Q'] && this.keysPressed['D']) {
+          this.fillTank(2, 0);
+        }
+
+        if (this.keysPressed['W'] && this.keysPressed['A']) {
+          this.fillTank(0, 4);
+        }
+        if (this.keysPressed['W'] && this.keysPressed['S']) {
+          this.fillTank(1, 0);
+        }
+        if (this.keysPressed['W'] && this.keysPressed['F']) {
+          this.fillTank(3, 2);
+        }
+
+        if (this.keysPressed['E'] && this.keysPressed['S']) {
+          this.fillTank(1, 4);
+        }
+        if (this.keysPressed['E'] && this.keysPressed['D']) {
+          this.fillTank(2, 4);
+        }
+        if (this.keysPressed['E'] && this.keysPressed['F']) {
+          this.fillTank(3, 4);
+        }
+
+        if (this.keysPressed['R'] && this.keysPressed['A']) {
+          this.fillTank(0, 2);
+        }
+        if (this.keysPressed['R'] && this.keysPressed['D']) {
+          this.fillTank(2, 2);
+        }
+        if (this.keysPressed['R'] && this.keysPressed['F']) {
+          this.fillTank(3, 0);
+        }
+      }
+      
+      // Arithmetic
+      if (this.config.subtask.arithmetics) {
+        if (this.isPlayAudio && this.audio) {
+          this.startPlayback();
+          this.isPlayAudio = false;
+        }
+
+        if (this.isCanChooseAudio) {
+          if (this.keysPressed['7']) {
+            this.pressAnswerAudio(7);
+          }
+
+          if (this.keysPressed['8']) {
+            this.pressAnswerAudio(8);
+          }
+
+          if (this.keysPressed['9']) {
+            this.pressAnswerAudio(9);
+          }
+
+          if (this.keysPressed['0']) {
+            this.pressAnswerAudio(0);
+          }
+        }
+      }
+    },
+    handleKeyUp(event) {
+      delete this.keysPressed[event.key.toUpperCase()];
+    },
+  },
+};
+</script>
+
+<style scoped>
+.horizontal-line {
+  height: 2px;
+  width: 100%;
+  background-color: black;
+  position: absolute;
+  margin-top: 90px;
+}
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
+.question-container {
+  border: 2px solid black;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.question {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+.options {
+  list-style-type: none;
+  padding: 0;
+}
+.options li {
+  margin-bottom: 8px;
+}
+.option-answer {
+  background-color: grey;
+  padding: 10px;
+  border-radius: 5px;
+  display: inline-block;
+  padding: 4px 7px;
+  color: white;
+  border: 2px solid black;
+  text-align: center;
+  font-size: 11px;
+  transition: background-color 0.3s ease;
+}
+.horizon-tank {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  height: 100vh;
+  margin-top: -35px;
+  margin-left: 40px;
+  margin-right: 40px;
+}
+.tank-section {
+  display: flex;
+  flex-direction: column;
+}
+.upper-tanks {
+  margin-left: 15px;
+}
+.lower-tanks {
+  margin-left: 15px;
+  margin-top: 10px;
+}
+.upper-tanks, .lower-tanks {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 10px;
+}
+.tank {
+  width: 69px;
+  height: 100px;
+  border: 3px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 10px;
+  position: relative; /* Positioning for absolute elements inside */
+}
+.tank-fill {
+  height: 100%;
+  width: 100%;
+  top: 0%;
+  bottom: 0%;
+  background-color: white;
+  margin-top: auto;
+  margin-bottom: initial;
+}
+.fill-animation {
+  transition: height 1s ease; /* Animation for height change */
+}
+
+.line canvas {
+  border: 0px !important;
+}
+.horizon-section {
+  position: relative;
+}
+canvas {
+  border: 2px solid black;
+}
+
+.arithmetic {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+.warning-light {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: brown;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+  margin-right: 10px;
+}
+.warning-light.active {
+  background-color: red;
+}
+</style>
