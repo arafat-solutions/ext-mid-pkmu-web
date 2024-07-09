@@ -1,12 +1,18 @@
 <template>
   <div class="main-view">
+    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+      Task: {{ currentTask }} / {{ numberOfTask }}
+      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
+      <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
+      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+    </div>
     <div class="checkbox-grid">
       <div v-for="row in 10" :key="row" class="checkbox-row">
         <div v-for="col in (choicesLength * stringSizeLength)" :key="col" class="checkbox-item">
           <label :for="`checkbox-${row}-${col}`" v-if="(col % 3) === 1" class="mr-2">{{ String.fromCharCode(96 + Math.ceil(col / 3)) }})</label>
           <div class="checkbox-wrapper">
             <label class="checkbox">
-              <input class="checkbox__trigger visuallyhidden" type="checkbox" :id="`checkbox-${row}-${col}`" :disabled="row !== currentTask" />
+              <input class="checkbox__trigger visuallyhidden" type="checkbox" :id="`checkbox-${row}-${col}`" :disabled="row > currentTask" />
               <span class="checkbox__symbol">
                 <svg aria-hidden="true" class="icon-checkbox" width="28px" height="28px" viewBox="0 0 28 28" version="1" xmlns="http://www.w3.org/2000/svg">
                   <path d="M4 14l8 7L24 7"></path>
@@ -24,6 +30,7 @@
 export default {
   data() {
     return {
+      page: 1,
       currentTask: 1,
       numberOfTask: 3, //positive number
       stringSize: 'ABC-DE-FG', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
@@ -189,6 +196,17 @@ export default {
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
+    pause() {
+      clearInterval(this.interval);
+      this.isPause = true;
+    },
+    startAgain() {
+      this.isPause = false;
+      this.startCountdown();
+    },
+    exit() {
+      this.$router.push('module');
+    },
   }
 }
 </script>
@@ -200,7 +218,7 @@ export default {
     gap: 20px;
     width: 1280px;
     margin: 60px auto;
-    padding-top: 5rem;
+    padding-top: 4rem;
   }
 
   .checkbox-grid {
@@ -240,7 +258,9 @@ export default {
     --t-base: 0.4s;
     --t-fast: 0.2s;
     --e-in: ease-in;
-    --e-out: cubic-bezier(.11,.29,.18,.98);
+    --e-out: cubic-bezier(.11, .29, .18, .98);
+    --c-disabled-bg: #d3d3d3; /* Light gray background for disabled checkboxes */
+    --c-disabled-border: #a9a9a9; /* Dark gray border for disabled checkboxes */
   }
 
   .checkbox-wrapper .visuallyhidden {
@@ -259,9 +279,11 @@ export default {
     align-items: center;
     justify-content: flex-start;
   }
+
   .checkbox-wrapper .checkbox + .checkbox {
     margin-top: var(--s-small);
   }
+
   .checkbox-wrapper .checkbox__symbol {
     display: inline-block;
     display: flex;
@@ -273,6 +295,7 @@ export default {
     transition: box-shadow var(--t-base) var(--e-out), background-color var(--t-base);
     box-shadow: 0 0 0 0 var(--c-primary-10-percent-opacity);
   }
+
   .checkbox-wrapper .checkbox__symbol:after {
     content: "";
     position: absolute;
@@ -313,14 +336,23 @@ export default {
 
   .checkbox-wrapper .checkbox__trigger:checked + .checkbox__symbol:after {
     -webkit-animation: ripple 1.5s var(--e-out);
-            animation: ripple 1.5s var(--e-out);
+    animation: ripple 1.5s var(--e-out);
   }
+
   .checkbox-wrapper .checkbox__trigger:checked + .checkbox__symbol .icon-checkbox path {
     transition: stroke-dashoffset var(--t-base) var(--e-out);
     stroke-dashoffset: 0px;
   }
+
   .checkbox-wrapper .checkbox__trigger:focus + .checkbox__symbol {
     box-shadow: 0 0 0 0.25em var(--c-primary-20-percent-opacity);
+  }
+
+  .checkbox-wrapper .checkbox__trigger:disabled + .checkbox__symbol {
+    background-color: var(--c-disabled-bg);
+    border-color: var(--c-disabled-border);
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   @-webkit-keyframes ripple {
@@ -343,5 +375,40 @@ export default {
       opacity: 0;
       transform: scale(20);
     }
+  }
+
+  .timer-container-trial {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background-color: #0349D0;
+    padding: 0.75rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+
+    button {
+      color: #000000;
+      font-weight: bold;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-radius: 5px;
+      border-color: transparent;
+      min-width: 100px;
+      cursor: pointer;
+    }
+  }
+
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
   }
 </style>
