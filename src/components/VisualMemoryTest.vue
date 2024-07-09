@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+
 export default {
     data() {
         return {
@@ -105,24 +107,23 @@ export default {
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').config
-            const { id } = config
-            // console.log(config, "<< config")
+            const { id, display, duration, interval } = config
 
             this.configBe = {
-                duration: 5 * 60, // hardcode
-                questionInterval: 30, // hardcode
+                duration: duration * 60,
+                questionInterval: interval * 60,
                 testId: id,
                 moduleId: scheduleData.moduleId,
                 sessionId: scheduleData.sessionId,
                 userId: scheduleData.userId,
                 display: {
-                    alphanumeric: true,
-                    shape: true
+                    alphanumeric: display.alphanumeric,
+                    shape: display.shape
                 },
             }
 
-            this.testTime = 5 * 60
-            this.memoryTime = 30
+            this.testTime = duration * 60
+            this.memoryTime = interval * 60
         },
         updateCanvasDimensions() {
             this.canvasWidth = this.canvasDimensions.width;
@@ -301,12 +302,8 @@ export default {
                     this.drawVisual()
                 } else {
                     clearInterval(this.tesInterval);
-                    // try {
-                    //     await this.submitResult();
-                    //     console.log('Test result submitted successfully');
-                    // } catch (error) {
-                    //     console.error('An error occurred while submitting the test result:', error);
-                    // }
+                    await this.submitResult();
+
                 }
             }, 1000)
         },
@@ -525,7 +522,7 @@ export default {
                     userId: this.configBe.userId,
                     moduleId: this.configBe.moduleId,
                     batteryTestConfigId: this.configBe.testId,
-                    result: { ...this.result }
+                    result: this.result
                 }
                 const response = await fetch(`${API_URL}api/submission`, {
                     method: 'POST',
@@ -538,6 +535,7 @@ export default {
                 if (!response.ok) {
                     throw new Error(`Error: ${response.statusText}`);
                 }
+                removeTestByNameAndUpdateLocalStorage('Visual Memory Test')
                 this.$router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
