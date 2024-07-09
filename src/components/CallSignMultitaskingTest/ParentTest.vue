@@ -123,7 +123,7 @@ export default {
             moduleId: '',
             sessionId: '',
             userId: '',
-            seeResults: true,
+            seeResults: false, // untuk hide show debugging
             isModalVisible: true
         }
     },
@@ -178,9 +178,8 @@ export default {
                     play: subtask.horizon
                 },
             }
-            console.log(duration)
             this.configBe = newConfig
-            this.testTime = 0.6 * 60
+            this.testTime = duration * 60
             this.testId = id
             this.moduleId = scheduleData.moduleId
             this.sessionId = scheduleData.sessionId
