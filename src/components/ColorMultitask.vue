@@ -259,8 +259,24 @@ export default {
         console.error(error), "error";
       } finally {
         this.isLoading = false;
+        this.removeTest()
         this.$router.push('/module');
       }
+    },
+    removeTest() {
+      let config = JSON.parse(localStorage.getItem('scheduleData'));
+
+      let data = {
+        endHour: config.endHour,
+        moduleId: config.moduleId,
+        name: config.name,
+        sessionId: config.sessionId,
+        startHour: config.startHour,
+        userId:  config.userId,
+        tests: config.tests.filter(test => test.testUrl !== 'color-multitask-test')
+      }
+
+      localStorage.setItem('scheduleData', JSON.stringify(data));
     }
   },
 };
