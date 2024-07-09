@@ -215,6 +215,7 @@ export default {
       return utterance;
     },
     spellOutString(text) {
+      text = text.toLowerCase();
       console.log(text);
       const synth = window.speechSynthesis;
       const utterance = this.setupSound();
