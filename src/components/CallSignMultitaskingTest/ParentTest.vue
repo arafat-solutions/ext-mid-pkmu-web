@@ -1,9 +1,7 @@
 <template>
     <div id="parent-callsign-multitask">
-        <div v-if="!startTest" class="start-container">
-            <p>Anda akan melaksanakan Tes Call Sign Multitask. Tekan Tombol Start Test untuk memulai.</p>
-            <button class="start-button" @click="startSpeechTest">Start Test</button>
-        </div>
+        <ModalComponent :visible="isModalVisible" title="Start Test" message="Are you sure you want to start this test?"
+            @confirm="handleConfirm" @cancel="handleCancel" />
         <div class="left-side">
             <ColorTest :color-tank-data="configBe.color_tank" :update-results="updateResults" />
         </div>
@@ -21,7 +19,9 @@
             <div class="test">
                 <p class="title">Color </p>
                 <div class="test-result">
-                    <p>negative: {{ results.color_tank.negative_tank }}</p>
+                    <p>correct: {{ results.color_tank.correct_button_combination }}</p>
+                    <p>below: {{ results.color_tank.below_line_responses }}</p>
+                    <p>total occurances: {{ results.color_tank.total_occurrences }}</p>
                 </div>
             </div>
             <div class="test">
@@ -49,6 +49,10 @@
                 </div>
             </div>
         </div>
+        <div v-if="loading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Your result is submitting</div>
+        </div>
     </div>
 </template>
 
@@ -57,11 +61,14 @@ import ColorTest from './ColorTest.vue';
 import HorizonTest from './HorizonTest.vue';
 import CircleTest from './CircleTest.vue';
 import CallSignTest from './CallSignTest.vue';
+import ModalComponent from './Modal.vue'
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 export default {
     name: 'CallSignMultitask',
     data() {
         return {
+            loading: false,
             startTest: false,
             testTime: 5 * 60,
             tesInterval: null,
@@ -86,15 +93,9 @@ export default {
                     play: true
                 },
                 horizon: {
-                    speed: 'fast', // slow, medium, fast
+                    speed: 'medium', // slow, medium, fast
                     play: true
                 },
-                subtask: {
-                    alert_lights: true,
-                    callsign: true,
-                    color_tank: true,
-                    horizon: true
-                }
             },
             results: {
                 horizon: {
@@ -113,15 +114,21 @@ export default {
                     total_match_count: 0,
                 },
                 color_tank: {
-                    negative_tank: 0
+                    correct_button_combination: 0,
+                    below_line_responses: 0,
+                    total_occurrences: 0
                 }
             },
             testId: '',
             moduleId: '',
             sessionId: '',
             userId: '',
-            seeResults: true
+            seeResults: true,
+            isModalVisible: true
         }
+    },
+    mounted() {
+        this.initConfig()
     },
     beforeUnmount() {
         clearInterval(this.tesInterval);
@@ -138,12 +145,7 @@ export default {
                     this.testTime--;
                 } else {
                     clearInterval(this.tesInterval);
-                    // try {
-                    //     await this.submitResult();
-                    //     console.log('Test result submitted successfully');
-                    // } catch (error) {
-                    //     console.error('An error occurred while submitting the test result:', error);
-                    // }
+                    await this.submitResult();
                 }
             }, 1000)
         },
@@ -152,7 +154,7 @@ export default {
             const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').config
             const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
 
-            this.configBe = {
+            const newConfig = {
                 alert_lights: {
                     frequency: alert_lights.frequency,
                     speed: alert_lights.speed,
@@ -167,8 +169,8 @@ export default {
                 color_tank: {
                     negative_score: color_tank.negative_score,
                     speed: color_tank.speed,
-                    descend_speed: color_tank.descend_speed ?? 'slow', // belum dikirim dari be
-                    colored_lower_tank: color_tank.colored_lower_tank ?? true, // belum dikirim dari be
+                    descend_speed: color_tank.descend_speed,
+                    colored_lower_tank: color_tank.colored_lower_tank,
                     play: subtask.color_tank
                 },
                 horizon: {
@@ -176,16 +178,23 @@ export default {
                     play: subtask.horizon
                 },
             }
-            this.testTime = duration * 60
+            console.log(duration)
+            this.configBe = newConfig
+            this.testTime = 0.6 * 60
             this.testId = id
             this.moduleId = scheduleData.moduleId
             this.sessionId = scheduleData.sessionId
             this.userId = scheduleData.userId
         },
-        startSpeechTest() {
+        handleConfirm() {
+            this.isModalVisible = false
             this.startTest = true
             this.countDownTestTime()
             this.$refs.callSignTest.startSpeechTest()
+        },
+        handleCancel() {
+            this.isModalVisible = false;
+            this.$router.replace('/module');
         },
         updateResults(component, data) {
             if (Object.hasOwn(this.results, component)) {
@@ -198,13 +207,44 @@ export default {
         },
         updateResultLightAvgTime(time) {
             this.results.alert_lights.avg_response_time = time
+        },
+        async submitResult() {
+            try {
+                this.loading = true;
+                const API_URL = process.env.VUE_APP_API_URL;
+                const payload = {
+                    testSessionId: this.sessionId,
+                    userId: this.userId,
+                    moduleId: this.moduleId,
+                    batteryTestConfigId: this.testId,
+                    result: this.results
+                }
+                const response = await fetch(`${API_URL}api/submission`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                removeTestByNameAndUpdateLocalStorage('Multitasking Mix With Call Sign')
+                this.$router.push('/module');
+            } catch (error) {
+                console.log(error, "<< error")
+            } finally {
+                this.loading = false; // Set loading to false when the submission is complete
+            }
         }
     },
     components: {
         ColorTest,
         HorizonTest,
         CircleTest,
-        CallSignTest
+        CallSignTest,
+        ModalComponent
     }
 };
 </script>
@@ -327,5 +367,49 @@ export default {
     color: white;
     margin: auto auto;
     border: 1px solid white;
+}
+
+.loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+}
+
+.loading-spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
 }
 </style>
