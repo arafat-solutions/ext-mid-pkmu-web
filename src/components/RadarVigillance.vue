@@ -495,25 +495,12 @@ export default {
         console.error(error), "error";
       } finally {
         this.isLoading = false;
-        this.removeTest();
+
+        //Call Utils Remove Test from Local Storage
+
         this.$router.push('/module');
       }
     },
-    removeTest() {
-      let config = JSON.parse(localStorage.getItem('scheduleData'));
-
-      let data = {
-        endHour: config.endHour,
-        moduleId: config.moduleId,
-        name: config.name,
-        sessionId: config.sessionId,
-        startHour: config.startHour,
-        userId:  config.userId,
-        tests: config.tests.filter(test => test.testUrl !== 'radar-vigilance-test')
-      }
-
-      localStorage.setItem('scheduleData', JSON.stringify(data));
-    }
   },
   computed: {
     formattedTime() {
