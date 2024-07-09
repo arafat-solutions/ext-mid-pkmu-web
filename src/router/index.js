@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from '@/components/LoginPage.vue';
 import RadarVigillancePage from '@/components/RadarVigillance.vue';
 import CallSignMultitask from '@/components/CallSignMultitaskingTest/ParentTest.vue'
+import VisualMemoryTest from '@/components/VisualMemoryTest.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
@@ -30,6 +31,11 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: ProfilePage
+  },
+  {
+    path: '/visual-memory-test',
+    name: 'Visual Memory Test',
+    component: VisualMemoryTest
   },
   {
     path: '/radar-vigilance-test',
