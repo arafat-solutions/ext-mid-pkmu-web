@@ -31,14 +31,15 @@ export default {
                 horizonOffsetY: 0,
                 horizonOffsetX: 0
             },
-            horizonFrame: 0,
-            angleFrames: 2,
-            heightFrames: 3,
-            heightChangeSize: 0,
-            widthFrames: 30,
             correct_time: 0,
             isCurrentlyCorrect: false,
             lastCorrectStartTime: null,
+            maxAngleChange: 0,
+            maxOffsetChange: 0,
+            changeProb: 0,
+            angleChangeProb: 0.3,
+            heightChangeProb: 0.3,
+            widthChangeProb: 0.3,
         };
     },
     mounted() {
@@ -46,9 +47,7 @@ export default {
     },
     methods: {
         initializeTest() {
-            const { speed } = this.horizonData;
-            this.heightChangeSize = speed === 'slow' ? 2 : speed === 'medium' ? 4 : 8;
-
+            this.setSpeedParameters();
             this.initVisual();
             this.drawVisual();
             if (this.horizonData.play) {
@@ -199,29 +198,28 @@ export default {
             ctx.restore();
         },
         setAngle() {
-            const change = Math.random() < 0.5 ? -2 : 2;
-            this.config.angle = Math.max(-43, Math.min(43, this.config.angle + change));
+            if (Math.random() < this.changeProb) {
+                const change = (Math.random() - 0.5) * 2 * this.maxAngleChange;
+                this.config.angle = Math.max(-70, Math.min(70, this.config.angle + change));
+            }
         },
         setHeight() {
-            const change = Math.random() < 0.5 ? -this.heightChangeSize : this.heightChangeSize;
-            this.config.horizonOffsetY = Math.max(-70, Math.min(70, this.config.horizonOffsetY + change));
+            if (Math.random() < this.changeProb) {
+                const change = (Math.random() - 0.5) * 2 * this.maxOffsetChange;
+                this.config.horizonOffsetY = Math.max(-70, Math.min(70, this.config.horizonOffsetY + change));
+            }
         },
         setWidth() {
-            const change = Math.random() < 0.5 ? -10 : 10;
-            this.config.horizonOffsetX = Math.max(-70, Math.min(70, this.config.horizonOffsetX + change));
+            if (Math.random() < this.changeProb) {
+                const change = (Math.random() - 0.5) * 2 * this.maxOffsetChange;
+                this.config.horizonOffsetX = Math.max(-70, Math.min(70, this.config.horizonOffsetX + change));
+            }
         },
         animate() {
             this.drawVisual();
-            if (this.horizonFrame % this.angleFrames === 0) {
-                this.setAngle();
-            }
-            if (this.horizonFrame % this.heightFrames === 0) {
-                this.setHeight();
-            }
-            if (this.horizonFrame % this.widthFrames === 0) {
-                this.setWidth();
-            }
-            this.horizonFrame++;
+            this.setAngle();
+            this.setHeight();
+            this.setWidth();
             requestAnimationFrame(this.animate);
         },
         handleMouseEnter(event) {
@@ -243,6 +241,39 @@ export default {
                 this.lastCorrectStartTime = null;
             }
         },
+        setSpeedParameters() {
+            const { speed } = this.horizonData;
+            switch (speed) {
+                case 'slow':
+                    this.maxAngleChange = 2;
+                    this.maxOffsetChange = 3;
+                    this.changeProb = 0.3;
+                    break;
+                case 'medium':
+                    this.maxAngleChange = 2;
+                    this.maxOffsetChange = 3;
+                    this.changeProb = 0.6;
+                    break;
+                case 'fast':
+                    this.maxAngleChange = 2;
+                    this.maxOffsetChange = 3;
+                    this.changeProb = 0.9;
+                    break;
+                default:
+                    console.warn('Invalid speed setting, defaulting to medium');
+                    this.maxAngleChange = 1;
+                    this.maxOffsetChange = 2;
+                    this.changeProb = 0.2;
+            }
+        },
+    },
+    watch: {
+        horizonData: {
+            handler() {
+                this.setSpeedParameters();
+            },
+            deep: true
+        }
     },
 };
 </script>
