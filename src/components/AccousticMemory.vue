@@ -1,10 +1,10 @@
 <template>
   <div class="main-view">
-    <div class="choices" v-for="row in 1" :key="row">
-      <div class="choice" v-for="choices in choicesLength" :key="choices">
-        <span>{{ String.fromCharCode(96 + choices) }})</span>
-        <div v-for="indexCheckbox in this.stringSizeLength" :key="indexCheckbox" class="input-box">
-          <input type="checkbox" />
+    <div class="checkbox-grid">
+      <div v-for="row in 10" :key="row" class="checkbox-row">
+        <div v-for="col in (choicesLength * stringSizeLength)" :key="col" class="checkbox-item">
+          <label :for="`checkbox-${row}-${col}`" v-if="(col % 3) === 1" class="mr-2">{{ String.fromCharCode(96 + Math.ceil(col / 3)) }})</label>
+          <input type="checkbox" :id="`checkbox-${row}-${col}`" />
         </div>
       </div>
     </div>
@@ -190,23 +190,33 @@ export default {
     gap: 20px;
     width: 1280px;
     margin: 60px auto;
+    padding-top: 5rem;
   }
 
-  .choices {
+  .checkbox-grid {
     display: flex;
-    flex-direction: row;
-    gap: 10px;
+    flex-direction: column;
   }
-  .choice {
+
+  .checkbox-row {
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+  }
+
+  .checkbox-item {
+    display: flex;
     align-items: center;
-    gap: 10px;
+    margin: 0 0.5rem;
+    font-weight: bold;
+    font-size: 20px;
   }
-  .choice label {
-    margin-right: 10px;
+
+  .checkbox-item label {
+    margin-left: 30px;
   }
-  .input-box {
-    display: inline-block;
+
+  .mr-2 {
+    margin-right: 1rem;
   }
 </style>
