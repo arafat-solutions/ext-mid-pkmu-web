@@ -21,36 +21,46 @@
     </div>
 
     <div class="input-simulation-container">
-      <div class="question">
-        <p> Sort the numbers from the beginning </p>
-      </div>
+      <div v-if="isShowQuestion">>
+        <div class="question">
+          <p> Numbers from the end </p>
+        </div>
 
-      <div class="calculator">
-        <input type="text" v-model.trim="expression" readonly>
-        <div class="buttons">
-          <button class="digit-number" @click="appendToExpression('1')">1</button>
-          <button class="digit-number" @click="appendToExpression('2')">2</button>
-          <button class="digit-number" @click="appendToExpression('3')">3</button>
-          <button class="digit-number" @click="appendToExpression('4')">4</button>
-          <button class="digit-number" @click="appendToExpression('5')">5</button>
-          <button class="digit-number" @click="appendToExpression('6')">6</button>
-          <button class="digit-number" @click="appendToExpression('7')">7</button>
-          <button class="digit-number" @click="appendToExpression('8')">8</button>
-          <button class="digit-number" @click="appendToExpression('9')">9</button>
-          <button class="digit-number" @click="appendToExpression('0')">0</button>
-          <button class="digit-number" @click="clearExpression()">Del</button>
-          <button class="digit-number" @click="submitAnswer()">Send</button>
+        <div class="calculator">
+          <input type="text" v-model.trim="expression" readonly>
+          <div class="buttons">
+            <button class="digit-number" @click="appendToExpression('1')">1</button>
+            <button class="digit-number" @click="appendToExpression('2')">2</button>
+            <button class="digit-number" @click="appendToExpression('3')">3</button>
+            <button class="digit-number" @click="appendToExpression('4')">4</button>
+            <button class="digit-number" @click="appendToExpression('5')">5</button>
+            <button class="digit-number" @click="appendToExpression('6')">6</button>
+            <button class="digit-number" @click="appendToExpression('7')">7</button>
+            <button class="digit-number" @click="appendToExpression('8')">8</button>
+            <button class="digit-number" @click="appendToExpression('9')">9</button>
+            <button class="digit-number" @click="clearExpression()">Del</button>
+            <button class="digit-number" @click="appendToExpression('0')">0</button>
+            <button class="digit-number" @click="submitAnswer()">Send</button>
+          </div>
         </div>
       </div>
+
+      <div v-else style="margin-top: 20%;">
+        <p>Listen to item presentation!</p>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+
 export default {
   name: 'RunningMemorySpan',
   data() {
     return {
+      isShowQuestion: false,
       isShowModal: false,
       isConfigLoaded: false,
       isTrial: this.$route.query.isTrial ?? false,
@@ -71,8 +81,13 @@ export default {
         sequence_pattern: null, // up or down
         include_zero: null // true or false
       },
+      correctAnswer: 0,
+      responseQuestion: 0,
+      responseTime: 0,
+      responseDurations: [],
       result: {
         correct_answer: 0,
+        avg_response_time: 0,
       },
     };
   },
@@ -116,7 +131,7 @@ export default {
 
           // Submit Answer
           setTimeout(() => {
-            this.submitResult();
+            this.calculatedResult();
           }, 1000);
         }
       }, 1000);
@@ -144,8 +159,46 @@ export default {
         console.error(error);
       }
     },
-    submitResult() {
-      //noop
+    calculatedResult() {
+      this.correct_answer = this.correctAnswer;
+      this.result.avg_response_time = this.averageResponseTime();
+
+      this.submitResult()
+    },
+    async submitResult() {
+      try {
+        this.isLoading = true;
+
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = {
+          testSessionId: this.config.sessionId,
+          userId: this.config.userId,
+          moduleId: this.config.moduleId,
+          batteryTestConfigId: this.config.batteryTestConfigId,
+          result: this.result,
+        }
+
+        const res = await fetch(`${API_URL}api/submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed Submit Test');
+        }
+      } catch (error) {
+        console.error(error), "error";
+      } finally {
+        this.isLoading = false;
+
+        removeTestByNameAndUpdateLocalStorage('Running Memory Span Test')
+        this.$router.push('/module');
+      }
     },
     setLength() {
       if (this.config.broadcast_length === 'short') {
@@ -167,6 +220,8 @@ export default {
 
       this.audios = [];
       this.utterances = [];
+      this.responseQuestion = 0;
+      this.responseTime = 0;
 
       for (let i = 0; i < this.setLength(); i++) {
         let number = Math.floor(Math.random() * 10);
@@ -194,14 +249,30 @@ export default {
         return;
       }
 
-      let checkAnswer = this.answer.length === this.audios.length && this.answer.every((value, index) => value === this.audios[index]);
+      const reverseAudios = [...this.audios].reverse();
+      let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
 
       if (checkAnswer) {
-        this.result.correct_answer++;
+        this.correctAnswer++;
+        this.responseTime = Date.now();
+				this.calculateResponseTime();
       }
 
       this.clearExpression();
       this.generateAudio();
+      this.isShowQuestion = false;
+    },
+    averageResponseTime() {
+      if (this.responseDurations.length > 0) {
+        const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
+
+        return (sum / this.responseDurations.length) / 1000;
+      }
+
+      return 0;
+    },
+    calculateResponseTime() {
+      return this.responseDurations.push(this.responseTime - this.responseQuestion);
     },
     appendToExpression(value) {
       if (this.isPause) {
@@ -245,6 +316,9 @@ export default {
                 speakNext();
               };
               window.speechSynthesis.speak(utterance);
+            } else {
+              this.responseQuestion = Date.now();
+              this.isShowQuestion = true;
             }
           };
           speakNext();
@@ -389,7 +463,7 @@ export default {
   }
   .buttons {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     grid-gap: 10px;
   }
   .digit-number {
