@@ -40,6 +40,8 @@
         </div>
       </div>
     </div>
+    <div class="wrong-text" v-if="wrong">{{ wrong }} answer{{ wrong > 1 ? 's' : '' }} wrong</div>
+    <button class="btn-continue" v-show="canContinue">Continue</button>
   </div>
 </template>
 
@@ -48,6 +50,7 @@ export default {
   data() {
     return {
       isShowModal: false,
+      canContinue: false,
       page: 1,
       currentTask: 1,
       numberOfTask: 3, //positive number
@@ -62,6 +65,7 @@ export default {
       isLoading: false,
       problem: null,
       choicesLength: 4,
+      wrong: null,
       dashInterval: 2000, //in ms
       choicesInterval: 3000, //in ms
       charInterval: 1000, //in ms
@@ -199,6 +203,9 @@ export default {
         await this.spellOutString(choice);
         await this.delay(this.choicesInterval);
       }
+
+      // Check Answer per Row
+      this.checkRowAnswer();
     },
     setupSound() {
       if (!('speechSynthesis' in window)) {
@@ -240,6 +247,10 @@ export default {
         }
       })();
     },
+    checkRowAnswer() {
+      console.log(this.problem.answers, this.checkboxValues, this.checkboxValues[this.currentTask - 1], this.currentTask);
+      this.canContinue = true;
+    },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
@@ -263,13 +274,11 @@ export default {
 </script>
 <style scoped>
   .main-view {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
     gap: 20px;
-    width: 1280px;
+    width: 1000px;
     margin: 60px auto;
     padding-top: 4rem;
+    text-align: left;
   }
 
   .checkbox-grid {
@@ -499,4 +508,28 @@ export default {
   .modal-content button:hover {
     background-color: #5e37a6;
   }
+
+  .wrong-text {
+    display: inline-block;
+    color: rgb(223, 35, 35);
+    font-weight: bold;
+    font-size: 16px;
+    text-align: left;
+    margin-left: 25px;
+    margin-top: 50px;
+  }
+
+  .btn-continue {
+    display: inline-block;
+    background-color: #5e37a6;
+    padding: 10px 25px;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: right !important;
+    border-radius: 10px;
+    border-width: 0;
+    margin-left: 670px;
+  }
+
 </style>
