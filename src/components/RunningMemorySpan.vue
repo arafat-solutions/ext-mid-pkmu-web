@@ -81,11 +81,13 @@ export default {
         sequence_pattern: null, // up or down
         include_zero: null // true or false
       },
+      totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
       responseTime: 0,
       responseDurations: [],
       result: {
+        total_question: 0,
         correct_answer: 0,
         avg_response_time: 0,
       },
@@ -160,7 +162,8 @@ export default {
       }
     },
     calculatedResult() {
-      this.correct_answer = this.correctAnswer;
+      this.result.total_question = this.totalQuestion;
+      this.result.correct_answer = this.correctAnswer;
       this.result.avg_response_time = this.averageResponseTime();
 
       this.submitResult()
@@ -224,13 +227,25 @@ export default {
       this.responseTime = 0;
 
       for (let i = 0; i < this.setLength(); i++) {
-        let number = Math.floor(Math.random() * 10);
+        let number = null
 
         if (!this.config.include_zero) {
           number = Math.floor(Math.random() * 9) + 1;
+        } else {
+          number = Math.floor(Math.random() * 10);
         }
 
         this.audios.push(number);
+      }
+
+      // Check Sequence Pattern
+      if (this.config.sequence_pattern === 'up') {
+        this.audios = [...this.audios].sort((a, b) => a - b);
+      }
+
+      // Check Sequence Pattern
+      if (this.config.sequence_pattern === 'down') {
+        this.audios = [...this.audios].sort((a, b) =>b - a);
       }
 
       if (this.audios.length > 0) {
@@ -307,7 +322,7 @@ export default {
           const speakNext = () => {
             if (index < this.utterances.length) {
               const utterance = this.utterances[index];
-              utterance.rate = 1;
+              utterance.rate = this.setSpeed();
               utterance.pitch = 1.2;
               utterance.volume = 1;
               utterance.lang = 'id-ID';
@@ -317,6 +332,7 @@ export default {
               };
               window.speechSynthesis.speak(utterance);
             } else {
+              this.totalQuestion++;
               this.responseQuestion = Date.now();
               this.isShowQuestion = true;
             }
@@ -327,6 +343,9 @@ export default {
         alert('Sorry, your browser does not support text-to-speech.');
       }
     },
+    setSpeed() {
+      return 1 + (this.config.speed - 1) / 10;
+    }
   },
   mounted() {
     this.initConfig();
