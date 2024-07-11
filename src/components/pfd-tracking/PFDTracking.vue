@@ -67,56 +67,43 @@ export default {
       const centerX = this.canvas.width / 2;
       const centerY = this.canvas.height / 2;
 
-      this.drawIndicator(50, centerY - 200, 'Altitude', this.altitude, 9100, 8600, 50, 400, true, this.offset.altitude);
-      this.drawIndicator(centerX - 200, centerY + 200, 'Heading', this.heading, 0, 360, 400, 50, false, this.offset.heading);
-      this.drawIndicator(this.canvas.width - 100, centerY - 200, 'Speed', this.speed, 180, 0, 50, 400, true, this.offset.speed);
+      this.drawAltitude(50, centerY - 200, 50, 500);
+      this.drawSpeed(this.canvas.width - 100, centerY - 200, 50, 500);
+      this.drawHeading(centerX - 200, centerY + 200, 300, 50);
     },
-    drawIndicator(x, y, label, value, minValue, maxValue, width, height, isVertical, offset) {
+    drawAltitude(x, y, width, height) {
       this.context.fillStyle = 'white';
       this.context.fillRect(x, y, width, height);
-      
+
       this.context.fillStyle = 'black';
       this.context.font = '12px Arial';
-      this.context.fillText(label, x, y - 10);
+      this.context.fillText('Altitude', x, y - 10);
 
       this.context.strokeStyle = 'black';
       this.context.lineWidth = 2;
-      if (isVertical) {
-        this.context.beginPath();
-        this.context.moveTo(x, y);
-        this.context.lineTo(x, y + height);
-        this.context.lineTo(x + width, y + height);
-        this.context.stroke();
+      this.context.beginPath();
+      this.context.moveTo(x, y);
+      this.context.lineTo(x, y + height);
+      this.context.lineTo(x + width, y + height);
+      this.context.stroke();
 
-        this.drawVerticalScale(x, y, width, height, value, minValue, maxValue, offset);
-        this.drawGreenPositionText(x, y + height, width, value + offset);
-      } else {
-        this.context.beginPath();
-        this.context.moveTo(x, y);
-        this.context.lineTo(x + width, y);
-        this.context.lineTo(x + width, y + height);
-        this.context.stroke();
-
-        this.drawHorizontalScale(x, y, width, height, value, minValue, maxValue, offset);
-      }
-    },
-    drawVerticalScale(x, y, width, height, value, minValue, maxValue, offset) {
       const scaleHeight = height - 20;
       const scaleY = y + 10;
-      const interval = 10;
-      const longLineLength = width / 2;
+      const interval = 5;
+      const longLineLength = width / 1.5;
       const shortLineLength = width / 4;
+      const labelInterval = Math.round((9100 - 8600) / 10);
 
-      for (let i = minValue + offset; i >= maxValue + offset - height / interval; i -= interval) {
-        let posY = scaleY + (scaleHeight * (minValue - i + offset)) / (minValue - maxValue);
+      for (let i = 9100 + this.offset.altitude; i >= 8600 + this.offset.altitude - height / interval; i -= interval) {
+        let posY = scaleY + (scaleHeight * (9100 - i + this.offset.altitude)) / (9100 - 8600);
         let distanceFromCenter = Math.abs(i - this.altitude);
-        if (distanceFromCenter <= 100) {
-          let color = this.getColorForDistance(distanceFromCenter);
+        if (distanceFromCenter <= 50) {
+          let color = this.getColorForDistanceAltitude(distanceFromCenter);
           this.context.strokeStyle = color;
         } else {
           this.context.strokeStyle = 'black';
         }
-        if (i % 100 === 0) {
+        if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
           this.context.beginPath();
           this.context.moveTo(x, posY);
@@ -136,24 +123,103 @@ export default {
       this.context.lineTo(x + width, y + height / 2);
       this.context.stroke();
 
+      this.drawGreenPositionText(x, y + height, width, this.altitude + this.offset.altitude);
     },
-    drawHorizontalScale(x, y, width, height, value, minValue, maxValue, offset) {
-      const scaleWidth = width - 20;
-      const scaleX = x + 10;
-      const interval = 10;
-      const longLineLength = height / 2;
-      const shortLineLength = height / 4;
+    drawSpeed(x, y, width, height) {
+      this.context.fillStyle = 'white';
+      this.context.fillRect(x, y, width, height);
 
-      for (let i = minValue + offset; i <= maxValue + offset + width / interval; i += interval) {
-        let posX = scaleX + (scaleWidth * (i - minValue + offset)) / (maxValue - minValue);
-        let distanceFromCenter = Math.abs(i - this.heading);
-        if (distanceFromCenter <= 100) {
-          let color = this.getColorForDistance(distanceFromCenter);
+      this.context.fillStyle = 'black';
+      this.context.font = '12px Arial';
+      this.context.fillText('Speed', x, y - 10);
+
+      this.context.strokeStyle = 'black';
+      this.context.lineWidth = 2;
+      this.context.beginPath();
+      this.context.moveTo(x, y);
+      this.context.lineTo(x, y + height);
+      this.context.lineTo(x + width, y + height);
+      this.context.stroke();
+
+      const scaleHeight = height - 20;
+      const scaleY = y + 10;
+      const interval = 2; // Smaller interval for finer control
+      const longLineLength = width / 1.5;
+      const shortLineLength = width / 4;
+      const labelInterval = 18; // Ensure labels appear at regular intervals
+
+      // Adjust the start and end values based on the range and height
+      const maxValue = 180;
+      const minValue = 0;
+      const range = maxValue - minValue;
+
+      for (let i = Math.ceil(this.speed / labelInterval) * labelInterval + this.offset.speed; i >= minValue - height / interval + this.offset.speed; i -= interval) {
+        // let posY = scaleY + (scaleHeight * (maxValue - i + this.offset.speed)) / range;
+        console.log(scaleHeight, scaleY, range)
+        let posY = scaleY + (scaleHeight * (maxValue - i + this.offset.speed)) / range;
+        console.log('pos y', posY)
+        let distanceFromCenter = Math.abs(i - this.speed);
+        if (distanceFromCenter <= 20) {
+          let color = this.getColorForDistanceSpeed(distanceFromCenter);
           this.context.strokeStyle = color;
         } else {
           this.context.strokeStyle = 'black';
         }
-        if (i % 30 === 0) {
+        if (i % labelInterval === 0) {
+          this.context.fillText(i.toFixed(0), x + width + 5, posY);
+          this.context.beginPath();
+          this.context.moveTo(x, posY);
+          this.context.lineTo(x + longLineLength, posY);
+          this.context.stroke();
+        } else {
+          this.context.beginPath();
+          this.context.moveTo(x, posY);
+          this.context.lineTo(x + shortLineLength, posY);
+          this.context.stroke();
+        }
+      }
+
+      this.context.strokeStyle = 'blue';
+      this.context.beginPath();
+      this.context.moveTo(x, y + height / 2);
+      this.context.lineTo(x + width, y + height / 2);
+      this.context.stroke();
+
+      this.drawGreenPositionText(x, y + height, width, this.speed + this.offset.speed);
+    },
+    drawHeading(x, y, width, height) {
+      this.context.fillStyle = 'white';
+      this.context.fillRect(x, y, width, height);
+
+      this.context.fillStyle = 'black';
+      this.context.font = '12px Arial';
+      this.context.fillText('Heading', x, y - 10);
+
+      this.context.strokeStyle = 'black';
+      this.context.lineWidth = 2;
+      this.context.beginPath();
+      this.context.moveTo(x, y);
+      this.context.lineTo(x + width, y);
+      this.context.lineTo(x + width, y + height);
+      this.context.stroke();
+
+      const scaleWidth = width - 20;
+      const scaleX = x + 10;
+      const interval = 5;
+      const longLineLength = height / 1.5;
+      const shortLineLength = height / 4;
+      const labelInterval = Math.round((360 - 0) / 10);
+
+      for (let i = 0 + this.offset.heading; i <= 360 + this.offset.heading + scaleWidth / interval; i += interval) {
+        let posX = scaleX + (scaleWidth * (i - this.offset.heading)) / (360 - 0);
+        let distanceFromCenter = Math.abs(i - this.heading);
+        if (distanceFromCenter <= 20) {
+          let color = this.getColorForDistanceHeading(distanceFromCenter);
+          this.context.strokeStyle = color;
+        } else {
+          this.context.strokeStyle = 'black';
+        }
+        if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), posX, y + height + 20);
           this.context.beginPath();
           this.context.moveTo(posX, y);
@@ -174,10 +240,30 @@ export default {
       this.context.stroke();
     },
 
-    getColorForDistance(distance) {
-      if (distance <= 33) {
+    getColorForDistanceAltitude(distance) {
+      if (distance <= 20) {
         return 'green';
-      } else if (distance <= 66) {
+      } else if (distance <= 40) {
+        return 'yellow';
+      } else {
+        return 'red';
+      }
+    },
+
+    getColorForDistanceSpeed(distance) {
+      if (distance <= 5) {
+        return 'green';
+      } else if (distance <= 10) {
+        return 'yellow';
+      } else {
+        return 'red';
+      }
+    },
+
+    getColorForDistanceHeading(distance) {
+      if (distance <= 5) {
+        return 'green';
+      } else if (distance <= 10) {
         return 'yellow';
       } else {
         return 'red';
@@ -203,6 +289,7 @@ export default {
   align-items: flex-end;
   height: 80vh;
 }
+
 canvas {
   background-color: #ffffff;
 }
