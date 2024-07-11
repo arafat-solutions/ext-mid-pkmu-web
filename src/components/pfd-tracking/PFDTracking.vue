@@ -100,7 +100,10 @@ export default {
       const longLineLength = width / 2;
       const shortLineLength = width / 4;
 
-      for (let i = minValue; i >= maxValue; i -= interval) {
+      let currentMinValue = minValue + offset;
+      let currentMaxValue = maxValue + offset;
+
+      for (let i = currentMinValue; i >= currentMaxValue; i -= interval) {
         let posY = scaleY + (scaleHeight * (minValue - i + offset)) / (minValue - maxValue);
         if (i % 100 === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
@@ -122,12 +125,7 @@ export default {
       this.context.lineTo(x + width, y + height / 2);
       this.context.stroke();
 
-      this.context.strokeStyle = 'green';
-      const pointerY = Math.max(y, Math.min(y + height, y + height / 2 + (height / 2 - ((value - minValue + offset) / (minValue - maxValue)) * scaleHeight)));
-      this.context.beginPath();
-      this.context.moveTo(x, pointerY);
-      this.context.lineTo(x + width, pointerY);
-      this.context.stroke();
+      this.drawGreenLine(x, y, width, height, value, minValue, maxValue, offset, scaleHeight);
     },
     drawHorizontalScale(x, y, width, height, value, minValue, maxValue, offset) {
       const scaleWidth = width - 20;
@@ -136,7 +134,10 @@ export default {
       const longLineLength = height / 2;
       const shortLineLength = height / 4;
 
-      for (let i = minValue; i <= maxValue; i += interval) {
+      let currentMinValue = minValue + offset;
+      let currentMaxValue = maxValue + offset;
+
+      for (let i = currentMinValue; i <= currentMaxValue; i += interval) {
         let posX = scaleX + (scaleWidth * (i - minValue + offset)) / (maxValue - minValue);
         if (i % 30 === 0) {
           this.context.fillText(i.toFixed(0), posX, y + height + 20);
@@ -158,12 +159,27 @@ export default {
       this.context.lineTo(x + width / 2, y + height);
       this.context.stroke();
 
-      this.context.strokeStyle = 'green';
-      const pointerX = Math.max(x, Math.min(x + width, x + width / 2 + (width / 2 - ((value - minValue + offset) / (maxValue - minValue)) * scaleWidth)));
+      this.drawGreenLine(x, y, width, height, value, minValue, maxValue, offset, scaleWidth);
+    },
+    drawGreenLine(x, y, width, height, value, minValue, maxValue, offset, scaleSize) {
+      const pointerPos = y + height / 2 + (height / 2 - ((value - minValue + offset) / (minValue - maxValue)) * scaleSize);
+      const gradient = this.context.createLinearGradient(x, pointerPos - 50, x, pointerPos + 50);
+      gradient.addColorStop(0, 'red');
+      gradient.addColorStop(0.25, 'orange');
+      gradient.addColorStop(0.5, 'yellow');
+      gradient.addColorStop(0.75, 'green');
+      gradient.addColorStop(1, 'green');
+
+      this.context.strokeStyle = gradient;
       this.context.beginPath();
-      this.context.moveTo(pointerX, y);
-      this.context.lineTo(pointerX, y + height);
+      this.context.moveTo(x, pointerPos);
+      this.context.lineTo(x + width, pointerPos);
       this.context.stroke();
+
+      this.context.fillStyle = 'green';
+      this.context.beginPath();
+      this.context.arc(x + width / 2, pointerPos, 5, 0, 2 * Math.PI);
+      this.context.fill();
     },
   },
 };
@@ -174,7 +190,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 90vh;
+  height: 100vh;
 }
 canvas {
   border: 1px solid #000;
