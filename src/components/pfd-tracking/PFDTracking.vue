@@ -10,7 +10,7 @@ export default {
     return {
       canvas: null,
       context: null,
-      altitude: 8050,
+      altitude: 8800,
       speed: 150,
       heading: 345,
       animationSpeed: 0.5,
@@ -22,9 +22,11 @@ export default {
     this.context = this.canvas.getContext('2d');
     window.addEventListener('keydown', this.handleKeydown);
     this.startAnimation();
+    window.addEventListener('resize', this.draw);
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown);
+    window.removeEventListener('resize', this.draw);
   },
   methods: {
     handleKeydown(event) {
@@ -59,11 +61,15 @@ export default {
       }, 1000 / 60);
     },
     draw() {
+      if (!this.context) return;
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-      this.drawIndicator(50, 150, 'Altitude', this.altitude, 8200, 7900, 50, 400, true, this.offset.altitude);
-      this.drawIndicator(450, 300, 'Heading', this.heading, 0, 360, 400, 50, false, this.offset.heading);
-      this.drawIndicator(800, 150, 'Speed', this.speed, 180, 0, 50, 400, true, this.offset.speed);
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 2;
+
+      this.drawIndicator(50, centerY - 200, 'Altitude', this.altitude, 9100, 8600, 50, 400, true, this.offset.altitude);
+      this.drawIndicator(centerX - 200, centerY - 25, 'Heading', this.heading, 0, 360, 400, 50, false, this.offset.heading);
+      this.drawIndicator(this.canvas.width - 100, centerY - 200, 'Speed', this.speed, 180, 0, 50, 400, true, this.offset.speed);
     },
     drawIndicator(x, y, label, value, minValue, maxValue, width, height, isVertical, offset) {
       this.context.fillStyle = 'white';
@@ -83,6 +89,7 @@ export default {
         this.context.stroke();
 
         this.drawVerticalScale(x, y, width, height, value, minValue, maxValue, offset);
+        this.drawGreenPositionText(x, y + height, width, value + offset);
       } else {
         this.context.beginPath();
         this.context.moveTo(x, y);
@@ -100,11 +107,15 @@ export default {
       const longLineLength = width / 2;
       const shortLineLength = width / 4;
 
-      let currentMinValue = minValue + offset;
-      let currentMaxValue = maxValue + offset;
-
-      for (let i = currentMinValue; i >= currentMaxValue; i -= interval) {
+      for (let i = minValue + offset; i >= maxValue + offset - height / interval; i -= interval) {
         let posY = scaleY + (scaleHeight * (minValue - i + offset)) / (minValue - maxValue);
+        let distanceFromCenter = Math.abs(i - this.altitude);
+        if (distanceFromCenter <= 100) {
+          let color = this.getColorForDistance(distanceFromCenter);
+          this.context.strokeStyle = color;
+        } else {
+          this.context.strokeStyle = 'black';
+        }
         if (i % 100 === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
           this.context.beginPath();
@@ -125,7 +136,6 @@ export default {
       this.context.lineTo(x + width, y + height / 2);
       this.context.stroke();
 
-      this.drawGreenLine(x, y, width, height, value, minValue, maxValue, offset, scaleHeight);
     },
     drawHorizontalScale(x, y, width, height, value, minValue, maxValue, offset) {
       const scaleWidth = width - 20;
@@ -134,11 +144,15 @@ export default {
       const longLineLength = height / 2;
       const shortLineLength = height / 4;
 
-      let currentMinValue = minValue + offset;
-      let currentMaxValue = maxValue + offset;
-
-      for (let i = currentMinValue; i <= currentMaxValue; i += interval) {
+      for (let i = minValue + offset; i <= maxValue + offset + width / interval; i += interval) {
         let posX = scaleX + (scaleWidth * (i - minValue + offset)) / (maxValue - minValue);
+        let distanceFromCenter = Math.abs(i - this.heading);
+        if (distanceFromCenter <= 100) {
+          let color = this.getColorForDistance(distanceFromCenter);
+          this.context.strokeStyle = color;
+        } else {
+          this.context.strokeStyle = 'black';
+        }
         if (i % 30 === 0) {
           this.context.fillText(i.toFixed(0), posX, y + height + 20);
           this.context.beginPath();
@@ -158,29 +172,26 @@ export default {
       this.context.moveTo(x + width / 2, y);
       this.context.lineTo(x + width / 2, y + height);
       this.context.stroke();
-
-      this.drawGreenLine(x, y, width, height, value, minValue, maxValue, offset, scaleWidth);
     },
-    drawGreenLine(x, y, width, height, value, minValue, maxValue, offset, scaleSize) {
-      const pointerPos = y + height / 2 + (height / 2 - ((value - minValue + offset) / (minValue - maxValue)) * scaleSize);
-      const gradient = this.context.createLinearGradient(x, pointerPos - 50, x, pointerPos + 50);
-      gradient.addColorStop(0, 'red');
-      gradient.addColorStop(0.25, 'orange');
-      gradient.addColorStop(0.5, 'yellow');
-      gradient.addColorStop(0.75, 'green');
-      gradient.addColorStop(1, 'green');
 
-      this.context.strokeStyle = gradient;
-      this.context.beginPath();
-      this.context.moveTo(x, pointerPos);
-      this.context.lineTo(x + width, pointerPos);
-      this.context.stroke();
+    getColorForDistance(distance) {
+      if (distance <= 33) {
+        return 'green';
+      } else if (distance <= 66) {
+        return 'yellow';
+      } else {
+        return 'red';
+      }
+    },
+    drawGreenPositionText(x, y, width, value) {
+      this.context.fillStyle = 'black';
+      this.context.fillRect(x, y + 5, width, 20);
 
       this.context.fillStyle = 'green';
-      this.context.beginPath();
-      this.context.arc(x + width / 2, pointerPos, 5, 0, 2 * Math.PI);
-      this.context.fill();
-    },
+      this.context.font = '16px Arial';
+      this.context.textAlign = 'center';
+      this.context.fillText(value.toFixed(0), x + width / 2, y + 20);
+    }
   },
 };
 </script>
@@ -190,7 +201,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 100vh;
+  height: 80vh;
 }
 canvas {
   border: 1px solid #000;
