@@ -21,7 +21,7 @@
     </div>
 
     <div class="input-simulation-container">
-      <div v-if="isShowQuestion">>
+      <div v-if="isShowQuestion">
         <div class="question">
           <p> Numbers from the end </p>
         </div>
@@ -237,8 +237,6 @@ export default {
 
         this.audios.push(number);
       }
-
-      console.log(this.audios, 'this.audios')
 
       // Check Sequence Pattern
       if (this.config.sequence_pattern === 'up') {
