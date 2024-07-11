@@ -68,7 +68,7 @@ export default {
       const centerY = this.canvas.height / 2;
 
       this.drawIndicator(50, centerY - 200, 'Altitude', this.altitude, 9100, 8600, 50, 400, true, this.offset.altitude);
-      this.drawIndicator(centerX - 200, centerY - 25, 'Heading', this.heading, 0, 360, 400, 50, false, this.offset.heading);
+      this.drawIndicator(centerX - 200, centerY + 200, 'Heading', this.heading, 0, 360, 400, 50, false, this.offset.heading);
       this.drawIndicator(this.canvas.width - 100, centerY - 200, 'Speed', this.speed, 180, 0, 50, 400, true, this.offset.speed);
     },
     drawIndicator(x, y, label, value, minValue, maxValue, width, height, isVertical, offset) {
@@ -204,7 +204,6 @@ export default {
   height: 80vh;
 }
 canvas {
-  border: 1px solid #000;
-  background-color: #f0f0f0;
+  background-color: #ffffff;
 }
 </style>
