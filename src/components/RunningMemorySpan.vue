@@ -144,9 +144,8 @@ export default {
 
         if (config) {
           const runningMemorySpan = config.tests.find(test => test.testUrl === 'running-memory-span-test' || test.name === 'Running Memory Span Test').config;
-          this.config.duration = runningMemorySpan.duration * 60;
+          this.config.duration = 1 * 60;
           this.config.batteryTestConfigId = runningMemorySpan.id;
-          this.config.moduleId = config.moduleId;
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
@@ -164,7 +163,9 @@ export default {
     calculatedResult() {
       this.result.total_question = this.totalQuestion;
       this.result.correct_answer = this.correctAnswer;
-      this.result.avg_response_time = this.averageResponseTime();
+
+      const resultTimeResonded = this.averageResponseTime()
+      this.result.avg_response_time = resultTimeResonded.toFixed(2);
 
       this.submitResult()
     },
@@ -176,7 +177,6 @@ export default {
         const payload = {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
-          moduleId: this.config.moduleId,
           batteryTestConfigId: this.config.batteryTestConfigId,
           result: this.result,
         }
@@ -237,6 +237,8 @@ export default {
 
         this.audios.push(number);
       }
+
+      console.log(this.audios, 'this.audios')
 
       // Check Sequence Pattern
       if (this.config.sequence_pattern === 'up') {
