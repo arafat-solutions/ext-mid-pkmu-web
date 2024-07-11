@@ -1,6 +1,6 @@
 <template>
     <div class="visual-container">
-        <canvas ref="visualCanvas" :width="canvasWidth" :height="canvasHeight"></canvas>
+        <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
         <div class="timer">
             <p>Waktu:</p>
             <p>{{ formatTime(testTime) }}</p>
@@ -15,11 +15,14 @@
 </template>
 
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+
 export default {
     data() {
         return {
-            canvasWidth: 1000,
-            canvasHeight: 400,
+            canvasWidth: 0,
+            canvasHeight: 0,
+            canvasRect: null,
             timerConfig: {
                 timerPosition: { top: '20px', left: `${this.canvasWidth / 2}px` },
             },
@@ -66,13 +69,27 @@ export default {
                     alphanumeric: true,
                     shape: true
                 },
-                questionInterval: 30
+                questionInterval: 30,
+                testId: '',
+                moduleId: '',
+                sessionId: '',
+                userId: ''
             },
+            timerInterval: null,
+            tesInterval: null
         };
     },
     mounted() {
+        this.updateCanvasDimensions();
+        window.addEventListener('resize', this.handleResize);
         this.initializeTest()
         document.addEventListener('keydown', this.handleGlobalKeydown);
+    },
+    beforeUnmount() {
+        window.removeEventListener('keydown', this.handleGlobalKeydown);
+        window.removeEventListener('resize', this.handleResize);
+        clearInterval(this.tesInterval)
+        clearInterval(this.timerInterval)
     },
     methods: {
         initVisual() {
@@ -80,13 +97,38 @@ export default {
             this.ctx = canvas.getContext("2d");
         },
         initializeTest() {
-            this.testTime = this.configBe.duration * 60;
-            this.memoryTime = this.configBe.questionInterval;
             this.createRandomQuestion();
+            this.initConfig()
             this.initVisual();
             this.drawVisual();
             this.countDownMemoryTime();
             this.countDownTestTime();
+        },
+        initConfig() {
+            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+            const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').config
+            const { id, display } = config
+
+            this.configBe = {
+                duration: 0.5 * 60,
+                questionInterval: 2,
+                testId: id,
+                moduleId: scheduleData.moduleId,
+                sessionId: scheduleData.sessionId,
+                userId: scheduleData.userId,
+                display: {
+                    alphanumeric: display ? display.alphanumeric : true,
+                    shape: display ? display.shape : true
+                },
+            }
+
+            this.testTime = 0.5 * 60
+            this.memoryTime = 2
+        },
+        updateCanvasDimensions() {
+            this.canvasWidth = this.canvasDimensions.width;
+            this.canvasHeight = this.canvasDimensions.height;
+            this.updateCanvasRect();
         },
         drawVisual() {
             this.clearCanvas();
@@ -216,11 +258,41 @@ export default {
             ctx.fill();
             ctx.restore();
         },
-        drawInput({ input, top, left }) {
-            input.style.top = `${top}px`;
-            input.style.left = `${left}px`;
-            input.style.width = `${100}px`
-            input.style.height = `${20}px`
+        calculateInputPositions() {
+            if (!this.canvasRect) {
+                return null;
+            }
+
+            const canvasTop = this.canvasRect.top;
+            const canvasLeft = this.canvasRect.left;
+            const inputWidth = 100;
+            const inputHeight = 20;
+            const margin = 50;
+
+            return {
+                input1: {
+                    top: canvasTop + (this.canvasHeight / 4) - (inputHeight / 2),
+                    left: canvasLeft + this.canvasWidth - inputWidth - margin
+                },
+                input2: {
+                    top: canvasTop + (this.canvasHeight * 3 / 4) - (inputHeight / 2),
+                    left: canvasLeft + this.canvasWidth - inputWidth - margin
+                }
+            };
+        },
+        drawInput({ input, inputType }) {
+            const positions = this.calculateInputPositions();
+            if (!positions) {
+                return;
+            }
+
+            const position = positions[inputType];
+
+            input.style.position = 'fixed';
+            input.style.top = `${position.top}px`;
+            input.style.left = `${position.left}px`;
+            input.style.width = `100px`;
+            input.style.height = `20px`;
             input.visible = true;
         },
         countDownTestTime() {
@@ -230,12 +302,8 @@ export default {
                     this.drawVisual()
                 } else {
                     clearInterval(this.tesInterval);
-                    try {
-                        await this.submitResult();
-                        console.log('Test result submitted successfully');
-                    } catch (error) {
-                        console.error('An error occurred while submitting the test result:', error);
-                    }
+                    await this.submitResult();
+
                 }
             }, 1000)
         },
@@ -250,9 +318,8 @@ export default {
                     this.innerConfig[7] = { type: 'shape', shapeName: 'questionMark' }
                     this.canAnswer = true
                     this.drawVisual()
-                    // Optionally handle timer expiration logic here
                 }
-            }, 1000); // Update every second
+            }, 1000);
         },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -262,14 +329,13 @@ export default {
         handleGlobalKeydown(event) {
             if (this.memoryTime === 0 && this.canAnswer) {
                 if (event.key === 'Enter') {
-                    const { canvasWidth, canvasHeight } = this;
                     const input1 = this.input.input1
                     const input2 = this.input.input2
 
                     if (this.renderInput === 0) {
                         this.renderInput = 1
 
-                        this.drawInput({ input: input1, top: (canvasHeight / 2) + 20, left: canvasWidth + 30 })
+                        this.drawInput({ input: this.input.input1, inputType: 'input1' });
 
                         this.$nextTick(() => {
                             if (this.$refs.input1) {
@@ -279,7 +345,7 @@ export default {
                     } else if (this.renderInput === 1) {
                         this.renderInput = 2
 
-                        this.drawInput({ input: input2, top: canvasHeight + 20, left: canvasWidth + 30 })
+                        this.drawInput({ input: this.input.input2, inputType: 'input2' });
 
                         this.$nextTick(() => {
                             if (this.$refs.input2) {
@@ -392,14 +458,6 @@ export default {
             this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
             this.questions = JSON.parse(JSON.stringify(arrQuestion));
         },
-        calculateNumberOfQuestion({ duration, questionInterval }) {
-            // duration in second
-            const dis = duration * 60;
-            // interval plus answer time 20 second
-            const ipat = questionInterval + 20;
-
-            return dis / ipat
-        },
         generateRandomLetters() {
             const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             let result = '';
@@ -439,18 +497,32 @@ export default {
         getRandomAngle() {
             return Math.floor(Math.random() * 361); // Generates a random angle between 0 and 360 (inclusive)
         },
+        updateCanvasRect() {
+            if (this.$refs.visualCanvas) {
+                this.canvasRect = this.$refs.visualCanvas.getBoundingClientRect();
+            }
+        },
+        handleResize() {
+            this.updateCanvasDimensions();
+            this.drawVisual();
+            if (this.input.input1.visible) {
+                this.drawInput({ input: this.input.input1, inputType: 'input1' });
+            }
+            if (this.input.input2.visible) {
+                this.drawInput({ input: this.input.input2, inputType: 'input2' });
+            }
+        },
         async submitResult() {
             try {
                 this.loading = true;
                 const API_URL = process.env.VUE_APP_API_URL;
-                const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-                const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test')
+
                 const payload = {
-                    testSessionId: scheduleData.sessionId,
-                    "userId": scheduleData.userId,
-                    "moduleId": scheduleData.moduleId,
-                    "batteryTestConfigId": test.config.id,
-                    "result": { ...this.result }
+                    testSessionId: this.configBe.sessionId,
+                    userId: this.configBe.userId,
+                    moduleId: this.configBe.moduleId,
+                    batteryTestConfigId: this.configBe.testId,
+                    result: this.result
                 }
                 const response = await fetch(`${API_URL}api/submission`, {
                     method: 'POST',
@@ -463,17 +535,24 @@ export default {
                 if (!response.ok) {
                     throw new Error(`Error: ${response.statusText}`);
                 }
+                removeTestByNameAndUpdateLocalStorage('Visual Memory Test')
                 this.$router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
             } finally {
                 this.loading = false; // Set loading to false when the submission is complete
             }
+        },
+
+    },
+    computed: {
+        canvasDimensions() {
+            return {
+                width: Math.min(1000, window.innerWidth * 0.9),
+                height: Math.min(400, window.innerHeight * 0.7)
+            };
         }
     },
-    beforeUnmount() {
-        window.removeEventListener('keydown', this.handleGlobalKeydown);
-    }
 };
 </script>
 
@@ -491,6 +570,7 @@ canvas {
     display: block;
     margin: 0 auto;
     background-color: white;
+    border: 2px solid black;
 }
 
 .timer {
