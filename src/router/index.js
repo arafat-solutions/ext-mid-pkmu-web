@@ -4,7 +4,7 @@ import RadarVigillancePage from '@/components/RadarVigillance.vue';
 import CallSignMultitask from '@/components/CallSignMultitaskingTest/ParentTest.vue'
 import VisualMemoryTest from '@/components/VisualMemoryTest.vue';
 import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
-import PFDTracking from '@/components/PFDTracking.vue';
+import PFDTracking from '@/components/pfd-tracking/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
 import RotatingMaze from '@/components/RotatingMaze.vue';
 import OperativeMultitasking from '@/components/OperativeMultitasking.vue';

@@ -8,9 +8,9 @@
       <p class="schedule-time">Waktu: {{scheduleData.startHour}}-{{scheduleData.endHour}}</p>
     </div>
     <ul class="menu">
-      <li v-for="test in scheduleData.tests" :key="test.name" @click="selectTest(test)">
+      <li v-for="(test, index) in scheduleData.tests" :key="test.name" @click="selectTest(test)">
         <div class="menu-item" :class="{ active: isActive(test.name) }">
-          {{test.name}}
+           Baterai Test {{index + 1}}
           <span class="status selesai" v-if="isCompleted(test.name)">Selesai</span>
         </div>
       </li>
