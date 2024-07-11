@@ -41,7 +41,7 @@
       </div>
     </div>
     <div class="wrong-text" v-if="wrong">{{ wrong }} answer{{ wrong > 1 ? 's' : '' }} wrong</div>
-    <button class="btn-continue" v-show="canContinue">Continue</button>
+    <button class="btn-continue" v-show="canContinue" @click="continueTask">Continue</button>
   </div>
 </template>
 
@@ -55,7 +55,7 @@ export default {
       currentTask: 1,
       numberOfTask: 3, //positive number
       totalRow: 10,
-      stringSize: 'ABC-DE-FG', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
+      stringSize: 'AB-CD-E', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: true, //true or false
       excludeVowels: true, //true or false
       readingSpeed: 'medium', // easy,medium,difficult
@@ -69,7 +69,12 @@ export default {
       dashInterval: 2000, //in ms
       choicesInterval: 3000, //in ms
       charInterval: 1000, //in ms
-      checkboxValues: []
+      checkboxValues: [],
+      result: {
+        correct: 0,
+        wrong: 0,
+        problems: [],
+      }
     }
   },
   computed: {
@@ -82,22 +87,22 @@ export default {
   },
   mounted() {
     this.initiateCheckboxValues();
+    this.isConfigLoaded = true;
+    this.isShowModal = true;
   },
   methods: {
     initiateCheckboxValues() {
       this.checkboxValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
-      this.isConfigLoaded = true;
-      this.isShowModal = true;
     },
     currentRow(row) {
       return this.page * row;
     },
     async generateProblem() {
+      this.problem = null;
       const randomString = this.generateRandomString(this.stringSize, this.includeDigits, this.excludeVowels);
       const choices = this.generateChoices(randomString, this.stringSize, this.includeDigits, this.excludeVowels);
-      const answers = this.getCurrentAnswer(randomString, choices);
 
-      this.problem = {randomString, choices, answers};
+      this.problem = {randomString, choices};
 
       // Read the question
       await this.readQuestion();
@@ -160,24 +165,27 @@ export default {
 
       return choices;
     },
-    getCurrentAnswer(mainString, choices) {
+    checkAnswer(mainString, choices, answers) {
       const mainSegments = mainString.split('-');
-      const answers = [];
+      let wrong = 0;
+      let correct = 0;
 
       choices.forEach(choice => {
         const choiceSegments = choice.split('-');
-        const matchIndices = [];
 
         for (let i = 0; i < mainSegments.length; i++) {
-            if (mainSegments[i] === choiceSegments[i]) {
-                matchIndices.push(i);
-            }
-        }
+          const isCorrectMatch = mainSegments[i] === choiceSegments[i];
+          const isAnswerCorrect = answers[i];
 
-        answers.push(matchIndices);
+          if (isCorrectMatch === isAnswerCorrect) {
+            correct++;
+          } else {
+            wrong++;
+          }
+        }
       });
 
-      return answers;
+      return { correct, wrong };
     },
     async readQuestion() {
       const synth = window.speechSynthesis;
@@ -223,7 +231,6 @@ export default {
     },
     spellOutString(text) {
       text = text.toLowerCase();
-      console.log(text);
       const synth = window.speechSynthesis;
       const utterance = this.setupSound();
 
@@ -248,8 +255,13 @@ export default {
       })();
     },
     checkRowAnswer() {
-      console.log(this.problem.answers, this.checkboxValues, this.checkboxValues[this.currentTask - 1], this.currentTask);
+      const rowResult = this.checkAnswer(this.problem.randomString, this.problem.choices, this.checkboxValues[this.currentTask - 1]);
+      this.result.correct += rowResult.correct;
+      this.result.wrong += rowResult.wrong;
+      this.wrong = rowResult.wrong;
       this.canContinue = true;
+
+      this.result.problems.push(this.problem);
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -269,6 +281,22 @@ export default {
       this.isShowModal = false;
       this.generateProblem();
     },
+    continueTask() {
+      this.currentTask++;
+      if (this.currentTask >= this.numberOfTask) {
+        //TODO SUBMIT
+        return;
+      }
+
+      if (this.currentTask % this.totalRow === 0) {
+        this.page++;
+      }
+      this.generateProblem();
+
+      //Reset
+      this.canContinue = false;
+      this.wrong = 0;
+    }
   }
 }
 </script>
