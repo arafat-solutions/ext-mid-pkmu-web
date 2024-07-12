@@ -27,7 +27,7 @@
                 class="checkbox__trigger visuallyhidden"
                 type="checkbox"
                 :id="`checkbox-${rowIndex}-${colIndex}`"
-                :disabled="row !== (currentTask % numberOfTask)"
+                :disabled="row !== currentRow || currentRowDisabled"
                 v-model="checkboxValues[rowIndex][colIndex]"
               />
               <span class="checkbox__symbol">
@@ -52,8 +52,9 @@ export default {
       isShowModal: false,
       canContinue: false,
       page: 1,
-      currentTask: 1,
-      numberOfTask: 3, //positive number
+      currentRowDisabled: false,
+      currentTask: 11,
+      numberOfTask: 15, //positive number
       totalRow: 10,
       stringSize: 'AB-CD-E', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: true, //true or false
@@ -66,8 +67,8 @@ export default {
       problem: null,
       choicesLength: 4,
       wrong: null,
-      dashInterval: 2000, //in ms
-      choicesInterval: 3000, //in ms
+      dashInterval: 500, //in ms2000
+      choicesInterval: 500, //in ms3000
       charInterval: 1000, //in ms
       checkboxValues: [],
       result: {
@@ -84,6 +85,13 @@ export default {
     totalColumn() {
       return this.choicesLength * this.stringSizeLength;
     },
+    currentRow() {
+      if (this.currentTask <= this.totalRow) {
+        return this.currentTask;
+      }
+
+      return this.currentTask % this.totalRow;
+    },
   },
   mounted() {
     this.initiateCheckboxValues();
@@ -93,9 +101,6 @@ export default {
   methods: {
     initiateCheckboxValues() {
       this.checkboxValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
-    },
-    currentRow(row) {
-      return this.page * row;
     },
     async generateProblem() {
       this.problem = null;
@@ -254,14 +259,15 @@ export default {
         }
       })();
     },
-    checkRowAnswer() {
-      const rowResult = this.checkAnswer(this.problem.randomString, this.problem.choices, this.checkboxValues[this.currentTask - 1]);
+    async checkRowAnswer() {
+      const rowResult = this.checkAnswer(this.problem.randomString, this.problem.choices, this.checkboxValues[this.currentRow - 1]);
       this.result.correct += rowResult.correct;
       this.result.wrong += rowResult.wrong;
       this.wrong = rowResult.wrong;
       this.canContinue = true;
-
       this.result.problems.push(this.problem);
+      await this.delay(3000);
+      this.currentRowDisabled = true;
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -275,6 +281,7 @@ export default {
       this.startCountdown();
     },
     exit() {
+      window.speechSynthesis.cancel();
       this.$router.push('module');
     },
     closeModal() {
@@ -282,20 +289,23 @@ export default {
       this.generateProblem();
     },
     continueTask() {
-      this.currentTask++;
       if (this.currentTask >= this.numberOfTask) {
         //TODO SUBMIT
+        this.exit();
         return;
       }
-
-      if (this.currentTask % this.totalRow === 0) {
-        this.page++;
-      }
-      this.generateProblem();
 
       //Reset
       this.canContinue = false;
       this.wrong = 0;
+      this.currentRowDisabled = false;
+      this.currentTask++;
+
+      if (this.currentTask % this.totalRow === 1) {
+        this.page++;
+        this.initiateCheckboxValues();
+      }
+      this.generateProblem();
     }
   }
 }
@@ -524,7 +534,6 @@ export default {
   .modal-content button {
     background-color: #6200ee;
     color:white;
-    padding: 20px;
     border-radius: 10px;
     border: none;
     padding: 10px;
@@ -559,5 +568,4 @@ export default {
     border-width: 0;
     margin-left: 670px;
   }
-
 </style>
