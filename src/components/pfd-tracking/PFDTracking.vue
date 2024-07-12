@@ -16,7 +16,8 @@ export default {
       animationSpeed: 0.5,
       offset: { altitude: 0, speed: 0, heading: 0 },
       direction: { altitude: -1, speed: 1, heading: 1 },
-      config: {}
+      config: {},
+      animationFrameId: null,
     };
   },
   mounted() {
@@ -26,7 +27,6 @@ export default {
       return test.name === 'PFD Tracking Test';
     });
     this.config = config?.config;
-    console.log('config', this.config);
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext('2d');
     window.addEventListener('keydown', this.handleKeydown);
@@ -36,42 +36,102 @@ export default {
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown);
     window.removeEventListener('resize', this.draw);
+    cancelAnimationFrame(this.animationFrameId);
   },
   methods: {
     handleKeydown(event) {
       switch (event.key) {
         case 'ArrowUp':
-          this.speed += 10;
+          this.speedUp();
           break;
         case 'ArrowDown':
-          this.speed -= 10;
+          this.speedDown();
           break;
         case 'ArrowLeft':
-          this.offset.heading -= 10;
+          this.headingLeft();
           break;
         case 'ArrowRight':
-          this.offset.heading += 10;
+          this.headingRight();
           break;
         case 'w':
-          this.offset.altitude += 10;
+          this.altitudeUp();
           break;
         case 's':
-          this.offset.altitude -= 10;
+          this.altitudeDown();
           break;
       }
       this.draw();
     },
-    startAnimation() {
-      setInterval(() => {
-        this.updateIndicator('altitude', 8500, 9100);
-        this.updateIndicator('speed', 0, 180);
-        this.updateIndicator('heading', 0, 360);
-        this.draw();
-      }, 1000 / 60);
+    speedUp() {
+      this.speed += 10;
+      this.offset.speed += 10;
     },
-    updateIndicator(indicator, min, max) {
-      console.log('updateIndicator', indicator, min, max);
-      // hey GPT, update this one. 
+    speedDown() {
+      this.speed -= 10;
+      this.offset.speed -= 10;
+    },
+    headingLeft() {
+      this.heading -= 10;
+      this.offset.heading -= 10;
+    },
+    headingRight() {
+      this.heading += 10;
+      this.offset.heading += 10;
+    },
+    altitudeUp() {
+      this.altitude += 10;
+      this.offset.altitude += 10;
+    },
+    altitudeDown() {
+      this.altitude -= 10;
+      this.offset.altitude -= 10;
+    },
+    startAnimation() {
+      const animate = () => {
+        this.updateIndicator('altimeter', 'altitude', 8500, 9100);
+        this.updateIndicator('compass', 'heading', 0, 360);
+        this.updateIndicator('speed', 'speed', 0, 180);
+        this.draw();
+        this.animationFrameId = requestAnimationFrame(animate);
+      };
+      this.animationFrameId = requestAnimationFrame(animate);
+    },
+    updateIndicator(configKey, indicator, min, max) {
+      const config = this.config[configKey];
+      if (!config) return;
+
+      if (config.includes('inactive')) {
+        return; // Do nothing
+      }
+
+      if (config.includes('keep_indication')) {
+        // Do not change the value, just keep the blue line
+        return;
+      }
+
+      const randomChange = (range) => (Math.random() * range * 2) - range;
+
+      if (config.includes('adjust_for_consistent_updates')) {
+        // Move at a fixed interval
+        this[indicator] += this.direction[indicator] * this.animationSpeed;
+        if (this[indicator] < min) {
+          this[indicator] = min;
+          this.direction[indicator] *= -1;
+        } else if (this[indicator] > max) {
+          this[indicator] = max;
+          this.direction[indicator] *= -1;
+        }
+      }
+
+      if (config.includes('adjust_for_irregular_updates')) {
+        // Move at random intervals
+        this[indicator] += randomChange(0.5); // Adjust range as needed
+        if (this[indicator] < min) {
+          this[indicator] = min;
+        } else if (this[indicator] > max) {
+          this[indicator] = max;
+        }
+      }
     },
     draw() {
       if (!this.context) return;
@@ -136,7 +196,7 @@ export default {
       this.context.lineTo(x + width, y + height / 2);
       this.context.stroke();
 
-      this.drawGreenPositionText(x, y + height, width, this.altitude + this.offset.altitude);
+      this.drawGreenPositionText(x, y + height, width, this.altitude);
     },
     drawSpeed(x, y, width, height) {
       this.context.fillStyle = 'white';
@@ -166,9 +226,9 @@ export default {
       const minValue = 0;
       const range = maxValue - minValue;
 
-      for (let i = maxValue; i >= minValue - range / interval; i -= interval) {
-        let posY = scaleY + (scaleHeight * (maxValue - i)) / range;
-        let distanceFromCenter = Math.abs(i - (this.speed + this.offset.speed));
+      for (let i = maxValue + this.offset.speed; i >= minValue + this.offset.speed - range / interval; i -= interval) {
+        let posY = scaleY + (scaleHeight * (maxValue - i + this.offset.speed)) / range;
+        let distanceFromCenter = Math.abs(i - this.speed);
         if (distanceFromCenter <= 20) {
           let color = this.getColorForDistanceSpeed(distanceFromCenter);
           this.context.strokeStyle = color;
@@ -195,7 +255,7 @@ export default {
       this.context.lineTo(x + width, y + height / 2);
       this.context.stroke();
 
-      this.drawGreenPositionText(x, y + height, width, this.speed + this.offset.speed);
+      this.drawGreenPositionText(x, y + height, width, this.speed);
     },
 
     drawHeading(x, y, width, height) {
