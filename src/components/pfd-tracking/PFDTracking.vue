@@ -16,8 +16,7 @@ export default {
       animationSpeed: 0.5,
       offset: { altitude: 0, speed: 0, heading: 0 },
       direction: { altitude: -1, speed: 1, heading: 1 },
-      config: {},
-      animationFrameId: null,
+      config: {}
     };
   },
   mounted() {
@@ -26,7 +25,8 @@ export default {
     const config = tests?.find((test) => {
       return test.name === 'PFD Tracking Test';
     });
-    this.config = config?.config;
+    this.config = config?.config || { altimeter: [], compass: [], speed: [] };
+    console.log('config', this.config);
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext('2d');
     window.addEventListener('keydown', this.handleKeydown);
@@ -36,7 +36,6 @@ export default {
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown);
     window.removeEventListener('resize', this.draw);
-    cancelAnimationFrame(this.animationFrameId);
   },
   methods: {
     handleKeydown(event) {
@@ -70,11 +69,11 @@ export default {
       this.speed -= 10;
       this.offset.speed -= 10;
     },
-    headingLeft() {
+    headingRight() {
       this.heading -= 10;
       this.offset.heading -= 10;
     },
-    headingRight() {
+    headingLeft() {
       this.heading += 10;
       this.offset.heading += 10;
     },
@@ -92,9 +91,9 @@ export default {
         this.updateIndicator('compass', 'heading', 0, 360);
         this.updateIndicator('speed', 'speed', 0, 180);
         this.draw();
-        this.animationFrameId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
       };
-      this.animationFrameId = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
     },
     updateIndicator(configKey, indicator, min, max) {
       const config = this.config[configKey];
@@ -140,9 +139,10 @@ export default {
       const centerX = this.canvas.width / 2;
       const centerY = this.canvas.height / 2;
 
+      // x, y is starting point, width, height is the size of the ruler
       this.drawAltitude(50, centerY - 200, 50, 500);
       this.drawSpeed(this.canvas.width - 100, centerY - 200, 50, 500);
-      this.drawHeading(centerX - 200, centerY + 200, 300, 50);
+      this.drawHeading(centerX - 300, centerY + 200, 500, 50);
     },
     drawAltitude(x, y, width, height) {
       this.context.fillStyle = 'white';
@@ -169,13 +169,26 @@ export default {
 
       for (let i = 9100 + this.offset.altitude; i >= 8600 + this.offset.altitude - height / interval; i -= interval) {
         let posY = scaleY + (scaleHeight * (9100 - i + this.offset.altitude)) / (9100 - 8600);
-        let distanceFromCenter = Math.abs(i - this.altitude);
-        if (distanceFromCenter <= 50) {
-          let color = this.getColorForDistanceAltitude(distanceFromCenter);
-          this.context.strokeStyle = color;
+
+        if (i === this.altitude) {
+          this.context.strokeStyle = 'blue';
         } else {
           this.context.strokeStyle = 'black';
         }
+
+        // coloring the ruler
+        // if i is between 8800 - 8900
+        if (i >= 8800 && i <= 8900) {
+          // if i is between 8840 - 8860
+          if (i >= 8840 && i <= 8860) {
+            this.context.strokeStyle = 'green';
+          } else if (i >= 8820 && i <= 8880) {
+            this.context.strokeStyle = 'yellow';
+          } else {
+            this.context.strokeStyle = 'red';
+          }
+        }
+
         if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
           this.context.beginPath();
@@ -219,7 +232,7 @@ export default {
       const interval = 2; // Smaller interval for finer control
       const longLineLength = width / 1.5;
       const shortLineLength = width / 4;
-      const labelInterval = 18; // Ensure labels appear at regular intervals
+      const labelInterval = 10; // Ensure labels appear at regular intervals
 
       // Adjust the start and end values based on the range and height
       const maxValue = 180;
@@ -228,13 +241,25 @@ export default {
 
       for (let i = maxValue + this.offset.speed; i >= minValue + this.offset.speed - range / interval; i -= interval) {
         let posY = scaleY + (scaleHeight * (maxValue - i + this.offset.speed)) / range;
-        let distanceFromCenter = Math.abs(i - this.speed);
-        if (distanceFromCenter <= 20) {
-          let color = this.getColorForDistanceSpeed(distanceFromCenter);
-          this.context.strokeStyle = color;
+        if (i === this.speed) {
+          this.context.strokeStyle = 'blue';
         } else {
           this.context.strokeStyle = 'black';
         }
+
+        // coloring the ruler
+        // if i is between 8800 - 8900
+        if (i >= 72 && i <= 108) {
+          // if i is between 8840 - 8860
+          if (i >= 85 && i <= 95) {
+            this.context.strokeStyle = 'green';
+          } else if (i >= 80 && i <= 100) {
+            this.context.strokeStyle = 'yellow';
+          } else {
+            this.context.strokeStyle = 'red';
+          }
+        }
+
         if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
           this.context.beginPath();
@@ -270,26 +295,48 @@ export default {
       this.context.lineWidth = 2;
       this.context.beginPath();
       this.context.moveTo(x, y);
+      this.context.lineTo(x + width + 120, y);
       this.context.lineTo(x + width, y);
-      this.context.lineTo(x + width, y + height);
       this.context.stroke();
 
       const scaleWidth = width - 20;
       const scaleX = x + 10;
       const interval = 5;
-      const longLineLength = height / 1.5;
-      const shortLineLength = height / 4;
-      const labelInterval = Math.round((360 - 0) / 10);
+      const longLineLength = height / 2;
+      const shortLineLength = height / 5;
+      const labelInterval = Math.round((360 - 0) / 100);
 
       for (let i = 0 + this.offset.heading; i <= 360 + this.offset.heading + scaleWidth / interval; i += interval) {
         let posX = scaleX + (scaleWidth * (i - this.offset.heading)) / (360 - 0);
-        let distanceFromCenter = Math.abs(i - this.heading);
-        if (distanceFromCenter <= 20) {
-          let color = this.getColorForDistanceHeading(distanceFromCenter);
-          this.context.strokeStyle = color;
+        if (i === this.heading) {
+          this.context.strokeStyle = 'blue';
         } else {
           this.context.strokeStyle = 'black';
         }
+
+        // coloring the ruler
+        // if i is between 8800 - 8900
+        if (i >= 100 && i <= 270) {
+          // if i is between 8840 - 8860
+          if (i >= 160 && i <= 200) {
+            this.context.strokeStyle = 'green';
+
+          } else if (i >= 120 && i <= 240) {
+            this.context.strokeStyle = 'yellow';
+          } else {
+            this.context.strokeStyle = 'red';
+          }
+        }
+
+        if (i == 180) {
+          this.context.beginPath();
+          this.context.moveTo(posX, y + 30);
+          this.context.lineTo(posX + 10, y + 40);
+          this.context.lineTo(posX - 10, y + 40);
+          this.context.closePath();
+          this.context.stroke();
+        }
+
         if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), posX, y + height + 20);
           this.context.beginPath();
@@ -307,38 +354,8 @@ export default {
       this.context.strokeStyle = 'blue';
       this.context.beginPath();
       this.context.moveTo(x + width / 2, y);
-      this.context.lineTo(x + width / 2, y + height);
+      this.context.lineTo(x + width / 2, y + 30);
       this.context.stroke();
-    },
-
-    getColorForDistanceAltitude(distance) {
-      if (distance <= 20) {
-        return 'green';
-      } else if (distance <= 40) {
-        return 'yellow';
-      } else {
-        return 'red';
-      }
-    },
-
-    getColorForDistanceSpeed(distance) {
-      if (distance <= 5) {
-        return 'green';
-      } else if (distance <= 10) {
-        return 'yellow';
-      } else {
-        return 'red';
-      }
-    },
-
-    getColorForDistanceHeading(distance) {
-      if (distance <= 5) {
-        return 'green';
-      } else if (distance <= 10) {
-        return 'yellow';
-      } else {
-        return 'red';
-      }
     },
     drawGreenPositionText(x, y, width, value) {
       this.context.fillStyle = 'black';
