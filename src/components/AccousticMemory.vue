@@ -25,7 +25,12 @@
             <label class="checkbox">
               <input
                 class="checkbox__trigger visuallyhidden"
-                :class="wrongRows[rowIndex][colIndex] ? 'wrong-answer' : ''"
+                :class="[
+                  {
+                    'wrong-answer': wrongRows[rowIndex][colIndex],
+                    'disabled': row !== currentRow
+                  }
+                ]"
                 type="checkbox"
                 :id="`checkbox-${rowIndex}-${colIndex}`"
                 :disabled="row !== currentRow || currentRowDisabled"
@@ -69,8 +74,8 @@ export default {
       choicesLength: 4,
       wrong: null,
       wrongRows: [],
-      dashInterval: 500, //in ms2000
-      choicesInterval: 500, //in ms3000
+      dashInterval: 2000, //in ms
+      choicesInterval: 3000, //in ms
       charInterval: 1000, //in ms
       checkboxValues: [],
       result: {
@@ -270,13 +275,12 @@ export default {
     },
     async checkRowAnswer() {
       const rowResult = this.checkAnswer(this.problem.randomString, this.problem.choices, this.checkboxValues[this.currentRow - 1]);
+      this.currentRowDisabled = true;
       this.result.correct += rowResult.correct;
       this.result.wrong += rowResult.wrong;
       this.wrong = rowResult.wrong;
       this.canContinue = true;
       this.result.problems.push(this.problem);
-      await this.delay(3000);
-      this.currentRowDisabled = true;
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -457,22 +461,25 @@ export default {
   }
 
   .checkbox-wrapper .checkbox__trigger:disabled + .checkbox__symbol {
-    background-color: var(--c-disabled-bg);
-    border-color: var(--c-disabled-border);
     cursor: not-allowed;
     opacity: 0.6;
+  }
+
+  .checkbox-wrapper .checkbox__trigger.disabled + .checkbox__symbol {
+    background-color: var(--c-disabled-bg);
+    border-color: var(--c-disabled-border);
   }
 
   .checkbox-wrapper .checkbox__trigger.wrong-answer + .checkbox__symbol {
     border-color: red; /* Change border color to red for wrong answer */
     transition: border-color var(--t-base) var(--e-out); /* Smooth transition */
+    box-shadow: 0 0 0 0.25em rgb(255 0 0 / 20%);
   }
 
   .checkbox-wrapper .checkbox__trigger.wrong-answer + .checkbox__symbol .icon-checkbox path {
     stroke: red; /* Change checkbox icon color to red for wrong answer */
     transition: stroke var(--t-base) var(--e-out); /* Smooth transition */
   }
-
 
   @-webkit-keyframes ripple {
     from {
@@ -543,6 +550,7 @@ export default {
     background-color: rgba(0, 0, 0, 0.8);
     z-index: 1000;
   }
+
   .modal-content {
     background-color: white;
     padding: 20px;
