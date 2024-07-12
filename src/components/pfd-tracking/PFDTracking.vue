@@ -203,6 +203,25 @@ export default {
         }
       }
 
+      // draw triangle indicator at 8850 altitude
+      let trianglePosY = y + (scaleHeight * (9100 - 8850 + this.offset.altitude)) / (9100 - 8600) + 10;
+      if (trianglePosY < scaleY) {
+        trianglePosY = scaleY;
+      } else if (trianglePosY > scaleY + scaleHeight) {
+        trianglePosY = scaleY + scaleHeight;
+      }
+
+      this.context.strokeStyle = 'green';
+      this.context.fillStyle = 'white';
+      this.context.beginPath();
+      this.context.moveTo(x - 20, trianglePosY); // Starting point
+      this.context.lineTo(x - 30, trianglePosY + 10); // Bottom point
+      this.context.lineTo(x - 30, trianglePosY - 10); // Top point
+
+      this.context.closePath();
+      this.context.fill();
+      this.context.stroke();
+
       this.context.strokeStyle = 'blue';
       this.context.beginPath();
       this.context.moveTo(x, y + height / 2);
@@ -273,6 +292,24 @@ export default {
           this.context.stroke();
         }
       }
+
+      // draw triangle indicator at 90 speed
+      let trianglePosY = y + (scaleHeight * (maxValue - 90 + this.offset.speed)) / range + 10;
+      if (trianglePosY < scaleY) {
+        trianglePosY = scaleY;
+      } else if (trianglePosY > scaleY + scaleHeight) {
+        trianglePosY = scaleY + scaleHeight;
+      }
+
+      this.context.strokeStyle = 'green';
+      this.context.fillStyle = 'white';
+      this.context.beginPath();
+      this.context.moveTo(x - 20, trianglePosY);
+      this.context.lineTo(x - 30, trianglePosY + 10);
+      this.context.lineTo(x - 30, trianglePosY - 10);
+      this.context.closePath();
+      this.context.fill();
+      this.context.stroke();
 
       this.context.strokeStyle = 'blue';
       this.context.beginPath();
