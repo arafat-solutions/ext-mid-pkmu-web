@@ -1,7 +1,15 @@
 <template>
     <div class="container">
-        <maze :strategy="strategy" :difficulty="difficulty" @start="onStart" @finish="onFinish" @init="onInit"
-            :style="mazeStyle"></maze>
+        <div class="circular-base">
+            <div class="maze-container" :style="rotationStyle">
+                <maze :strategy="strategy" :difficulty="difficulty" @start="onStart" @finish="onFinish" @init="onInit"
+                    :style="mazeStyle"></maze>
+            </div>
+        </div>
+        <div class="timer">
+            <p>Waktu:</p>
+            <p>{{ formatTime(testTime) }}</p>
+        </div>
     </div>
 </template>
 
@@ -15,26 +23,91 @@ export default {
     },
     data() {
         return {
+            testTime: 10 * 60,
+            tesInterval: null,
             mazeStyle: {
-                width: '500px',
-                height: '500px'
+                width: '400px',
+                height: '400px',
+                backgroundColor: 'white'
             },
-            startTime: 0,
-            time: 0,
             strategy: 'cluster', //cluster, dig
-            difficulty: 'hard', // easy, normal, hard
+            difficulty: 'easy', // easy, normal, hard
+            rotation: 0,
+            rotationSpeed: 30, // speed of rotation per second
+            rotationDuration: 5000, // milliseconds
+            isRotating: false,
+            rotationInterval: 2000 // milliseconds
+        }
+    },
+    computed: {
+        rotationStyle() {
+            return {
+                transform: `rotate(${this.rotation}deg)`,
+                transition: this.isRotating ? 'transform 0.1s linear' : 'none'
+            }
         }
     },
     methods: {
         onStart() {
-            this.startTime = Date.now();
+            this.startRotation();
         },
         onFinish() {
-            this.time = Date.now() - this.startTime;
+            this.stopRotation();
         },
         onInit() {
-            this.startTime = 0;
-        }
+            this.rotation = 0;
+            this.isRotating = false;
+        },
+        startRotation() {
+            this.isRotating = true;
+            const startTime = Date.now();
+            const initialRotation = this.rotation;
+            const animate = () => {
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < this.rotationDuration) {
+                    this.rotation = initialRotation + this.rotationSpeed * elapsedTime / 1000
+                    requestAnimationFrame(animate);
+                } else {
+                    this.isRotating = false;
+                    setTimeout(() => {
+                        this.startRotation();
+                    }, this.rotationInterval);
+                }
+            };
+            requestAnimationFrame(animate);
+
+            console.log(this.rotation, "<< rotation")
+        },
+        stopRotation() {
+            this.isRotating = false;
+        },
+        formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainderSeconds = seconds % 60;
+            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+        },
+        countDownTestTime() {
+            this.tesInterval = setInterval(async () => {
+                if (this.testTime > 0) {
+                    this.testTime--;
+                    // this.drawVisual()
+                } else {
+                    clearInterval(this.tesInterval);
+                    // try {
+                    //     await this.submitResult();
+                    //     console.log('Test result submitted successfully');
+                    // } catch (error) {
+                    //     console.error('An error occurred while submitting the test result:', error);
+                    // }
+                }
+            }, 1000)
+        },
+    },
+    mounted() {
+        this.countDownTestTime()
+    },
+    beforeUnmount() {
+        clearInterval(this.tesInterval)
     }
 }
 </script>
@@ -47,11 +120,28 @@ export default {
     height: 100vh;
     width: 100vw;
     position: relative;
+    padding-top: 3%;
+}
+
+.circular-base {
+    width: 500px;
+    /* Larger than the maze */
+    height: 500px;
+    border-radius: 50%;
+    border: 2px solid black;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.maze-container {
+    width: 400px;
+    height: 400px;
 }
 
 canvas {
     display: block;
-    margin-top: 40px;
     border: none;
 }
 
