@@ -306,6 +306,7 @@ export default {
       const shortLineLength = height / 5;
       const labelInterval = Math.round((360 - 0) / 100);
 
+      // This loop generates the stripes based on the ruler width
       for (let i = 0 + this.offset.heading; i <= 360 + this.offset.heading + scaleWidth / interval; i += interval) {
         let posX = scaleX + (scaleWidth * (i - this.offset.heading)) / (360 - 0);
         if (i === this.heading) {
@@ -314,27 +315,15 @@ export default {
           this.context.strokeStyle = 'black';
         }
 
-        // coloring the ruler
-        // if i is between 8800 - 8900
+        // Coloring the ruler
         if (i >= 100 && i <= 270) {
-          // if i is between 8840 - 8860
           if (i >= 160 && i <= 200) {
             this.context.strokeStyle = 'green';
-
           } else if (i >= 120 && i <= 240) {
             this.context.strokeStyle = 'yellow';
           } else {
             this.context.strokeStyle = 'red';
           }
-        }
-
-        if (i == 180) {
-          this.context.beginPath();
-          this.context.moveTo(posX, y + 30);
-          this.context.lineTo(posX + 10, y + 40);
-          this.context.lineTo(posX - 10, y + 40);
-          this.context.closePath();
-          this.context.stroke();
         }
 
         if (i % labelInterval === 0) {
@@ -351,12 +340,30 @@ export default {
         }
       }
 
+      // Draw triangle indicator
+      let trianglePosX = x + (scaleWidth * (180 - this.offset.heading)) / (360 - 0) + 10;
+      if (trianglePosX < scaleX) {
+        trianglePosX = scaleX;
+      } else if (trianglePosX > scaleX + scaleWidth) {
+        trianglePosX = scaleX + scaleWidth;
+      }
+      this.context.strokeStyle = 'green';
+      this.context.fillStyle = 'white';
+      this.context.beginPath();
+      this.context.moveTo(trianglePosX, y + 30);
+      this.context.lineTo(trianglePosX + 10, y + 40);
+      this.context.lineTo(trianglePosX - 10, y + 40);
+      this.context.closePath();
+      this.context.fill();
+      this.context.stroke();
+
       this.context.strokeStyle = 'blue';
       this.context.beginPath();
       this.context.moveTo(x + width / 2, y);
       this.context.lineTo(x + width / 2, y + 30);
       this.context.stroke();
     },
+
     drawGreenPositionText(x, y, width, value) {
       this.context.fillStyle = 'black';
       this.context.fillRect(x, y + 5, width, 20);
