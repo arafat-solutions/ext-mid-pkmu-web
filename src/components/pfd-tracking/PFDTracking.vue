@@ -15,6 +15,7 @@ export default {
       heading: 345,
       animationSpeed: 0.5,
       offset: { altitude: 0, speed: 0, heading: 0 },
+      direction: { altitude: -1, speed: 1, heading: 1 },
     };
   },
   mounted() {
@@ -32,10 +33,10 @@ export default {
     handleKeydown(event) {
       switch (event.key) {
         case 'ArrowUp':
-          this.offset.speed += 10;
+          this.speed += 10;
           break;
         case 'ArrowDown':
-          this.offset.speed -= 10;
+          this.speed -= 10;
           break;
         case 'ArrowLeft':
           this.offset.heading -= 10;
@@ -54,11 +55,25 @@ export default {
     },
     startAnimation() {
       setInterval(() => {
-        this.altitude += (Math.random() * 2 - 1) * this.animationSpeed;
-        this.heading += (Math.random() * 2 - 1) * this.animationSpeed;
-        this.speed += (Math.random() * 2 - 1) * this.animationSpeed;
+        this.updateIndicator('altitude', 8500, 9100);
+        this.updateIndicator('speed', 0, 180);
+        this.updateIndicator('heading', 0, 360);
         this.draw();
       }, 1000 / 60);
+    },
+    updateIndicator(indicator, min, max) {
+      if (Math.random() < 0.01) {
+        this.direction[indicator] *= -1;
+      }
+      this[indicator] += this.direction[indicator] * this.animationSpeed;
+
+      if (this[indicator] < min) {
+        this[indicator] = min;
+        this.direction[indicator] *= -1;
+      } else if (this[indicator] > max) {
+        this[indicator] = max;
+        this.direction[indicator] *= -1;
+      }
     },
     draw() {
       if (!this.context) return;
@@ -155,7 +170,7 @@ export default {
 
       for (let i = maxValue; i >= minValue - range / interval; i -= interval) {
         let posY = scaleY + (scaleHeight * (maxValue - i)) / range;
-        let distanceFromCenter = Math.abs(i - this.speed);
+        let distanceFromCenter = Math.abs(i - (this.speed + this.offset.speed));
         if (distanceFromCenter <= 20) {
           let color = this.getColorForDistanceSpeed(distanceFromCenter);
           this.context.strokeStyle = color;
