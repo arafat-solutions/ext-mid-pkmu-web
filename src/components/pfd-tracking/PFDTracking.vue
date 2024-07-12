@@ -285,7 +285,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 80vh;
+  height: 90vh;
 }
 
 canvas {
