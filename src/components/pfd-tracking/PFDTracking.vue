@@ -16,9 +16,17 @@ export default {
       animationSpeed: 0.5,
       offset: { altitude: 0, speed: 0, heading: 0 },
       direction: { altitude: -1, speed: 1, heading: 1 },
+      config: {}
     };
   },
   mounted() {
+    const scheduleData = localStorage.getItem('scheduleData');
+    const tests = JSON.parse(scheduleData).tests;
+    const config = tests?.find((test) => {
+      return test.name === 'PFD Tracking Test';
+    });
+    this.config = config?.config;
+    console.log('config', this.config);
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext('2d');
     window.addEventListener('keydown', this.handleKeydown);
@@ -62,18 +70,8 @@ export default {
       }, 1000 / 60);
     },
     updateIndicator(indicator, min, max) {
-      if (Math.random() < 0.01) {
-        this.direction[indicator] *= -1;
-      }
-      this[indicator] += this.direction[indicator] * this.animationSpeed;
-
-      if (this[indicator] < min) {
-        this[indicator] = min;
-        this.direction[indicator] *= -1;
-      } else if (this[indicator] > max) {
-        this[indicator] = max;
-        this.direction[indicator] *= -1;
-      }
+      console.log('updateIndicator', indicator, min, max);
+      // hey GPT, update this one. 
     },
     draw() {
       if (!this.context) return;
