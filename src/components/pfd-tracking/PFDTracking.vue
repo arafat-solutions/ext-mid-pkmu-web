@@ -85,6 +85,19 @@ export default {
       this.altitude -= 10;
       this.offset.altitude -= 10;
     },
+    ascend(targetAltitude) {
+      if (this.altitude < targetAltitude) {
+        this.altitude += 10;
+        this.offset.altitude += 10;
+      }
+    },
+    descend(targetAltitude) {
+      if (this.altitude > targetAltitude) {
+        this.altitude -= 10;
+        this.offset.altitude -= 10;
+      }
+    },
+
     startAnimation() {
       const animate = () => {
         this.updateIndicator('altimeter', 'altitude', 8500, 9100);
@@ -92,6 +105,7 @@ export default {
         this.updateIndicator('speed', 'speed', 0, 180);
         this.draw();
         requestAnimationFrame(animate);
+
       };
       requestAnimationFrame(animate);
     },
