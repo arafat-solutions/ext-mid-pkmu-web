@@ -139,17 +139,51 @@ export default {
 
         this.$refs.mazeContainer.focus();
 
-        const image = new Image();
-        image.addEventListener("load", () => {
-            this.image = image;
-        });
-        image.src = this.imagePath;
+        // Create a blue circle
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#1961D5';
+        ctx.beginPath();
+        ctx.arc(50, 50, 40, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        this.image = new Image();
+        this.image.src = canvas.toDataURL();
 
-        const goalImage = new Image();
-        goalImage.addEventListener("load", () => {
-            this.goalImage = goalImage;
-        });
-        goalImage.src = this.goalImagePath;
+        // Create a star
+        const goalCanvas = document.createElement('canvas');
+        goalCanvas.width = 100;
+        goalCanvas.height = 100;
+        const goalCtx = goalCanvas.getContext('2d');
+        goalCtx.fillStyle = 'green';
+        goalCtx.beginPath();
+        const outerRadius = 50;
+        const innerRadius = 20;
+        const points = 5;
+        const step = Math.PI / points;
+        for (let i = 0; i < 2 * points; i++) {
+            const r = (i % 2 === 0) ? outerRadius : innerRadius;
+            const angle = i * step;
+            goalCtx.lineTo(50 + r * Math.cos(angle), 50 - r * Math.sin(angle));
+        }
+        goalCtx.closePath();
+        goalCtx.fill();
+        this.goalImage = new Image();
+        this.goalImage.src = goalCanvas.toDataURL();
+
+        // const image = new Image();
+        // image.addEventListener("load", () => {
+        //     this.image = image;
+        // });
+        // image.src = this.imagePath;
+
+        // const goalImage = new Image();
+        // goalImage.addEventListener("load", () => {
+        //     this.goalImage = goalImage;
+        // });
+        // goalImage.src = this.goalImagePath;
 
         window.addEventListener("resize", () => {
             this.height = this.$el.offsetHeight;
