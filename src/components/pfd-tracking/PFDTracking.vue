@@ -153,11 +153,8 @@ export default {
       const minValue = 0;
       const range = maxValue - minValue;
 
-      for (let i = Math.ceil(this.speed / labelInterval) * labelInterval + this.offset.speed; i >= minValue - height / interval + this.offset.speed; i -= interval) {
-        // let posY = scaleY + (scaleHeight * (maxValue - i + this.offset.speed)) / range;
-        console.log(scaleHeight, scaleY, range)
-        let posY = scaleY + (scaleHeight * (maxValue - i + this.offset.speed)) / range;
-        console.log('pos y', posY)
+      for (let i = maxValue; i >= minValue - range / interval; i -= interval) {
+        let posY = scaleY + (scaleHeight * (maxValue - i)) / range;
         let distanceFromCenter = Math.abs(i - this.speed);
         if (distanceFromCenter <= 20) {
           let color = this.getColorForDistanceSpeed(distanceFromCenter);
@@ -187,6 +184,7 @@ export default {
 
       this.drawGreenPositionText(x, y + height, width, this.speed + this.offset.speed);
     },
+
     drawHeading(x, y, width, height) {
       this.context.fillStyle = 'white';
       this.context.fillRect(x, y, width, height);
