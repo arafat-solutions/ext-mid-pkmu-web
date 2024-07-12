@@ -25,6 +25,7 @@
             <label class="checkbox">
               <input
                 class="checkbox__trigger visuallyhidden"
+                :class="wrongRows[rowIndex][colIndex] ? 'wrong-answer' : ''"
                 type="checkbox"
                 :id="`checkbox-${rowIndex}-${colIndex}`"
                 :disabled="row !== currentRow || currentRowDisabled"
@@ -53,8 +54,8 @@ export default {
       canContinue: false,
       page: 1,
       currentRowDisabled: false,
-      currentTask: 11,
-      numberOfTask: 15, //positive number
+      currentTask: 1,
+      numberOfTask: 20, //positive number
       totalRow: 10,
       stringSize: 'AB-CD-E', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: true, //true or false
@@ -67,6 +68,7 @@ export default {
       problem: null,
       choicesLength: 4,
       wrong: null,
+      wrongRows: [],
       dashInterval: 500, //in ms2000
       choicesInterval: 500, //in ms3000
       charInterval: 1000, //in ms
@@ -95,12 +97,16 @@ export default {
   },
   mounted() {
     this.initiateCheckboxValues();
+    this.initiateWrongRows();
     this.isConfigLoaded = true;
     this.isShowModal = true;
   },
   methods: {
     initiateCheckboxValues() {
       this.checkboxValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
+    },
+    initiateWrongRows() {
+      this.wrongRows = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
     },
     async generateProblem() {
       this.problem = null;
@@ -174,19 +180,22 @@ export default {
       const mainSegments = mainString.split('-');
       let wrong = 0;
       let correct = 0;
+      let column = 0;
 
-      choices.forEach(choice => {
+      choices.forEach((choice) => {
         const choiceSegments = choice.split('-');
 
         for (let i = 0; i < mainSegments.length; i++) {
           const isCorrectMatch = mainSegments[i] === choiceSegments[i];
-          const isAnswerCorrect = answers[i];
+          const isAnswerCorrect = answers[column];
 
           if (isCorrectMatch === isAnswerCorrect) {
             correct++;
           } else {
             wrong++;
+            this.wrongRows[this.currentRow-1][column] = true;
           }
+          column++;
         }
       });
 
@@ -296,6 +305,7 @@ export default {
       }
 
       //Reset
+      this.initiateWrongRows();
       this.canContinue = false;
       this.wrong = 0;
       this.currentRowDisabled = false;
@@ -452,6 +462,17 @@ export default {
     cursor: not-allowed;
     opacity: 0.6;
   }
+
+  .checkbox-wrapper .checkbox__trigger.wrong-answer + .checkbox__symbol {
+    border-color: red; /* Change border color to red for wrong answer */
+    transition: border-color var(--t-base) var(--e-out); /* Smooth transition */
+  }
+
+  .checkbox-wrapper .checkbox__trigger.wrong-answer + .checkbox__symbol .icon-checkbox path {
+    stroke: red; /* Change checkbox icon color to red for wrong answer */
+    transition: stroke var(--t-base) var(--e-out); /* Smooth transition */
+  }
+
 
   @-webkit-keyframes ripple {
     from {
