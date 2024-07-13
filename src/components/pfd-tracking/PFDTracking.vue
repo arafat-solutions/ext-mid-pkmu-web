@@ -2,6 +2,9 @@
   <div class="canvas-container">
     <canvas ref="canvas" width="1000" height="600"></canvas>
   </div>
+  {{ this.altitude }} to {{ this.targetAltitude }} <br>
+  {{ this.speed }} to {{ this.targetSpeed }} <br>
+  {{ this.heading }} to {{ this.targetHeading }}
 </template>
 
 <script>
@@ -29,19 +32,49 @@ export default {
       return test.name === 'PFD Tracking Test';
     });
     this.config = config?.config || { altimeter: [], compass: [], speed: [] };
-    console.log('config', this.config);
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext('2d');
     window.addEventListener('keydown', this.handleKeydown);
     this.startAnimation();
     window.addEventListener('resize', this.draw);
-    this.simulateAltitudeChange(this.targetAltitude, 10);
-  },
+    this.playAltitude();
+    this.playHeading();
+  },  
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown);
     window.removeEventListener('resize', this.draw);
   },
   methods: {
+    playAltitude() {
+      if (this.config.altimter == 'adjust_for_consistent_update') {
+        // set interval to randomly increase OR decrease the target altitude between 100 - 1000 of the current altitude
+        setInterval(() => {
+          this.targetAltitude = Math.floor(Math.random() * (this.altitude + 1000 - this.altitude + 100) + this.altitude + 100);
+        }, 10000);
+      } else if (this.config.altimeter == 'adjust_for_irregular_updates') {
+        // with a 50% chance, increase or decrease the target altitude between 100 - 1000 of the current altitude
+        setInterval(() => {
+          if (Math.random() > 0.5) {
+            this.targetAltitude = Math.floor(Math.random() * (this.altitude + 1000 - this.altitude + 100) + this.altitude + 100);
+          }
+        }, 10000);
+      }
+    },
+    playHeading() {
+      if (this.config.compass == 'adjust_for_consistent_update') {
+        // set interval to randomly increase OR decrease the target heading between 0 - 360
+        setInterval(() => {
+          this.targetHeading = Math.floor(Math.random() * (360 - 0) + 0);
+        }, 10000);
+      } else if (this.config.compass == 'adjust_for_irregular_updates') {
+        // with a 50% chance, increase or decrease the target heading between 0 - 360
+        setInterval(() => {
+          if (Math.random() > 0.5) {
+            this.targetHeading = Math.floor(Math.random() * (360 - 0) + 0);
+          }
+        }, 1000);
+      }
+    },
     handleKeydown(event) {
       switch (event.key) {
         case 'ArrowUp':
@@ -115,68 +148,13 @@ export default {
         this.offset.altitude -= 10;
       }
     },
-    simulateAltitudeChange(targetAltitude, speed) {
-      console.log('targetAltitude', targetAltitude, this.altitude, 'speed', speed)
-      // loop through the altitude until it reaches the target altitude
-      const interval = setInterval(() => {
-        const diff = targetAltitude - this.altitude;
-        // console.log('need to go to', targetAltitude, 'current altitude', this.altitude, 'diff', diff)
-        if (diff > 0 && diff >= 10) {
-          this.ascend(targetAltitude);
-        } else if (diff < 0 && diff <= -10) {
-          this.descend(targetAltitude);
-        } else if (diff >= -10 && diff <= 10) {
-          clearInterval(interval);
-        }
-      }, 100);
-    },
     startAnimation() {
       const animate = () => {
-        this.updateIndicator('altimeter', 'altitude', 8500, 9100);
-        this.updateIndicator('compass', 'heading', 0, 360);
-        this.updateIndicator('speed', 'speed', 0, 180);
         this.draw();
         requestAnimationFrame(animate);
 
       };
       requestAnimationFrame(animate);
-    },
-    updateIndicator(configKey, indicator, min, max) {
-      const config = this.config[configKey];
-      if (!config) return;
-
-      if (config.includes('inactive')) {
-        return; // Do nothing
-      }
-
-      if (config.includes('keep_indication')) {
-        // Do not change the value, just keep the blue line
-        return;
-      }
-
-      const randomChange = (range) => (Math.random() * range * 2) - range;
-
-      if (config.includes('adjust_for_consistent_updates')) {
-        // Move at a fixed interval
-        this[indicator] += this.direction[indicator] * this.animationSpeed;
-        if (this[indicator] < min) {
-          this[indicator] = min;
-          this.direction[indicator] *= -1;
-        } else if (this[indicator] > max) {
-          this[indicator] = max;
-          this.direction[indicator] *= -1;
-        }
-      }
-
-      if (config.includes('adjust_for_irregular_updates')) {
-        // Move at random intervals
-        this[indicator] += randomChange(0.5); // Adjust range as needed
-        if (this[indicator] < min) {
-          this[indicator] = min;
-        } else if (this[indicator] > max) {
-          this[indicator] = max;
-        }
-      }
     },
     draw() {
       if (!this.context) return;
@@ -242,8 +220,8 @@ export default {
 
       this.context.strokeStyle = 'blue';
       this.context.beginPath();
-      this.context.moveTo(x, y + height / 2);
-      this.context.lineTo(x + width, y + height / 2);
+      this.context.moveTo(x, y + 50 + height / 2);
+      this.context.lineTo(x + width, y + 50 + height / 2);
       this.context.stroke();
 
       this.drawGreenPositionText(x, y + height, width, this.altitude);
@@ -342,15 +320,15 @@ export default {
     colorSpeedRuler(i) {
       // coloring the ruler
       if (i >= this.targetSpeed - 15 && i <= this.targetSpeed + 15) {
-          // if i is between 8840 - 8860
-          if (i >= this.targetSpeed - 5 && i <= this.targetSpeed + 5) {
-            this.context.strokeStyle = 'green';
-          } else if (i >= this.targetSpeed - 10 && i <= this.targetSpeed + 10) {
-            this.context.strokeStyle = 'yellow';
-          } else {
-            this.context.strokeStyle = 'red';
-          }
+        // if i is between 8840 - 8860
+        if (i >= this.targetSpeed - 5 && i <= this.targetSpeed + 5) {
+          this.context.strokeStyle = 'green';
+        } else if (i >= this.targetSpeed - 10 && i <= this.targetSpeed + 10) {
+          this.context.strokeStyle = 'yellow';
+        } else {
+          this.context.strokeStyle = 'red';
         }
+      }
     },
     drawTriangleIndicatorSpeed(x, y, scaleHeight, scaleY) {
       let trianglePosY = y + (scaleHeight * (180 - this.targetSpeed + this.offset.speed)) / 180 + 10;
