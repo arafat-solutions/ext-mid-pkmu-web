@@ -11,8 +11,11 @@ export default {
       canvas: null,
       context: null,
       altitude: 8800,
+      targetAltitude: 10000,
       speed: 150,
+      targetSpeed: 150,
       heading: 345,
+      targetHeading: 180,
       animationSpeed: 0.5,
       offset: { altitude: 0, speed: 0, heading: 0 },
       direction: { altitude: -1, speed: 1, heading: 1 },
@@ -32,6 +35,7 @@ export default {
     window.addEventListener('keydown', this.handleKeydown);
     this.startAnimation();
     window.addEventListener('resize', this.draw);
+    this.simulateAltitudeChange(this.targetAltitude, 10);
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown);
@@ -41,10 +45,16 @@ export default {
     handleKeydown(event) {
       switch (event.key) {
         case 'ArrowUp':
-          this.speedUp();
+          if (this.config.control.invert_throttle)
+            this.speedDown();
+          else
+            this.speedUp();
           break;
         case 'ArrowDown':
-          this.speedDown();
+          if (this.config.control.invert_throttle)
+            this.speedUp();
+          else
+            this.speedDown();
           break;
         case 'ArrowLeft':
           this.headingLeft();
@@ -53,10 +63,16 @@ export default {
           this.headingRight();
           break;
         case 'w':
-          this.altitudeUp();
+          if (this.config.control.invert_y_axis)
+            this.altitudeDown();
+          else
+            this.altitudeUp();
           break;
         case 's':
-          this.altitudeDown();
+          if (this.config.control.invert_y_axis)
+            this.altitudeUp();
+          else
+            this.altitudeDown();
           break;
       }
       this.draw();
@@ -86,10 +102,12 @@ export default {
       this.offset.altitude -= 10;
     },
     ascend(targetAltitude) {
+      console.log('ascending to...', targetAltitude, this.altitude)
       if (this.altitude < targetAltitude) {
         this.altitude += 10;
         this.offset.altitude += 10;
       }
+      console.log('after ascending', this.altitude, targetAltitude)
     },
     descend(targetAltitude) {
       if (this.altitude > targetAltitude) {
@@ -97,7 +115,21 @@ export default {
         this.offset.altitude -= 10;
       }
     },
-
+    simulateAltitudeChange(targetAltitude, speed) {
+      console.log('targetAltitude', targetAltitude, this.altitude, 'speed', speed)
+      // loop through the altitude until it reaches the target altitude
+      const interval = setInterval(() => {
+        const diff = targetAltitude - this.altitude;
+        // console.log('need to go to', targetAltitude, 'current altitude', this.altitude, 'diff', diff)
+        if (diff > 0 && diff >= 10) {
+          this.ascend(targetAltitude);
+        } else if (diff < 0 && diff <= -10) {
+          this.descend(targetAltitude);
+        } else if (diff >= -10 && diff <= 10) {
+          clearInterval(interval);
+        }
+      }, 100);
+    },
     startAnimation() {
       const animate = () => {
         this.updateIndicator('altimeter', 'altitude', 8500, 9100);
@@ -190,18 +222,7 @@ export default {
           this.context.strokeStyle = 'black';
         }
 
-        // coloring the ruler
-        // if i is between 8800 - 8900
-        if (i >= 8800 && i <= 8900) {
-          // if i is between 8840 - 8860
-          if (i >= 8840 && i <= 8860) {
-            this.context.strokeStyle = 'green';
-          } else if (i >= 8820 && i <= 8880) {
-            this.context.strokeStyle = 'yellow';
-          } else {
-            this.context.strokeStyle = 'red';
-          }
-        }
+        this.colorAltiRuler(i);
 
         if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
@@ -217,8 +238,29 @@ export default {
         }
       }
 
-      // draw triangle indicator at 8850 altitude
-      let trianglePosY = y + (scaleHeight * (9100 - 8850 + this.offset.altitude)) / (9100 - 8600) + 10;
+      this.drawTriangleIndicatorAltitude(x, y, scaleHeight, scaleY);
+
+      this.context.strokeStyle = 'blue';
+      this.context.beginPath();
+      this.context.moveTo(x, y + height / 2);
+      this.context.lineTo(x + width, y + height / 2);
+      this.context.stroke();
+
+      this.drawGreenPositionText(x, y + height, width, this.altitude);
+    },
+    colorAltiRuler(i) {
+      if (i >= this.targetAltitude - 50 && i <= this.targetAltitude + 50) {
+        if (i >= this.targetAltitude - 10 && i <= this.targetAltitude + 10) {
+          this.context.strokeStyle = 'green';
+        } else if (i >= this.targetAltitude - 30 && i <= this.targetAltitude + 30) {
+          this.context.strokeStyle = 'yellow';
+        } else {
+          this.context.strokeStyle = 'red';
+        }
+      }
+    },
+    drawTriangleIndicatorAltitude(x, y, scaleHeight, scaleY) {
+      let trianglePosY = y + (scaleHeight * (9100 - this.targetAltitude + this.offset.altitude)) / (9100 - 8600) + 10;
       if (trianglePosY < scaleY) {
         trianglePosY = scaleY;
       } else if (trianglePosY > scaleY + scaleHeight) {
@@ -235,14 +277,6 @@ export default {
       this.context.closePath();
       this.context.fill();
       this.context.stroke();
-
-      this.context.strokeStyle = 'blue';
-      this.context.beginPath();
-      this.context.moveTo(x, y + height / 2);
-      this.context.lineTo(x + width, y + height / 2);
-      this.context.stroke();
-
-      this.drawGreenPositionText(x, y + height, width, this.altitude);
     },
     drawSpeed(x, y, width, height) {
       this.context.fillStyle = 'white';
@@ -280,18 +314,7 @@ export default {
           this.context.strokeStyle = 'black';
         }
 
-        // coloring the ruler
-        // if i is between 8800 - 8900
-        if (i >= 72 && i <= 108) {
-          // if i is between 8840 - 8860
-          if (i >= 85 && i <= 95) {
-            this.context.strokeStyle = 'green';
-          } else if (i >= 80 && i <= 100) {
-            this.context.strokeStyle = 'yellow';
-          } else {
-            this.context.strokeStyle = 'red';
-          }
-        }
+        this.colorSpeedRuler(i);
 
         if (i % labelInterval === 0) {
           this.context.fillText(i.toFixed(0), x + width + 5, posY);
@@ -307,8 +330,30 @@ export default {
         }
       }
 
-      // draw triangle indicator at 90 speed
-      let trianglePosY = y + (scaleHeight * (maxValue - 90 + this.offset.speed)) / range + 10;
+      this.drawTriangleIndicatorSpeed(x, y, scaleHeight, scaleY);
+      this.context.strokeStyle = 'blue';
+      this.context.beginPath();
+      this.context.moveTo(x, y + height / 2);
+      this.context.lineTo(x + width, y + height / 2);
+      this.context.stroke();
+
+      this.drawGreenPositionText(x, y + height, width, this.speed);
+    },
+    colorSpeedRuler(i) {
+      // coloring the ruler
+      if (i >= this.targetSpeed - 15 && i <= this.targetSpeed + 15) {
+          // if i is between 8840 - 8860
+          if (i >= this.targetSpeed - 5 && i <= this.targetSpeed + 5) {
+            this.context.strokeStyle = 'green';
+          } else if (i >= this.targetSpeed - 10 && i <= this.targetSpeed + 10) {
+            this.context.strokeStyle = 'yellow';
+          } else {
+            this.context.strokeStyle = 'red';
+          }
+        }
+    },
+    drawTriangleIndicatorSpeed(x, y, scaleHeight, scaleY) {
+      let trianglePosY = y + (scaleHeight * (180 - this.targetSpeed + this.offset.speed)) / 180 + 10;
       if (trianglePosY < scaleY) {
         trianglePosY = scaleY;
       } else if (trianglePosY > scaleY + scaleHeight) {
@@ -318,22 +363,14 @@ export default {
       this.context.strokeStyle = 'green';
       this.context.fillStyle = 'white';
       this.context.beginPath();
-      this.context.moveTo(x - 20, trianglePosY);
-      this.context.lineTo(x - 30, trianglePosY + 10);
-      this.context.lineTo(x - 30, trianglePosY - 10);
+      this.context.moveTo(x - 20, trianglePosY); // Starting point
+      this.context.lineTo(x - 30, trianglePosY + 10); // Bottom point
+      this.context.lineTo(x - 30, trianglePosY - 10); // Top point
+
       this.context.closePath();
       this.context.fill();
       this.context.stroke();
-
-      this.context.strokeStyle = 'blue';
-      this.context.beginPath();
-      this.context.moveTo(x, y + height / 2);
-      this.context.lineTo(x + width, y + height / 2);
-      this.context.stroke();
-
-      this.drawGreenPositionText(x, y + height, width, this.speed);
     },
-
     drawHeading(x, y, width, height) {
       this.context.fillStyle = 'white';
       this.context.fillRect(x, y, width, height);
