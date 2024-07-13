@@ -399,7 +399,7 @@ export default {
         }
       }
 
-      this.drawTriangleIndicatorHeading(x, y, scaleWidth, scaleX);
+      this.drawTriangleIndicatorHeading(x, y, scaleWidth, scaleX, startHeading, width);
 
       this.context.strokeStyle = 'blue';
       this.context.beginPath();
@@ -419,9 +419,8 @@ export default {
         }
       }
     },
-
-    drawTriangleIndicatorHeading(x, y, scaleWidth, scaleX) {
-      let trianglePosX = scaleX + (scaleWidth * (this.targetHeading - this.heading + 180)) / 360;
+    drawTriangleIndicatorHeading(x, y, scaleWidth, scaleX, startHeading, width) {
+      let trianglePosX = scaleX + (scaleWidth * (this.targetHeading - startHeading)) / width;
       if (trianglePosX < scaleX) {
         trianglePosX = scaleX;
       } else if (trianglePosX > scaleX + scaleWidth) {
