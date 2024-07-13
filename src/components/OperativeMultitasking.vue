@@ -1,193 +1,177 @@
 <template>
-    <div class="game-container">
-      <div class="lights-container">
-        <div
-          v-for="(light, index) in lights"
-          :key="index"
-          :class="['light', { active: light }]"
-        >
-          {{ index + 1 }}
-        </div>
-      </div>
-  
-      <div class="question-container">
-        <div class="question">{{ question }}</div>
-        <input v-model="userAnswer" @keydown.enter="checkAnswer" class="answer-input" />
-      </div>
-  
-      <div class="aim-container">
-        <div class="target" :style="{ top: target1.y + 'px', left: target1.x + 'px' }"></div>
-        <div class="aim" :style="{ top: aim1.y + 'px', left: aim1.x + 'px' }"></div>
-      </div>
-  
-      <div class="aim-container large" @mousemove="handleMouseMoveInContainer">
-        <div class="target" :style="{ top: target2.y + 'px', left: target2.x + 'px' }"></div>
-        <div class="aim" :style="{ top: aim2.y + 'px', left: aim2.x + 'px' }"></div>
-      </div>
+  <div class="simulation-container">
+    <canvas ref="canvas" width="1000" height="600"></canvas>
+    <div class="recorded-data">
+      <p>Response Times: {{ responseTimes.join(', ') }}</p>
+      <p>Correct Answers: {{ correctAnswers }}</p>
+      <p>Incorrect Answers: {{ incorrectAnswers }}</p>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'GamePage',
-    data() {
-      return {
-        lights: [false, false, false, false],
-        lightKeys: ['1', '2', '3', '4'],
-        lightTimers: [null, null, null, null],
-        target1: { x: 50, y: 100 },
-        aim1: { x: 50, y: 50 },
-        target2: { x: 150, y: 150 },
-        aim2: { x: 150, y: 150 },
-        question: '',
-        answer: '',
-        userAnswer: '',
-        rotationInterval: 5000, // 5 seconds
-        lightInterval: 2000, // 2 seconds interval before the next light
-      };
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      activeKey: null,
+      question: '36 + 38 = ?',
+      userAnswer: '',
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      responseTimes: [],
+      startTime: 0,
+      isActive: false,
+      aimWasd: { x: 100, y: 450 },
+      aimArrow: { x: 700, y: 450 },
+      targetWasd: { x: 100, y: 450 },
+      targetArrow: { x: 700, y: 450 },
+    };
+  },
+  methods: {
+    generateRandomKey() {
+      const keys = ['F1', 'F2', 'F3', 'F4'];
+      this.activeKey = keys[Math.floor(Math.random() * keys.length)];
+      this.isActive = true;
+      this.startTime = performance.now();
+      this.draw();
     },
-    methods: {
-      randomLight() {
-        const index = Math.floor(Math.random() * 4);
-        this.lights[index] = true;
-        this.lightTimers[index] = Date.now();
-      },
-      handleLightKeyPress(event) {
-        const key = event.key.toLowerCase();
-        const index = this.lightKeys.indexOf(key);
-        if (index > -1 && this.lights[index]) {
-          this.lights[index] = false;
-          const reactionTime = Date.now() - this.lightTimers[index];
-          console.log(`Reaction time for ${index + 1}: ${reactionTime}ms`);
-          setTimeout(this.randomLight, this.lightInterval); // Interval before the next light
-        }
-      },
-      moveTarget1() {
-        const stepSize = 2; // Adjust step size for slower movement
-        this.target1.x += Math.random() * stepSize - stepSize / 2;
-        this.target1.y += Math.random() * stepSize - stepSize / 2;
-  
-        // Ensure the target stays within bounds
-        const container = { x: 0, y: 0, w: 150, h: 300 };
-        if (this.target1.x < container.x) this.target1.x = container.x;
-        if (this.target1.x > container.x + container.w) this.target1.x = container.x + container.w;
-        if (this.target1.y < container.y) this.target1.y = container.y;
-        if (this.target1.y > container.y + container.h) this.target1.y = container.y + container.h;
-      },
-      handleAim1KeyPress(event) {
-        const step = 5;
-        if (event.key === 'w') this.aim1.y -= step;
-        if (event.key === 'a') this.aim1.x -= step;
-        if (event.key === 's') this.aim1.y += step;
-        if (event.key === 'd') this.aim1.x += step;
-      },
-      handleMouseMove(event) {
-        this.aim2.x = event.clientX - event.target.getBoundingClientRect().left;
-        this.aim2.y = event.clientY - event.target.getBoundingClientRect().top;
-      },
-      handleMouseMoveInContainer(event) {
-        const rect = event.currentTarget.getBoundingClientRect();
-        this.aim2.x = event.clientX - rect.left;
-        this.aim2.y = event.clientY - rect.top;
-      },
-      generateQuestion() {
-        const num1 = Math.floor(Math.random() * 50);
-        const num2 = Math.floor(Math.random() * 50);
-        this.question = `${num1} + ${num2} = ?`;
-        this.answer = (num1 + num2).toString();
-      },
-      checkAnswer() {
-        if (this.userAnswer === this.answer) {
-          console.log('Correct answer!');
-          this.generateQuestion();
-          this.userAnswer = '';
+    handleKeyPress(event) {
+      if (['F1', 'F2', 'F3', 'F4'].includes(event.key)) {
+        if (event.key === this.activeKey) {
+          this.responseTimes.push(performance.now() - this.startTime);
+          this.activeKey = null;
         } else {
-          console.log('Incorrect answer.');
+          this.incorrectAnswers++;
         }
+        this.isActive = false;
+        this.draw();
       }
     },
-    mounted() {
-      this.generateQuestion();
-      setTimeout(this.randomLight, this.lightInterval);
-      window.addEventListener('keydown', this.handleLightKeyPress);
-      window.addEventListener('keydown', this.handleAim1KeyPress);
-      setInterval(() => {
-        this.moveTarget1();
-      }, 100); // Move target every 100ms for slower movement
+    checkAnswer() {
+      const correctAnswer = 36 + 38;
+      if (parseInt(this.userAnswer) === correctAnswer) {
+        this.correctAnswers++;
+      } else {
+        this.incorrectAnswers++;
+      }
+      this.userAnswer = '';
+      this.generateNewQuestion();
+      this.draw();
     },
-    beforeUnmount() {
-      window.removeEventListener('keydown', this.handleLightKeyPress);
-      window.removeEventListener('keydown', this.handleAim1KeyPress);
-    }
-  };
-  </script>
-  
-  <style>
-  .game-container {
-    display: grid;
-    grid-template-areas:
-      "lights question"
-      "aim1 aim2";
-    gap: 20px;
-    padding: 20px;
-    background-color: black;
-    color: white;
-  }
-  .lights-container {
-    display: grid;
-    grid-template-columns: repeat(2, 30px);
-    grid-template-rows: repeat(2, 30px);
-    gap: 10px;
-    grid-area: lights;
-  }
-  .light {
-    width: 30px;
-    height: 30px;
-    background-color: grey;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .light.active {
-    background-color: red;
-  }
-  .question-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    grid-area: question;
-  }
-  .answer-input {
-    font-size: 24px;
-    text-align: center;
-    margin-top: 10px;
-  }
-  .aim-container {
-    width: 150px;
-    height: 300px;
-    border: 1px solid white;
-    position: relative;
-    grid-area: aim1;
-  }
-  .aim-container.large {
-    width: 400px;
-    height: 300px;
-    grid-area: aim2;
-  }
-  .target {
-    width: 20px;
-    height: 20px;
-    background-color: red;
-    border-radius: 50%;
-    position: absolute;
-  }
-  .aim {
-    width: 20px;
-    height: 20px;
-    border: 2px solid white;
-    border-radius: 50%;
-    position: absolute;
-  }
-  </style>
-  
+    generateNewQuestion() {
+      // Implement logic to generate a new arithmetic question
+    },
+    draw() {
+      const canvas = this.$refs.canvas;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw segment outlines
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+
+      // Active Lights Segment
+      ctx.strokeRect(5, 55, 200, 290);
+
+      // Arithmetic Question Segment
+      ctx.strokeRect(210, 5, 785, 140);
+
+      // Aim WASD Segment
+      ctx.strokeRect(5, 305, 200, 290);
+
+      // Aim Arrow Segment
+      ctx.strokeRect(210, 305, 785, 290);
+
+      // Draw active lights
+      const keys = ['F1', 'F2', 'F3', 'F4'];
+      keys.forEach((key, index) => {
+        ctx.fillStyle = this.activeKey === key ? 'red' : 'grey';
+        ctx.fillRect(10, 10 + index * 70, 60, 60);
+        ctx.fillStyle = 'white';
+        ctx.font = '20px Arial';
+        ctx.fillText(key, 30, 50 + index * 70);
+      });
+
+      // Draw question box
+      ctx.fillStyle = 'white';
+      ctx.font = '30px Arial';
+      ctx.fillText(this.question, 220, 60);
+      ctx.strokeRect(220, 80, 300, 40);
+
+      // Draw aim indicators and targets
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(this.targetWasd.x, this.targetWasd.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(this.aimWasd.x, this.aimWasd.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(this.targetArrow.x, this.targetArrow.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(this.aimArrow.x, this.aimArrow.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    updateAim(aim, key) {
+      if (key === 'W') aim.y -= 5;
+      if (key === 'S') aim.y += 5;
+      if (key === 'A') aim.x -= 5;
+      if (key === 'D') aim.x += 5;
+      if (key === 'ArrowUp') aim.y -= 5;
+      if (key === 'ArrowDown') aim.y += 5;
+      if (key === 'ArrowLeft') aim.x -= 5;
+      if (key === 'ArrowRight') aim.x += 5;
+    },
+    handleWasdKeyPress(event) {
+      if (['w', 'a', 's', 'd'].includes(event.key.toLowerCase())) {
+        this.updateAim(this.aimWasd, event.key.toUpperCase());
+        this.draw();
+      }
+    },
+    handleArrowKeyPress(event) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        this.updateAim(this.aimArrow, event.key);
+        this.draw();
+      }
+    },
+    startSimulation() {
+      setInterval(this.generateRandomKey, 3000);
+      this.draw();
+    },
+  },
+  mounted() {
+    window.addEventListener('keydown', this.handleKeyPress);
+    window.addEventListener('keydown', this.handleWasdKeyPress);
+    window.addEventListener('keydown', this.handleArrowKeyPress);
+    this.startSimulation();
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeyPress);
+    window.removeEventListener('keydown', this.handleWasdKeyPress);
+    window.removeEventListener('keydown', this.handleArrowKeyPress);
+  },
+};
+</script>
+
+<style scoped>
+.simulation-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+canvas {
+  border: 1px solid #333;
+  background-color: #222;
+}
+.recorded-data {
+  margin-top: 20px;
+  color: white;
+}
+</style>
