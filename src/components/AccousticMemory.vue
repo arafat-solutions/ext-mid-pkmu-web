@@ -13,8 +13,8 @@
   <div class="main-view" v-if="isConfigLoaded">
     <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Task: {{ currentTask }} / {{ numberOfTask }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
+      <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
+      <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
     <div class="checkbox-grid">
@@ -49,6 +49,10 @@
     <div class="wrong-text" v-if="wrong">{{ wrong }} answer{{ wrong > 1 ? 's' : '' }} wrong</div>
     <button class="btn-continue" v-show="canContinue" @click="continueTask">Continue</button>
   </div>
+  <div v-if="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Your result is submitting</div>
+  </div>
 </template>
 
 <script>
@@ -60,12 +64,12 @@ export default {
       page: 1,
       currentRowDisabled: false,
       currentTask: 1,
-      numberOfTask: 20, //positive number
+      numberOfTask: null, //positive number
       totalRow: 10,
-      stringSize: 'AB-CD-E', //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
-      includeDigits: true, //true or false
-      excludeVowels: true, //true or false
-      readingSpeed: 'medium', // easy,medium,difficult
+      stringSize: null, //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
+      includeDigits: null, //true or false
+      excludeVowels: null, //true or false
+      readingSpeed: null, // 1-100
       isPause: false,
       isConfigLoaded: false,
       isTrial: this.$route.query.isTrial ?? false,
@@ -77,6 +81,7 @@ export default {
       dashInterval: 2000, //in ms
       choicesInterval: 3000, //in ms
       charInterval: 1000, //in ms
+      pauseIntervalID: null,
       checkboxValues: [],
       result: {
         correct: 0,
@@ -101,10 +106,7 @@ export default {
     },
   },
   mounted() {
-    this.initiateCheckboxValues();
-    this.initiateWrongRows();
-    this.isConfigLoaded = true;
-    this.isShowModal = true;
+    this.loadConfig();
   },
   methods: {
     initiateCheckboxValues() {
@@ -113,7 +115,33 @@ export default {
     initiateWrongRows() {
       this.wrongRows = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
     },
+    loadConfig() {
+      const data = localStorage.getItem('scheduleData');
+      if (data) {
+        try {
+          const scheduleData = JSON.parse(data);
+          const accousticMemoryConfig = scheduleData.tests.find((t) => t.name === 'Acoustic Memory Test').config;
+          this.stringSize = accousticMemoryConfig.string_size;
+          this.includeDigits = accousticMemoryConfig.combination.include_number;
+          this.excludeVowels = !accousticMemoryConfig.combination.vocal;
+          this.readingSpeed = accousticMemoryConfig.speed;
+          this.numberOfTask = accousticMemoryConfig.number_of_task;
+          this.isConfigLoaded = true;
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        } finally {
+          this.initiateCheckboxValues();
+          this.initiateWrongRows();
+          this.isShowModal = true;
+        }
+      }
+      console.warn('No schedule data found in localStorage.');
+    },
     async generateProblem() {
+      if (this.utterance) {
+        window.speechSynthesis.cancel();
+      }
+
       this.problem = null;
       const randomString = this.generateRandomString(this.stringSize, this.includeDigits, this.excludeVowels);
       const choices = this.generateChoices(randomString, this.stringSize, this.includeDigits, this.excludeVowels);
@@ -212,6 +240,9 @@ export default {
       utterance.text = 'The reference letter';
       // Wrap speechSynthesis.speak in a promise
       await new Promise((resolve, reject) => {
+        if (this.isPause) {
+          synth.pause();
+        }
         utterance.onend = resolve;
         utterance.onerror = reject;
         synth.speak(utterance);
@@ -220,6 +251,9 @@ export default {
       utterance.text = 'is introduces. The query letter strings read out are:';
       // Wrap speechSynthesis.speak in a promise
       await new Promise((resolve, reject) => {
+        if (this.isPause) {
+          synth.pause();
+        }
         utterance.onend = resolve;
         utterance.onerror = reject;
         synth.speak(utterance);
@@ -242,11 +276,18 @@ export default {
 
       const utterance = new SpeechSynthesisUtterance();
       utterance.lang = 'en-US';
-      utterance.rate = 1.0;
+      utterance.rate = this.getRate();
       utterance.pitch = 1.2;
       utterance.volume = 1;
 
       return utterance;
+    },
+    getRate() {
+      const minRate = 0.1;
+      const maxRate = 1;
+      const rate = (this.readingSpeed / 100) * (maxRate - minRate) + minRate;
+
+      return rate;
     },
     spellOutString(text) {
       text = text.toLowerCase();
@@ -265,6 +306,10 @@ export default {
 
       return (async () => { // Return the promise chain
         for (let char of text) {
+          if (this.isPause) {
+            await synth.pause();
+          }
+
           if (char === '-') {
             await this.delay(this.dashInterval);
           } else {
@@ -286,12 +331,14 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     pause() {
-      clearInterval(this.interval);
       this.isPause = true;
+      this.currentRowDisabled = true;
+      window.speechSynthesis.pause();
     },
     startAgain() {
       this.isPause = false;
-      this.startCountdown();
+      this.currentRowDisabled = false;
+      window.speechSynthesis.resume();
     },
     exit() {
       window.speechSynthesis.cancel();
@@ -305,6 +352,7 @@ export default {
       if (this.currentTask >= this.numberOfTask) {
         //TODO SUBMIT
         this.exit();
+        this.submitResult();
         return;
       }
 
@@ -320,6 +368,50 @@ export default {
         this.initiateCheckboxValues();
       }
       this.generateProblem();
+    },
+    generatePayloadForSubmit() {
+      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+      const test = scheduleData.tests.find((t) => t.name === 'Acoustic Memory Test');
+      const payload = {
+        'testSessionId': scheduleData.sessionId,
+        'userId': scheduleData.userId,
+        'moduleId': scheduleData.moduleId,
+        'batteryTestConfigId': test.config.id,
+        'result': {
+        }
+      }
+
+      return payload;
+    },
+    async submitResult() {
+      try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
+        this.isLoading = true;
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = this.generatePayloadForSubmit();
+        const response = await fetch(`${API_URL}api/submission`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        console.log(response);
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+        this.$router.push('/module');
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.isLoading = false; // Set isLoading to false when the submission is complete
+      }
     }
   }
 }
@@ -582,7 +674,7 @@ export default {
     font-size: 16px;
     text-align: left;
     margin-left: 25px;
-    margin-top: 50px;
+    margin-top: 20px;
   }
 
   .btn-continue {
@@ -596,5 +688,57 @@ export default {
     border-radius: 10px;
     border-width: 0;
     margin-left: 670px;
+  }
+
+  .ml-4 {
+    margin-left: 4rem;
+  }
+
+  .ml-1 {
+    margin-left: 1rem;
+  }
+
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
+
+  .loading-spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
   }
 </style>

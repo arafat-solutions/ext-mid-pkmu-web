@@ -271,8 +271,6 @@
             body: JSON.stringify(payload),
           });
 
-          console.log(response);
-
           if (!response.ok) {
             throw new Error(`Error: ${response.statusText}`);
           }
