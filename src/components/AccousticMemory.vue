@@ -56,9 +56,12 @@
 </template>
 
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+
 export default {
   data() {
     return {
+      testName: 'Acoustic Memory Test',
       isShowModal: false,
       canContinue: false,
       page: 1,
@@ -120,7 +123,7 @@ export default {
       if (data) {
         try {
           const scheduleData = JSON.parse(data);
-          const accousticMemoryConfig = scheduleData.tests.find((t) => t.name === 'Acoustic Memory Test').config;
+          const accousticMemoryConfig = scheduleData.tests.find((t) => t.name === this.testName).config;
           this.stringSize = accousticMemoryConfig.string_size;
           this.includeDigits = accousticMemoryConfig.combination.include_number;
           this.excludeVowels = !accousticMemoryConfig.combination.vocal;
@@ -147,7 +150,6 @@ export default {
       const choices = this.generateChoices(randomString, this.stringSize, this.includeDigits, this.excludeVowels);
 
       this.problem = {randomString, choices};
-
       // Read the question
       await this.readQuestion();
 
@@ -350,8 +352,6 @@ export default {
     },
     continueTask() {
       if (this.currentTask >= this.numberOfTask) {
-        //TODO SUBMIT
-        this.exit();
         this.submitResult();
         return;
       }
@@ -371,13 +371,15 @@ export default {
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === 'Acoustic Memory Test');
+      const test = scheduleData.tests.find((t) => t.name === this.testName);
       const payload = {
         'testSessionId': scheduleData.sessionId,
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
         'batteryTestConfigId': test.config.id,
         'result': {
+          'total_question': this.numberOfTask,
+          'correct_answer': this.result.correct,
         }
       }
 
@@ -401,16 +403,16 @@ export default {
           body: JSON.stringify(payload),
         });
 
-        console.log(response);
-
         if (!response.ok) {
           throw new Error(`Error: ${response.statusText}`);
         }
-        this.$router.push('/module');
       } catch (error) {
         console.error(error);
       } finally {
-        this.isLoading = false; // Set isLoading to false when the submission is complete
+        this.isLoading = false;
+
+        removeTestByNameAndUpdateLocalStorage(this.testName)
+        this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
     }
   }
