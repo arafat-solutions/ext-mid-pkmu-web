@@ -2,13 +2,21 @@
     <div class="container">
         <div class="circular-base">
             <div class="maze-container" :style="rotationStyle">
-                <maze :strategy="strategy" :difficulty="difficulty" @start="onStart" @finish="onFinish" @init="onInit"
-                    :style="mazeStyle"></maze>
+                <maze :strategy="strategy" :difficulty="difficulty" @start="onStart" @finish="onMazeFinish"
+                    @init="onInit" @move="onMazeMove" @wallHit="onWallHit" :style="mazeStyle"></maze>
+                <div class="rotation-indicator"></div>
             </div>
         </div>
         <div class="timer">
             <p>Waktu:</p>
             <p>{{ formatTime(testTime) }}</p>
+        </div>
+        <div class="result">
+            <p>correctTurn: {{ quizMetrics.correctTurn }}</p>
+            <p>wrongTurn: {{ quizMetrics.wrongTurn }}</p>
+            <p>leastPossibleMove: {{ quizMetrics.leastPossibleMove }}</p>
+            <p>wallHit: {{ quizMetrics.wallHit }}</p>
+            <p>avgStepResponse: {{ quizMetrics.avgStepResponse.toFixed(2) }} ms</p>
         </div>
     </div>
 </template>
@@ -31,12 +39,21 @@ export default {
                 backgroundColor: 'white'
             },
             strategy: 'cluster', //cluster, dig
-            difficulty: 'easy', // easy, normal, hard
+            difficulty: 'hard', // easy, normal, hard
             rotation: 0,
             rotationSpeed: 30, // speed of rotation per second
             rotationDuration: 5000, // milliseconds
             isRotating: false,
-            rotationInterval: 2000 // milliseconds
+            rotationInterval: 2000, // milliseconds
+            quizMetrics: {
+                correctTurn: 0,
+                wrongTurn: 0,
+                leastPossibleMove: 0,
+                wallHit: 0,
+                avgStepResponse: 0,
+                totalSteps: 0,
+                totalResponseTime: 0
+            }
         }
     },
     computed: {
@@ -50,22 +67,38 @@ export default {
     methods: {
         onStart() {
             this.startRotation();
+            this.resetMetrics()
         },
-        onFinish() {
-            this.stopRotation();
-        },
+        // onFinish() {
+        //     this.stopRotation();
+        // },
         onInit() {
             this.rotation = 0;
             this.isRotating = false;
+        },
+        resetMetrics() {
+            this.quizMetrics = {
+                correctTurn: 0,
+                wrongTurn: 0,
+                leastPossibleMove: 0,
+                wallHit: 0,
+                avgStepResponse: 0,
+                totalSteps: 0,
+                totalResponseTime: 0
+            }
         },
         startRotation() {
             this.isRotating = true;
             const startTime = Date.now();
             const initialRotation = this.rotation;
+
+            const rotationDirection = Math.random() < 0.5 ? 1 : -1;
+            const currentRotationSpeed = this.rotationSpeed * rotationDirection;
+
             const animate = () => {
                 const elapsedTime = Date.now() - startTime;
                 if (elapsedTime < this.rotationDuration) {
-                    this.rotation = initialRotation + this.rotationSpeed * elapsedTime / 1000
+                    this.rotation = initialRotation + currentRotationSpeed * elapsedTime / 1000
                     requestAnimationFrame(animate);
                 } else {
                     this.isRotating = false;
@@ -75,11 +108,32 @@ export default {
                 }
             };
             requestAnimationFrame(animate);
-
-            console.log(this.rotation, "<< rotation")
         },
         stopRotation() {
             this.isRotating = false;
+        },
+        onMazeMove(moveData) {
+            this.quizMetrics.totalSteps++;
+            this.quizMetrics.totalResponseTime += moveData.responseTime;
+            this.quizMetrics.avgStepResponse = this.quizMetrics.totalResponseTime / this.quizMetrics.totalSteps;
+
+            if (moveData.isCorrectTurn) {
+                this.quizMetrics.correctTurn++;
+            } else {
+                this.quizMetrics.wrongTurn++;
+            }
+        },
+        onWallHit() {
+            this.quizMetrics.wallHit++;
+        },
+        onMazeFinish() {
+            // wip
+            // const startX = 0;
+            // const startY = 0;
+            // const goalX = this.maze.goal.x;
+            // const goalY = this.maze.goal.y;
+            // this.quizMetrics.leastPossibleMove = Math.abs(startX - goalX) + Math.abs(startY - goalY);
+            this.stopRotation();
         },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -125,7 +179,6 @@ export default {
 
 .circular-base {
     width: 500px;
-    /* Larger than the maze */
     height: 500px;
     border-radius: 50%;
     border: 2px solid black;
@@ -136,13 +189,27 @@ export default {
 }
 
 .maze-container {
+    position: relative;
     width: 400px;
     height: 400px;
 }
 
-canvas {
-    display: block;
-    border: none;
+.rotation-indicator {
+    position: absolute;
+    top: 50%;
+    right: -65px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 20px solid black;
+    transform: translateY(-50%);
+}
+
+.result {
+    position: absolute;
+    left: 0;
+    margin-left: 30px;
 }
 
 .timer {

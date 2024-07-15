@@ -1,5 +1,5 @@
 <template>
-    <div class="maze" tabindex="-1" @keydown="onKeyUp" ref="mazeContainer">
+    <div class="maze" ref="mazeContainer">
         <canvas ref="mazeCanvas" :width="width" :height="height"></canvas>
         <canvas ref="goalCanvas" :width="width" :height="height"></canvas>
         <canvas ref="effectCanvas" :style="effectStyle" :width="width" :height="height"></canvas>
@@ -81,21 +81,21 @@ export default {
         cellWidth() {
             switch (this.difficulty) {
                 case "easy":
-                    return 50;
+                    return 40;
                 case "hard":
-                    return 10;
-                default:
                     return 20;
+                default:
+                    return 30;
             }
         },
         cellHeight() {
             switch (this.difficulty) {
                 case "easy":
-                    return 50;
+                    return 40;
                 case "hard":
-                    return 10;
-                default:
                     return 20;
+                default:
+                    return 30;
             }
         },
         lx() {
@@ -173,6 +173,9 @@ export default {
         this.goalImage = new Image();
         this.goalImage.src = goalCanvas.toDataURL();
 
+        // will chage int back to image
+        // after i create image
+
         // const image = new Image();
         // image.addEventListener("load", () => {
         //     this.image = image;
@@ -189,6 +192,11 @@ export default {
             this.height = this.$el.offsetHeight;
             this.width = this.$el.offsetWidth;
         });
+
+        window.addEventListener('keydown', this.onKeyDown);
+    },
+    beforeUnmount() {
+        window.removeEventListener('keydown', this.onKeyDown);
     },
     watch: {
         height() {
@@ -228,7 +236,7 @@ export default {
         }
     },
     methods: {
-        onKeyUp(event) {
+        onKeyDown(event) {
             switch (event.keyCode) {
                 case 37:
                     this.goLeft();
@@ -292,20 +300,34 @@ export default {
         moveTo(toX, toY) {
             const fromX = this.player.x;
             const fromY = this.player.y;
-
+            const startTime = performance.now();
             // Check if player can move
 
             // Players can't go outside of the maze
             if (toX < 0 || toX >= this.lx || toY < 0 || toY >= this.ly) {
+                this.$emit('wallHit');
                 return;
             }
+
+            // Check if it's a correct turn
+            const isCorrectTurn = this.isCorrectDirection(fromX, fromY, toX, toY);
+
 
             // Players can't go through the walls
             if (!this.canReach(fromX, fromY, toX, toY)) {
+                this.$emit('wallHit');
                 return;
             }
 
+            const endTime = performance.now();
+            const responseTime = endTime - startTime;
+
             this.player = { x: toX, y: toY }
+            this.$emit('move', {
+                isCorrectTurn,
+                responseTime
+            });
+
             if (!this.isStarted) {
                 this.isStarted = true;
                 this.$emit("start");
@@ -318,6 +340,17 @@ export default {
                 this.isFinished = true;
                 this.$emit("finish");
             }
+        },
+        isCorrectDirection(fromX, fromY, toX, toY) {
+            // Implement logic to determine if this move is in the correct direction
+            // For now, let's assume any move towards the goal is correct
+            const goalX = this.maze.goal.x;
+            const goalY = this.maze.goal.y;
+
+            const distanceBefore = Math.abs(fromX - goalX) + Math.abs(fromY - goalY);
+            const distanceAfter = Math.abs(toX - goalX) + Math.abs(toY - goalY);
+
+            return distanceAfter < distanceBefore;
         },
         resetMaze() {
             const lx = this.lx;
