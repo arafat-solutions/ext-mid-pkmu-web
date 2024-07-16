@@ -2,8 +2,8 @@
   <div class="canvas-container">
     <canvas ref="canvas" width="1000" height="600"></canvas>
   </div>
-  <!-- {{ this.altitude }} to {{ this.targetAltitude }} <br>
-  {{ this.speed }} to {{ this.targetSpeed }} <br> -->
+  {{ this.altitude }} to {{ this.targetAltitude }} <br>
+  {{ this.speed }} to {{ this.targetSpeed }} <br>
   {{ this.heading }} to {{ this.targetHeading }}
 </template>
 
@@ -14,7 +14,7 @@ export default {
       canvas: null,
       context: null,
       altitude: 8800,
-      targetAltitude: 10000,
+      targetAltitude: 8800,
       speed: 150,
       targetSpeed: 150,
       heading: 345,
@@ -49,13 +49,25 @@ export default {
       if (this.config.altimter == 'adjust_for_consistent_update') {
         // set interval to randomly increase OR decrease the target altitude between 100 - 1000 of the current altitude
         setInterval(() => {
-          this.targetAltitude = Math.floor(Math.random() * (this.altitude + 1000 - this.altitude + 100) + this.altitude + 100);
-        }, 10000);
+          const setNewAltitude = Math.floor(Math.random() * (this.altitude + 1000 - this.altitude + 100) + this.altitude + 100);
+          // const setNewAltitude = this.altitude + 200;
+          if (this.altitude < setNewAltitude) {
+            this.ascend(setNewAltitude);
+          } else {
+            this.descend(setNewAltitude);
+          }
+        }, 15000);
       } else if (this.config.altimeter == 'adjust_for_irregular_updates') {
         // with a 50% chance, increase or decrease the target altitude between 100 - 1000 of the current altitude
         setInterval(() => {
           if (Math.random() > 0.5) {
-            this.targetAltitude = Math.floor(Math.random() * (this.altitude + 1000 - this.altitude + 100) + this.altitude + 100);
+            const setNewAltitude = Math.floor(Math.random() * (this.altitude + 1000 - this.altitude + 100) + this.altitude + 100);
+            // const setNewAltitude = this.altitude + 200;
+            if (this.altitude < setNewAltitude) {
+              this.ascend(setNewAltitude);
+            } else {
+              this.descend(setNewAltitude);
+            }
           }
         }, 10000);
       }
@@ -64,13 +76,23 @@ export default {
       if (this.config.compass == 'adjust_for_consistent_update') {
         // set interval to randomly increase OR decrease the target heading between 0 - 360
         setInterval(() => {
-          this.targetHeading = Math.floor(Math.random() * (360 - 0) + 0);
+          const newHeading = Math.floor(Math.random() * (360 - 0) + 0);
+          if (this.heading < 180) {
+            this.yawRight(newHeading);
+          } else {
+            this.yawLeft(newHeading);
+          }
         }, 10000);
       } else if (this.config.compass == 'adjust_for_irregular_updates') {
         // with a 50% chance, increase or decrease the target heading between 0 - 360
         setInterval(() => {
           if (Math.random() > 0.5) {
-            this.targetHeading = Math.floor(Math.random() * (360 - 0) + 0);
+            const newHeading = Math.floor(Math.random() * (360 - 0) + 0);
+            if (this.heading < 180) {
+              this.yawRight(newHeading);
+            } else {
+              this.yawLeft(newHeading);
+            }
           }
         }, 1000);
       }
@@ -135,18 +157,52 @@ export default {
       this.offset.altitude -= 10;
     },
     ascend(targetAltitude) {
-      console.log('ascending to...', targetAltitude, this.altitude)
-      if (this.altitude < targetAltitude) {
-        this.altitude += 10;
-        this.offset.altitude += 10;
-      }
-      console.log('after ascending', this.altitude, targetAltitude)
+      console.log('ascend to', targetAltitude, 'from', this.altitude);
+      const x = setInterval(() => {
+        if (this.altitude < targetAltitude) {
+          this.altitude += 10;
+          this.offset.altitude += 10;
+        } else {
+          console.log('reached target altitude');
+          clearInterval(x);
+        }
+      }, 100);
     },
     descend(targetAltitude) {
-      if (this.altitude > targetAltitude) {
-        this.altitude -= 10;
-        this.offset.altitude -= 10;
-      }
+      console.log('descend to', targetAltitude, 'from', this.altitude);
+      const x = setInterval(() => {
+        if (this.altitude > targetAltitude) {
+          this.altitude -= 10;
+          this.offset.altitude -= 10;
+        } else {
+          console.log('reached target altitude');
+          clearInterval(x);
+        }
+      }, 100);
+    },
+    yawRight(targetHeading) {
+      console.log('yaw right to', targetHeading, 'from', this.heading);
+      const x = setInterval(() => {
+        if (this.heading < targetHeading) {
+          this.heading += 10;
+          this.offset.heading += 10;
+        } else {
+          console.log('reached target heading');
+          clearInterval(x);
+        }
+      }, 100);
+    },
+    yawLeft(targetHeading) {
+      console.log('yaw left to', targetHeading, 'from', this.heading);
+      const x = setInterval(() => {
+        if (this.heading > targetHeading) {
+          this.heading -= 10;
+          this.offset.heading -= 10;
+        } else {
+          console.log('reached target heading');
+          clearInterval(x);
+        }
+      }, 100);
     },
     startAnimation() {
       const animate = () => {

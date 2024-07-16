@@ -71,7 +71,8 @@ export default {
       ctx.lineWidth = 2;
 
       // Active Lights Segment
-      ctx.strokeRect(5, 55, 200, 290);
+      // top left canvas
+      ctx.strokeRect(5, 5, 200, 140);
 
       // Arithmetic Question Segment
       ctx.strokeRect(210, 5, 785, 140);
@@ -86,10 +87,13 @@ export default {
       const keys = ['F1', 'F2', 'F3', 'F4'];
       keys.forEach((key, index) => {
         ctx.fillStyle = this.activeKey === key ? 'red' : 'grey';
-        ctx.fillRect(10, 10 + index * 70, 60, 60);
+        // top left corner of the canvas, max is (5, 5, 200, 140);
+        ctx.fillRect(5 + (index * 50), 5, 50, 50);
+        
+        // Draw key text
         ctx.fillStyle = 'white';
         ctx.font = '20px Arial';
-        ctx.fillText(key, 30, 50 + index * 70);
+        ctx.fillText(key, 5 + (index * 50) + 20, 40);
       });
 
       // Draw question box
