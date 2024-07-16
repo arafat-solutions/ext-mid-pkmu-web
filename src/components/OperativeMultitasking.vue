@@ -7,17 +7,20 @@
         <input ref="input" v-model="userAnswer" @keyup.enter="checkAnswer" placeholder="Type your answer here" />
       </div>
     </div>
-    <!-- <div class="recorded-data">
-      <p>Average Response Time: {{ averageResponseTime.toFixed(2) }} ms</p>
-      <p>Mispresses: {{ mispresses }}</p>
-      <p>Correct Presses: {{ correctPresses }}</p>
-      <p>===========</p>
-      <p>Correct Answers: {{ correctAnswers }}</p>
-      <p>Incorrect Answers: {{ incorrectAnswers }}</p>
-      <p>===========</p>
-      <p>WASD Segment Aimed Time: {{ wasdAimedTime.toFixed(2) }} seconds</p>
-      <p>Arrow Segment Aimed Time: {{ arrowAimedTime.toFixed(2) }} seconds</p>
-    </div> -->
+
+    <div v-if="showModal" class="modal">
+      <div class="modal-content">
+        <h2>Simulation Results</h2>
+        <p>Average Response Time: {{ averageResponseTime.toFixed(2) }} ms</p>
+        <p>Mispresses: {{ mispresses }}</p>
+        <p>Correct Presses: {{ correctPresses }}</p>
+        <p>Correct Answers: {{ correctAnswers }}</p>
+        <p>Incorrect Answers: {{ incorrectAnswers }}</p>
+        <p>WASD Segment Aimed Time: {{ wasdAimedTime.toFixed(2) }} seconds</p>
+        <p>Arrow Segment Aimed Time: {{ arrowAimedTime.toFixed(2) }} seconds</p>
+        <button @click="closeModal">Close</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -49,6 +52,7 @@ export default {
       arrowAimed: false,
       duration: 0,
       timeRemaining: 0,
+      showModal: false,
     };
   },
   computed: {
@@ -276,23 +280,27 @@ export default {
     },
     startSimulation() {
       this.generateNewQuestion();
-      setInterval(this.generateRandomKey, 3000);
-      setInterval(this.moveTargets, 50);
-      setInterval(this.draw, 50);
+      this.randomKeyInterval = setInterval(this.generateRandomKey, 3000);
+      this.moveTargetsInterval = setInterval(this.moveTargets, 50);
+      this.drawInterval = setInterval(this.draw, 50);
       this.startTimer();
     },
     startTimer() {
       this.timeRemaining = this.duration;
-      const timerInterval = setInterval(() => {
+      this.timerInterval = setInterval(() => {
         if (this.timeRemaining > 0) {
           this.timeRemaining--;
         } else {
-          clearInterval(timerInterval);
+          clearInterval(this.timerInterval);
           this.endSimulation();
         }
       }, 1000);
     },
     endSimulation() {
+      clearInterval(this.randomKeyInterval);
+      clearInterval(this.moveTargetsInterval);
+      clearInterval(this.drawInterval);
+
       console.log("Simulation ended. Recorded data:", {
         averageResponseTime: this.averageResponseTime.toFixed(2),
         mispresses: this.mispresses,
@@ -302,7 +310,12 @@ export default {
         wasdAimedTime: this.wasdAimedTime.toFixed(2),
         arrowAimedTime: this.arrowAimedTime.toFixed(2),
       });
-      // Add any additional end-of-simulation logic here
+
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
+      // Add any additional logic for closing the modal
     }
   },
   mounted() {
@@ -360,7 +373,6 @@ canvas {
   margin-top: 20px;
   color: black;
   text-align: center;
-  display: hidden;
 }
 .input-container {
   position: absolute;
@@ -372,5 +384,27 @@ input {
   height: 40px;
   font-size: 20px;
   text-align: center;
+}
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+}
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
 }
 </style>
