@@ -15,6 +15,7 @@ import TestModule from '@/components/TestModule.vue';
 import ProfilePage from '@/components/ProfilePage.vue';
 import ColorMultitask from '@/components/ColorMultitask.vue';
 import ConfigPage from '@/components/ConfigPage.vue';
+import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
 
 const routes = [
   {
@@ -97,7 +98,11 @@ const routes = [
     name: 'Shape Recognition Test',
     component: ShapeRecognition
   },
-
+  {
+    path: '/instrument-coordination-test',
+    name: 'Instrument Coordination',
+    component: InstrumentCoordination
+  },
 ];
 
 const router = createRouter({
