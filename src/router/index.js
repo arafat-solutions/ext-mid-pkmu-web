@@ -104,6 +104,7 @@ const routes = [
     name: 'Running Memory Span Test',
     component: RunningMemorySpan
   },
+  {
     path: '/accoustic-memory-test',
     name: 'Accoustic Memory Test',
     component: AccousticMemory
