@@ -1,11 +1,11 @@
 <template>
   <div id="app">
     <div class="indicators">
-      <Attitude class="indicator-bg" :size="200" :roll="roll" :pitch="pitch" />
+      <Attitude class="indicator-bg" :size="200" :roll="roll" :pitch="pitch" v-show="false"/>
       <Heading class="indicator-bg" :size="200" :heading="heading"/>
-      <Variometer class="indicator-bg" :size="200" :vario="vario" />
-      <Airspeed class="indicator-bg" :size="200" :airspeed="airspeed" />
-      <Altimeter class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure"/>
+      <Variometer class="indicator-bg" :size="200" :vario="vario" v-show="false" />
+      <Airspeed class="indicator-bg" :size="200" :airspeed="airspeed" v-show="false" />
+      <Altimeter class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure" v-show="false" />
     </div>
   </div>
 </template>
@@ -14,7 +14,6 @@
 import {Airspeed, Attitude, Altimeter, Heading, Variometer} from  'vue-flight-indicators'
 
 export default {
-  name: 'app',
   components: {
     Attitude,
     Heading,
@@ -25,7 +24,6 @@ export default {
   data: function () {
     return {
       counter: 0,
-
       roll: 0,
       pitch: 0,
       heading: 0,
@@ -54,8 +52,5 @@ export default {
 #app {
   text-align: center;
   margin-top: 60px;
-}
-.indicator-bg {
-  background-color: grey;
 }
 </style>
