@@ -6306,6 +6306,11 @@ vue-eslint-parser@^8.0.1:
     lodash "^4.17.21"
     semver "^7.3.5"
 
+vue-flight-indicators@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/vue-flight-indicators/-/vue-flight-indicators-0.1.1.tgz#468e3499468a67cea8879d4621c25eab743f8e56"
+  integrity sha512-Qwu7IMl2/IRiB7mtyi5C/rt+ty4jJNkvsjCU8GiuFNp2NcYGaQlUhzQmIeQBbjgTBA/Tnh0sy+rQXjIp7rymeA==
+
 vue-hot-reload-api@^2.3.0:
   version "2.3.4"
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.3.4.tgz#532955cc1eb208a3d990b3a9f9a70574657e08f2"
