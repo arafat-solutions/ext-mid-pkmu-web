@@ -59,7 +59,6 @@ class Renderer {
     }
 
     drawLine(x1, y1, x2, y2) {
-        console.log("Drawing line:", x1, y1, x2, y2);
         const fromX = this.offsetLeft + x1 * this.unitWidth;
         const fromY = this.offsetTop + y1 * this.unitHeight;
         const toX = this.offsetLeft + x2 * this.unitWidth;

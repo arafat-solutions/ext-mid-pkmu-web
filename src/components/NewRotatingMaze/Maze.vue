@@ -348,6 +348,7 @@ export default {
             }
         },
         isCorrectDirection(fromX, fromY, toX, toY) {
+            if (!this.shortestPath) return
             const currentIndex = this.shortestPath.findIndex(p => p.x === fromX && p.y === fromY);
             const nextIndex = this.shortestPath.findIndex(p => p.x === toX && p.y === toY);
             return nextIndex === currentIndex + 1;
@@ -359,6 +360,7 @@ export default {
             if (lx > 0 && ly > 0) {
                 const Maze = strategy[this.strategy];
                 const maze = new Maze(lx, ly, seed);
+                console.log("Generated maze structure:", JSON.stringify(maze));
                 this.maze = maze
                 this.player = { x: 0, y: 0 }
                 this.isStarted = false;
@@ -371,21 +373,32 @@ export default {
             }
         },
         canMove(fromX, fromY, toX, toY) {
-            if (toX < 0 || toX >= this.lx || toY < 0 || toY >= this.ly) return false;
+            console.log(`Checking move from (${fromX},${fromY}) to (${toX},${toY})`);
+            if (toX < 0 || toX >= this.lx || toY < 0 || toY >= this.ly) {
+                console.log("Move out of bounds");
+                return false;
+            }
             if (fromX === toX) {
                 // Vertical movement
                 const minY = Math.min(fromY, toY);
-                return this.maze.bondV[minY * this.lx + fromX];
+                const isValid = this.maze.bondV[minY * this.lx + fromX];
+                console.log(`Vertical move ${isValid ? 'valid' : 'invalid'}`);
+                return isValid
             } else {
                 // Horizontal movement
                 const minX = Math.min(fromX, toX);
-                return this.maze.bondH[fromY * (this.lx + 1) + minX];
+                const isValid = this.maze.bondH[fromY * (this.lx + 1) + minX];
+                console.log(`Horizontal move ${isValid ? 'valid' : 'invalid'}`);
+                return isValid
             }
         },
         findPathBFS() {
             const queue = [{ x: 0, y: 0, path: [] }];
             const visited = new Set();
             const goal = this.maze.goal;
+
+            console.log("Starting Path BFS algorithm");
+            console.log("Goal in path bfs:", goal);
 
             while (queue.length > 0) {
                 const { x, y, path } = queue.shift();
@@ -422,19 +435,26 @@ export default {
             const start = { x: 0, y: 0 };
             const goal = this.maze.goal;
             console.log("Start:", start, "Goal:", goal);
+            console.log("Maze dimensions:", this.lx, "x", this.ly);
 
             const result = dijkstra(this.maze, start, goal, this.canMove.bind(this));
-            if (result.path.length <= 1) {
+            console.log("Dijkstra result:", result);
+
+            if (!result.path || result.path.length <= 1) {
                 console.log("Dijkstra failed, trying BFS");
                 this.shortestPath = this.findPathBFS();
             } else {
                 this.shortestPath = result.path;
             }
 
-            this.leastPossibleMove = this.shortestPath ? this.shortestPath.length - 1 : Infinity;
-
-            this.$emit('updateMetrics', { leastPossibleMove: this.leastPossibleMove });
-            this.renderShortestPath();
+            if (this.shortestPath) {
+                this.leastPossibleMove = this.shortestPath.length - 1;
+                this.$emit('updateMetrics', { leastPossibleMove: this.leastPossibleMove });
+                this.renderShortestPath();
+            } else {
+                console.error('No path found');
+                // Handle the case when no path is found
+            }
             console.log("Shortest path:", this.shortestPath);
             console.log("Least possible moves:", this.leastPossibleMove);
         },
@@ -456,14 +476,18 @@ export default {
             renderer.beginPath();
 
             console.log("Starting to draw path");
-            for (let i = 0; i < this.shortestPath.length - 1; i++) {
-                const current = this.shortestPath[i];
-                const next = this.shortestPath[i + 1];
-                console.log(`Drawing line from (${current.x}, ${current.y}) to (${next.x}, ${next.y})`);
-                renderer.drawLine(current.x + 0.5, current.y + 0.5, next.x + 0.5, next.y + 0.5);
+            if (this.shortestPath && this.shortestPath.length > 1) {
+                for (let i = 0; i < this.shortestPath.length - 1; i++) {
+                    const current = this.shortestPath[i];
+                    const next = this.shortestPath[i + 1];
+                    console.log(`Drawing line from (${current.x}, ${current.y}) to (${next.x}, ${next.y})`);
+                    renderer.drawLine(current.x + 0.5, current.y + 0.5, next.x + 0.5, next.y + 0.5);
+                }
+                renderer.stroke();
+                console.log("Finished drawing path");
+            } else {
+                console.log('No valid path to render')
             }
-            renderer.stroke();
-            console.log("Finished drawing path");
         },
         renderPlayer() {
             const playerRenderer = new Renderer(
