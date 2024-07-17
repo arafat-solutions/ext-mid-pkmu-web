@@ -183,7 +183,6 @@ export default {
           const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
           this.config.duration = colorMultitask.duration * 60;
           this.config.batteryTestConfigId = colorMultitask.id;
-          this.config.moduleId = config.moduleId;
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
@@ -223,13 +222,13 @@ export default {
     arithmeticResult(result) {
       this.result.arithmetics.correct_answer = result.correctAnswer;
       this.result.arithmetics.total_questions = result.totalQuestion;
-      this.result.arithmetics.avg_response_time = result.responseTime;
+      this.result.arithmetics.avg_response_time = result.responseTime.toFixed(2);
     },
     colorTankResult(result) {
       this.result.color_tank.final_score = result.score;
     },
     horizonResult(result) {
-      this.result.horizon.correct_time = result.correctTime;
+      this.result.horizon.correct_time = result.correctTime.toFixed(2);
     },
     async submitResult() {
       try {
@@ -239,7 +238,6 @@ export default {
         const payload = {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
-          moduleId: this.config.moduleId,
           batteryTestConfigId: this.config.batteryTestConfigId,
           result: this.result,
         }
