@@ -67,9 +67,9 @@
   import AlertLights from './instrument-multitask/AlertLights';
   import GaugesMeter from './instrument-multitask/GaugesMeter';
   import HorizonTest from './instrument-multitask/HorizonTest';
+  import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
 
   export default {
-    name: 'MainView',
     components: {
       ArithmeticTask,
       AlertLights,
@@ -78,6 +78,7 @@
     },
     data() {
       return {
+        testName: 'Multitasking With Instrument',
         isLoading: false,
         minuteTime: null,
         timeLeft: null, // Countdown time in seconds
@@ -150,7 +151,7 @@
         if (data) {
           try {
             const scheduleData = JSON.parse(data);
-            const instrumentMultitaskConfig = scheduleData.tests.find((t) => t.name === 'Multitasking With Instrument').config;
+            const instrumentMultitaskConfig = scheduleData.tests.find((t) => t.name === this.testName).config;
             this.minuteTime = instrumentMultitaskConfig.duration;
             this.timeLeft = this.minuteTime * 60;
             this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
@@ -164,8 +165,8 @@
             this.config.alertLight.speed = instrumentMultitaskConfig.alert_lights.speed;
             this.config.alertLight.frequency = instrumentMultitaskConfig.alert_lights.frequency;
             this.config.alertLight.isActive = instrumentMultitaskConfig.subtask.alert_lights;
-            this.config.gaugesMeter.frequency = instrumentMultitaskConfig.instruments.frequency;
-            this.config.gaugesMeter.isActive = instrumentMultitaskConfig.subtask.instruments;
+            this.config.gaugesMeter.frequency = instrumentMultitaskConfig.instrument.frequency;
+            this.config.gaugesMeter.isActive = instrumentMultitaskConfig.subtask.instrument;
             this.config.horizon.speed = instrumentMultitaskConfig.horizon.speed;
             this.config.horizon.isActive = instrumentMultitaskConfig.subtask.horizon;
             this.isConfigLoaded = true;
@@ -223,7 +224,7 @@
       },
       generatePayloadForSubmit() {
         const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-        const test = scheduleData.tests.find((t) => t.name === 'Multitasking With Instrument');
+        const test = scheduleData.tests.find((t) => t.name === this.testName);
         const payload = {
           'testSessionId': scheduleData.sessionId,
           'userId': scheduleData.userId,
@@ -272,16 +273,16 @@
             body: JSON.stringify(payload),
           });
 
-          console.log(response);
-
           if (!response.ok) {
             throw new Error(`Error: ${response.statusText}`);
           }
-          this.$router.push('/module');
         } catch (error) {
           console.error(error);
         } finally {
-          this.isLoading = false; // Set isLoading to false when the submission is complete
+          this.isLoading = false;
+
+          removeTestByNameAndUpdateLocalStorage(this.testName)
+          this.$router.push('/module');
         }
       }
     },
