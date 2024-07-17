@@ -53,6 +53,11 @@ export default {
       duration: 0,
       timeRemaining: 0,
       showModal: false,
+      config: {
+        sessionId: '',
+        userId: '',
+        batteryTestConfigId: '',
+      },
     };
   },
   computed: {
@@ -296,20 +301,50 @@ export default {
         }
       }, 1000);
     },
-    endSimulation() {
+    async endSimulation() {
       clearInterval(this.randomKeyInterval);
       clearInterval(this.moveTargetsInterval);
       clearInterval(this.drawInterval);
 
-      console.log("Simulation ended. Recorded data:", {
+      const result = {
         averageResponseTime: this.averageResponseTime.toFixed(2),
-        mispresses: this.mispresses,
-        correctPresses: this.correctPresses,
-        correctAnswers: this.correctAnswers,
-        incorrectAnswers: this.incorrectAnswers,
-        wasdAimedTime: this.wasdAimedTime.toFixed(2),
-        arrowAimedTime: this.arrowAimedTime.toFixed(2),
-      });
+        alertLights: {
+          wrongResponse: this.mispresses,
+          correctResponse: this.correctPresses,
+        },
+        arithmetics: {
+          totalQuestions: this.correctAnswers + this.incorrectAnswers,
+          correctAnswers: this.correctAnswers,
+          incorrectAnswers: this.incorrectAnswers,
+        },
+        primary: {
+          leftAim: this.wasdAimedTime.toFixed(2),
+          rightAim: this.arrowAimedTime.toFixed(2),
+        }
+      }
+
+      console.log(this.config)
+      const API_URL = process.env.VUE_APP_API_URL;
+      const payload = {
+        testSessionId: this.config.sessionId,
+        userId: this.config.userId,
+        batteryTestConfigId: this.config.batteryTestConfigId,
+        result: result,
+      }
+
+      const res = await fetch(`${API_URL}api/submission`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error('Failed Submit Test');
+      }
 
       this.showModal = true;
     },
@@ -322,14 +357,17 @@ export default {
     window.addEventListener('keydown', this.handleKeyPress);
     window.addEventListener('keydown', this.handleWasdKeyPress);
     window.addEventListener('keydown', this.handleArrowKeyPress);
-    const scheduleData = localStorage.getItem('scheduleData');
-    const tests = JSON.parse(scheduleData).tests;
+    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+    const tests = scheduleData.tests;
     const config = tests?.find((test) => {
       return test.name === 'Test For Operative Multitasking';
     });
+    this.config = scheduleData;
+    this.config.batteryTestConfigId = config?.config?.id;
     this.targetSpeed = config?.config?.speed;
     this.duration = config?.config?.duration;
-    
+
+    console.log(this.config, 'config', this.targetSpeed, 'speed', this.duration, 'duration');
     this.startSimulation();
   },
   beforeUnmount() {
@@ -348,6 +386,7 @@ export default {
   align-items: center;
   height: 100vh;
 }
+
 .timer {
   position: absolute;
   top: 0;
@@ -358,6 +397,7 @@ export default {
   text-align: center;
   width: 10%;
 }
+
 .canvas-wrapper {
   display: flex;
   justify-content: center;
@@ -366,25 +406,30 @@ export default {
   width: 1000px;
   height: 600px;
 }
+
 canvas {
   border: 1px solid #333;
 }
+
 .recorded-data {
   margin-top: 20px;
   color: black;
   text-align: center;
 }
+
 .input-container {
   position: absolute;
   top: 150px;
   left: 530px;
 }
+
 input {
   width: 300px;
   height: 40px;
   font-size: 20px;
   text-align: center;
 }
+
 .modal {
   position: fixed;
   top: 0;
@@ -396,12 +441,14 @@ input {
   align-items: center;
   background: rgba(0, 0, 0, 0.5);
 }
+
 .modal-content {
   background: white;
   padding: 20px;
   border-radius: 5px;
   text-align: center;
 }
+
 button {
   margin-top: 20px;
   padding: 10px 20px;
