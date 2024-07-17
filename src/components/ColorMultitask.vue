@@ -1,161 +1,400 @@
 <template>
-    <div class="horizon-tank">
-      <div class="tank-section">
-        <div class="upper-tanks">
-          <div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }" class="tank">
-            <p>{{ keys[index] }}</p>
-          </div>
-        </div>
-        <div class="lower-tanks">
-          <div v-for="(tank, index) in lowerTanks" :key="index" class="tank">
-            <div v-for="(color, i) in colors" :key="i" :style="{ height: `${tank[color]}%`, backgroundColor: color }" class="tank-fill"></div>
-          </div>
-        </div>
-      </div>
-      <div class="horizon-section">
-        <canvas ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight"></canvas>
-        <div class="warning-lights">
-          <div v-for="(light, index) in warningLights" :key="index" :class="{ 'warning-light': true, active: light.active }">{{ light.key }}</div>
-        </div>
+    <div v-if="isShowModal" class="modal-overlay">
+      <div class="modal-content">
+        <p>
+          <strong>
+            Apakah Anda Yakin <br>akan memulai test Multitasking with Color?
+          </strong>
+          </p>
+        <button @click="exit()" style="margin-right: 20px;">Batal</button>
+        <button @click="closeModal()">Ya</button>
       </div>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    data() {
-      return {
-        colors: ['yellow', 'red', 'blue', 'green'],
-        keys: ['Q', 'W', 'E', 'R'],
-        lowerTanks: [
-          { yellow: 0, red: 0, blue: 0, green: 0 },
-          { yellow: 0, red: 0, blue: 0, green: 0 },
-          { yellow: 0, red: 0, blue: 0, green: 0 },
-          { yellow: 0, red: 0, blue: 0, green: 0 }
-        ],
-        horizonWidth: 400,
-        horizonHeight: 300,
-        warningLights: [
-          { key: 'T', active: false },
-          { key: 'Y', active: false },
-          { key: 'U', active: false },
-          { key: 'I', active: false }
-        ]
-      };
+
+  <div class="main-view" v-if="isConfigLoaded">
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <div class="text">submitting a result</div>
+    </div>
+
+    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+      Time: {{ formattedTime }}
+      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
+      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
+      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+    </div>
+
+    <div class="horizon-tank">
+      <ColorTank
+        :isTimesUp="isTimesUp"
+        :speed="config.color_tank.speed"
+        :coloredLowerTank="config.color_tank.colored_lower_tank"
+        :descendSpeed="config.color_tank.descend_speed"
+        :startToDecreaseIn="config.color_tank.start_to_decrease_in"
+        :isNegativeScore="config.color_tank.negative_score"
+        :isPause="isPause"
+        :isActive="config.subtask.color_tank"
+        @getResult="colorTankResult"
+      />
+
+      <div class="horizon-section">
+        <Horizon
+          :isTimesUp="isTimesUp"
+          :speed="config.horizon.speed"
+          :isPause="isPause"
+          :isActive="config.subtask.horizon"
+          @getResult="horizonResult"
+        />
+
+        <Arithmetics
+          ref="arithmeticsRef"
+          :isTimesUp="isTimesUp"
+          :difficulty="config.arithmetics.difficulty"
+          :duration="config.duration"
+          :isPause="isPause"
+          :isActive="config.subtask.arithmetics"
+          :useSound="config.arithmetics.sound"
+          @getResult="arithmeticResult"
+        />
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script>
+import Arithmetics from './color-multitask/Arithmetics';
+import ColorTank from './color-multitask/ColorTank';
+import Horizon from './color-multitask/Horizon';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+
+export default {
+  name: 'MainView',
+  components: {
+    Arithmetics,
+    ColorTank,
+    Horizon,
+  },
+  data() {
+    return {
+      isShowModal: false,
+      isLoading: false,
+      timer: {
+        minutes: 0,
+        second: 0
+      },
+      countdownInterval: null,
+      isPause: false,
+      isConfigLoaded: false,
+      isTrial: this.$route.query.isTrial ?? false,
+      config: {
+        duration : null,
+        subtask: {
+          arithmetics: null,
+          color_tank: null,
+          horizon: null,
+        },
+        arithmetics: {
+          difficulty: null, //easy, medium, difficult
+          sound: null
+        },
+        horizon: {
+          speed: null, //very_slow, slow, medium, fast, very_fast
+        },
+        color_tank: {
+          negative_score: null,
+          colored_lower_tank: null,
+          speed: null, //slow, medium, fast
+          descend_speed: null, //slow, medium, fast
+          start_to_decrease_in: 3000,
+        },
+      },
+      result: {
+        arithmetics: {
+          total_questions: null,
+          correct_answer: null,
+          avg_response_time: null,
+        },
+        horizon: {
+          correct_time: null, // in seconds
+        },
+        color_tank: {
+          final_score: null,
+        },
+      },
+    };
+  },
+  async mounted() {
+    this.initConfig();
+  },
+  beforeUnmount() {
+    clearInterval(this.countdownInterval);
+  },
+  computed: {
+    isTimesUp() {
+      return this.config.duration  < 1;
     },
-    mounted() {
-      this.initHorizon();
-      window.addEventListener('keydown', this.handleKeyPress);
-      setInterval(this.randomizeWarningLights, 3000);
+    formattedTime() {
+      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      return `${minutes}:${seconds}`;
     },
-    methods: {
-      handleKeyPress(event) {
-        const key = event.key.toUpperCase();
-        const colorIndex = this.keys.indexOf(key);
-        if (colorIndex !== -1) {
-          this.fillLowerTank(colorIndex);
+  },
+  methods: {
+    closeModal() {
+      this.isShowModal = false;
+      this.isConfigLoaded = true;
+      this.startCountdown();
+
+      setTimeout(() => {
+        this.$refs.arithmeticsRef.generateAudio();
+			}, 2000)
+    },
+    pause() {
+      clearInterval(this.countdownInterval);
+      this.isPause = true;
+    },
+    startAgain() {
+      this.startCountdown();
+      this.isPause = false;
+    },
+    exit() {
+      this.$router.push('module');
+    },
+    startCountdown() {
+      this.countdownInterval = setInterval(() => {
+        if (this.config.duration > 0) {
+          this.config.duration--;
+        } else {
+          clearInterval(this.countdownInterval);
+
+          // Submit Answer
+          setTimeout(() => {
+            this.submitResult();
+          }, 1000);
         }
-        const warningLight = this.warningLights.find(light => light.key === key);
-        if (warningLight && warningLight.active) {
-          warningLight.active = false;
+      }, 1000);
+    },
+    initConfig() {
+      try {
+        let config = JSON.parse(localStorage.getItem('scheduleData'));
+
+        if (config) {
+          const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
+          this.config.duration = colorMultitask.duration * 60;
+          this.config.batteryTestConfigId = colorMultitask.id;
+          this.config.sessionId = config.sessionId;
+          this.config.userId = config.userId;
+
+          // Color Tank
+          this.config.subtask.color_tank = colorMultitask.subtask.color_tank
+          if (this.config.subtask.color_tank) {
+            this.config.color_tank.negative_score = colorMultitask.color_tank.negative_score
+            this.config.color_tank.speed = colorMultitask.color_tank.speed
+            this.config.color_tank.descend_speed = colorMultitask.color_tank.descend_speed
+            this.config.color_tank.colored_lower_tank = colorMultitask.color_tank.colored_lower_tank
+          }
+
+          // Arithmetic
+          this.config.subtask.arithmetics = colorMultitask.subtask.arithmetics
+          if (this.config.subtask.arithmetics) {
+            this.config.arithmetics.sound = colorMultitask.arithmetics.sound
+            this.config.arithmetics.difficulty = colorMultitask.arithmetics.difficulty
+          }
+
+          // Horizon
+          this.config.subtask.horizon = colorMultitask.subtask.horizon
+          if (this.config.subtask.horizon) {
+            this.config.horizon.speed = colorMultitask.horizon.speed
+          }
+
+          if (this.config.subtask.arithmetics) {
+            this.isShowModal = true;
+          } else {
+            this.isConfigLoaded = true;
+            this.startCountdown();
+          }
         }
-      },
-      fillLowerTank(index) {
-        const color = this.colors[index];
-        const tank = this.lowerTanks[index];
-        if (tank[color] < 100) {
-          tank[color] += 20;
-        }
-      },
-      randomizeWarningLights() {
-        this.warningLights.forEach(light => {
-          light.active = Math.random() > 0.5;
-        });
-      },
-      initHorizon() {
-        const canvas = this.$refs.horizonCanvas;
-        this.ctx = canvas.getContext('2d');
-        this.drawHorizon();
-      },
-      drawHorizon() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
-        // Draw horizon
-        ctx.fillStyle = '#87CEEB';
-        ctx.fillRect(0, 0, this.horizonWidth, this.horizonHeight / 2);
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(0, this.horizonHeight / 2, this.horizonWidth, this.horizonHeight / 2);
-        // Draw aim
-        ctx.strokeStyle = 'yellow';
-        ctx.beginPath();
-        ctx.moveTo(this.horizonWidth / 2 - 20, this.horizonHeight / 2);
-        ctx.lineTo(this.horizonWidth / 2 + 20, this.horizonHeight / 2);
-        ctx.moveTo(this.horizonWidth / 2, this.horizonHeight / 2 - 20);
-        ctx.lineTo(this.horizonWidth / 2, this.horizonHeight / 2 + 20);
-        ctx.stroke();
+      } catch (error) {
+        console.log(error, 'error')
       }
     },
-    beforeUnmount() {
-      window.removeEventListener('keydown', this.handleKeyPress);
-    }
-  };
-  </script>
-  
-  <style>
-  .horizon-tank {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    height: 100vh;
+    arithmeticResult(result) {
+      this.result.arithmetics.correct_answer = result.correctAnswer;
+      this.result.arithmetics.total_questions = result.totalQuestion;
+      this.result.arithmetics.avg_response_time = result.responseTime.toFixed(2);
+    },
+    colorTankResult(result) {
+      this.result.color_tank.final_score = result.score;
+    },
+    horizonResult(result) {
+      this.result.horizon.correct_time = result.correctTime.toFixed(2);
+    },
+    async submitResult() {
+      try {
+        this.isLoading = true;
+
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = {
+          testSessionId: this.config.sessionId,
+          userId: this.config.userId,
+          batteryTestConfigId: this.config.batteryTestConfigId,
+          result: this.result,
+        }
+
+        const res = await fetch(`${API_URL}api/submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed Submit Test');
+        }
+      } catch (error) {
+        console.error(error), "error";
+      } finally {
+        this.isLoading = false;
+
+        removeTestByNameAndUpdateLocalStorage('Multi Tasking With Color')
+        this.$router.push('/module');
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+  .main-view {
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 60px auto;
   }
-  .tank-section {
-    display: flex;
-    flex-direction: column;
-  }
-  .upper-tanks, .lower-tanks {
-    display: flex;
-    flex-direction: row;
-    margin-bottom: 20px;
-  }
-  .tank {
-    width: 50px;
-    height: 100px;
-    border: 2px solid black;
+  .modal-overlay {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-right: 10px;
-  }
-  .tank-fill {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+  }
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+
+  .modal-content button {
+    background-color: #6200ee;
+    color:white;
+    padding: 20px;
+    border-radius: 10px;
+    border: none;
+    padding: 10px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background-color: #5e37a6;
+  }
+
+  .timer-container-trial {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background-color: #0349D0;
+    padding: 0.75rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+  }
+  .timer-container-trial button {
+    color: #000000;
+    font-weight: bold;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 5px;
+    border-color: transparent;
+    min-width: 100px;
+    cursor: pointer;
+  }
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
+  .spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  .horizon-tank {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+		align-items: center;
+		height: 92vh;
+		margin-left: 40px;
+		margin-right: 40px;
+	}
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
   }
   .horizon-section {
     position: relative;
   }
-  canvas {
-    border: 2px solid black;
-  }
-  .warning-lights {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    margin-top: 10px;
-  }
-  .warning-light {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: brown;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-    margin-right: 10px;
-  }
-  .warning-light.active {
-    background-color: red;
-  }
-  </style>
-  
+</style>
