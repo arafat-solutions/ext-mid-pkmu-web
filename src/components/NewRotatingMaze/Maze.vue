@@ -14,6 +14,7 @@ import Maze2 from "./getMaze2";
 import imagePath from "../../assets/tori.png";
 import goalImagePath from "../../assets/flag.png";
 import Renderer from "./Renderer";
+import { dijkstra } from './dijkstra'
 
 // TODO: select strategy method, not a class
 const strategy = {
@@ -68,7 +69,9 @@ export default {
             },
             isFinished: false,
             seed: Date.now(),
-            isStarted: false
+            isStarted: false,
+            shortestPath: [],
+            leastPossibleMove: 0
         };
     },
     computed: {
@@ -312,7 +315,6 @@ export default {
             // Check if it's a correct turn
             const isCorrectTurn = this.isCorrectDirection(fromX, fromY, toX, toY);
 
-
             // Players can't go through the walls
             if (!this.canReach(fromX, fromY, toX, toY)) {
                 this.$emit('wallHit');
@@ -325,7 +327,11 @@ export default {
             this.player = { x: toX, y: toY }
             this.$emit('move', {
                 isCorrectTurn,
-                responseTime
+                responseTime,
+                fromX,
+                fromY,
+                toX,
+                toY
             });
 
             if (!this.isStarted) {
@@ -342,15 +348,9 @@ export default {
             }
         },
         isCorrectDirection(fromX, fromY, toX, toY) {
-            // Implement logic to determine if this move is in the correct direction
-            // For now, let's assume any move towards the goal is correct
-            const goalX = this.maze.goal.x;
-            const goalY = this.maze.goal.y;
-
-            const distanceBefore = Math.abs(fromX - goalX) + Math.abs(fromY - goalY);
-            const distanceAfter = Math.abs(toX - goalX) + Math.abs(toY - goalY);
-
-            return distanceAfter < distanceBefore;
+            const currentIndex = this.shortestPath.findIndex(p => p.x === fromX && p.y === fromY);
+            const nextIndex = this.shortestPath.findIndex(p => p.x === toX && p.y === toY);
+            return nextIndex === currentIndex + 1;
         },
         resetMaze() {
             const lx = this.lx;
@@ -363,7 +363,107 @@ export default {
                 this.player = { x: 0, y: 0 }
                 this.isStarted = false;
                 this.isFinished = false;
+
+                console.log("Maze reset, finding shortest path");
+                this.$nextTick(() => {
+                    this.findShortestPath();
+                });
             }
+        },
+        canMove(fromX, fromY, toX, toY) {
+            if (toX < 0 || toX >= this.lx || toY < 0 || toY >= this.ly) return false;
+            if (fromX === toX) {
+                // Vertical movement
+                const minY = Math.min(fromY, toY);
+                return this.maze.bondV[minY * this.lx + fromX];
+            } else {
+                // Horizontal movement
+                const minX = Math.min(fromX, toX);
+                return this.maze.bondH[fromY * (this.lx + 1) + minX];
+            }
+        },
+        findPathBFS() {
+            const queue = [{ x: 0, y: 0, path: [] }];
+            const visited = new Set();
+            const goal = this.maze.goal;
+
+            while (queue.length > 0) {
+                const { x, y, path } = queue.shift();
+                const key = `${x},${y}`;
+
+                if (x === goal.x && y === goal.y) {
+                    console.log("BFS found path:", path);
+                    return path;
+                }
+
+                if (visited.has(key)) continue;
+                visited.add(key);
+
+                const neighbors = [
+                    { dx: 0, dy: -1 }, // Up
+                    { dx: 0, dy: 1 },  // Down
+                    { dx: -1, dy: 0 }, // Left
+                    { dx: 1, dy: 0 }   // Right
+                ];
+
+                for (const { dx, dy } of neighbors) {
+                    const newX = x + dx;
+                    const newY = y + dy;
+                    if (this.canMove(x, y, newX, newY)) {
+                        queue.push({ x: newX, y: newY, path: [...path, { x: newX, y: newY }] });
+                    }
+                }
+            }
+
+            console.log("BFS found no path");
+            return null;
+        },
+        findShortestPath() {
+            const start = { x: 0, y: 0 };
+            const goal = this.maze.goal;
+            console.log("Start:", start, "Goal:", goal);
+
+            const result = dijkstra(this.maze, start, goal, this.canMove.bind(this));
+            if (result.path.length <= 1) {
+                console.log("Dijkstra failed, trying BFS");
+                this.shortestPath = this.findPathBFS();
+            } else {
+                this.shortestPath = result.path;
+            }
+
+            this.leastPossibleMove = this.shortestPath ? this.shortestPath.length - 1 : Infinity;
+
+            this.$emit('updateMetrics', { leastPossibleMove: this.leastPossibleMove });
+            this.renderShortestPath();
+            console.log("Shortest path:", this.shortestPath);
+            console.log("Least possible moves:", this.leastPossibleMove);
+        },
+        renderShortestPath() {
+            console.log("Rendering shortest path");
+            const ctx = this.$refs.mazeCanvas.getContext("2d");
+            console.log("Canvas context:", ctx);
+
+            const renderer = new Renderer(
+                ctx,
+                this.cellWidth,
+                this.cellHeight,
+                this.marginLeft,
+                this.marginTop
+            );
+
+            renderer.ctx.lineWidth = 3;
+            renderer.setColor("yellow", "red");
+            renderer.beginPath();
+
+            console.log("Starting to draw path");
+            for (let i = 0; i < this.shortestPath.length - 1; i++) {
+                const current = this.shortestPath[i];
+                const next = this.shortestPath[i + 1];
+                console.log(`Drawing line from (${current.x}, ${current.y}) to (${next.x}, ${next.y})`);
+                renderer.drawLine(current.x + 0.5, current.y + 0.5, next.x + 0.5, next.y + 0.5);
+            }
+            renderer.stroke();
+            console.log("Finished drawing path");
         },
         renderPlayer() {
             const playerRenderer = new Renderer(
@@ -459,6 +559,8 @@ export default {
                 renderer.stroke();
                 this.renderPlayer();
                 this.renderGoal();
+                this.renderShortestPath()
+                console.log("Shortest path rendered");
             });
         }
     }
@@ -481,5 +583,6 @@ canvas {
     top: 0;
     left: 0;
     margin: auto;
+    border: 1px solid red;
 }
 </style>

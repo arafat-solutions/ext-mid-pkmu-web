@@ -3,7 +3,9 @@
         <div class="circular-base">
             <div class="maze-container" :style="rotationStyle">
                 <maze :strategy="strategy" :difficulty="difficulty" @start="onStart" @finish="onMazeFinish"
-                    @init="onInit" @move="onMazeMove" @wallHit="onWallHit" :style="mazeStyle"></maze>
+                    @init="onInit" @move="onMazeMove" @wallHit="onWallHit" @updateMetrics="updateMetrics"
+                    :style="mazeStyle">
+                </maze>
                 <div class="rotation-indicator"></div>
             </div>
         </div>
@@ -75,6 +77,9 @@ export default {
         onInit() {
             this.rotation = 0;
             this.isRotating = false;
+            this.quizMetrics.leastPossibleMove = 0;
+            this.quizMetrics.correctTurn = 0;
+            this.quizMetrics.wrongTurn = 0;
         },
         resetMetrics() {
             this.quizMetrics = {
@@ -122,9 +127,18 @@ export default {
             } else {
                 this.quizMetrics.wrongTurn++;
             }
+
+            // Emit the updated metrics
+            this.$emit('move', {
+                isCorrectTurn: moveData.isCorrectTurn,
+                responseTime: moveData.responseTime
+            });
         },
         onWallHit() {
             this.quizMetrics.wallHit++;
+        },
+        updateMetrics(metrics) {
+            Object.assign(this.quizMetrics, metrics);
         },
         onMazeFinish() {
             // wip
