@@ -7,7 +7,8 @@ import InstrumentMultitask from '@/components/InstrumentMultitask.vue';
 import PFDTracking from '@/components/pfd-tracking/PFDTracking.vue';
 import SpatialOrientation from '@/components/SpatialOrientation.vue';
 // import NewRotatingMaze from '@/components/NewRotatingMaze/Parent.vue';
-import NewRotatingMaze from '@/components/NewRotatingMaze/TestMaze.vue';
+// import NewRotatingMaze from '@/components/NewRotatingMaze/TestMaze.vue';
+import NewRotatingMaze from '@/components/NewRotatingMaze3/RotatingMaze.vue';
 
 import OperativeMultitasking from '@/components/OperativeMultitasking.vue';
 import MultidimensionalCoordination from '@/components/MultidimensionalCoordination.vue';
