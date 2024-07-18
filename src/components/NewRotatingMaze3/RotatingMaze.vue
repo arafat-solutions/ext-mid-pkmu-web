@@ -1,4 +1,6 @@
 <template>
+    <button @click="() => { generateGrid(); mazeGenerator(); }">new maze</button>
+    <button @click="greedyBestFirst">View solution</button>
     <div id="containerMaze">
         <div id="visualizerMaze" :style="{ width: `${mazeWidth}px`, height: `${mazeHeight}px` }">
             <div id="gridMaze" :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
@@ -28,6 +30,12 @@ export default {
         const myInterval = ref(null)
         const generating = ref(false)
         const gridClean = ref(true)
+        const nodeList = ref([])
+        const nodeListIndex = ref(0)
+        const pathList = ref([])
+        const pathListIndex = ref(0)
+        const found = ref(false)
+        const path = ref(false)
 
         const setGridProperties = () => {
             let ratio = mazeWidth.value / mazeHeight.value
@@ -107,7 +115,6 @@ export default {
             timeouts.value = [];
             clearInterval(myInterval.value);
             document.querySelector("#my_table").remove();
-            generateGrid()
         }
 
         const addWall = (x, y) => {
@@ -247,14 +254,115 @@ export default {
 
         }
 
+        const distance = (point_1, point_2) => {
+            return Math.sqrt(Math.pow(point_2[0] - point_1[0], 2) + Math.pow(point_2[1] - point_1[1], 2));
+        }
+
+        const getNeighbours = (cell, distance) => {
+            let up = [cell[0], cell[1] - distance];
+            let right = [cell[0] + distance, cell[1]];
+            let down = [cell[0], cell[1] + distance];
+            let left = [cell[0] - distance, cell[1]];
+            return [up, right, down, left];
+        }
+
+        const getNode = (x, y) => {
+            if (x >= 0 && x < grid.value.length && y >= 0 && y < grid.value[0].length)
+                return grid.value[x][y];
+
+            return -2;
+        }
+
+        const mazeSolversInterval = () => {
+            myInterval.value = window.setInterval(function () {
+                if (!path.value) {
+                    placeToCell(nodeList.value[nodeListIndex.value][0], nodeList.value[nodeListIndex.value][1]).classList.add("cell_algo");
+                    nodeListIndex.value++;
+
+                    if (nodeListIndex.value == nodeList.value.length) {
+                        if (!found.value)
+                            clearInterval(myInterval.value);
+
+                        else {
+                            path.value = true;
+                            placeToCell(startPos.value[0], startPos.value[1]).classList.add("cell_path");
+                        }
+                    }
+                }
+
+                else {
+                    if (pathListIndex.value == pathList.value.length) {
+                        placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("cell_path");
+                        clearInterval(myInterval.value);
+                        return;
+                    }
+
+                    placeToCell(pathList.value[pathListIndex.value][0], pathList.value[pathListIndex.value][1]).classList.remove("cell_algo");
+                    placeToCell(pathList.value[pathListIndex.value][0], pathList.value[pathListIndex.value][1]).classList.add("cell_path");
+                    pathListIndex.value++;
+                }
+            }, 10);
+        }
+
+        const greedyBestFirst = () => {
+            nodeList.value = [];
+            nodeListIndex.value = 0;
+            pathList.value = [];
+            pathListIndex.value = 0;
+            found.value = false;
+            path.value = false;
+            let frontier = [startPos.value];
+            grid.value[startPos.value[0]][startPos.value[1]] = 1;
+
+            do {
+                frontier.sort(function (a, b) {
+                    return distance(a, targetPos.value) - distance(b, targetPos);
+                });
+
+                let list = getNeighbours(frontier[0], 1);
+                frontier.splice(0, 1);
+
+                for (let i = 0; i < list.length; i++)
+                    if (getNode(list[i][0], list[i][1]) == 0) {
+                        frontier.push(list[i]);
+                        grid.value[list[i][0]][list[i][1]] = i + 1;
+
+                        if (list[i][0] == targetPos.value[0] && list[i][1] == targetPos.value[1]) {
+                            found.value = true;
+                            break;
+                        }
+
+                        nodeList.value.push(list[i]);
+                    }
+            }
+            while (frontier.length > 0 && !found.value)
+
+            if (found.value) {
+                let current_node = targetPos.value;
+
+                while (current_node[0] != startPos.value[0] || current_node[1] != startPos.value[1]) {
+                    switch (grid.value[current_node[0]][current_node[1]]) {
+                        case 1: current_node = [current_node[0], current_node[1] + 1]; break;
+                        case 2: current_node = [current_node[0] - 1, current_node[1]]; break;
+                        case 3: current_node = [current_node[0], current_node[1] - 1]; break;
+                        case 4: current_node = [current_node[0] + 1, current_node[1]]; break;
+                        default: break;
+                    }
+
+                    pathList.value.push(current_node);
+                }
+
+                pathList.value.pop();
+                pathList.value.reverse();
+            }
+
+            mazeSolversInterval();
+        }
+
         onMounted(() => {
             console.log('Component mounted');
             generateGrid();
-            console.log('Grid generated');
-            setTimeout(() => {
-                mazeGenerator();
-                console.log('Maze generation initiated');
-            }, 100);
+            mazeGenerator();
         });
 
         return {
@@ -267,7 +375,8 @@ export default {
             placeToCell,
             generateGrid,
             clear,
-            mazeGenerator
+            mazeGenerator,
+            greedyBestFirst
         };
 
     }
