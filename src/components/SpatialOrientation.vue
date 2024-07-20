@@ -47,7 +47,7 @@
 </template>
 
 <script>
-// import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 export default {
   name: 'SpatialOrientation',
@@ -58,16 +58,18 @@ export default {
       isTrial: this.$route.query.isTrial ?? false,
       isPause: false,
       isShowAnswerBox: false,
-      width: 600,
-      height: 600,
-      answer: null,
+      width: 480,
+      height: 480,
       rightTurns: 0,
       leftTurns: 0,
-      lines: [],
-      optionAnswers: [],
       collisions: 0,
       direction: 0,
+      drawIndex: 0,
+      drawIndexRemoval: 0,
+      lines: [],
+      optionAnswers: [],
       directions: [[1, 0], [0, 1], [-1, 0], [0, -1]],
+      answer: null,
       drawLineinterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
@@ -97,10 +99,27 @@ export default {
   },
   methods: {
     pause() {
+      clearInterval(this.countdownInterval);
+      if (this.drawLineinterval) {
+        clearInterval(this.drawLineinterval);
+      }
+
+      if (this.drawIndexRemoval > 0) {
+        clearInterval(this.tailRemoveInterval);
+      }
+
       this.isPause = true;
     },
     startAgain() {
       this.startCountdown();
+      if (!this.config.full_image) {
+        this.drawLineOneByOne(this.drawIndex);
+      }
+
+      if (this.drawIndexRemoval > 0) {
+        this.startTailDisappearance(this.drawIndexRemoval);
+      }
+
       this.isPause = false;
     },
     exit() {
@@ -121,8 +140,8 @@ export default {
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
-          this.config.crash = 3
-          // this.config.crash = spatialOrientation.crash
+          // this.config.crash = 0
+          this.config.crash = spatialOrientation.crash
 
           this.config.full_image = spatialOrientation.full_image, //true or false
           this.config.left_turn = spatialOrientation.left_turn, //true or false
@@ -154,9 +173,51 @@ export default {
           // setTimeout(() => {
           //   this.calculatedResult();
           // }, 1000);
-
         }
       }, 1000);
+    },
+    calculatedResult() {
+      this.result.total_question = this.totalQuestion;
+      this.result.correct_answer = this.correctAnswer;
+
+      const resultTimeResonded = this.averageResponseTime()
+      this.result.avg_response_time = resultTimeResonded.toFixed(2);
+
+      this.submitResult()
+    },
+    async submitResult() {
+      try {
+        this.isLoading = true;
+
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = {
+          testSessionId: this.config.sessionId,
+          userId: this.config.userId,
+          batteryTestConfigId: this.config.batteryTestConfigId,
+          result: this.result,
+        }
+
+        const res = await fetch(`${API_URL}api/submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed Submit Test');
+        }
+      } catch (error) {
+        console.error(error), "error";
+      } finally {
+        this.isLoading = false;
+
+        removeTestByNameAndUpdateLocalStorage('Spatial Orientation Test')
+        this.$router.push('/module');
+      }
     },
     async generateLines() {
       this.lines = [];
@@ -170,15 +231,16 @@ export default {
       this.isShowAnswerBox = false
 
       this.generateCoordinat();
-      // if (this.config.full_image) {
-      //   await this.drawLineFull();
-      // } else {
-      //   await this.drawLineOneByOne();
-      // }
-      await this.drawLineOneByOne();
+      if (this.config.full_image) {
+        await this.drawLineFull();
+      } else {
+        await this.drawLineOneByOne();
+      }
+
+      // await this.drawLineOneByOne();
     },
     generateCoordinat() {
-      const length = 50;
+      const length = 40;
       const visitedCoordinates = new Set();
 
       let x = this.width / 2;
@@ -199,8 +261,8 @@ export default {
             newY = y + this.directions[this.direction][1] * length;
 
             // Keep Within Bounds
-            newX = Math.max(0, Math.min(this.width, newX));
-            newY = Math.max(0, Math.min(this.height, newY));
+            newX = Math.max(40, Math.min(this.width - 40, newX));
+            newY = Math.max(40, Math.min(this.height - 40, newY));
 
             validCoordinate = !visitedCoordinates.has(`${newX},${newY}`) && !(newX === x && newY === y);
 
@@ -226,11 +288,8 @@ export default {
           newY = y + this.directions[this.direction][1] * length;
 
           // Keep Within Bounds
-          newX = Math.max(0, Math.min(this.width, newX));
-          newY = Math.max(0, Math.min(this.height, newY));
-
-          // Prevent Same Value
-          if (newX === x && newY === y) continue;
+          newX = Math.max(40, Math.min(this.width - 40, newX));
+          newY = Math.max(40, Math.min(this.height - 40, newY));
 
           validCoordinate = visitedCoordinates.has(`${newX},${newY}`);
 
@@ -276,14 +335,19 @@ export default {
         this.startTailDisappearance();
       }, 3000);
     },
-    async drawLineOneByOne() {
+    async drawLineOneByOne(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
       const ctx = canvas.getContext('2d');
 
       ctx.clearRect(0, 0, this.width, this.height);
 
-      let i = 0
+      let i = startIndex;
       this.drawLineinterval = setInterval(() => {
+        if (this.isPause) {
+          clearInterval(this.drawLineinterval);
+          return;
+        }
+
         if (i === 0) {
           ctx.beginPath();
           ctx.moveTo(this.lines[i].x, this.lines[i].y);
@@ -307,9 +371,10 @@ export default {
           this.setAnswerOption();
 
           setTimeout(() => {
-          this.startTailDisappearance();
-        }, 3000);
+            this.startTailDisappearance();
+          }, 3000);
         }
+        this.drawIndex = i;
       }, this.config.speed);
     },
     countTurns(index) {
@@ -319,24 +384,13 @@ export default {
       const currDirection = this.lines[index];
       const nextDirection = this.lines[index + 1];
 
-      if (this.config.crash === 0) {
-        if (prevDirection.x < currDirection.x && prevDirection.y !== nextDirection.y) {
-          console.log('right')
-          this.rightTurns++;
-        }
-        if (prevDirection.x > currDirection.x && prevDirection.y !== nextDirection.y) {
-          console.log('left')
-          this.leftTurns++;
-        }
-      } else {
-        if (prevDirection.x < currDirection.x) {
-          console.log('right')
-          this.rightTurns++;
-        }
-        if (prevDirection.x > currDirection.x) {
-          console.log('left')
-          this.leftTurns++;
-        }
+      if (prevDirection.x < currDirection.x && currDirection.y !== nextDirection.y) {
+        console.log('right')
+        this.rightTurns++;
+      }
+      if (prevDirection.x > currDirection.x && currDirection.y !== nextDirection.y) {
+        console.log('left')
+        this.leftTurns++;
       }
     },
     setAnswerOption() {
@@ -411,49 +465,67 @@ export default {
       clearInterval(this.drawLineinterval);
       this.drawLineinterval = null;
     },
-    startTailDisappearance() {
+    startTailDisappearance(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
       const ctx = canvas.getContext('2d');
-      let i = 0;
 
-      ctx.clearRect(0, 0, this.width, canvas.height);
+      let i = startIndex;
+      const halfLength = Math.floor(this.lines.length/2);
 
-      ctx.beginPath();
-      ctx.moveTo(this.lines[0].x, this.lines[0].y);
-      for (let j = 1; j < this.lines.length ; j++) {
-        ctx.lineTo(this.lines[j].x, this.lines[j].y);
-      }
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      this.drawArrowHead();
-
-      this.tailRemoveInterval = setInterval(() => {
-      if (i < this.lines.length - 2) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.beginPath();
-        ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
-
-        for (let j = i + 2; j < this.lines.length - 1; j++) {
-          ctx.lineTo(this.lines[j].x, this.lines[j].y);
+      const tailRemove = () => {
+        if (this.isPause) {
+          clearInterval(this.tailRemoveInterval);
+          return;
         }
 
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        if (i < halfLength) {
+          ctx.clearRect(0, 0, this.width, this.height);
 
-        this.drawArrowHead();
+          ctx.beginPath();
+          ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
 
-        i++;
-      } else {
-        clearInterval(this.tailRemoveInterval);
-        this.tailRemoveInterval = null;
+          for (let j = i + 2; j < this.lines.length - 1; j++) {
+            ctx.lineTo(this.lines[j].x, this.lines[j].y);
+          }
 
-        this.drawArrowHead();
-      }
-    }, 2000);
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          this.drawArrowHead();
+
+          i++;
+        } else if (i < this.lines.length - 2 && i >= halfLength) {
+          ctx.clearRect(0, 0, this.width, this.height);
+
+          ctx.beginPath();
+          ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
+
+          for (let j = i + 2; j < this.lines.length - 1; j++) {
+            ctx.lineTo(this.lines[j].x, this.lines[j].y);
+          }
+
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          this.drawArrowHead();
+
+          i++;
+        } else {
+          clearInterval(this.tailRemoveInterval);
+          this.tailRemoveInterval = null;
+        }
+
+        if (i === halfLength && this.config.speed_increasing) {
+          clearInterval(this.tailRemoveInterval);
+          this.tailRemoveInterval = setInterval(tailRemove, 2000/2);
+        }
+
+        this.drawIndexRemoval = i;
+      };
+
+      this.tailRemoveInterval = setInterval(tailRemove, 2000);
     },
     pressAnswer(value) {
       if (this.isPause) {
@@ -473,9 +545,18 @@ export default {
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
 
-      // setTimeout(() => {
-      //   this.generateLines();
-      // }, 1000);
+      setTimeout(() => {
+        this.generateLines();
+      }, 1000);
+    },
+    averageResponseTime() {
+      if (this.responseDurations.length > 0) {
+        const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
+
+        return (sum / this.responseDurations.length) / 1000;
+      }
+
+      return 0;
     },
     calculateResponseTime() {
       return this.responseDurations.push(this.responseTime - this.responseQuestion);
@@ -578,11 +659,11 @@ export default {
   .line-turns {
     padding: 10px;
     position: relative;
-    margin-bottom: 20px;
-    margin-top: 20px;
+    margin-bottom: 10px;
+    margin-top: 10px;
   }
   canvas {
-    border: 1px solid #000;
+    border: 0px solid #000;
     background-color: white;
   }
   .question {
