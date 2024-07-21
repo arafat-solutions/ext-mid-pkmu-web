@@ -1,8 +1,7 @@
 <template>
     <div class="containerSettingMaze">
         <div class="settingMaze">
-            <button @click="() => { generateGrid(); mazeGenerator(); }">new maze</button>
-            <button @click="greedyBestFirst">View solution</button>
+            <button @click="async () => { await generateGrid(); await mazeGenerator(); }">new maze</button>
             <br /> <br />
             <div>
                 <button @click="changeDifficulty('easy')">Easy</button>
@@ -75,28 +74,27 @@ export default {
         }
 
         const clearGrid = () => {
-            if (!gridClean.value) {
-                for (let i = 0; i < timeouts.value.length; i++)
-                    clearTimeout(timeouts.value[i]);
+            for (let i = 0; i < gridSizeX.value; i++) {
+                for (let j = 0; j < gridSizeY.value; j++) {
+                    grid.value[i][j] = 0;
+                    const cell = placeToCell(i, j);
+                    cell.classList.remove("cell_wall", "cell_algo", "cell_path", "visited_cell");
+                }
+            }
+            gridClean.value = true;
 
-                timeouts.value = [];
+            // Reset visualization-related variables
+            nodeList.value = [];
+            nodeListIndex.value = 0;
+            pathList.value = [];
+            pathListIndex.value = 0;
+            found.value = false;
+            path.value = false;
+
+            // Clear any ongoing intervals
+            if (myInterval.value) {
                 clearInterval(myInterval.value);
-
-                for (let i = 0; i < grid.value.length; i++)
-                    for (let j = 0; j < grid.value[0].length; j++) {
-                        if (grid.value[i][j] > -1) {
-                            removeWall(i, j);
-                            placeToCell(i, j).classList.remove("cell_algo");
-                            placeToCell(i, j).classList.remove("cell_path");
-                        }
-
-                        else if (grid.value[i][j] < -1)
-                            addWall(i, j);
-
-                        placeToCell(i, j).classList.remove("visited_cell");
-                    }
-
-                gridClean.value = true;
+                myInterval.value = null;
             }
         }
 
@@ -130,7 +128,7 @@ export default {
             }
         }
 
-        const generateGrid = () => {
+        const generateGrid = async () => {
             setGridProperties();
 
             const table = document.createElement("table");
@@ -233,124 +231,146 @@ export default {
         }
 
         const recursiveDivision = () => {
-            enclose();
-            let time = 0;
-            let step = 17;
-            timeouts.value = [];
+            return new Promise((resolve) => {
+                enclose();
+                let time = 0;
+                let step = 17;
+                timeouts.value = [];
 
-            function sub_recursive_division(x_min, y_min, x_max, y_max) {
-                if (y_max - y_min > x_max - x_min) {
-                    let x = randomInt(x_min + 1, x_max);
-                    let y = randomInt(y_min + 2, y_max - 1);
+                function sub_recursive_division(x_min, y_min, x_max, y_max) {
+                    if (y_max - y_min > x_max - x_min) {
+                        let x = randomInt(x_min + 1, x_max);
+                        let y = randomInt(y_min + 2, y_max - 1);
 
-                    if ((x - x_min) % 2 == 0) {
-                        x += (randomInt(0, 2) == 0 ? 1 : -1);
-                    }
-
-                    if ((y - y_min) % 2 == 1) {
-                        y += (randomInt(0, 2) == 0 ? 1 : -1);
-                    }
-
-                    for (let i = x_min + 1; i < x_max; i++) {
-                        if (i != x) {
-                            time += step;
-                            timeouts.value.push(setTimeout(function () { addWall(i, y); }, time));
-                        }
-                    }
-
-                    if (y - y_min > 2) {
-                        sub_recursive_division(x_min, y_min, x_max, y);
-                    }
-
-                    if (y_max - y > 2) {
-                        sub_recursive_division(x_min, y, x_max, y_max);
-                    }
-                }
-                else {
-                    let x = randomInt(x_min + 2, x_max - 1);
-                    let y = randomInt(y_min + 1, y_max);
-
-                    if ((x - x_min) % 2 == 1)
-                        x += (randomInt(0, 2) == 0 ? 1 : -1);
-
-                    if ((y - y_min) % 2 == 0)
-                        y += (randomInt(0, 2) == 0 ? 1 : -1);
-
-                    for (let i = y_min + 1; i < y_max; i++)
-                        if (i != y) {
-                            time += step;
-                            timeouts.value.push(setTimeout(function () { addWall(x, i); }, time));
+                        if ((x - x_min) % 2 == 0) {
+                            x += (randomInt(0, 2) == 0 ? 1 : -1);
                         }
 
-                    if (x - x_min > 2)
-                        sub_recursive_division(x_min, y_min, x, y_max);
+                        if ((y - y_min) % 2 == 1) {
+                            y += (randomInt(0, 2) == 0 ? 1 : -1);
+                        }
 
-                    if (x_max - x > 2)
-                        sub_recursive_division(x, y_min, x_max, y_max);
+                        for (let i = x_min + 1; i < x_max; i++) {
+                            if (i != x) {
+                                time += step;
+                                timeouts.value.push(setTimeout(function () { addWall(i, y); }, time));
+                            }
+                        }
+
+                        if (y - y_min > 2) {
+                            sub_recursive_division(x_min, y_min, x_max, y);
+                        }
+
+                        if (y_max - y > 2) {
+                            sub_recursive_division(x_min, y, x_max, y_max);
+                        }
+                    }
+                    else {
+                        let x = randomInt(x_min + 2, x_max - 1);
+                        let y = randomInt(y_min + 1, y_max);
+
+                        if ((x - x_min) % 2 == 1)
+                            x += (randomInt(0, 2) == 0 ? 1 : -1);
+
+                        if ((y - y_min) % 2 == 0)
+                            y += (randomInt(0, 2) == 0 ? 1 : -1);
+
+                        for (let i = y_min + 1; i < y_max; i++)
+                            if (i != y) {
+                                time += step;
+                                timeouts.value.push(setTimeout(function () { addWall(x, i); }, time));
+                            }
+
+                        if (x - x_min > 2)
+                            sub_recursive_division(x_min, y_min, x, y_max);
+
+                        if (x_max - x > 2)
+                            sub_recursive_division(x, y_min, x_max, y_max);
+                    }
                 }
-            }
 
-            sub_recursive_division(0, 0, grid.value.length - 1, grid.value[0].length - 1);
-            timeouts.value.push(setTimeout(function () {
-                generating.value = false;
-                timeouts.value = []
-            }, time));
+                sub_recursive_division(0, 0, grid.value.length - 1, grid.value[0].length - 1);
+                timeouts.value.push(setTimeout(function () {
+                    generating.value = false;
+                    timeouts.value = []
+                    resolve()
+                }, time));
+            })
         }
 
-        const mazeGenerator = () => {
-            let startTemp = startPos.value;
-            let targetTemp = targetPos.value;
-            generating.value = true;
+        const adjustPositions = () => {
+            [startPos.value, targetPos.value].forEach(pos => {
+                if (pos[0] % 2 === 0) pos[0] += pos[0] === gridSizeX.value - 1 ? -1 : 1;
+                if (pos[1] % 2 === 0) pos[1] += pos[1] === 0 ? 1 : -1;
+            });
+        }
 
-            if (startTemp[0] % 2 == 0) {
-                if (startTemp[0] == grid.value.length - 1)
-                    startTemp[0] -= 1;
-                else
-                    startTemp[0] += 1;
-            }
+        const updateStartTargetCells = () => {
+            document.querySelectorAll('.start, .target').forEach(el => {
+                el.classList.remove('start', 'target');
+            });
+            placeToCell(startPos.value[0], startPos.value[1]).classList.add("start");
+            placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("target");
+        }
 
-            if (startTemp[1] % 2 == 0) {
-                if (startTemp[1] == 0)
-                    startTemp[1] += 1;
-                else
-                    startTemp[1] -= 1;
-            }
+        const mazeGenerator = async () => {
+            let solvableMaze = false;
+            let attempts = 0;
+            const maxAttempts = 10;
 
-            if (targetTemp[0] % 2 == 0) {
-                if (targetTemp[0] == grid.value.length - 1)
-                    targetTemp[0] -= 1;
-                else
-                    targetTemp[0] += 1;
-            }
+            while (!solvableMaze && attempts < maxAttempts) {
+                attempts++;
+                console.log(`Attempting to generate maze: Attempt ${attempts}`);
 
-            if (targetTemp[1] % 2 == 0) {
-                if (targetTemp[1] == 0)
-                    targetTemp[1] += 1;
-                else
-                    targetTemp[1] -= 1;
-            }
+                // Clear the old maze
+                clearGrid();
 
-            placeToCell(startPos.value[0], startPos.value[1]).classList.remove("start");
-            placeToCell(startTemp[0], startTemp[1]).classList.add("start");
-            placeToCell(targetPos.value[0], targetPos.value[1]).classList.remove("target");
-            placeToCell(targetTemp[0], targetTemp[1]).classList.add("target");
-            startPos.value = startTemp;
-            targetPos.value = targetTemp;
+                // Reset start and target positions
+                startPos.value = getInitialStartPos();
+                targetPos.value = getInitialTargetPos();
 
-            gridClean.value = false;
+                // Ensure start and target positions are on odd coordinates
+                adjustPositions();
 
-            switch (generatorMazeAlgo.value) {
-                case 1:
-                    recursiveDivision();
+                // Update start and target cell classes
+                updateStartTargetCells();
+
+                gridClean.value = false;
+                generating.value = true;
+
+                try {
+                    // Generate the maze
+                    switch (generatorMazeAlgo.value) {
+                        case 1:
+                            await recursiveDivision();
+                            break;
+                        case 2:
+                            await primAlgorithm();
+                            break;
+                        default:
+                            console.warn("Unknown maze generation algorithm selected");
+                            break;
+                    }
+
+                    // Check if the maze is solvable
+                    solvableMaze = greedyBestFirst();
+
+                    if (!solvableMaze) {
+                        console.log(`Generated maze has no solution. Attempt ${attempts}. Regenerating...`);
+                    } else {
+                        console.log(`Solvable maze generated on attempt ${attempts}!`);
+                        updateStartTargetCells();
+                        generating.value = false;
+                    }
+                } catch (error) {
+                    console.error("Error during maze generation:", error);
                     break;
-                case 2:
-                    primAlgorithm();
-                    break;
-                default:
-                    console.warn("Unknown maze generation algorithm selected");
-                    break;
+                }
             }
 
+            if (!solvableMaze) {
+                console.error("Failed to generate a solvable maze after maximum attempts");
+            }
         }
 
         const distance = (point_1, point_2) => {
@@ -366,42 +386,40 @@ export default {
         }
 
         const getNode = (x, y) => {
-            if (x >= 0 && x < grid.value.length && y >= 0 && y < grid.value[0].length)
+            if (x >= 0 && x < gridSizeX.value && y >= 0 && y < gridSizeY.value) {
                 return grid.value[x][y];
-
-            return -2;
-        }
+            }
+            return -2;  // Out of bounds
+        };
 
         const mazeSolversInterval = () => {
-            myInterval.value = window.setInterval(function () {
+            myInterval.value = window.setInterval(() => {
                 if (!path.value) {
-                    placeToCell(nodeList.value[nodeListIndex.value][0], nodeList.value[nodeListIndex.value][1]).classList.add("cell_algo");
-                    nodeListIndex.value++;
-
-                    if (nodeListIndex.value == nodeList.value.length) {
-                        if (!found.value)
+                    if (nodeListIndex.value < nodeList.value.length) {
+                        const [x, y] = nodeList.value[nodeListIndex.value];
+                        placeToCell(x, y).classList.add("cell_algo");
+                        nodeListIndex.value++;
+                    } else {
+                        if (!found.value) {
                             clearInterval(myInterval.value);
-
-                        else {
+                        } else {
                             path.value = true;
                             placeToCell(startPos.value[0], startPos.value[1]).classList.add("cell_path");
                         }
                     }
-                }
-
-                else {
-                    if (pathListIndex.value == pathList.value.length) {
+                } else {
+                    if (pathListIndex.value < pathList.value.length) {
+                        const [x, y] = pathList.value[pathListIndex.value];
+                        placeToCell(x, y).classList.remove("cell_algo");
+                        placeToCell(x, y).classList.add("cell_path");
+                        pathListIndex.value++;
+                    } else {
                         placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("cell_path");
                         clearInterval(myInterval.value);
-                        return;
                     }
-
-                    placeToCell(pathList.value[pathListIndex.value][0], pathList.value[pathListIndex.value][1]).classList.remove("cell_algo");
-                    placeToCell(pathList.value[pathListIndex.value][0], pathList.value[pathListIndex.value][1]).classList.add("cell_path");
-                    pathListIndex.value++;
                 }
             }, 10);
-        }
+        };
 
         const fill = () => {
             for (let i = 0; i < grid.value.length; i++)
@@ -409,18 +427,42 @@ export default {
                     addWall(i, j);
         }
 
-        const greedyBestFirst = () => {
+        const getDirection = (from, to) => {
+            if (to[1] < from[1]) return 1;  // Up
+            if (to[0] > from[0]) return 2;  // Right
+            if (to[1] > from[1]) return 3;  // Down
+            if (to[0] < from[0]) return 4;  // Left
+            return 0;
+        };
 
-            for (let i = 0; i < grid.value.length; i++) {
-                for (let j = 0; j < grid.value[i].length; j++) {
+        const reconstructPath = () => {
+            let current = targetPos.value;
+            while (current[0] !== startPos.value[0] || current[1] !== startPos.value[1]) {
+                pathList.value.unshift(current);
+                let direction = grid.value[current[0]][current[1]];
+                switch (direction) {
+                    case 1: current = [current[0], current[1] + 1]; break;
+                    case 2: current = [current[0] - 1, current[1]]; break;
+                    case 3: current = [current[0], current[1] - 1]; break;
+                    case 4: current = [current[0] + 1, current[1]]; break;
+                }
+            }
+        };
+
+        const clearVisualization = () => {
+            for (let i = 0; i < gridSizeX.value; i++) {
+                for (let j = 0; j < gridSizeY.value; j++) {
                     if (grid.value[i][j] !== -1) {  // Don't reset walls
                         grid.value[i][j] = 0;
                     }
-                    // Clear previous visualizations
                     const cell = placeToCell(i, j);
                     cell.classList.remove("cell_algo", "cell_path");
                 }
             }
+        };
+
+        const greedyBestFirst = () => {
+            clearVisualization();
 
             nodeList.value = [];
             nodeListIndex.value = 0;
@@ -428,116 +470,119 @@ export default {
             pathListIndex.value = 0;
             found.value = false;
             path.value = false;
+
             let frontier = [startPos.value];
             grid.value[startPos.value[0]][startPos.value[1]] = 1;
 
-            do {
-                frontier.sort(function (a, b) {
-                    return distance(a, targetPos.value) - distance(b, targetPos);
-                });
+            while (frontier.length > 0 && !found.value) {
+                frontier.sort((a, b) => distance(a, targetPos.value) - distance(b, targetPos.value));
 
-                let list = getNeighbours(frontier[0], 1);
-                frontier.splice(0, 1);
+                let current = frontier.shift();
+                nodeList.value.push(current);
 
-                for (let i = 0; i < list.length; i++)
-                    if (getNode(list[i][0], list[i][1]) == 0) {
-                        frontier.push(list[i]);
-                        grid.value[list[i][0]][list[i][1]] = i + 1;
+                if (current[0] === targetPos.value[0] && current[1] === targetPos.value[1]) {
+                    found.value = true;
+                    break;
+                }
 
-                        if (list[i][0] == targetPos.value[0] && list[i][1] == targetPos.value[1]) {
-                            found.value = true;
-                            break;
-                        }
-
-                        nodeList.value.push(list[i]);
+                let neighbors = getNeighbours(current, 1);
+                for (let neighbor of neighbors) {
+                    if (getNode(neighbor[0], neighbor[1]) === 0) {
+                        frontier.push(neighbor);
+                        grid.value[neighbor[0]][neighbor[1]] = getDirection(current, neighbor);
                     }
+                }
             }
-            while (frontier.length > 0 && !found.value)
 
             if (found.value) {
-                let current_node = targetPos.value;
-
-                while (current_node[0] != startPos.value[0] || current_node[1] != startPos.value[1]) {
-                    switch (grid.value[current_node[0]][current_node[1]]) {
-                        case 1: current_node = [current_node[0], current_node[1] + 1]; break;
-                        case 2: current_node = [current_node[0] - 1, current_node[1]]; break;
-                        case 3: current_node = [current_node[0], current_node[1] - 1]; break;
-                        case 4: current_node = [current_node[0] + 1, current_node[1]]; break;
-                        default: break;
-                    }
-
-                    pathList.value.push(current_node);
-                }
-
-                pathList.value.pop();
-                pathList.value.reverse();
+                reconstructPath();
             }
 
-            mazeSolversInterval();
-        }
+            if (!generating.value) {
+                mazeSolversInterval();
+            }
+
+            return found.value;
+        };
 
         const primAlgorithm = () => {
-            fill();
-            let first_cell = [1, 1];
-            removeWall(first_cell[0], first_cell[1]);
-            placeToCell(first_cell[0], first_cell[1]).classList.add("visited_cell");
-            grid.value[first_cell[0]][first_cell[1]] = 1;
-            let wall_list = [];
-            let list = getNeighbours(first_cell, 1);
+            return new Promise((resolve) => {
+                fill();
+                let first_cell = [1, 1];
+                removeWall(first_cell[0], first_cell[1]);
+                placeToCell(first_cell[0], first_cell[1]).classList.add("visited_cell");
+                grid.value[first_cell[0]][first_cell[1]] = 1;
+                let wall_list = [];
+                let list = getNeighbours(first_cell, 1);
 
-            for (let i = 0; i < list.length; i++)
-                if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
-                    wall_list.push(list[i]);
+                for (let i = 0; i < list.length; i++)
+                    if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
+                        wall_list.push(list[i]);
 
-            myInterval.value = window.setInterval(function () {
-                // eslint-disable-next-line no-constant-condition
-                while (true) {
+                function processWalls() {
                     if (wall_list.length == 0) {
-                        clearInterval(myInterval.value);
                         clearGrid();
                         generating.value = false;
+                        resolve();
                         return;
                     }
 
-                    let index = randomInt(0, wall_list.length);
-                    let wall = wall_list[index];
-                    wall_list.splice(index, 1);
-                    let cell_pair;
+                    myInterval.value = window.setInterval(function () {
+                        // eslint-disable-next-line no-constant-condition
+                        while (true) {
+                            if (wall_list.length == 0) {
+                                clearInterval(myInterval.value);
+                                clearGrid();
+                                generating.value = false;
+                                return;
+                            }
 
-                    if (wall[0] % 2 == 0)
-                        cell_pair = [[wall[0] - 1, wall[1]], [wall[0] + 1, wall[1]]];
-                    else
-                        cell_pair = [[wall[0], wall[1] - 1], [wall[0], wall[1] + 1]];
+                            let index = randomInt(0, wall_list.length);
+                            let wall = wall_list[index];
+                            wall_list.splice(index, 1);
+                            let cell_pair;
 
-                    let new_cell;
-                    let valid = false;
+                            if (wall[0] % 2 == 0)
+                                cell_pair = [[wall[0] - 1, wall[1]], [wall[0] + 1, wall[1]]];
+                            else
+                                cell_pair = [[wall[0], wall[1] - 1], [wall[0], wall[1] + 1]];
 
-                    if (grid.value[cell_pair[0][0]][cell_pair[0][1]] < 1) {
-                        new_cell = cell_pair[0];
-                        valid = true;
-                    }
+                            let new_cell;
+                            let valid = false;
 
-                    else if (grid.value[cell_pair[1][0]][cell_pair[1][1]] < 1) {
-                        new_cell = cell_pair[1];
-                        valid = true;
-                    }
+                            if (grid.value[cell_pair[0][0]][cell_pair[0][1]] < 1) {
+                                new_cell = cell_pair[0];
+                                valid = true;
+                            }
 
-                    if (valid) {
-                        removeWall(wall[0], wall[1]);
-                        removeWall(new_cell[0], new_cell[1]);
-                        placeToCell(wall[0], wall[1]).classList.add("visited_cell");
-                        placeToCell(new_cell[0], new_cell[1]).classList.add("visited_cell");
-                        grid.value[new_cell[0]][new_cell[1]] = 1;
-                        let list = getNeighbours(new_cell, 1);
+                            else if (grid.value[cell_pair[1][0]][cell_pair[1][1]] < 1) {
+                                new_cell = cell_pair[1];
+                                valid = true;
+                            }
 
-                        for (let i = 0; i < list.length; i++)
-                            if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
-                                wall_list.push(list[i]);
+                            if (valid) {
+                                removeWall(wall[0], wall[1]);
+                                removeWall(new_cell[0], new_cell[1]);
+                                placeToCell(wall[0], wall[1]).classList.add("visited_cell");
+                                placeToCell(new_cell[0], new_cell[1]).classList.add("visited_cell");
+                                grid.value[new_cell[0]][new_cell[1]] = 1;
+                                let list = getNeighbours(new_cell, 1);
 
-                        return;
-                    }
+                                for (let i = 0; i < list.length; i++)
+                                    if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
+                                        wall_list.push(list[i]);
+
+                                return;
+                            }
+                        }
+                    }, 28);
+
+                    setTimeout(processWalls, 28)
                 }
-            }, 28);
+
+                processWalls()
+
+            })
         }
 
         onMounted(() => {
