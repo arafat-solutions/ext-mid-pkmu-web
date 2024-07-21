@@ -8,7 +8,14 @@
                 <button @click="changeDifficulty('normal')">Normal</button>
                 <button @click="changeDifficulty('hard')">Hard</button>
             </div>
-            <div></div>
+            <div>
+                <p>correct turn: {{ quizMetrics.correctTurn }}</p>
+                <p>wrong turn: {{ quizMetrics.wrongTurn }}</p>
+                <p>least possible move: {{ quizMetrics.leastPossibleMove }}</p>
+                <p>wallHit: {{ quizMetrics.wallHit }}</p>
+                <p>avgStepResponse: {{ quizMetrics.avgStepResponse.toFixed(2) }}</p>
+                <p>total maze: {{ quizMetrics.total_maze }}</p>
+            </div>
         </div>
     </div>
     <div id="containerMaze">
@@ -43,8 +50,18 @@ export default {
         const pathListIndex = ref(0)
         const found = ref(false)
         const path = ref(false)
-        const generatorMazeAlgo = ref(1) // 1. recursive, 2. prim
-        const difficulty = ref('normal') // easy, normal, hard
+        const difficulty = ref('normal'); // easy, normal, hard
+        const totalMoves = ref(0);
+        const lastMoveTime = ref(performance.now());
+        const quizMetrics = ref({
+            correctTurn: 0,
+            wrongTurn: 0,
+            leastPossibleMove: 0,
+            wallHit: 0,
+            avgStepResponse: 0,
+            total_maze: 1,
+        })
+
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 20; // This was the original initialMaxGridSize
@@ -207,11 +224,6 @@ export default {
             }
         }
 
-        const removeWall = (x, y) => {
-            grid.value[x][y] = 0;
-            placeToCell(x, y).classList.remove("cell_wall");
-        }
-
         const enclose = () => {
             for (let i = 0; i < grid.value.length; i++) {
                 addWall(i, 0);
@@ -318,6 +330,15 @@ export default {
             let attempts = 0;
             const maxAttempts = 10;
 
+            quizMetrics.value = {
+                correctTurn: 0,
+                wrongTurn: 0,
+                leastPossibleMove: 0,
+                wallHit: 0,
+                avgStepResponse: 0,
+                total_maze: 1,
+            };
+
             while (!solvableMaze && attempts < maxAttempts) {
                 attempts++;
                 console.log(`Attempting to generate maze: Attempt ${attempts}`);
@@ -340,17 +361,7 @@ export default {
 
                 try {
                     // Generate the maze
-                    switch (generatorMazeAlgo.value) {
-                        case 1:
-                            await recursiveDivision();
-                            break;
-                        case 2:
-                            await primAlgorithm();
-                            break;
-                        default:
-                            console.warn("Unknown maze generation algorithm selected");
-                            break;
-                    }
+                    await recursiveDivision();
 
                     // Check if the maze is solvable
                     solvableMaze = greedyBestFirst();
@@ -420,12 +431,6 @@ export default {
                 }
             }, 10);
         };
-
-        const fill = () => {
-            for (let i = 0; i < grid.value.length; i++)
-                for (let j = 0; j < grid.value[0].length; j++)
-                    addWall(i, j);
-        }
 
         const getDirection = (from, to) => {
             if (to[1] < from[1]) return 1;  // Up
@@ -502,88 +507,9 @@ export default {
                 mazeSolversInterval();
             }
 
+            quizMetrics.value.leastPossibleMove = pathList.value.length
             return found.value;
         };
-
-        const primAlgorithm = () => {
-            return new Promise((resolve) => {
-                fill();
-                let first_cell = [1, 1];
-                removeWall(first_cell[0], first_cell[1]);
-                placeToCell(first_cell[0], first_cell[1]).classList.add("visited_cell");
-                grid.value[first_cell[0]][first_cell[1]] = 1;
-                let wall_list = [];
-                let list = getNeighbours(first_cell, 1);
-
-                for (let i = 0; i < list.length; i++)
-                    if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
-                        wall_list.push(list[i]);
-
-                function processWalls() {
-                    if (wall_list.length == 0) {
-                        clearGrid();
-                        generating.value = false;
-                        resolve();
-                        return;
-                    }
-
-                    myInterval.value = window.setInterval(function () {
-                        // eslint-disable-next-line no-constant-condition
-                        while (true) {
-                            if (wall_list.length == 0) {
-                                clearInterval(myInterval.value);
-                                clearGrid();
-                                generating.value = false;
-                                return;
-                            }
-
-                            let index = randomInt(0, wall_list.length);
-                            let wall = wall_list[index];
-                            wall_list.splice(index, 1);
-                            let cell_pair;
-
-                            if (wall[0] % 2 == 0)
-                                cell_pair = [[wall[0] - 1, wall[1]], [wall[0] + 1, wall[1]]];
-                            else
-                                cell_pair = [[wall[0], wall[1] - 1], [wall[0], wall[1] + 1]];
-
-                            let new_cell;
-                            let valid = false;
-
-                            if (grid.value[cell_pair[0][0]][cell_pair[0][1]] < 1) {
-                                new_cell = cell_pair[0];
-                                valid = true;
-                            }
-
-                            else if (grid.value[cell_pair[1][0]][cell_pair[1][1]] < 1) {
-                                new_cell = cell_pair[1];
-                                valid = true;
-                            }
-
-                            if (valid) {
-                                removeWall(wall[0], wall[1]);
-                                removeWall(new_cell[0], new_cell[1]);
-                                placeToCell(wall[0], wall[1]).classList.add("visited_cell");
-                                placeToCell(new_cell[0], new_cell[1]).classList.add("visited_cell");
-                                grid.value[new_cell[0]][new_cell[1]] = 1;
-                                let list = getNeighbours(new_cell, 1);
-
-                                for (let i = 0; i < list.length; i++)
-                                    if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
-                                        wall_list.push(list[i]);
-
-                                return;
-                            }
-                        }
-                    }, 28);
-
-                    setTimeout(processWalls, 28)
-                }
-
-                processWalls()
-
-            })
-        }
 
         const movePlayer = (direction) => {
             const [x, y] = startPos.value;
@@ -606,20 +532,48 @@ export default {
             }
 
             // Check if the new position is a wall
-            if (grid.value[newX][newY] !== -1) {
-                // Remove player from current cell
-                placeToCell(x, y).classList.remove("start");
+            if (grid.value[newX][newY] === -1) {
+                quizMetrics.value.wallHit++;
+                quizMetrics.value.wrongTurn++;
+                return
+            }
 
-                // Update player position
-                startPos.value = [newX, newY];
+            totalMoves.value++;
 
-                // Add player to new cell
-                placeToCell(newX, newY).classList.add("start");
+            const currentIndex = pathList.value.findIndex(cell => cell[0] === x && cell[1] === y);
+            const newIndex = pathList.value.findIndex(cell => cell[0] === newX && cell[1] === newY);
 
-                // Check if player reached the target
-                if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
-                    alert("Congratulations! You've reached the target!");
+            if (newIndex !== -1) {
+                if (newIndex > currentIndex) {
+                    quizMetrics.value.correctTurn++;
+                } else {
+                    // Player is moving away or retreating on the optimal path
+                    quizMetrics.value.wrongTurn++;
                 }
+            } else {
+                quizMetrics.value.wrongTurn++;
+            }
+
+            // Remove player from current cell
+            placeToCell(x, y).classList.remove("start");
+
+            // Update player position
+            startPos.value = [newX, newY];
+
+            // Add player to new cell
+            placeToCell(newX, newY).classList.add("start");
+
+            // Update avgStepResponse
+            const currentTime = performance.now();
+            const stepTime = currentTime - lastMoveTime.value;
+            quizMetrics.value.avgStepResponse =
+                (quizMetrics.value.avgStepResponse * (totalMoves.value - 1) + stepTime) / totalMoves.value;
+            lastMoveTime.value = currentTime;
+
+            // Check if player reached the target
+            if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
+                alert("Congratulations! You've reached the target!");
+                console.log("Quiz Metrics:", quizMetrics.value);
             }
         };
 
@@ -644,6 +598,7 @@ export default {
             cellSize,
             gridSizeX,
             gridSizeY,
+            quizMetrics,
             setGridProperties,
             placeToCell,
             generateGrid,
