@@ -572,18 +572,19 @@ export default {
             const currentIndex = pathList.value.findIndex(cell => cell[0] === x && cell[1] === y);
             const newIndex = pathList.value.findIndex(cell => cell[0] === newX && cell[1] === newY);
 
-            // kurangi wrong turn kalo dia maju lagi di dalem kuning
-
             if (newIndex !== -1) {
                 if (newIndex > currentIndex) {
                     quizMetrics.value.correctTurn++;
-                } else {
-                    // Player is moving away or retreating on the optimal path
-                    quizMetrics.value.wrongTurn++;
+                } else if (newIndex < currentIndex) {
                     quizMetrics.value.correctTurn--
                 }
             } else {
-                quizMetrics.value.wrongTurn++;
+                if (newIndex < currentIndex) {
+                    quizMetrics.value.correctTurn--
+                } else {
+                    quizMetrics.value.wrongTurn++;
+
+                }
             }
 
             // Remove player from current cell
