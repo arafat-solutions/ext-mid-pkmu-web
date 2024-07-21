@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 export default {
     name: 'RotationMaze',
@@ -61,7 +61,6 @@ export default {
             avgStepResponse: 0,
             total_maze: 1,
         })
-
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 20; // This was the original initialMaxGridSize
@@ -591,6 +590,10 @@ export default {
             // Add event listener for key presses
             window.addEventListener('keydown', handleKeyPress);
         });
+
+        onUnmounted(() => {
+            window.removeEventListener(handleKeyPress)
+        })
 
         return {
             mazeWidth,
