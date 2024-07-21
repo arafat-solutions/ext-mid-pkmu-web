@@ -36,6 +36,7 @@ export default {
         const pathListIndex = ref(0)
         const found = ref(false)
         const path = ref(false)
+        const generatorMazeAlgo = ref(1) // 1. recursive, 2. prim
 
         const setGridProperties = () => {
             let ratio = mazeWidth.value / mazeHeight.value
@@ -47,6 +48,32 @@ export default {
                 gridSizeX.value += 1;
 
             cellSize.value = Math.floor(mazeHeight.value / initialMaxGridSize);
+        }
+
+        const clearGrid = () => {
+            if (!gridClean.value) {
+                for (let i = 0; i < timeouts.value.length; i++)
+                    clearTimeout(timeouts.value[i]);
+
+                timeouts.value = [];
+                clearInterval(myInterval.value);
+
+                for (let i = 0; i < grid.value.length; i++)
+                    for (let j = 0; j < grid.value[0].length; j++) {
+                        if (grid.value[i][j] > -1) {
+                            removeWall(i, j);
+                            placeToCell(i, j).classList.remove("cell_algo");
+                            placeToCell(i, j).classList.remove("cell_path");
+                        }
+
+                        else if (grid.value[i][j] < -1)
+                            addWall(i, j);
+
+                        placeToCell(i, j).classList.remove("visited_cell");
+                    }
+
+                gridClean.value = true;
+            }
         }
 
         const placeToCell = (x, y) => {
@@ -124,6 +151,11 @@ export default {
                 grid.value[x][y] = -1;
                 cell.classList.add("cell_wall");
             }
+        }
+
+        const removeWall = (x, y) => {
+            grid.value[x][y] = 0;
+            placeToCell(x, y).classList.remove("cell_wall");
         }
 
         const enclose = () => {
@@ -250,7 +282,18 @@ export default {
             targetPos.value = targetTemp;
 
             gridClean.value = false;
-            recursiveDivision();
+
+            switch (generatorMazeAlgo.value) {
+                case 1:
+                    recursiveDivision();
+                    break;
+                case 2:
+                    primAlgorithm();
+                    break;
+                default:
+                    console.warn("Unknown maze generation algorithm selected");
+                    break;
+            }
 
         }
 
@@ -304,7 +347,25 @@ export default {
             }, 10);
         }
 
+        const fill = () => {
+            for (let i = 0; i < grid.value.length; i++)
+                for (let j = 0; j < grid.value[0].length; j++)
+                    addWall(i, j);
+        }
+
         const greedyBestFirst = () => {
+
+            for (let i = 0; i < grid.value.length; i++) {
+                for (let j = 0; j < grid.value[i].length; j++) {
+                    if (grid.value[i][j] !== -1) {  // Don't reset walls
+                        grid.value[i][j] = 0;
+                    }
+                    // Clear previous visualizations
+                    const cell = placeToCell(i, j);
+                    cell.classList.remove("cell_algo", "cell_path");
+                }
+            }
+
             nodeList.value = [];
             nodeListIndex.value = 0;
             pathList.value = [];
@@ -357,6 +418,70 @@ export default {
             }
 
             mazeSolversInterval();
+        }
+
+        const primAlgorithm = () => {
+            fill();
+            let first_cell = [1, 1];
+            removeWall(first_cell[0], first_cell[1]);
+            placeToCell(first_cell[0], first_cell[1]).classList.add("visited_cell");
+            grid.value[first_cell[0]][first_cell[1]] = 1;
+            let wall_list = [];
+            let list = getNeighbours(first_cell, 1);
+
+            for (let i = 0; i < list.length; i++)
+                if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
+                    wall_list.push(list[i]);
+
+            myInterval.value = window.setInterval(function () {
+                // eslint-disable-next-line no-constant-condition
+                while (true) {
+                    if (wall_list.length == 0) {
+                        clearInterval(myInterval.value);
+                        clearGrid();
+                        generating.value = false;
+                        return;
+                    }
+
+                    let index = randomInt(0, wall_list.length);
+                    let wall = wall_list[index];
+                    wall_list.splice(index, 1);
+                    let cell_pair;
+
+                    if (wall[0] % 2 == 0)
+                        cell_pair = [[wall[0] - 1, wall[1]], [wall[0] + 1, wall[1]]];
+                    else
+                        cell_pair = [[wall[0], wall[1] - 1], [wall[0], wall[1] + 1]];
+
+                    let new_cell;
+                    let valid = false;
+
+                    if (grid.value[cell_pair[0][0]][cell_pair[0][1]] < 1) {
+                        new_cell = cell_pair[0];
+                        valid = true;
+                    }
+
+                    else if (grid.value[cell_pair[1][0]][cell_pair[1][1]] < 1) {
+                        new_cell = cell_pair[1];
+                        valid = true;
+                    }
+
+                    if (valid) {
+                        removeWall(wall[0], wall[1]);
+                        removeWall(new_cell[0], new_cell[1]);
+                        placeToCell(wall[0], wall[1]).classList.add("visited_cell");
+                        placeToCell(new_cell[0], new_cell[1]).classList.add("visited_cell");
+                        grid.value[new_cell[0]][new_cell[1]] = 1;
+                        let list = getNeighbours(new_cell, 1);
+
+                        for (let i = 0; i < list.length; i++)
+                            if (list[i][0] > 0 && list[i][0] < grid.value.length - 1 && list[i][1] > 0 && list[i][1] < grid.value[0].length - 1)
+                                wall_list.push(list[i]);
+
+                        return;
+                    }
+                }
+            }, 28);
         }
 
         onMounted(() => {
