@@ -5,15 +5,17 @@
       <Heading id="heading" class="indicator-bg" :size="200" :heading="heading"/>
       <button id="btn-green" class="btn-listening-action green-gradient"></button>
       <button id="btn-red" class="btn-listening-action red-gradient"></button>
+      <Altimeter id="altimeter" class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure" />
+      <AnalogClock id="clock" />
       <Variometer class="indicator-bg" :size="200" :vario="vario" v-show="false" />
       <Attitude class="indicator-bg" :size="200" :roll="roll" :pitch="pitch" v-show="false"/>
-      <Altimeter class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure" v-show="false" />
     </div>
   </div>
 </template>
 
 <script>
-import {Airspeed, Attitude, Altimeter, Heading, Variometer} from  'vue-flight-indicators'
+import {Airspeed, Attitude, Altimeter, Heading, Variometer} from  'vue-flight-indicators';
+import AnalogClock from './instrument-coordination/AnalogClock';
 
 export default {
   components: {
@@ -21,7 +23,8 @@ export default {
     Heading,
     Variometer,
     Airspeed,
-    Altimeter
+    Altimeter,
+    AnalogClock,
   },
   data: function () {
     return {
@@ -83,6 +86,18 @@ body {
   position: absolute;
   left: 540px;
   top: 75px;
+}
+
+#altimeter {
+  position: absolute;
+  left: 780px;
+  top: 200px;
+}
+
+#clock {
+  position: absolute;
+  left: 540px;
+  top: 300px;
 }
 
 #btn-green {
