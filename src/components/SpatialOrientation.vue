@@ -22,13 +22,11 @@
 
       <div class="right-content" style="width: 40%;">
         <div class="question">
-          <p v-if="config.left_turn && config.right_turn">
-            How many Left Turns and Right Turns in the line?
-          </p>
-          <p v-else-if="config.left_turn">
+          <p v-if="question === 'left'">
             How many Left Turns in the line?
           </p>
-          <p v-else-if="config.right_turn">
+
+          <p v-if="question === 'right'">
             How many Right Turns in the line?
           </p>
 
@@ -37,7 +35,7 @@
               <button v-for="(x, index) in optionAnswers" :key="index" class="digit-number" @click="pressAnswer(x)">
                 {{ x }}
               </button>
-              <button class="digit-number" @click="pressAnswer('next')">
+              <button class="digit-number next" @click="pressAnswer('next')">
                 Next
               </button>
             </div>
@@ -72,8 +70,10 @@ export default {
       lines: [],
       optionAnswers: [],
       directions: [[1, 0], [0, 1], [-1, 0], [0, -1]],
+      question: null,
       answer: null,
       drawLineinterval: null,
+      timeoutIdRemoveInterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
       config: {
@@ -103,6 +103,7 @@ export default {
   methods: {
     pause() {
       clearInterval(this.countdownInterval);
+
       if (this.drawLineinterval) {
         clearInterval(this.drawLineinterval);
       }
@@ -143,8 +144,8 @@ export default {
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
-          // this.config.crash = 0
-          this.config.crash = spatialOrientation.crash
+          this.config.crash = 0
+          // this.config.crash = spatialOrientation.crash
 
           this.config.full_image = spatialOrientation.full_image, //true or false
           this.config.left_turn = spatialOrientation.left_turn, //true or false
@@ -155,7 +156,7 @@ export default {
           this.isConfigLoaded = true;
 
           setTimeout(() => {
-            this.generateLines();
+            this.generateCoordinat();
             this.startCountdown();
           }, 1000);
         }
@@ -223,30 +224,79 @@ export default {
       }
     },
     async generateLines() {
-      this.lines = [];
       this.optionAnswers = [];
       this.rightTurns = 0;
       this.leftTurns = 0;
-      this.collisions = 0;
       this.responseQuestion = 0;
       this.responseTime = 0;
       this.answer = null;
       this.isShowAnswerBox = false
 
-      this.generateCoordinat();
       if (this.config.full_image) {
         await this.drawLineFull();
       } else {
         await this.drawLineOneByOne();
       }
     },
-    generateCoordinat() {
+    async checkLines() {
+      try {
+        if (this.lines.length > 0) {
+          // Start Reset Coordinat If Not Keep in The Bounds
+          for (let i = 0; i < this.lines.length; i++) {
+            if (this.lines[i].x < 39 || this.lines[i].x > 441 || this.lines[i].y < 39 || this.lines[i].y > 441) {
+              return false;
+            }
+          }
+          // End Reset Coordinat If Not Keep in The Bounds
+
+          if (this.config.crash > 0) {
+            // Start Reset Coordinat Same More than Two
+            const frequencyMap = {};
+
+            this.lines.forEach(coord => {
+              const key = `${coord.x},${coord.y}`;
+              if (frequencyMap[key]) {
+                frequencyMap[key]++;
+              } else {
+                frequencyMap[key] = 1;
+              }
+            });
+
+            for (const key in frequencyMap) {
+              if (frequencyMap[key] > 2) {
+                return false;
+              }
+            }
+            // End Reset Coordinat Same More than Two
+          }
+        }
+
+        // Start Reset Coordinat If Line Go Back Previous
+        if (this.lines.length > 4) {
+          if (
+            (this.lines[this.lines.length - 1].x === this.lines[this.lines.length - 4].x && this.lines[this.lines.length - 1].y === this.lines[this.lines.length - 4].y) ||
+            (this.lines[this.lines.length - 1].x === this.lines[this.lines.length - 2].x && this.lines[this.lines.length - 1].y === this.lines[this.lines.length - 2].y)
+          ) {
+            return false;
+          }
+        }
+        // End Reset Coordinat If Line Go Back Previous
+
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
+    async generateCoordinat() {
+      this.lines = [];
+      this.collisions = 0;
+
       const length = 40;
       const visitedCoordinates = new Set();
 
       let x = this.width / 2;
       let y = this.height / 2;
-      this.lines.push({ 'x': x, 'y': y });
+      this.lines.push({ x, y });
       visitedCoordinates.add(`${x},${y}`);
 
       if (this.config.crash === 0) {
@@ -261,50 +311,53 @@ export default {
             newX = x + this.directions[this.direction][0] * length;
             newY = y + this.directions[this.direction][1] * length;
 
-            // Keep Within Bounds
-            newX = Math.max(40, Math.min(this.width - 40, newX));
-            newY = Math.max(40, Math.min(this.height - 40, newY));
-
             validCoordinate = !visitedCoordinates.has(`${newX},${newY}`) && !(newX === x && newY === y);
-
           } while (!validCoordinate);
 
           x = newX;
           y = newY;
-          this.lines.push({ 'x': x, 'y': y });
+          this.lines.push({ x, y });
           visitedCoordinates.add(`${x},${y}`);
         }
       }
 
       if (this.config.crash > 0) {
-        console.log(this.config.crash, 'this.config.crash')
         this.collisions = 0;
-        let newX, newY, validCoordinate;
 
-        do {
-          const turn = Math.random() < 0.5 ? -1 : 1;
-          this.direction = (this.direction + turn + 4) % 4;
+        while (this.collisions < this.config.crash) {
+          let newX, newY, validCoordinate;
 
-          newX = x + this.directions[this.direction][0] * length;
-          newY = y + this.directions[this.direction][1] * length;
+          do {
+            const turn = Math.random() < 0.5 ? -1 : 1;
+            this.direction = (this.direction + turn + 4) % 4;
 
-          // Keep Within Bounds
-          newX = Math.max(40, Math.min(this.width - 40, newX));
-          newY = Math.max(40, Math.min(this.height - 40, newY));
+            newX = x + this.directions[this.direction][0] * length;
+            newY = y + this.directions[this.direction][1] * length;
 
-          validCoordinate = visitedCoordinates.has(`${newX},${newY}`);
+            validCoordinate = visitedCoordinates.has(`${newX},${newY}`);
 
-          if (validCoordinate) {
-            this.collisions++;
-            console.log(this.collisions, 'collisions');
-            this.lines.push({ 'x': newX, 'y': newY });
-          } else {
-            x = newX;
-            y = newY;
-            this.lines.push({ 'x': x, 'y': y });
-            visitedCoordinates.add(`${x},${y}`);
+            if (validCoordinate) {
+              this.collisions++;
+              this.lines.push({ x: newX, y: newY });
+            } else {
+              x = newX;
+              y = newY;
+              this.lines.push({ x, y });
+              visitedCoordinates.add(`${x},${y}`);
+            }
+          } while (!validCoordinate);
+
+          if (this.collisions >= this.config.crash) {
+            break;
           }
-        } while (this.collisions < this.config.crash)
+        }
+      }
+
+      let checkLines = await this.checkLines();
+      if (!checkLines) {
+        this.generateCoordinat();
+      } else {
+        this.generateLines()
       }
     },
     async drawLineFull() {
@@ -332,7 +385,7 @@ export default {
       this.responseQuestion = Date.now();
       this.setAnswerOption();
 
-      setTimeout(() => {
+      this.timeoutIdRemoveInterval = setTimeout(() => {
         this.startTailDisappearance();
       }, 3000);
     },
@@ -371,7 +424,7 @@ export default {
           this.responseQuestion = Date.now();
           this.setAnswerOption();
 
-          setTimeout(() => {
+          this.timeoutIdRemoveInterval = setTimeout(() => {
             this.startTailDisappearance();
           }, 3000);
         }
@@ -383,25 +436,32 @@ export default {
 
       const prevDirection = this.lines[index - 1];
       const currDirection = this.lines[index];
-      const nextDirection = this.lines[index + 1];
 
-      if (prevDirection.x < currDirection.x && currDirection.y !== nextDirection.y) {
+      if (prevDirection.x < currDirection.x) {
         this.rightTurns++;
       }
-      if (prevDirection.x > currDirection.x && currDirection.y !== nextDirection.y) {
+      if (prevDirection.x > currDirection.x) {
         this.leftTurns++;
       }
     },
     setAnswerOption() {
       if (this.config.left_turn && this.config.right_turn) {
-        this.answer = this.rightTurns + this.leftTurns
+        this.question = Math.random() < 0.5 ? 'right' : 'left';
       } else if (this.config.left_turn) {
-        this.answer = this.leftTurns
+        this.question = 'left'
       } else if (this.config.right_turn) {
+        this.question = 'right'
+      }
+
+      if (this.question === 'left') {
+        this.answer = this.leftTurns
+      }
+
+      if (this.question === 'right') {
         this.answer = this.rightTurns
       }
 
-      console.log(this.answer, 'answer');
+      console.log(this.answer, 'answer')
 
       const totalNumbers = 11;
       const halfBefore = Math.min(this.answer - 1, Math.floor((totalNumbers - 1) / 2));
@@ -539,12 +599,18 @@ export default {
         }
       }
 
+      clearTimeout(this.timeoutIdRemoveInterval);
+      this.timeoutIdRemoveInterval = null;
+
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
 
+      clearInterval(this.drawLineinterval);
+      this.drawLineinterval = null;
+
       setTimeout(() => {
-        this.generateLines();
-      }, 1000);
+        this.generateCoordinat();
+      }, 1500);
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
@@ -660,7 +726,7 @@ export default {
     margin-top: 10px;
   }
   canvas {
-    border: 0px solid #000;
+    border: 1px solid #000;
     background-color: white;
   }
   .question {
@@ -686,5 +752,8 @@ export default {
     cursor: pointer;
     background-color: #505250;
     color: white;
+  }
+  .next {
+    background-color: #0349D0;
   }
 </style>
