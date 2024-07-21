@@ -1,6 +1,17 @@
 <template>
-    <button @click="() => { generateGrid(); mazeGenerator(); }">new maze</button>
-    <button @click="greedyBestFirst">View solution</button>
+    <div class="containerSettingMaze">
+        <div class="settingMaze">
+            <button @click="() => { generateGrid(); mazeGenerator(); }">new maze</button>
+            <button @click="greedyBestFirst">View solution</button>
+            <br /> <br />
+            <div>
+                <button @click="changeDifficulty('easy')">Easy</button>
+                <button @click="changeDifficulty('normal')">Normal</button>
+                <button @click="changeDifficulty('hard')">Hard</button>
+            </div>
+            <div></div>
+        </div>
+    </div>
     <div id="containerMaze">
         <div id="visualizerMaze" :style="{ width: `${mazeWidth}px`, height: `${mazeHeight}px` }">
             <div id="gridMaze" :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
@@ -15,9 +26,6 @@ import { ref, onMounted } from 'vue';
 export default {
     name: 'RotationMaze',
     setup() {
-        const initialMaxGridSize = 20;
-        const initialStartPos = [1, 1]
-        const initialTargetPos = [19, 18]
         const mazeWidth = ref(500);
         const mazeHeight = ref(500);
         const gridSizeX = ref(0)
@@ -37,17 +45,33 @@ export default {
         const found = ref(false)
         const path = ref(false)
         const generatorMazeAlgo = ref(1) // 1. recursive, 2. prim
+        const difficulty = ref('normal') // easy, normal, hard
+
+        const setGridSizeByDifficulty = () => {
+            let baseSize = 20; // This was the original initialMaxGridSize
+            switch (difficulty.value) {
+                case 'easy':
+                    return Math.floor(baseSize * 0.75); // Smaller maze
+                case 'normal':
+                    return baseSize; // Original size
+                case 'hard':
+                    return Math.floor(baseSize * 1.25); // Larger maze
+                default:
+                    return baseSize;
+            }
+        }
 
         const setGridProperties = () => {
-            let ratio = mazeWidth.value / mazeHeight.value
+            let ratio = mazeWidth.value / mazeHeight.value;
+            let maxGridSize = setGridSizeByDifficulty();
 
-            gridSizeX.value = Math.floor(initialMaxGridSize * ratio);
-            gridSizeY.value = Math.floor(initialMaxGridSize * ratio)
+            gridSizeX.value = Math.floor(maxGridSize * ratio);
+            gridSizeY.value = Math.floor(maxGridSize * ratio);
 
             if (gridSizeX.value % 2 == 0)
                 gridSizeX.value += 1;
 
-            cellSize.value = Math.floor(mazeHeight.value / initialMaxGridSize);
+            cellSize.value = Math.floor(mazeHeight.value / maxGridSize);
         }
 
         const clearGrid = () => {
@@ -78,6 +102,32 @@ export default {
 
         const placeToCell = (x, y) => {
             return document.querySelector(".x_" + x.toString(10) + ".y_" + y.toString(10));
+        }
+
+        const getInitialStartPos = () => {
+            switch (difficulty.value) {
+                case 'easy':
+                    return [1, 1];
+                case 'normal':
+                    return [1, 1];
+                case 'hard':
+                    return [1, 1];
+                default:
+                    return [1, 1];
+            }
+        }
+
+        const getInitialTargetPos = () => {
+            switch (difficulty.value) {
+                case 'easy':
+                    return [Math.floor(gridSizeX.value * 0.75), Math.floor(gridSizeY.value * 0.75)];
+                case 'normal':
+                    return [gridSizeX.value - 2, gridSizeY.value - 2];
+                case 'hard':
+                    return [gridSizeX.value - 2, gridSizeY.value - 2];
+                default:
+                    return [gridSizeX.value - 2, gridSizeY.value - 2];
+            }
         }
 
         const generateGrid = () => {
@@ -111,8 +161,8 @@ export default {
             }
             grid.value = new Array(gridSizeX.value).fill(0).map(() => new Array(gridSizeY.value).fill(0));
 
-            startPos.value = initialStartPos
-            targetPos.value = initialTargetPos
+            startPos.value = getInitialStartPos()
+            targetPos.value = getInitialTargetPos()
 
             if (startPos.value[0] % 2 == 0) {
                 startPos.value[0] += 1;
@@ -132,6 +182,12 @@ export default {
 
             placeToCell(startPos.value[0], startPos.value[1]).classList.add("start");
             placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("target");
+        }
+
+        const changeDifficulty = (newDifficulty) => {
+            difficulty.value = newDifficulty;
+            generateGrid();
+            mazeGenerator();
         }
 
         const clear = () => {
@@ -501,7 +557,8 @@ export default {
             generateGrid,
             clear,
             mazeGenerator,
-            greedyBestFirst
+            greedyBestFirst,
+            changeDifficulty
         };
 
     }
@@ -615,5 +672,18 @@ export default {
 .target {
     background-image: url(./shapes/target.svg);
     background-size: 100% 100%;
+}
+
+.containerSettingMaze {
+    position: relative;
+    height: 100vh;
+}
+
+.settingMaze {
+    position: absolute;
+    background-color: aqua;
+    height: 100%;
+    width: 200px;
+    padding: 20px
 }
 </style>
