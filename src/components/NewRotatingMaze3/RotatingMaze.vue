@@ -585,10 +585,57 @@ export default {
             })
         }
 
+        const movePlayer = (direction) => {
+            const [x, y] = startPos.value;
+            let newX = x;
+            let newY = y;
+
+            switch (direction) {
+                case 'ArrowUp':
+                    newY = Math.max(0, y - 1);
+                    break;
+                case 'ArrowDown':
+                    newY = Math.min(gridSizeY.value - 1, y + 1);
+                    break;
+                case 'ArrowLeft':
+                    newX = Math.max(0, x - 1);
+                    break;
+                case 'ArrowRight':
+                    newX = Math.min(gridSizeX.value - 1, x + 1);
+                    break;
+            }
+
+            // Check if the new position is a wall
+            if (grid.value[newX][newY] !== -1) {
+                // Remove player from current cell
+                placeToCell(x, y).classList.remove("start");
+
+                // Update player position
+                startPos.value = [newX, newY];
+
+                // Add player to new cell
+                placeToCell(newX, newY).classList.add("start");
+
+                // Check if player reached the target
+                if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
+                    alert("Congratulations! You've reached the target!");
+                }
+            }
+        };
+
+        const handleKeyPress = (event) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                movePlayer(event.key);
+            }
+        };
+
         onMounted(() => {
             console.log('Component mounted');
             generateGrid();
             mazeGenerator();
+
+            // Add event listener for key presses
+            window.addEventListener('keydown', handleKeyPress);
         });
 
         return {
