@@ -27,7 +27,7 @@
         position: 'fixed',
         left: '50%',
         top: '50%',
-        transform: 'translate(-50%, -50%)'
+        transform: 'translate(-50%, -50%)',
     }">
             <div id="visualizerMaze" :style="{
         width: `${mazeWidth}px`,
@@ -70,13 +70,20 @@ export default {
         const found = ref(false)
         const path = ref(false)
         const showMazeSolver = ref(false) // to show maze solver
-        const difficulty = ref('normal'); // easy, normal, hard
         const totalMoves = ref(0);
         const lastMoveTime = ref(performance.now());
         const rotationDegree = ref(0);
         const isRotating = ref(false)
         const isRotationActive = ref(true);
         const loadingGenerating = ref(false)
+        const config = ref({
+            duration: 0,
+            rotationFrequency: 0,
+            size: 0,
+            difficulty: '',
+            userId: '',
+            sessionId: ''
+        })
         const quizMetrics = ref({
             correctTurn: 0,
             wrongTurn: 0,
@@ -88,7 +95,7 @@ export default {
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 20; // This was the original initialMaxGridSize
-            switch (difficulty.value) {
+            switch (config.value.difficulty) {
                 case 'easy':
                     return Math.floor(baseSize * 0.75); // Smaller maze
                 case 'normal':
@@ -143,7 +150,7 @@ export default {
         }
 
         const getInitialStartPos = () => {
-            switch (difficulty.value) {
+            switch (config.value.difficulty) {
                 case 'easy':
                     return [1, 1];
                 case 'normal':
@@ -156,7 +163,7 @@ export default {
         }
 
         const getInitialTargetPos = () => {
-            switch (difficulty.value) {
+            switch (config.value.difficulty) {
                 case 'easy':
                     return [Math.floor(gridSizeX.value * 0.75), Math.floor(gridSizeY.value * 0.75)];
                 case 'normal':
@@ -223,7 +230,7 @@ export default {
         }
 
         const changeDifficulty = (newDifficulty) => {
-            difficulty.value = newDifficulty;
+            config.value.difficulty = newDifficulty;
             // loadingGenerating.value = true
             generateGrid();
             mazeGenerator();
@@ -624,7 +631,6 @@ export default {
             const initialRotation = rotationDegree.value
             const rotationSpeed = 30
             const rotationDuration = 5000
-            const rotationInterval = 2000
 
             const rotationDirection = Math.random() < 0.5 ? 1 : -1;
             const currentRotationSpeed = rotationSpeed * rotationDirection;
@@ -643,7 +649,7 @@ export default {
                     isRotating.value = false;
                     setTimeout(() => {
                         startRotation();
-                    }, rotationInterval);
+                    }, config.value.rotationFrequency);
                 }
             };
             requestAnimationFrame(animate);
@@ -660,8 +666,30 @@ export default {
             startRotation();
         }
 
+        const initConfig = () => {
+            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+            const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
+            const { duration, rotation_frequency, size } = configRotatingMaze.config
+
+            const ROTATION_FREQUENCY_VALUE = {
+                easy: 6000,
+                medium: 4000,
+                hard: 2000
+            }
+
+            config.value = {
+                duration: duration,
+                rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency],
+                size,
+                difficulty: 'medium', // difficulty masih hardcode
+                userId: scheduleData.userId,
+                sessionId: scheduleData.sessionId
+            }
+        }
+
         onMounted(() => {
             loadingGenerating.value = true
+            initConfig()
             generateGrid();
             mazeGenerator();
 
@@ -743,7 +771,6 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* overflow: hidden; */
 }
 
 .rotationIndicatorMaze {
