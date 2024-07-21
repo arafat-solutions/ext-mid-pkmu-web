@@ -1,4 +1,8 @@
 <template>
+    <div v-if="loadingGenerating" class="loadingFirstMaze">
+        <div class="spinnerMaze"></div>
+        <p>Preparing the maze...</p>
+    </div>
     <div class="containerSettingMaze">
         <div class="settingMaze">
             <button @click="async () => { await generateGrid(); await mazeGenerator(); }">new maze</button>
@@ -19,8 +23,23 @@
         </div>
     </div>
     <div id="containerMaze">
-        <div id="visualizerMaze" :style="{ width: `${mazeWidth}px`, height: `${mazeHeight}px` }">
-            <div id="gridMaze" :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
+        <div class="circularBaseMaze" :style="{
+        position: 'fixed',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)'
+    }">
+            <div id="visualizerMaze" :style="{
+        width: `${mazeWidth}px`,
+        height: `${mazeHeight}px`,
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`
+    }">
+                <div id="gridMaze" :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
+                </div>
+                <div class="rotationIndicatorMaze"></div>
             </div>
         </div>
     </div>
@@ -50,9 +69,14 @@ export default {
         const pathListIndex = ref(0)
         const found = ref(false)
         const path = ref(false)
+        const showMazeSolver = ref(false) // to show maze solver
         const difficulty = ref('normal'); // easy, normal, hard
         const totalMoves = ref(0);
         const lastMoveTime = ref(performance.now());
+        const rotationDegree = ref(0);
+        const isRotating = ref(false)
+        const isRotationActive = ref(true);
+        const loadingGenerating = ref(false)
         const quizMetrics = ref({
             correctTurn: 0,
             wrongTurn: 0,
@@ -200,6 +224,7 @@ export default {
 
         const changeDifficulty = (newDifficulty) => {
             difficulty.value = newDifficulty;
+            // loadingGenerating.value = true
             generateGrid();
             mazeGenerator();
         }
@@ -325,6 +350,8 @@ export default {
         }
 
         const mazeGenerator = async () => {
+            stopRotation()
+
             let solvableMaze = false;
             let attempts = 0;
             const maxAttempts = 10;
@@ -363,7 +390,7 @@ export default {
                     await recursiveDivision();
 
                     // Check if the maze is solvable
-                    solvableMaze = greedyBestFirst();
+                    solvableMaze = await greedyBestFirst();
 
                     if (!solvableMaze) {
                         console.log(`Generated maze has no solution. Attempt ${attempts}. Regenerating...`);
@@ -371,6 +398,8 @@ export default {
                         console.log(`Solvable maze generated on attempt ${attempts}!`);
                         updateStartTargetCells();
                         generating.value = false;
+                        loadingGenerating.value = false
+                        restartRotation()
                     }
                 } catch (error) {
                     console.error("Error during maze generation:", error);
@@ -400,35 +429,6 @@ export default {
                 return grid.value[x][y];
             }
             return -2;  // Out of bounds
-        };
-
-        const mazeSolversInterval = () => {
-            myInterval.value = window.setInterval(() => {
-                if (!path.value) {
-                    if (nodeListIndex.value < nodeList.value.length) {
-                        const [x, y] = nodeList.value[nodeListIndex.value];
-                        placeToCell(x, y).classList.add("cell_algo");
-                        nodeListIndex.value++;
-                    } else {
-                        if (!found.value) {
-                            clearInterval(myInterval.value);
-                        } else {
-                            path.value = true;
-                            placeToCell(startPos.value[0], startPos.value[1]).classList.add("cell_path");
-                        }
-                    }
-                } else {
-                    if (pathListIndex.value < pathList.value.length) {
-                        const [x, y] = pathList.value[pathListIndex.value];
-                        placeToCell(x, y).classList.remove("cell_algo");
-                        placeToCell(x, y).classList.add("cell_path");
-                        pathListIndex.value++;
-                    } else {
-                        placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("cell_path");
-                        clearInterval(myInterval.value);
-                    }
-                }
-            }, 10);
         };
 
         const getDirection = (from, to) => {
@@ -465,7 +465,7 @@ export default {
             }
         };
 
-        const greedyBestFirst = () => {
+        const greedyBestFirst = async () => {
             clearVisualization();
 
             nodeList.value = [];
@@ -500,14 +500,45 @@ export default {
 
             if (found.value) {
                 reconstructPath();
+                quizMetrics.value.leastPossibleMove = pathList.value.length
             }
 
             if (!generating.value) {
-                mazeSolversInterval();
+                await mazeSolversInterval();
             }
 
-            quizMetrics.value.leastPossibleMove = pathList.value.length
             return found.value;
+        };
+
+        const mazeSolversInterval = async () => {
+            if (!showMazeSolver.value) return
+
+            myInterval.value = window.setInterval(() => {
+                if (!path.value) {
+                    if (nodeListIndex.value < nodeList.value.length) {
+                        const [x, y] = nodeList.value[nodeListIndex.value];
+                        placeToCell(x, y).classList.add("cell_algo");
+                        nodeListIndex.value++;
+                    } else {
+                        if (!found.value) {
+                            clearInterval(myInterval.value);
+                        } else {
+                            path.value = true;
+                            placeToCell(startPos.value[0], startPos.value[1]).classList.add("cell_path");
+                        }
+                    }
+                } else {
+                    if (pathListIndex.value < pathList.value.length) {
+                        const [x, y] = pathList.value[pathListIndex.value];
+                        placeToCell(x, y).classList.remove("cell_algo");
+                        placeToCell(x, y).classList.add("cell_path");
+                        pathListIndex.value++;
+                    } else {
+                        placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("cell_path");
+                        clearInterval(myInterval.value);
+                    }
+                }
+            }, 10);
         };
 
         const movePlayer = (direction) => {
@@ -533,7 +564,6 @@ export default {
             // Check if the new position is a wall
             if (grid.value[newX][newY] === -1) {
                 quizMetrics.value.wallHit++;
-                quizMetrics.value.wrongTurn++;
                 return
             }
 
@@ -542,12 +572,15 @@ export default {
             const currentIndex = pathList.value.findIndex(cell => cell[0] === x && cell[1] === y);
             const newIndex = pathList.value.findIndex(cell => cell[0] === newX && cell[1] === newY);
 
+            // kurangi wrong turn kalo dia maju lagi di dalem kuning
+
             if (newIndex !== -1) {
                 if (newIndex > currentIndex) {
                     quizMetrics.value.correctTurn++;
                 } else {
                     // Player is moving away or retreating on the optimal path
                     quizMetrics.value.wrongTurn++;
+                    quizMetrics.value.correctTurn--
                 }
             } else {
                 quizMetrics.value.wrongTurn++;
@@ -582,8 +615,52 @@ export default {
             }
         };
 
+        const startRotation = () => {
+            if (!isRotationActive.value) return;
+
+            isRotating.value = true;
+            const startTime = Date.now();
+            const initialRotation = rotationDegree.value
+            const rotationSpeed = 30
+            const rotationDuration = 5000
+            const rotationInterval = 2000
+
+            const rotationDirection = Math.random() < 0.5 ? 1 : -1;
+            const currentRotationSpeed = rotationSpeed * rotationDirection;
+
+            const animate = () => {
+                if (!isRotationActive.value) {
+                    isRotating.value = false;
+                    return;
+                }
+
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < rotationDuration) {
+                    rotationDegree.value = initialRotation + currentRotationSpeed * elapsedTime / 1000
+                    requestAnimationFrame(animate);
+                } else {
+                    isRotating.value = false;
+                    setTimeout(() => {
+                        startRotation();
+                    }, rotationInterval);
+                }
+            };
+            requestAnimationFrame(animate);
+        }
+
+        const stopRotation = () => {
+            isRotationActive.value = false;
+            isRotating.value = false;
+            rotationDegree.value = 0
+        }
+
+        const restartRotation = () => {
+            isRotationActive.value = true;
+            startRotation();
+        }
+
         onMounted(() => {
-            console.log('Component mounted');
+            loadingGenerating.value = true
             generateGrid();
             mazeGenerator();
 
@@ -592,7 +669,7 @@ export default {
         });
 
         onUnmounted(() => {
-            window.removeEventListener(handleKeyPress)
+            window.removeEventListener('keydown', handleKeyPress)
         })
 
         return {
@@ -602,13 +679,15 @@ export default {
             gridSizeX,
             gridSizeY,
             quizMetrics,
+            loadingGenerating,
             setGridProperties,
             placeToCell,
             generateGrid,
             clear,
             mazeGenerator,
             greedyBestFirst,
-            changeDifficulty
+            changeDifficulty,
+            rotationDegree
         };
 
     }
@@ -631,7 +710,7 @@ export default {
     left: 50%;
     top: 50%;
     z-index: 2;
-    box-shadow: 0px 0px 30px rgba(6, 13, 29, 0.692);
+    /* box-shadow: 0px 0px 30px rgba(6, 13, 29, 0.692); */
 }
 
 #visualizerMaze {
@@ -642,6 +721,7 @@ export default {
     height: 100%;
     z-index: 1;
     background-color: rgb(197, 198, 211);
+    transition: transform 0.3s ease;
 }
 
 #my_table {
@@ -651,6 +731,34 @@ export default {
     width: 100%;
     height: 100%;
     z-index: 4;
+}
+
+.circularBaseMaze {
+    width: 620px;
+    height: 620px;
+    border-radius: 50%;
+    border: 2px solid black;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* overflow: hidden; */
+}
+
+.rotationIndicatorMaze {
+    position: absolute;
+    top: 50%;
+    right: -70px;
+    width: 0;
+    height: 0;
+    transform: translateY(-50%);
+
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 20px solid white;
+
+    /* Add the black border */
+    filter: drop-shadow(-2px 0 0 black) drop-shadow(0 2px 0 black) drop-shadow(2px 0 0 black) drop-shadow(0 -1px 0 black);
 }
 
 @-webkit-keyframes algo_in {
@@ -735,5 +843,41 @@ export default {
     height: 100%;
     width: 200px;
     padding: 20px
+}
+
+.loadingFirstMaze {
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    z-index: 199;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.loadingFirstMaze p {
+    margin-top: 50px;
+    font-size: 24px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinnerMaze {
+    width: 80px;
+    height: 80px;
+    border: 12px solid #5b4ac4;
+    border-top-color: #cecece;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 </style>
