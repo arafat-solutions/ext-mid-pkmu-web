@@ -37,6 +37,9 @@
               <button v-for="(x, index) in optionAnswers" :key="index" class="digit-number" @click="pressAnswer(x)">
                 {{ x }}
               </button>
+              <button class="digit-number" @click="pressAnswer('next')">
+                Next
+              </button>
             </div>
           </div>
 
@@ -170,9 +173,9 @@ export default {
           clearInterval(this.tailRemoveInterval)
 
           // Submit Answer
-          // setTimeout(() => {
-          //   this.calculatedResult();
-          // }, 1000);
+          setTimeout(() => {
+            this.calculatedResult();
+          }, 1000);
         }
       }, 1000);
     },
@@ -215,7 +218,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Spatial Orientation Test')
+        removeTestByNameAndUpdateLocalStorage('Spatial Orientation')
         this.$router.push('/module');
       }
     },
@@ -236,8 +239,6 @@ export default {
       } else {
         await this.drawLineOneByOne();
       }
-
-      // await this.drawLineOneByOne();
     },
     generateCoordinat() {
       const length = 40;
@@ -385,11 +386,9 @@ export default {
       const nextDirection = this.lines[index + 1];
 
       if (prevDirection.x < currDirection.x && currDirection.y !== nextDirection.y) {
-        console.log('right')
         this.rightTurns++;
       }
       if (prevDirection.x > currDirection.x && currDirection.y !== nextDirection.y) {
-        console.log('left')
         this.leftTurns++;
       }
     },
@@ -425,7 +424,7 @@ export default {
 
       if (this.lines.length < 2) return;
 
-      const end = this.lines[this.lines.length - 1];
+      const end = this.lines[this.lines.length-1];
       const start = this.lines[this.lines.length - 2];
 
       const angle = Math.atan2(end.y - start.y, end.x - start.x);
@@ -532,14 +531,12 @@ export default {
         return;
       }
 
-      console.log(this.answer)
-      console.log(value)
-
-      if (this.answer === value) {
-        console.log('correct')
-        this.correctAnswer++;
-        this.responseTime = Date.now();
-				this.calculateResponseTime();
+      if (value !== 'next') {
+        if (this.answer === value) {
+          this.correctAnswer++;
+          this.responseTime = Date.now();
+          this.calculateResponseTime();
+        }
       }
 
       clearInterval(this.tailRemoveInterval);
