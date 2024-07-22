@@ -144,9 +144,7 @@ export default {
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
-          this.config.crash = 0
-          // this.config.crash = spatialOrientation.crash
-
+          this.config.crash = spatialOrientation.crash
           this.config.full_image = spatialOrientation.full_image, //true or false
           this.config.left_turn = spatialOrientation.left_turn, //true or false
           this.config.right_turn = spatialOrientation.right_turn, //true or false
@@ -436,12 +434,27 @@ export default {
 
       const prevDirection = this.lines[index - 1];
       const currDirection = this.lines[index];
+      const nextDirection = this.lines[index + 1];
 
       if (prevDirection.x < currDirection.x) {
         this.rightTurns++;
       }
       if (prevDirection.x > currDirection.x) {
         this.leftTurns++;
+      }
+
+      if (
+          (prevDirection.x < currDirection.x) &&
+          ((prevDirection.y === currDirection.y) && (currDirection.y === nextDirection.y))
+        ) {
+          this.rightTurns--;
+      }
+
+      if (
+          (prevDirection.x > currDirection.x) &&
+          ((prevDirection.y === currDirection.y) && (currDirection.y === nextDirection.y))
+        ) {
+          this.leftTurns--;
       }
     },
     setAnswerOption() {
@@ -461,9 +474,7 @@ export default {
         this.answer = this.rightTurns
       }
 
-      console.log(this.answer, 'answer')
-
-      const totalNumbers = 11;
+      const totalNumbers = this.answer === 0 ? 10 : 11;
       const halfBefore = Math.min(this.answer - 1, Math.floor((totalNumbers - 1) / 2));
       const halfAfter = totalNumbers - 1 - halfBefore;
 
@@ -578,12 +589,15 @@ export default {
 
         if (i === halfLength && this.config.speed_increasing) {
           clearInterval(this.tailRemoveInterval);
+
+          // Increase Speed Remove
           this.tailRemoveInterval = setInterval(tailRemove, 2000/2);
         }
 
         this.drawIndexRemoval = i;
       };
 
+      // Speed Remove
       this.tailRemoveInterval = setInterval(tailRemove, 2000);
     },
     pressAnswer(value) {
