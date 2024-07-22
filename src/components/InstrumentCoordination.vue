@@ -10,21 +10,17 @@
       <button id="button-plus" class="btn-plus-minus">+</button>
       <div id="airspeed-indicator"></div>
       <button id="button-minus" class="btn-plus-minus">-</button>
-      <Variometer class="indicator-bg" :size="200" :vario="vario" v-show="false" />
-      <Attitude class="indicator-bg" :size="200" :roll="roll" :pitch="pitch" v-show="false"/>
     </div>
   </div>
 </template>
 
 <script>
-import {Airspeed, Attitude, Altimeter, Heading, Variometer} from  'vue-flight-indicators';
+import {Airspeed, Altimeter, Heading} from  'vue-flight-indicators';
 import AnalogClock from './instrument-coordination/AnalogClock';
 
 export default {
   components: {
-    Attitude,
     Heading,
-    Variometer,
     Airspeed,
     Altimeter,
     AnalogClock,
@@ -133,7 +129,8 @@ body {
   top: 235px;
   width: 33px;
   height: 113px;
-  border: 1px solid #9e9e9e
+  border: 1px solid #9e9e9e;
+  background: linear-gradient(to top, blue 50%, transparent 50%);
 }
 
 .btn-plus-minus {
