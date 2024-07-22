@@ -3,6 +3,10 @@
         <div class="spinnerMaze"></div>
         <p>Preparing the maze...</p>
     </div>
+    <div v-if="loadingSubmit" class="loadingContainerMaze">
+        <div class="spinnerMaze"></div>
+        <p class="loadingText">Your result is submitting...</p>
+    </div>
     <div class="containerSettingMaze">
         <div class="settingMaze">
             <button @click="async () => { await generateGrid(); await mazeGenerator(); }">new maze</button>
@@ -43,16 +47,23 @@
             </div>
         </div>
     </div>
+    <div class="timerMaze">
+        <p>Waktu:</p>
+        <p>{{ formatTime(config.duration) }}</p>
+    </div>
 </template>
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 export default {
     name: 'RotationMaze',
     setup() {
-        const mazeWidth = ref(500);
-        const mazeHeight = ref(500);
+        const tesInterval = ref(null)
+        const loadingSubmit = ref(false)
+        const mazeWidth = ref(400);
+        const mazeHeight = ref(400);
         const gridSizeX = ref(0)
         const gridSizeY = ref(0)
         const cellSize = ref(0)
@@ -79,10 +90,11 @@ export default {
         const config = ref({
             duration: 0,
             rotationFrequency: 0,
-            size: 0,
+            size: '',
             difficulty: '',
             userId: '',
-            sessionId: ''
+            sessionId: '',
+            testId: ''
         })
         const quizMetrics = ref({
             correctTurn: 0,
@@ -92,9 +104,10 @@ export default {
             avgStepResponse: 0,
             total_maze: 1,
         })
+        const arrayMetrics = ref([])
 
         const setGridSizeByDifficulty = () => {
-            let baseSize = 20; // This was the original initialMaxGridSize
+            let baseSize = 15; // This was the original initialMaxGridSize
             switch (config.value.difficulty) {
                 case 'easy':
                     return Math.floor(baseSize * 0.75); // Smaller maze
@@ -117,7 +130,7 @@ export default {
             if (gridSizeX.value % 2 == 0)
                 gridSizeX.value += 1;
 
-            cellSize.value = Math.floor(mazeHeight.value / maxGridSize);
+            cellSize.value = Math.floor(mazeHeight.value / maxGridSize) - 1;
         }
 
         const clearGrid = () => {
@@ -406,6 +419,7 @@ export default {
                         updateStartTargetCells();
                         generating.value = false;
                         loadingGenerating.value = false
+                        countDownTestTime()
                         restartRotation()
                     }
                 } catch (error) {
@@ -548,7 +562,7 @@ export default {
             }, 10);
         };
 
-        const movePlayer = (direction) => {
+        const movePlayer = async (direction) => {
             const [x, y] = startPos.value;
             let newX = x;
             let newY = y;
@@ -612,8 +626,40 @@ export default {
 
             // Check if player reached the target
             if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
-                alert("Congratulations! You've reached the target!");
-                console.log("Quiz Metrics:", quizMetrics.value);
+                console.log("Congratulations! You've reached the target!");
+
+                // 1. Push quizMetrics to arrayMetrics
+                arrayMetrics.value.push({ ...quizMetrics.value });
+                localStorage.setItem('arrayMetrics', JSON.stringify(arrayMetrics.value))
+
+                // 2. Reset quizMetrics
+                quizMetrics.value = {
+                    correctTurn: 0,
+                    wrongTurn: 0,
+                    leastPossibleMove: 0,
+                    wallHit: 0,
+                    avgStepResponse: 0,
+                    total_maze: quizMetrics.value.total_maze + 1,
+                };
+
+                // 3. Generate new maze
+                // 4. Pause the config.duration countdown
+                clearInterval(tesInterval.value);
+
+                // 5. Reset rotationDegree and stop rotating
+                rotationDegree.value = 0;
+                stopRotation();
+
+                // Generate new maze
+                loadingGenerating.value = true;
+                await generateGrid();
+                await mazeGenerator();
+
+                // Resume the countdown
+                countDownTestTime();
+
+                // Restart rotation
+                restartRotation();
             }
         };
 
@@ -669,7 +715,7 @@ export default {
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-            const { duration, rotation_frequency, size } = configRotatingMaze.config
+            const { duration, rotation_frequency, id } = configRotatingMaze.config
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,
@@ -678,13 +724,62 @@ export default {
             }
 
             config.value = {
-                duration: duration,
+                duration: duration * 10,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency],
-                size,
+                size: 'medium', // still hardcode
                 difficulty: 'medium', // difficulty masih hardcode
                 userId: scheduleData.userId,
-                sessionId: scheduleData.sessionId
+                sessionId: scheduleData.sessionId,
+                testId: id
             }
+        }
+
+        const formatTime = (seconds) => {
+            const minutes = Math.floor(seconds / 60);
+            const remainderSeconds = seconds % 60;
+            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+        }
+
+        const submitResult = async () => {
+            try {
+                loadingSubmit.value = true;
+                const API_URL = process.env.VUE_APP_API_URL;
+                const payload = {
+                    testSessionId: config.value.sessionId,
+                    userId: config.value.userId,
+                    batteryTestConfigId: config.value.testId,
+                    result: arrayMetrics.value
+                }
+                const response = await fetch(`${API_URL}api/submission`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                removeTestByNameAndUpdateLocalStorage('Rotating Maze')
+                localStorage.removeItem('arrayMetrics')
+                this.$router.push('/module');
+            } catch (error) {
+                console.log(error, "<< error")
+            } finally {
+                loadingSubmit.value = false; // Set loading to false when the submission is complete
+            }
+        }
+
+        const countDownTestTime = () => {
+            tesInterval.value = setInterval(async () => {
+                if (config.value.duration > 0) {
+                    config.value.duration--;
+                } else {
+                    clearInterval(tesInterval.value);
+                    await submitResult();
+                }
+            }, 1000)
         }
 
         onMounted(() => {
@@ -699,6 +794,7 @@ export default {
 
         onUnmounted(() => {
             window.removeEventListener('keydown', handleKeyPress)
+            clearInterval(tesInterval.value);
         })
 
         return {
@@ -709,6 +805,9 @@ export default {
             gridSizeY,
             quizMetrics,
             loadingGenerating,
+            rotationDegree,
+            config,
+            loadingSubmit,
             setGridProperties,
             placeToCell,
             generateGrid,
@@ -716,7 +815,7 @@ export default {
             mazeGenerator,
             greedyBestFirst,
             changeDifficulty,
-            rotationDegree
+            formatTime,
         };
 
     }
@@ -749,7 +848,7 @@ export default {
     top: 50%;
     height: 100%;
     z-index: 1;
-    background-color: rgb(197, 198, 211);
+    /* background-color: rgb(197, 198, 211); */
     transition: transform 0.3s ease;
 }
 
@@ -763,20 +862,21 @@ export default {
 }
 
 .circularBaseMaze {
-    width: 620px;
-    height: 620px;
+    width: 460px;
+    height: 460px;
     border-radius: 50%;
     border: 2px solid black;
     background-color: white;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: 4%;
 }
 
 .rotationIndicatorMaze {
     position: absolute;
     top: 50%;
-    right: -70px;
+    right: -40px;
     width: 0;
     height: 0;
     transform: translateY(-50%);
@@ -907,5 +1007,61 @@ export default {
     border-top-color: #cecece;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+.timerMaze {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    font-size: 24px;
+    font-weight: bold;
+    width: 300px;
+    height: 60px;
+    background-color: #6757dc;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.timerMaze p {
+    margin: 0;
+    padding: 0;
+}
+
+.timerMaze :nth-child(1) {
+    font-size: 12px;
+}
+
+.timerMaze :nth-child(2) {
+    font-size: 24px;
+    margin-top: 4px
+}
+
+.loadingContainerMaze {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+}
+
+.loadingContainerMaze p {
+    margin-top: 50px;
+    font-size: 24px;
 }
 </style>
