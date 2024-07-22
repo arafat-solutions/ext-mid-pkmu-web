@@ -94,7 +94,6 @@ export default {
 
           this.config.duration = radarVigillance.duration * 60;
           this.config.batteryTestConfigId = radarVigillance.id;
-          this.config.moduleId = config.moduleId;
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
@@ -475,7 +474,6 @@ export default {
         const payload = {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
-          moduleId: this.config.moduleId,
           batteryTestConfigId: this.config.batteryTestConfigId,
           result: this.result,
         }

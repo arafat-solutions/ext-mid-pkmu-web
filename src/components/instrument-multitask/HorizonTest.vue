@@ -15,7 +15,7 @@ export default {
   data() {
     return {
       isMouseInsideCircle: false,
-      tiltAngle: 10,
+      tiltAngle: 0,
       yellowLinePositionY: 0,
       yellowLinePositionX: 0,
       circleShiftX: 0,
@@ -23,6 +23,10 @@ export default {
       horizonHeight: 300,
       greenLineStartTime: null,
       greenLineDuration: 0,
+      targetTiltAngle: 0,
+      targetCircleShiftX: 0,
+      currentTilt: 0,
+      currentShiftX: 0,
       intervalRandomTilt: null,
       intervalRandomCircleShift: null,
       yellowLineMoved: false,
@@ -77,13 +81,13 @@ export default {
 			if (type === 'random-tilt') {
 				this.intervalRandomTilt = setInterval(() => {
 					this.randomTilt();
-				}, this.speedInterval());
+				}, this.setSpeed());
 			}
 
 			if (type === 'circle-shift') {
 				this.intervalRandomCircleShift = setInterval(() => {
 					this.randomCircleShift();
-				}, this.speedInterval());
+				}, this.setSpeed());
 			}
 		},
     initHorizon() {
@@ -235,15 +239,22 @@ export default {
 			ctx.stroke();
     },
     randomTilt() {
-      this.tiltAngle = this.isActive ? this.smoothRandom(-80, 80, this.tiltAngle) : 0; // Kemiringan acak antara -80 dan 80 derajat
-
-      this.updateHorizon();
+      const targetTilt = this.isActive ? this.getRandom(-80, 80) : 0;
+      this.animateValue(this.currentTilt, targetTilt, this.setSpeed(), (value) => {
+        this.currentTilt = value;
+        this.tiltAngle = value;
+        this.updateHorizon();
+      });
     },
     randomCircleShift() {
-      this.circleShiftX = this.isActive ? this.smoothRandom(-125, 125, this.circleShiftX) : null; // Kemiringan acak antara -125 dan 125 x position
+      const targetShift = this.isActive ? this.getRandom(-125, 125) : 0;
+      this.animateValue(this.currentShiftX, targetShift, this.setSpeed(), (value) => {
+        this.currentShiftX = value;
+        this.circleShiftX = value;
+        this.updateHorizon();
+      });
 
-      this.updateHorizon();
-			this.checkMousePosition();
+      this.checkMousePosition();
     },
     moveYellowLine(event) {
       if (this.isPause || this.isTimesUp || !this.isActive) {
@@ -309,36 +320,46 @@ export default {
         }
       }, 1000);
     },
-    speedInterval() {
-      switch (this.speed) {
-        case 'very_slow':
-          return 1250;
-        case 'slow':
-          return 1000;
-        case 'medium':
-          return 750;
-        case 'fast':
-          return 500;
-        case 'very_fast':
-          return 250;
-        default:
-          return 1000;
+    setSpeed() {
+      if (this.speed === 'very_slow') {
+        return 6000;
+      }
+      if (this.speed === 'slow') {
+        return 5000;
+      }
+      if (this.speed === 'medium') {
+        return 4000;
+      }
+      if (this.speed === 'fast') {
+        return 3000;
+      }
+      if (this.speed === 'very_fast') {
+        return 2000;
       }
     },
-    smoothRandom(min, max, previousValue, smoothingFactor = 1) {
-      let u = 0, v = 0;
-      while(u === 0) u = Math.random(); // Converting [0,1) to (0,1)
-      while(v === 0) v = Math.random();
-      let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-      num = num / 10.0 + 0.5; // Translate to 0 -> 1
-      if (num > 1 || num < 0) return this.smoothRandom(min, max, smoothingFactor); // Resample between 0 and 1
-      num *= max - min + 1;
-      num += min;
+    getRandom(min, max) {
+      return Math.random() * (max - min) + min;
+    },
+    animateValue(start, end, duration, callback) {
+      const startTime = performance.now();
 
-      // Apply smoothing
-      previousValue = previousValue + smoothingFactor * (num - previousValue);
+      const step = (currentTime) => {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        const easedProgress = this.easeInOutCubic(progress);
 
-      return previousValue;
+        const value = start + (end - start) * easedProgress;
+        callback(value);
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      };
+
+      requestAnimationFrame(step);
+    },
+    easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     },
   },
 };
