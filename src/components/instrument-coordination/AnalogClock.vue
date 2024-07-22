@@ -49,8 +49,8 @@ export default {
 }
 
 .clock {
-  min-height: 200px;
-  min-width: 200px;
+  min-height: 160px;
+  min-width: 160px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -88,8 +88,8 @@ export default {
 }
 
 .hour {
-  height: 10em;
-  width: 10em;
+  height: 8em;
+  width: 8em;
 }
 
 .hour:before {
@@ -102,8 +102,8 @@ export default {
 }
 
 .min {
-  height: 12em;
-  width: 12em;
+  height: 10em;
+  width: 10em;
 }
 
 .min:before {
@@ -115,8 +115,8 @@ export default {
 }
 
 .sec {
-  height: 13em;
-  width: 13em;
+  height: 10em;
+  width: 10em;
 }
 
 .sec:before {

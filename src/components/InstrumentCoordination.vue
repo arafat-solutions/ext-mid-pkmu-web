@@ -96,8 +96,8 @@ body {
 
 #clock {
   position: absolute;
-  left: 540px;
-  top: 300px;
+  left: 555px;
+  top: 350px;
 }
 
 #btn-green {
