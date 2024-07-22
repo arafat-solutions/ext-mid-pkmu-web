@@ -55,7 +55,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+// import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 export default {
     name: 'RotationMaze',
@@ -107,7 +107,7 @@ export default {
         const arrayMetrics = ref([])
 
         const setGridSizeByDifficulty = () => {
-            let baseSize = 15; // This was the original initialMaxGridSize
+            let baseSize = 15;
             switch (config.value.difficulty) {
                 case 'easy':
                     return Math.floor(baseSize * 0.75); // Smaller maze
@@ -750,20 +750,22 @@ export default {
                     batteryTestConfigId: config.value.testId,
                     result: arrayMetrics.value
                 }
-                const response = await fetch(`${API_URL}api/submission`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                });
 
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.statusText}`);
-                }
-                removeTestByNameAndUpdateLocalStorage('Rotating Maze')
-                localStorage.removeItem('arrayMetrics')
-                this.$router.push('/module');
+                console.log(API_URL, payload)
+                // const response = await fetch(`${API_URL}api/submission`, {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //     },
+                //     body: JSON.stringify(payload),
+                // });
+
+                // if (!response.ok) {
+                //     throw new Error(`Error: ${response.statusText}`);
+                // }
+                // removeTestByNameAndUpdateLocalStorage('Rotating Maze')
+                // localStorage.removeItem('arrayMetrics')
+                // this.$router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
             } finally {
@@ -788,7 +790,6 @@ export default {
             generateGrid();
             mazeGenerator();
 
-            // Add event listener for key presses
             window.addEventListener('keydown', handleKeyPress);
         });
 
@@ -838,7 +839,6 @@ export default {
     left: 50%;
     top: 50%;
     z-index: 2;
-    /* box-shadow: 0px 0px 30px rgba(6, 13, 29, 0.692); */
 }
 
 #visualizerMaze {
@@ -848,7 +848,6 @@ export default {
     top: 50%;
     height: 100%;
     z-index: 1;
-    /* background-color: rgb(197, 198, 211); */
     transition: transform 0.3s ease;
 }
 
@@ -1044,20 +1043,17 @@ export default {
 }
 
 .loadingContainerMaze {
-    /* Add your loading indicator styles here */
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background-color: white;
-    /* Black background with 80% opacity */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    /* Ensure it is above other content */
 }
 
 .loadingContainerMaze p {
