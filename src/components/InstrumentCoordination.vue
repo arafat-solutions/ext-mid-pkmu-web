@@ -7,6 +7,9 @@
       <button id="btn-red" class="btn-listening-action red-gradient"></button>
       <Altimeter id="altimeter" class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure" />
       <AnalogClock id="clock" />
+      <button id="button-plus" class="btn-plus-minus">+</button>
+      <div id="airspeed-indicator"></div>
+      <button id="button-minus" class="btn-plus-minus">-</button>
       <Variometer class="indicator-bg" :size="200" :vario="vario" v-show="false" />
       <Attitude class="indicator-bg" :size="200" :roll="roll" :pitch="pitch" v-show="false"/>
     </div>
@@ -110,6 +113,47 @@ body {
   position: absolute;
   left: 325px;
   top: 425px;
+}
+
+#button-plus {
+  position: absolute;
+  left: 250px;
+  top: 200px;
+}
+
+#button-minus {
+  position: absolute;
+  left: 250px;
+  top: 350px;
+}
+
+#airspeed-indicator {
+  position: absolute;
+  left: 250px;
+  top: 235px;
+  width: 33px;
+  height: 113px;
+  border: 1px solid #9e9e9e
+}
+
+.btn-plus-minus {
+  min-width: 35px;
+  min-height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #9e9e9e; /* Grey color */
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 22px;
+  font-weight: bold;
+  color: white;
+}
+
+.btn-plus-minus:hover {
+  background-color: #757575; /* Darker grey on hover */
 }
 
 .btn-listening-action {
