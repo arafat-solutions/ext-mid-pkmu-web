@@ -107,13 +107,12 @@ export default {
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').config
-            const { id, display } = config
+            const { id, display, duration, interval } = config
 
             this.configBe = {
-                duration: 0.5 * 60,
-                questionInterval: 2,
+                duration: duration * 60,
+                questionInterval: interval,
                 testId: id,
-                moduleId: scheduleData.moduleId,
                 sessionId: scheduleData.sessionId,
                 userId: scheduleData.userId,
                 display: {
@@ -122,8 +121,8 @@ export default {
                 },
             }
 
-            this.testTime = 0.5 * 60
-            this.memoryTime = 2
+            this.testTime = duration * 60
+            this.memoryTime = interval
         },
         updateCanvasDimensions() {
             this.canvasWidth = this.canvasDimensions.width;
@@ -266,16 +265,16 @@ export default {
             const canvasTop = this.canvasRect.top;
             const canvasLeft = this.canvasRect.left;
             const inputWidth = 100;
-            const inputHeight = 20;
             const margin = 50;
+            const verticalOffset = 40;
 
             return {
                 input1: {
-                    top: canvasTop + (this.canvasHeight / 4) - (inputHeight / 2),
+                    top: canvasTop + (this.canvasHeight / 4) + verticalOffset,
                     left: canvasLeft + this.canvasWidth - inputWidth - margin
                 },
                 input2: {
-                    top: canvasTop + (this.canvasHeight * 3 / 4) - (inputHeight / 2),
+                    top: canvasTop + (this.canvasHeight * 3 / 4) + verticalOffset,
                     left: canvasLeft + this.canvasWidth - inputWidth - margin
                 }
             };
@@ -520,7 +519,6 @@ export default {
                 const payload = {
                     testSessionId: this.configBe.sessionId,
                     userId: this.configBe.userId,
-                    moduleId: this.configBe.moduleId,
                     batteryTestConfigId: this.configBe.testId,
                     result: this.result
                 }
