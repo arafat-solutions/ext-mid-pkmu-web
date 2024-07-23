@@ -149,7 +149,23 @@ export default {
             }
 
             this.lastSpokenCallsign = callsign;
-            this.speech = new SpeechSynthesisUtterance(`your callsign is: ${callsign}, and new heading is: ${this.angle}`);
+
+            // format callsign
+            let formattedCallsign = callsign.split('').join(', ');
+            formattedCallsign = formattedCallsign.replace(/(\d)/g, (match, p1) => {
+                const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+                return numberWords[parseInt(p1)];
+            });
+
+            // format heading
+            let formattedHeading = this.angle.toString().split('').join(', ');
+            formattedHeading = formattedHeading.replace(/(\d)/g, (match, p1) => {
+                const numberWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+                return numberWords[parseInt(p1)];
+            });
+
+            this.speech = new SpeechSynthesisUtterance(`your callsign is: ${formattedCallsign}, and new heading is: ${formattedHeading}`);
+
             if (this.callsign === callsign) {
                 this.updateResults('call_sign', { total_match_count: 1 });
             }
