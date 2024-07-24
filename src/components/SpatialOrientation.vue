@@ -127,16 +127,18 @@ export default {
       this.isPause = false;
     },
     exit() {
-      this.$router.push('module');
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
     },
     setSpeed(speed) {
       return speed * 3000;
     },
     initConfig() {
-      try {
-        let config = JSON.parse(localStorage.getItem('scheduleData'));
+      let config = JSON.parse(localStorage.getItem('scheduleData'));
 
-        if (config) {
+      if (config) {
+        try {
           const spatialOrientation = config.tests.find(test => test.testUrl === 'spatial-orientation-test').config;
 
           this.config.duration = spatialOrientation.duration * 60;
@@ -152,15 +154,15 @@ export default {
           this.config.speed_increasing = spatialOrientation.speed_increasing, //true or false,
 
           this.isConfigLoaded = true;
-
-          setTimeout(() => {
-            this.generateCoordinat();
-            this.startCountdown();
-          }, 1000);
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        } finally {
+          this.generateCoordinat();
+          this.startCountdown();
         }
-      } catch (error) {
-        console.log(error, 'error')
       }
+
+      console.warn('No schedule data found in localStorage.');
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
@@ -189,6 +191,11 @@ export default {
     },
     async submitResult() {
       try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
