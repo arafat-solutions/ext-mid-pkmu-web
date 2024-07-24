@@ -7,8 +7,8 @@
             Apakah Anda Yakin <br>akan memulai test Instrument Coordination?
           </strong>
           </p>
-        <button @click="exit()" style="margin-right: 20px;">Batal</button>
-        <button @click="closeModal()">Ya</button>
+        <button @click="exit" style="margin-right: 20px;">Batal</button>
+        <button @click="startTest">Ya</button>
       </div>
     </div>
     <div v-if="timeLeft > 0 && !isShowModal" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
@@ -53,8 +53,9 @@ export default {
       isLoading: false,
       minuteTime: null,
       timeLeft: 120, // Countdown time in seconds
-      intervalTimer: null,
+      intervalTimerTest: null,
       intervalTimerSoundQuestion: null,
+      utterance: null,
       soundQuestionInterval: 3000, //in ms
       isPause: false,
       isConfigLoaded: false,
@@ -70,6 +71,11 @@ export default {
       altitude: 0,
       pressure: 0,
       soundQuestions: [],
+      config: {
+        soundQuestion: {
+          speed: 'medium', //slow, medium, fast
+        },
+      }
     }
   },
   mounted: function () {
@@ -95,13 +101,16 @@ export default {
     },
   },
   methods: {
-    closeModal() {
+    startTest() {
       this.isShowModal = false;
+      this.setupSound();
       this.startAgain();
     },
     pause() {
-      clearInterval(this.intervalTimer);
+      clearInterval(this.intervalTimerTest);
+      clearInterval(this.intervalTimerSoundQuestion);
       this.isPause = true;
+      window.speechSynthesis.pause();
     },
     startCountdown() {
       if (this.isPause) {
@@ -132,7 +141,9 @@ export default {
     },
     generateNumber() {
       const randomNumber = Math.floor(Math.random() * 99) + 1;
-      this.currentNumber = randomNumber;
+      console.log(randomNumber);
+      this.utterance.text = randomNumber.toString();
+      window.speechSynthesis.speak(this.utterance);
       this.soundQuestions.push(randomNumber);
       this.checkConsecutive();
     },
@@ -151,6 +162,27 @@ export default {
       alert('Three consecutive odd or even numbers detected!');
       // Reset the numbers list or take any other action as needed
       this.soundQuestions = [];
+    },
+    setupSound() {
+      if (!('speechSynthesis' in window)) {
+        console.error('Sorry, your browser does not support text-to-speech.');
+        return;
+      }
+
+      this.utterance = new SpeechSynthesisUtterance();
+      this.utterance.lang = 'en-US';
+      this.utterance.rate = this.getRateSpeedSound();
+      this.utterance.pitch = 1.2;
+      this.utterance.volume = 1;
+    },
+    getRateSpeedSound() {
+      if (this.config.soundQuestion.speed === 'slow') {
+        return 0.35;
+      } else if (this.config.soundQuestion.speed === 'medium') {
+        return 0.70;
+      }
+
+      return 1;
     },
   }
 }
