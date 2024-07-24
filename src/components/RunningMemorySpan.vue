@@ -139,28 +139,28 @@ export default {
       }, 1000);
     },
     initConfig() {
-        let config = JSON.parse(localStorage.getItem('scheduleData'));
+      let config = JSON.parse(localStorage.getItem('scheduleData'));
 
-        if (config) {
-          try {
-            const runningMemorySpan = config.tests.find(test => test.testUrl === 'running-memory-span-test' || test.name === 'Running Memory Span Test').config;
-            this.config.duration = 1 * 60;
-            this.config.batteryTestConfigId = runningMemorySpan.id;
-            this.config.sessionId = config.sessionId;
-            this.config.userId = config.userId;
+      if (config) {
+        try {
+          const runningMemorySpan = config.tests.find(test => test.testUrl === 'running-memory-span-test' || test.name === 'Running Memory Span Test').config;
+          this.config.duration = 1 * 60;
+          this.config.batteryTestConfigId = runningMemorySpan.id;
+          this.config.sessionId = config.sessionId;
+          this.config.userId = config.userId;
 
-            this.config.broadcast_length = runningMemorySpan.broadcast_length;
-            this.config.sequence_pattern = runningMemorySpan.sequence_pattern;
-            this.config.include_zero = runningMemorySpan.include_zero;
-            this.config.speed = runningMemorySpan.speed;
-          } catch (e) {
-            console.error('Error parsing schedule data:', e);
-          } finally {
-            this.isShowModal = true;
-          }
+          this.config.broadcast_length = runningMemorySpan.broadcast_length;
+          this.config.sequence_pattern = runningMemorySpan.sequence_pattern;
+          this.config.include_zero = runningMemorySpan.include_zero;
+          this.config.speed = runningMemorySpan.speed;
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        } finally {
+          this.isShowModal = true;
         }
-
+      } else {
         console.warn('No schedule data found in localStorage.');
+      }
     },
     calculatedResult() {
       this.result.total_question = this.totalQuestion;

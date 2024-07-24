@@ -160,9 +160,9 @@ export default {
           this.generateCoordinat();
           this.startCountdown();
         }
+      } else {
+        console.warn('No schedule data found in localStorage.');
       }
-
-      console.warn('No schedule data found in localStorage.');
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {

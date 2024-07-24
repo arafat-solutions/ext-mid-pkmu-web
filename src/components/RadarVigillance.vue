@@ -114,6 +114,8 @@ export default {
           this.initRadar();
           this.startCountdown();
         }
+      } else {
+        console.warn('No schedule data found in localStorage.');
       }
     },
     initRadar() {
