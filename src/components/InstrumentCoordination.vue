@@ -78,7 +78,7 @@ export default {
       config: {
         soundQuestion: {
           isActive: true, //true, false
-          speed: 'medium', //slow, medium, fast
+          speed: 'slow', //slow, medium, fast
         },
       },
     }

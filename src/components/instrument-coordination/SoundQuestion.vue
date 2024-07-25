@@ -18,13 +18,14 @@ export default {
       utterance: null,
       soundQuestionInterval: 3000, //in ms
       canAnswerSoundQuestion: false,
-      soundQuestions: [],
+      soundQuestionChecks: [],
       result: {
-        soundQuestion: {
-          questions: [],
-          needAnswers: [],
-          wrongAnswers: 0,
-        },
+        questions: [],
+        needAnswers: [],
+        clickedAnswers: [],
+        wrong: 0,
+        missed: 0,
+        correct: 0,
       }
     }
   },
@@ -44,8 +45,54 @@ export default {
         this.startGeneratingNumber();
       }
     },
+    isTimesUp(newValue) {
+      if (newValue) {
+        clearInterval(this.intervalTimerSoundQuestion);
+        window.speechSynthesis.cancel();
+      }
+    },
   },
   methods: {
+    handleKeyPress(event) {
+      if (this.isPause || this.isTimesUp || !this.isActive || !this.canAnswerSoundQuestion) {
+        return;
+      }
+
+      if (event.key === 'Alt') {
+        this.checkAnswer('alt');
+      } else if (event.key.toLowerCase() === 'x') {
+        this.checkAnswer('x');
+      } else if (event.key.toLowerCase() === 'c') {
+        this.checkAnswer('c');
+      }
+    },
+    checkAnswer(key) {
+      this.canAnswerSoundQuestion = false;
+      this.result.clickedAnswers.push(key);
+      const trueAnswer = this.result.needAnswers[this.result.needAnswers.length - 1];
+
+      if (key === 'alt' || key === 'x') {
+        const button = document.getElementById('btn-red');
+        if (button) {
+          button.click();
+        }
+      } else if (key === 'c') {
+        const button = document.getElementById('btn-green');
+        if (button) {
+          button.click();
+        }
+      }
+
+      if (this.soundQuestionChecks.length > 0) {
+        this.result.wrong++;
+      } else if ((key === 'alt' || key === 'x') && trueAnswer === 'odd') {
+        this.result.correct++
+      } else if (key === 'c' && trueAnswer === 'even') {
+        this.result.correct++
+      } else {
+        this.result.wrong++;
+      }
+    },
     startGeneratingNumber() {
       if (this.intervalTimerSoundQuestion) {
         clearInterval(this.intervalTimerSoundQuestion);
@@ -59,31 +106,26 @@ export default {
       this.utterance.text = randomNumber.toString();
       window.speechSynthesis.speak(this.utterance);
       this.canAnswerSoundQuestion = true;
-      this.soundQuestions.push(randomNumber);
-      this.result.soundQuestion.questions.push(randomNumber);
+      this.soundQuestionChecks.push(randomNumber);
+      this.result.questions.push(randomNumber);
       this.checkConsecutive();
     },
     checkConsecutive() {
-      const len = this.soundQuestions.length;
+      const len = this.soundQuestionChecks.length;
       if (len >= 3) {
-        const lastThree = this.soundQuestions.slice(len - 3);
+        const lastThree = this.soundQuestionChecks.slice(len - 3);
         const allEven = lastThree.every(num => num % 2 === 0);
         const allOdd = lastThree.every(num => num % 2 !== 0);
         if (allEven) {
-          this.result.soundQuestion.needAnswers.push('even');
+          this.result.needAnswers.push('even');
         } else if (allOdd) {
-          this.result.soundQuestion.needAnswers.push('odd');
+          this.result.needAnswers.push('odd');
         }
 
         if (allEven || allOdd) {
-          this.checkSoundQuestion();
+          this.soundQuestionChecks = [];
         }
       }
-    },
-    checkSoundQuestion() {
-      alert('Three consecutive odd or even numbers detected!');
-      // Reset the numbers list or take any other action as needed
-      this.soundQuestions = [];
     },
     setupSound() {
       if (!('speechSynthesis' in window)) {
@@ -96,6 +138,8 @@ export default {
       this.utterance.rate = this.getRateSpeedSound();
       this.utterance.pitch = 1.2;
       this.utterance.volume = 1;
+
+      this.startGeneratingNumber();
     },
     getRateSpeedSound() {
       if (this.speedSound === 'slow') {
