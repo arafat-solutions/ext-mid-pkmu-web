@@ -2,7 +2,8 @@
     <div class="shapeContainer">
         <canvas id="shapeCanvas" ref="shapeCanvas" width="500" height="300"></canvas>
         <div class="buttonContainer">
-            <div class="buttonGroup" v-for="(shape, index) in shapes" :key="index" @click="checkAnswer(index)">
+            <div class="buttonGroup" v-for="(shape, index) in shapes.slice(0, 5)" :key="index"
+                @click="checkAnswer(index)">
                 <canvas :ref="el => buttonCanvases[index] = el" width="200" height="80"></canvas>
                 <button>
                     {{ ['A', 'B', 'C', 'D', 'E'][index] }}
@@ -28,6 +29,8 @@ export default {
         const correctShapeIndex = ref(0);
         const shapes = ref([]);
 
+        const STROKE_WIDTH = 2;
+
         const shapeGenerators = [
             generateTriangle,
             generateSquare,
@@ -45,7 +48,7 @@ export default {
             ctx.save();
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = STROKE_WIDTH;
             ctx.translate(canvasWidth / 2, canvasHeight / 2);
             const scale = Math.min(canvasWidth, canvasHeight) * 0.8;
             ctx.scale(scale / 100, scale / 100);
@@ -72,35 +75,53 @@ export default {
             const ctx = shapeCanvas.value.getContext('2d');
             ctx.clearRect(0, 0, shapeCanvas.value.width, shapeCanvas.value.height);
 
-
-            // Draw the correct shape in green at the center
-            ctx.strokeStyle = 'green';
-            ctx.lineWidth = 2;
-            drawShape(ctx, shapes.value[correctShapeIndex.value], shapeCanvas.value.width, shapeCanvas.value.height);
-
-            // Draw additional random shapes
-            drawRandomShapes(ctx);
+            // Only draw randomized shapes (including the correct one)
+            drawRandomizedShapes(ctx);
         }
 
-        function drawRandomShapes(ctx) {
+        function drawRandomizedShapes(ctx) {
             const canvasWidth = shapeCanvas.value.width;
             const canvasHeight = shapeCanvas.value.height;
-            const numShapes = 3;
+            const numShapes = 80; // Increased number of shapes
 
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
+            // Draw the correct shape first
+            ctx.save();
+            const correctX = Math.random() * (canvasWidth - 100) + 50; // Ensure the shape stays within the canvas
+            const correctY = Math.random() * (canvasHeight - 100) + 50;
+            ctx.translate(correctX, correctY);
+            ctx.beginPath();
+            ctx.strokeStyle = 'black'; // Semi-transparent green
+            ctx.lineWidth = STROKE_WIDTH;
+            shapes.value[correctShapeIndex.value](ctx);
+            ctx.stroke();
+            ctx.restore();
 
-            for (let i = 0; i < numShapes; i++) {
-                const shape = shapeGenerators[Math.floor(Math.random() * shapeGenerators.length)];
+            // Draw random abstract shapes
+            for (let i = 1; i < numShapes; i++) {
                 ctx.save();
                 ctx.translate(
                     Math.random() * canvasWidth,
                     Math.random() * canvasHeight
                 );
-                // const scale = Math.random() * 30 + 20;
-                // ctx.scale(scale / 100, scale / 100);
                 ctx.beginPath();
-                shape(ctx);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = STROKE_WIDTH;
+
+                // Generate a truly random abstract shape
+                const points = Math.floor(Math.random() * 3) + 2; // 2 to 4 points
+                const size = Math.random() * 300 + 50; // Increased size range
+
+                for (let j = 0; j < points; j++) {
+                    const x = Math.random() * size - size / 2;
+                    const y = Math.random() * size - size / 2;
+                    if (j === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        // Always use lineTo for simpler shapes
+                        ctx.lineTo(x, y);
+                    }
+                }
+
                 ctx.stroke();
                 ctx.restore();
             }
@@ -168,10 +189,17 @@ export default {
             ctx.beginPath();
             ctx.moveTo(-30, -40);
             ctx.lineTo(-30, 40);
-            ctx.moveTo(-30, 0);
-            ctx.lineTo(30, 0);
-            ctx.moveTo(30, -40);
-            ctx.lineTo(30, 40);
+            ctx.lineTo(-20, 40)
+            ctx.lineTo(-20, 10)
+            ctx.lineTo(20, 10)
+            ctx.lineTo(20, 40)
+            ctx.lineTo(30, 40)
+            ctx.lineTo(30, -40)
+            ctx.lineTo(20, -40)
+            ctx.lineTo(20, 0)
+            ctx.lineTo(-20, 0)
+            ctx.lineTo(-20, -40)
+            ctx.lineTo(-30, -40)
         }
 
         function generateHexagon(ctx) {
@@ -195,7 +223,9 @@ export default {
         }
 
         function drawQuestions() {
-            shapes.value = [...shapeGenerators].sort(() => Math.random() - 0.5);
+            message.value = ''
+            // Randomly select 5 shapes from shapeGenerators
+            shapes.value = [...shapeGenerators].sort(() => Math.random() - 0.5).slice(0, 5);
             correctShapeIndex.value = Math.floor(Math.random() * shapes.value.length);
             drawInButtons();
             drawInCenter();
