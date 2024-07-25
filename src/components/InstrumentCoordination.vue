@@ -17,12 +17,17 @@
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
-    <div id="main-view" v-if="!isShowModal">
+    <div id="main-view" v-show="!isShowModal">
       <div class="indicators">
         <Airspeed id="airspeed" class="indicator-bg" :size="200" :airspeed="airspeed" />
         <Heading id="heading" class="indicator-bg" :size="200" :heading="heading"/>
-        <button id="btn-green" class="btn-listening-action green-gradient"></button>
-        <button id="btn-red" class="btn-listening-action red-gradient"></button>
+        <SoundQuestion
+          ref="soundQuestionRef"
+          :isTimesUp="isTimesUp"
+          :speedSound="config.soundQuestion.speed"
+          :isPause="isPause"
+          :isActive="config.soundQuestion.isActive"
+        />
         <Altimeter id="altimeter" class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure" />
         <AnalogClock id="clock" />
         <button id="button-plus" class="btn-plus-minus">+</button>
@@ -40,6 +45,7 @@
 <script>
 import {Airspeed, Altimeter, Heading} from  'vue-flight-indicators';
 import AnalogClock from './instrument-coordination/AnalogClock';
+import SoundQuestion from './instrument-coordination/SoundQuestion';
 
 export default {
   components: {
@@ -47,6 +53,7 @@ export default {
     Airspeed,
     Altimeter,
     AnalogClock,
+    SoundQuestion,
   },
   data: function () {
     return {
@@ -54,14 +61,10 @@ export default {
       minuteTime: null,
       timeLeft: 120, // Countdown time in seconds
       intervalTimerTest: null,
-      intervalTimerSoundQuestion: null,
-      utterance: null,
-      soundQuestionInterval: 3000, //in ms
       isPause: false,
       isConfigLoaded: false,
       isTrial: this.$route.query.isTrial ?? false,
       isShowModal: true,
-      allowSound: false,
       counter: 0,
       roll: 0,
       pitch: 0,
@@ -70,12 +73,14 @@ export default {
       airspeed: 0,
       altitude: 0,
       pressure: 0,
+      canAnswerSoundQuestion: false,
       soundQuestions: [],
       config: {
         soundQuestion: {
+          isActive: true, //true, false
           speed: 'medium', //slow, medium, fast
         },
-      }
+      },
     }
   },
   mounted: function () {
@@ -103,14 +108,12 @@ export default {
   methods: {
     startTest() {
       this.isShowModal = false;
-      this.setupSound();
+      this.$refs.soundQuestionRef.setupSound();
       this.startAgain();
     },
     pause() {
       clearInterval(this.intervalTimerTest);
-      clearInterval(this.intervalTimerSoundQuestion);
       this.isPause = true;
-      window.speechSynthesis.pause();
     },
     startCountdown() {
       if (this.isPause) {
@@ -128,61 +131,9 @@ export default {
     startAgain() {
       this.isPause = false;
       this.startCountdown();
-      this.startGeneratingNumber();
     },
     exit() {
       this.$router.push('module');
-    },
-    startGeneratingNumber() {
-      if (this.intervalTimerSoundQuestion) {
-        clearInterval(this.intervalTimerSoundQuestion);
-      }
-      this.intervalTimerSoundQuestion = setInterval(this.generateNumber, this.soundQuestionInterval);
-    },
-    generateNumber() {
-      const randomNumber = Math.floor(Math.random() * 99) + 1;
-      console.log(randomNumber);
-      this.utterance.text = randomNumber.toString();
-      window.speechSynthesis.speak(this.utterance);
-      this.soundQuestions.push(randomNumber);
-      this.checkConsecutive();
-    },
-    checkConsecutive() {
-      const len = this.soundQuestions.length;
-      if (len >= 3) {
-        const lastThree = this.soundQuestions.slice(len - 3);
-        const allEven = lastThree.every(num => num % 2 === 0);
-        const allOdd = lastThree.every(num => num % 2 !== 0);
-        if (allEven || allOdd) {
-          this.checkSoundQuestion();
-        }
-      }
-    },
-    checkSoundQuestion() {
-      alert('Three consecutive odd or even numbers detected!');
-      // Reset the numbers list or take any other action as needed
-      this.soundQuestions = [];
-    },
-    setupSound() {
-      if (!('speechSynthesis' in window)) {
-        console.error('Sorry, your browser does not support text-to-speech.');
-        return;
-      }
-
-      this.utterance = new SpeechSynthesisUtterance();
-      this.utterance.lang = 'en-US';
-      this.utterance.rate = this.getRateSpeedSound();
-      this.utterance.pitch = 1.2;
-      this.utterance.volume = 1;
-    },
-    getRateSpeedSound() {
-      if (this.config.soundQuestion.speed === 'slow') {
-        return 0.35;
-      } else if (this.config.soundQuestion.speed === 'medium') {
-        return 0.70;
-      }
-
-      return 1;
     },
   }
 }
@@ -235,18 +186,6 @@ body {
   top: 350px;
 }
 
-#btn-green {
-  position: absolute;
-  left: 415px;
-  top: 425px;
-}
-
-#btn-red {
-  position: absolute;
-  left: 325px;
-  top: 425px;
-}
-
 #button-plus {
   position: absolute;
   left: 250px;
@@ -287,29 +226,6 @@ body {
 
 .btn-plus-minus:hover {
   background-color: #757575; /* Darker grey on hover */
-}
-
-.btn-listening-action {
-  width: 60px;
-  height: 60px;
-  border: none;
-  cursor: pointer;
-  border-radius: 50%;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.2);
-  transition: transform 0.1s;
-}
-
-.btn-listening-action:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.2);
-}
-
-.green-gradient {
-  background: linear-gradient(to right, #00c851, #007e33);
-}
-
-.red-gradient {
-  background: linear-gradient(to right, #ff4444, #cc0000);
 }
 
 .modal-overlay {
