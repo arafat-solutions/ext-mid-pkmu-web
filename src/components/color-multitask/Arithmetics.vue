@@ -11,13 +11,13 @@
 								<span class="option-answer">
 									{{ option.key }}
 								</span>
-								
+
 								{{ option.value }}
 							</label>
 					</li>
 				</div>
 			</ul>
-		</div>  
+		</div>
 	</div>
 </template>
 
@@ -30,10 +30,10 @@
 				correctAnswer: 0,
 				totalQuestion: 0,
 				optionAnswerAudios: [
-					{ key: 7, value: ''},
-					{ key: 8, value: ''},
-					{ key: 9, value: ''},
-					{ key: 0, value: ''},
+					{ key: 1, value: ''},
+					{ key: 2, value: ''},
+					{ key: 3, value: ''},
+					{ key: 4, value: ''},
 				],
 				responseQuestion: 0,
 				responseTime: 0,
@@ -86,7 +86,7 @@
 				this.answerAudio = null;
 				this.responseQuestion = 0;
 				this.responseTime = 0;
-				
+
 				if (this.difficulty === 'hard') {
 					this.audio = Math.floor(Math.random() * 900) + 100;
 				}
@@ -97,13 +97,7 @@
 					this.audio = Math.floor(Math.random() * 9) + 1;
 				}
 
-				let correctLocationIndex = Math.floor(Math.random() * 4) + 6;
-				if (correctLocationIndex >= 9) {
-					correctLocationIndex = 9
-				}
-				if (correctLocationIndex <= 7) {
-					correctLocationIndex = 7
-				}
+				let correctLocationIndex = Math.floor(Math.random() * 4) + 1;
 
 				for (var i = 0; i < 4; i++) {
 					if (this.optionAnswerAudios[i].key === correctLocationIndex) {
@@ -148,13 +142,13 @@
 				this.isCanChooseAudio = false;
 				this.generateAudio();
 			},
-			startPlayback() { 
+			startPlayback() {
 				this.totalQuestion++;
 
 				setTimeout(() => {
 					if ('speechSynthesis' in window) {
 						let number = this.audio
-						
+
 						const utterancePart1 = new SpeechSynthesisUtterance("  ");
 						const utterancePart2 = new SpeechSynthesisUtterance(number + " ");
 						utterancePart2.rate = 1;
@@ -172,7 +166,7 @@
 								setTimeout(() => {
 									this.isCanChooseAudio = true;
 								}, 500);
-							}, 500); 
+							}, 500);
 						};
 					} else {
 						alert('Sorry, your browser does not support text-to-speech.');
@@ -183,22 +177,22 @@
 				if (this.isPause || this.isTimesUp || !this.isActive) {
           return;
         }
-				
+
 				if (this.isCanChooseAudio) {
-					if (event.key.toUpperCase() == 7) {
-						this.pressAnswerAudio(7);
+					if (event.key.toUpperCase() == 1) {
+						this.pressAnswerAudio(1);
 					}
 
-					if (event.key.toUpperCase() == 8) {
-						this.pressAnswerAudio(8);
+					if (event.key.toUpperCase() == 2) {
+						this.pressAnswerAudio(2);
 					}
 
-					if (event.key.toUpperCase() == 9) {
-						this.pressAnswerAudio(9);
+					if (event.key.toUpperCase() == 3) {
+						this.pressAnswerAudio(3);
 					}
 
-					if (event.key.toUpperCase() == 0) {
-						this.pressAnswerAudio(0);
+					if (event.key.toUpperCase() == 4) {
+						this.pressAnswerAudio(4);
 					}
 				}
 			},
