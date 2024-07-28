@@ -34,7 +34,7 @@ export default {
     executeIntervalHeader() {
         let intervalHeader = 100; //in ms
         if (this.changeType === 'adjust_for_irregular_updates') {
-          intervalHeader = getRandomInterval(minInterval, maxInterval);
+          intervalHeader = getRandomInterval(1000, 3000);
         }
         setTimeout(executeIntervalHeader, intervalHeader);
     }
