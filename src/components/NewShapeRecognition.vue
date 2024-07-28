@@ -14,6 +14,17 @@
     </div>
     <div class="settings">
         <button @click="drawQuestions">New Shape</button>
+        <div>
+            <p>correct : {{ quizMetrics.correctAnswer }}</p>
+            <p>wrong turn: {{ quizMetrics.wrongAnswer }}</p>
+            <p>unanswered: {{ quizMetrics.unanswered }}</p>
+            <p>totalQuestion: {{ quizMetrics.totalQuestion }}</p>
+            <p>avgResponseTime: {{ quizMetrics.avgResponseTime }}</p>
+        </div>
+    </div>
+    <div class="timer">
+        <p>Waktu:</p>
+        <p>{{ formatTime(config.duration) }}</p>
     </div>
 </template>
 
@@ -28,6 +39,7 @@ export default {
         const message = ref('');
         const correctShapeIndex = ref(0);
         const shapes = ref([]);
+        const tesInterval = ref(null)
         const config = ref({
             duration: 0,
             size: '',
@@ -455,9 +467,27 @@ export default {
             }
         }
 
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainderSeconds = seconds % 60;
+            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+        }
+
+        function countDownTestTime() {
+            tesInterval.value = setInterval(async () => {
+                if (config.value.duration > 0) {
+                    config.value.duration--;
+                } else {
+                    clearInterval(tesInterval.value);
+                    // await submitResult();
+                }
+            }, 1000)
+        }
+
         onMounted(() => {
             nextTick(() => {
                 initConfig()
+                countDownTestTime()
                 drawQuestions();
             });
         });
@@ -472,7 +502,10 @@ export default {
             buttonCanvases,
             checkAnswer,
             drawQuestions,
-            message
+            formatTime,
+            message,
+            quizMetrics,
+            config
         };
     }
 }
@@ -491,7 +524,7 @@ export default {
 
 #shapeCanvas {
     border: 1px solid black;
-    margin-top: 4%;
+    margin-top: 8%;
 }
 
 .buttonContainer {
@@ -522,7 +555,7 @@ export default {
 
 .settings {
     position: fixed;
-    width: 10%;
+    width: 15%;
     height: 100vh;
     background-color: #f0f0f0;
     top: 0;
@@ -536,5 +569,39 @@ export default {
     padding: 10px;
     margin-top: 20px;
     cursor: pointer;
+}
+
+.timer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    font-size: 24px;
+    font-weight: bold;
+    width: 300px;
+    height: 60px;
+    background-color: #6757dc;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.timer p {
+    margin: 0;
+    padding: 0;
+}
+
+.timer :nth-child(1) {
+    font-size: 12px;
+}
+
+.timer :nth-child(2) {
+    font-size: 24px;
+    margin-top: 4px
 }
 </style>
