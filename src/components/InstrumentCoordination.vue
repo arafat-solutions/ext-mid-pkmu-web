@@ -83,8 +83,8 @@ export default {
       config: {
         heading: {
           isActive: true, //true, false
-          changeType: 'keep_indicator', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
-          changeValue: 3, //integer
+          changeType: 'adjust_for_consistent_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          changeValue: 5, //integer
         },
         soundQuestion: {
           isActive: false, //true, false
