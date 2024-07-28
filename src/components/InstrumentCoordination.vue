@@ -20,7 +20,12 @@
     <div id="main-view" v-show="!isShowModal">
       <div class="indicators">
         <Airspeed id="airspeed" class="indicator-bg" :size="200" :airspeed="airspeed" />
-        <Heading id="heading" class="indicator-bg" :size="200" :heading="heading"/>
+        <HeadingInstrument
+          :isTimesUp="isTimesUp"
+          :isPause="isPause"
+          :changeType="config.heading.changeType"
+          :changeValue="config.heading.changeValue"
+        />
         <SoundQuestion
           ref="soundQuestionRef"
           :isTimesUp="isTimesUp"
@@ -43,13 +48,14 @@
 </template>
 
 <script>
-import {Airspeed, Altimeter, Heading} from  'vue-flight-indicators';
+import {Airspeed, Altimeter} from  'vue-flight-indicators';
 import AnalogClock from './instrument-coordination/AnalogClock';
 import SoundQuestion from './instrument-coordination/SoundQuestion';
+import HeadingInstrument from './instrument-coordination/HeadingInstrument';
 
 export default {
   components: {
-    Heading,
+    HeadingInstrument,
     Airspeed,
     Altimeter,
     AnalogClock,
@@ -68,7 +74,6 @@ export default {
       counter: 0,
       roll: 0,
       pitch: 0,
-      heading: 0,
       vario: 0,
       airspeed: 0,
       altitude: 0,
@@ -76,8 +81,13 @@ export default {
       canAnswerSoundQuestion: false,
       soundQuestions: [],
       config: {
-        soundQuestion: {
+        heading: {
           isActive: true, //true, false
+          changeType: 'keep_indicator', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          changeValue: 3, //integer
+        },
+        soundQuestion: {
+          isActive: false, //true, false
           speed: 'slow', //slow, medium, fast
         },
       },
@@ -87,7 +97,6 @@ export default {
     setInterval(() => {
       this.roll = 30*Math.sin(this.counter/10);
       this.pitch = 50*Math.sin(this.counter/20);
-      this.heading = this.counter;
       this.vario = 2*Math.sin(this.counter/10);
       this.airspeed = 80+80*Math.sin(this.counter/10);
       this.altitude = 10*this.counter;
@@ -166,12 +175,6 @@ body {
   position: absolute;
   left: 300px;
   top: 200px;
-}
-
-#heading {
-  position: absolute;
-  left: 540px;
-  top: 75px;
 }
 
 #altimeter {

@@ -94,6 +94,10 @@ export default {
       }
     },
     startGeneratingNumber() {
+      if (!this.isActive) {
+        return;
+      }
+
       if (this.intervalTimerSoundQuestion) {
         clearInterval(this.intervalTimerSoundQuestion);
       }
