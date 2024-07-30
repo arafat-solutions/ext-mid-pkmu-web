@@ -10,18 +10,23 @@
                 </button>
             </div>
         </div>
-        <p>{{ message }}</p>
     </div>
-    <div class="settings">
+    <div v-if="loading" class="loadingContainer">
+        <div class="spinner"></div>
+        <p class="loadingText">Your result is submitting...</p>
+    </div>
+    <!-- <div class="settings">
         <button @click="drawQuestions">New Shape</button>
         <div>
             <p>correct : {{ quizMetrics.correctAnswer }}</p>
-            <p>wrong turn: {{ quizMetrics.wrongAnswer }}</p>
+            <p>wrong: {{ quizMetrics.wrongAnswer }}</p>
             <p>unanswered: {{ quizMetrics.unanswered }}</p>
             <p>totalQuestion: {{ quizMetrics.totalQuestion }}</p>
-            <p>avgResponseTime: {{ quizMetrics.avgResponseTime }}</p>
+            <p>avgResponseTime: {{ quizMetrics.avgResponseTime.toFixed(2) }} s</p>
+            <p>answer count: {{ answerCount }}</p>
+            <p>Time left: {{ questionCountdown }}s</p>
         </div>
-    </div>
+    </div> -->
     <div class="timer">
         <p>Waktu:</p>
         <p>{{ formatTime(config.duration) }}</p>
@@ -29,24 +34,35 @@
 </template>
 
 <script>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { useRouter } from 'vue-router'
 
 export default {
     name: 'ShapeRecognition',
     setup() {
+        const router = useRouter()
+
         const shapeCanvas = ref(null);
         const buttonCanvases = ref([]);
-        const message = ref('');
         const correctShapeIndex = ref(0);
         const shapes = ref([]);
         const tesInterval = ref(null)
+        const answerCount = ref(0)
+        const startTime = ref(null);
+        const totalResponseTime = ref(0);
+        const responseCount = ref(0);
+        const questionCountdown = ref(0);
+        const questionCountDownInterval = ref(null)
+        const loading = ref(false)
         const config = ref({
             duration: 0,
             size: '',
-            variasi: 0,
+            variation: 0,
             userId: '',
             sessionId: '',
-            testId: ''
+            testId: '',
+            timePerQuestion: 0
         })
         const quizMetrics = ref({
             correctAnswer: 0,
@@ -57,6 +73,7 @@ export default {
         })
 
         const STROKE_WIDTH = 2;
+        const ANGLES = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
 
         const shapeGenerators = [
             generateOctagon,
@@ -75,26 +92,6 @@ export default {
             generateL
         ];
 
-        console.log(
-            generateS,
-            generateT,
-            generateTriangle,
-            generateSquare,
-            generateCircle,
-            generateOctagon,
-            generateStar,
-            generateParallelogram,
-            generateLeftArrow,
-            generateH,
-            generateL,
-            generatePlane,
-            generateHexagon,
-            generateQuestionMark,
-            generateChevronLeft,
-            generateReturnArrow,
-            generateHeart,
-        )
-
         function drawShape(ctx, shapeGenerator, canvasWidth, canvasHeight, angle) {
             ctx.save();
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -111,12 +108,51 @@ export default {
             ctx.restore();
         }
 
-        function checkAnswer(index) {
-            message.value = index === correctShapeIndex.value ? "BETUL GAN." : "SALAH.";
+        async function checkAnswer(index) {
+
+            // count average user answer in seconds
+            const currentTime = Date.now();
+            if (!startTime.value) {
+                startTime.value = currentTime;
+            }
+            const elapsedTime = (currentTime - startTime.value) / 1000; // Convert to seconds
+            totalResponseTime.value += elapsedTime;
+            responseCount.value++;
+            quizMetrics.value.avgResponseTime = totalResponseTime.value / responseCount.value;
+
+            startTime.value = currentTime;
+
+            // check the answer if correct or wrong
             if (index === correctShapeIndex.value) {
                 quizMetrics.value.correctAnswer++
             } else {
                 quizMetrics.value.wrongAnswer++
+            }
+
+            // count unanswered
+            quizMetrics.value.unanswered = quizMetrics.value.totalQuestion - (quizMetrics.value.correctAnswer + quizMetrics.value.wrongAnswer)
+
+            if (answerCount.value < config.value.variation - 1) {
+                answerCount.value++
+
+                // keep the button shape
+                correctShapeIndex.value = Math.floor(Math.random() * shapes.value.length);
+                const randomAngle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
+
+                drawInButtons(randomAngle);
+                drawInCenter(randomAngle);
+
+                startQuestionCountdown();
+            } else {
+                answerCount.value = 0
+
+                if (quizMetrics.value.correctAnswer + quizMetrics.value.wrongAnswer >= quizMetrics.value.totalQuestion) {
+                    await submitResult();
+                } else {
+
+                    drawQuestions()
+                }
+
             }
         }
 
@@ -149,7 +185,7 @@ export default {
             ctx.translate(correctX, correctY);
             ctx.rotate(randomAngle)
             ctx.beginPath();
-            ctx.strokeStyle = 'green';
+            ctx.strokeStyle = 'black';
             ctx.lineWidth = STROKE_WIDTH;
             shapes.value[correctShapeIndex.value](ctx);
             ctx.stroke();
@@ -186,20 +222,20 @@ export default {
             }
         }
 
-        function generateTriangle(ctx) {
-            ctx.moveTo(0, -50);
-            ctx.lineTo(43.3, 25);
-            ctx.lineTo(-43.3, 25);
-            ctx.closePath();
-        }
+        // function generateTriangle(ctx) {
+        //     ctx.moveTo(0, -50);
+        //     ctx.lineTo(43.3, 25);
+        //     ctx.lineTo(-43.3, 25);
+        //     ctx.closePath();
+        // }
 
-        function generateSquare(ctx) {
-            ctx.rect(-35, -35, 70, 70);
-        }
+        // function generateSquare(ctx) {
+        //     ctx.rect(-35, -35, 70, 70);
+        // }
 
-        function generateCircle(ctx) {
-            ctx.arc(0, 0, 40, 0, 2 * Math.PI);
-        }
+        // function generateCircle(ctx) {
+        //     ctx.arc(0, 0, 40, 0, 2 * Math.PI);
+        // }
 
         function generateOctagon(ctx) {
             for (let i = 0; i < 8; i++) {
@@ -440,31 +476,34 @@ export default {
         }
 
         function drawQuestions() {
-            message.value = ''
             // Randomly select 5 shapes from shapeGenerators
             shapes.value = [...shapeGenerators].sort(() => Math.random() - 0.5).slice(0, 5);
             correctShapeIndex.value = Math.floor(Math.random() * shapes.value.length);
 
-            const angles = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
-            const randomAngle = angles[Math.floor(Math.random() * angles.length)];
+            const randomAngle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
 
             drawInButtons(randomAngle);
             drawInCenter(randomAngle);
+
+            startQuestionCountdown()
         }
 
         function initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-            // const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-            // const { duration, rotation_frequency, id } = configRotatingMaze.config
+            const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
+            const { size, variation, id, time_per_question } = configShapeRecognition.config
 
             config.value = {
-                duration: 10 * 10,
-                size: 'medium', // still hardcode
-                variasi: 5,
+                duration: 1 * 60,
+                size,
+                variation,
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
-                testId: ''
+                testId: id,
+                timePerQuestion: time_per_question
             }
+            quizMetrics.value.unanswered = 30 // still hardcode
+            quizMetrics.value.totalQuestion = 30 // still hardcode
         }
 
         function formatTime(seconds) {
@@ -473,15 +512,62 @@ export default {
             return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
         }
 
+        async function submitResult() {
+            try {
+                loading.value = true;
+                const API_URL = process.env.VUE_APP_API_URL;
+                const payload = {
+                    testSessionId: config.value.sessionId,
+                    userId: config.value.userId,
+                    batteryTestConfigId: config.value.testId,
+                    result: quizMetrics.value
+                }
+                const response = await fetch(`${API_URL}api/submission`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                removeTestByNameAndUpdateLocalStorage('Shape Recognition')
+                router.push('/module');
+            } catch (error) {
+                console.log("error submit shape recognition:", error)
+            } finally {
+                loading.value = false; // Set loading to false when the submission is complete
+            }
+        }
+
         function countDownTestTime() {
             tesInterval.value = setInterval(async () => {
                 if (config.value.duration > 0) {
                     config.value.duration--;
                 } else {
                     clearInterval(tesInterval.value);
-                    // await submitResult();
+                    await submitResult();
                 }
             }, 1000)
+        }
+
+        function startQuestionCountdown() {
+            // Clear any existing interval to avoid multiple intervals running simultaneously
+            if (questionCountDownInterval.value) {
+                clearInterval(questionCountDownInterval.value);
+            }
+
+            questionCountdown.value = config.value.timePerQuestion;
+            questionCountDownInterval.value = setInterval(() => {
+                if (questionCountdown.value > 0) {
+                    questionCountdown.value--;
+                } else {
+                    clearInterval(questionCountDownInterval);
+                    drawQuestions();
+                }
+            }, 1000);
         }
 
         onMounted(() => {
@@ -491,6 +577,11 @@ export default {
                 drawQuestions();
             });
         });
+
+        onUnmounted(() => {
+            clearInterval(questionCountDownInterval.value);
+            clearInterval(tesInterval.value)
+        })
 
         watch(buttonCanvases, () => {
             drawQuestions();
@@ -503,9 +594,11 @@ export default {
             checkAnswer,
             drawQuestions,
             formatTime,
-            message,
             quizMetrics,
-            config
+            config,
+            answerCount,
+            questionCountdown,
+            loading
         };
     }
 }
@@ -603,5 +696,44 @@ export default {
 .timer :nth-child(2) {
     font-size: 24px;
     margin-top: 4px
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner {
+    width: 80px;
+    height: 80px;
+    border: 12px solid #5b4ac4;
+    border-top-color: #cecece;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+
+.loadingContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loadingContainer p {
+    margin-top: 50px;
+    font-size: 24px;
 }
 </style>
