@@ -26,15 +26,15 @@ export default {
       defaultIntervalTarget: 500, //in ms
       minimumIntervalTarget: 500, //in ms
       maximumIntervalTarget: 2000, //in ms
-      target: 0,
+      target: 360,
       targetIncrement: null,
-      width: 180,
-      height: 180,
+      width: 200,
+      height: 200,
       animationFrameId: null,
       greenDotX: 0,
       greenDotY: 0,
       greenDotColor: 'green',
-      radius: 80,
+      radius: 75,
     }
   },
   created() {
@@ -56,7 +56,7 @@ export default {
   mounted: function () {
     if (this.changeType !== 'inactive') {
       this.initTarget();
-      this.executeTargetMovement();
+      // this.executeTargetMovement();
     }
   },
   methods: {
@@ -108,27 +108,12 @@ export default {
       const centerX = this.width / 2;
       const centerY = this.height / 2;
 
-      // Draw main circle
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, this.radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'blue';
-      ctx.stroke();
-
-      // Draw axes
-      ctx.beginPath();
-      ctx.moveTo(centerX, 0);
-      ctx.lineTo(centerX, this.height);
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(this.width, centerY);
-      ctx.strokeStyle = 'grey';
-      ctx.stroke();
-
       // Koordinat objek kuning
       const yellowX = centerX + this.radius * Math.cos(this.target);
       const yellowY = centerY + this.radius * Math.sin(this.target);
 
       // Hitung titik-titik segitiga
-      const triangleSize = 20; // Ukuran segitiga
+      const triangleSize = 12; // Ukuran segitiga
       const angleOffset = Math.PI / 6; // Offset sudut untuk segitiga
 
       const point1X = yellowX;
@@ -147,7 +132,7 @@ export default {
       ctx.lineTo(point3X, point3Y); // Titik kanan bawah segitiga
       ctx.closePath(); // Menghubungkan titik terakhir dengan titik pertama
 
-      ctx.fillStyle = 'red'
+      ctx.fillStyle = 'green'
       ctx.fill();
     },
     animate() {
@@ -163,6 +148,7 @@ export default {
   position: absolute;
   left: 540px;
   top: 75px;
+  z-index: -99;
 }
 
 .circle-container {
@@ -188,6 +174,7 @@ export default {
 
 canvas {
   border: 0px solid black;
-  margin-top: 20px;
+  margin-top: 75px;
+  z-index: 999;
 }
 </style>
