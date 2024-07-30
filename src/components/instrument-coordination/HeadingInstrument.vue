@@ -26,7 +26,7 @@ export default {
       defaultIntervalTarget: 500, //in ms
       minimumIntervalTarget: 500, //in ms
       maximumIntervalTarget: 2000, //in ms
-      target: 360,
+      target: 80,
       targetIncrement: null,
       width: 200,
       height: 200,
@@ -108,9 +108,15 @@ export default {
       const centerX = this.width / 2;
       const centerY = this.height / 2;
 
+      // Adjust the target angle to make 0 degrees point upwards
+      const adjustedTarget = this.target - 90;
+
+      // Convert adjustedTarget from degrees to radians
+      const targetRadians = adjustedTarget * (Math.PI / 180);
+
       // Koordinat objek kuning
-      const yellowX = centerX + this.radius * Math.cos(this.target);
-      const yellowY = centerY + this.radius * Math.sin(this.target);
+      const yellowX = centerX + this.radius * Math.cos(targetRadians);
+      const yellowY = centerY + this.radius * Math.sin(targetRadians);
 
       // Hitung titik-titik segitiga
       const triangleSize = 12; // Ukuran segitiga
@@ -119,11 +125,11 @@ export default {
       const point1X = yellowX;
       const point1Y = yellowY;
 
-      const point2X = yellowX + triangleSize * Math.cos(this.target + angleOffset);
-      const point2Y = yellowY + triangleSize * Math.sin(this.target + angleOffset);
+      const point2X = yellowX + triangleSize * Math.cos(targetRadians + angleOffset);
+      const point2Y = yellowY + triangleSize * Math.sin(targetRadians + angleOffset);
 
-      const point3X = yellowX + triangleSize * Math.cos(this.target - angleOffset);
-      const point3Y = yellowY + triangleSize * Math.sin(this.target - angleOffset);
+      const point3X = yellowX + triangleSize * Math.cos(targetRadians - angleOffset);
+      const point3Y = yellowY + triangleSize * Math.sin(targetRadians - angleOffset);
 
       // Gambar segitiga
       ctx.beginPath();
@@ -132,7 +138,8 @@ export default {
       ctx.lineTo(point3X, point3Y); // Titik kanan bawah segitiga
       ctx.closePath(); // Menghubungkan titik terakhir dengan titik pertama
 
-      ctx.fillStyle = 'green'
+      // Set the fill color to rgb(72, 200, 68)
+      ctx.fillStyle = 'rgb(72, 200, 68)';
       ctx.fill();
     },
     animate() {
