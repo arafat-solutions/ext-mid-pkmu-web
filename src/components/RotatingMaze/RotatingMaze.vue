@@ -7,7 +7,7 @@
         <div class="spinnerMaze"></div>
         <p class="loadingText">Your result is submitting...</p>
     </div>
-    <div class="containerSettingMaze">
+    <!-- <div class="containerSettingMaze">
         <div class="settingMaze">
             <button @click="async () => { await generateGrid(); await mazeGenerator(); }">new maze</button>
             <br /> <br />
@@ -25,7 +25,7 @@
                 <p>total maze: {{ quizMetrics.total_maze }}</p>
             </div>
         </div>
-    </div>
+    </div> -->
     <div id="containerMaze">
         <div class="circularBaseMaze" :style="{
         position: 'fixed',
@@ -55,11 +55,14 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
-// import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { useRouter } from 'vue-router'
 
 export default {
     name: 'RotationMaze',
     setup() {
+        const router = useRouter()
+
         const tesInterval = ref(null)
         const loadingSubmit = ref(false)
         const mazeWidth = ref(400);
@@ -102,18 +105,17 @@ export default {
             leastPossibleMove: 0,
             wallHit: 0,
             avgStepResponse: 0,
-            total_maze: 1,
         })
         const arrayMetrics = ref([])
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 15;
             switch (config.value.difficulty) {
-                case 'easy':
+                case 'Mudah':
                     return Math.floor(baseSize * 0.75); // Smaller maze
-                case 'normal':
+                case 'Sedang':
                     return baseSize; // Original size
-                case 'hard':
+                case 'Sulit':
                     return Math.floor(baseSize * 1.25); // Larger maze
                 default:
                     return baseSize;
@@ -164,11 +166,11 @@ export default {
 
         const getInitialStartPos = () => {
             switch (config.value.difficulty) {
-                case 'easy':
+                case 'Mudah':
                     return [1, 1];
-                case 'normal':
+                case 'Sedang':
                     return [1, 1];
-                case 'hard':
+                case 'Sulit':
                     return [1, 1];
                 default:
                     return [1, 1];
@@ -177,11 +179,11 @@ export default {
 
         const getInitialTargetPos = () => {
             switch (config.value.difficulty) {
-                case 'easy':
+                case 'Mudah':
                     return [Math.floor(gridSizeX.value * 0.75), Math.floor(gridSizeY.value * 0.75)];
-                case 'normal':
+                case 'Sedang':
                     return [gridSizeX.value - 2, gridSizeY.value - 2];
-                case 'hard':
+                case 'Sulit':
                     return [gridSizeX.value - 2, gridSizeY.value - 2];
                 default:
                     return [gridSizeX.value - 2, gridSizeY.value - 2];
@@ -382,7 +384,6 @@ export default {
                 leastPossibleMove: 0,
                 wallHit: 0,
                 avgStepResponse: 0,
-                total_maze: 1,
             };
 
             while (!solvableMaze && attempts < maxAttempts) {
@@ -621,7 +622,7 @@ export default {
             const currentTime = performance.now();
             const stepTime = currentTime - lastMoveTime.value;
             quizMetrics.value.avgStepResponse =
-                (quizMetrics.value.avgStepResponse * (totalMoves.value - 1) + stepTime) / totalMoves.value;
+                ((quizMetrics.value.avgStepResponse * (totalMoves.value - 1) + stepTime) / totalMoves.value).toFixed(2)
             lastMoveTime.value = currentTime;
 
             // Check if player reached the target
@@ -639,7 +640,6 @@ export default {
                     leastPossibleMove: 0,
                     wallHit: 0,
                     avgStepResponse: 0,
-                    total_maze: quizMetrics.value.total_maze + 1,
                 };
 
                 // 3. Generate new maze
@@ -715,7 +715,7 @@ export default {
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-            const { duration, rotation_frequency, id } = configRotatingMaze.config
+            const { duration, rotation_frequency, id, size } = configRotatingMaze.config
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,
@@ -724,10 +724,10 @@ export default {
             }
 
             config.value = {
-                duration: duration * 10,
+                duration: duration * 60,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency],
-                size: 'medium', // still hardcode
-                difficulty: 'medium', // difficulty masih hardcode
+                size,
+                difficulty: configRotatingMaze.difficulty, // difficulty masih hardcode
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
                 testId: id
@@ -751,21 +751,20 @@ export default {
                     result: arrayMetrics.value
                 }
 
-                console.log(API_URL, payload)
-                // const response = await fetch(`${API_URL}api/submission`, {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //     },
-                //     body: JSON.stringify(payload),
-                // });
+                const response = await fetch(`${API_URL}api/submission`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
 
-                // if (!response.ok) {
-                //     throw new Error(`Error: ${response.statusText}`);
-                // }
-                // removeTestByNameAndUpdateLocalStorage('Rotating Maze')
-                // localStorage.removeItem('arrayMetrics')
-                // this.$router.push('/module');
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+                removeTestByNameAndUpdateLocalStorage('Rotating Maze')
+                localStorage.removeItem('arrayMetrics')
+                router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
             } finally {
@@ -774,6 +773,10 @@ export default {
         }
 
         const countDownTestTime = () => {
+            if (tesInterval.value) {
+                clearInterval(tesInterval.value);
+            }
+
             tesInterval.value = setInterval(async () => {
                 if (config.value.duration > 0) {
                     config.value.duration--;
