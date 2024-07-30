@@ -83,13 +83,15 @@ export default {
       this.isPause = false;
     },
     exit() {
-      this.$router.push('module');
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
     },
     initConfig() {
-      try {
-        let config = JSON.parse(localStorage.getItem('scheduleData'));
+      let config = JSON.parse(localStorage.getItem('scheduleData'));
 
-        if (config) {
+      if (config) {
+        try {
           const radarVigillance = config.tests.find(test => test.testUrl === 'radar-vigilance-test').config;
 
           this.config.duration = radarVigillance.duration * 60;
@@ -106,12 +108,14 @@ export default {
           this.config.density = radarVigillance.density;
 
           this.isConfigLoaded = true;
-
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        } finally {
           this.initRadar();
           this.startCountdown();
         }
-      } catch (error) {
-        console.log(error, 'error')
+      } else {
+        console.warn('No schedule data found in localStorage.');
       }
     },
     initRadar() {
@@ -468,6 +472,11 @@ export default {
     },
     async submitResult() {
       try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
