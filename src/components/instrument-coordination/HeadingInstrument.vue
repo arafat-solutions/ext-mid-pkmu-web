@@ -1,8 +1,7 @@
 <template>
   <div>
     <Heading id="heading" class="indicator-bg" :size="200" :heading="headingValue" />
-    <canvas ref="targetCanvas" :width="width" :height="height" />
-    <div class="target" v-show="false" />
+    <canvas ref="targetCanvas" :width="200" :height="200" />
   </div>
 </template>
 
@@ -26,14 +25,11 @@ export default {
       defaultIntervalTarget: 500, //in ms
       minimumIntervalTarget: 500, //in ms
       maximumIntervalTarget: 2000, //in ms
-      target: 80,
+      target: 0,
       targetIncrement: null,
       width: 200,
       height: 200,
       animationFrameId: null,
-      greenDotX: 0,
-      greenDotY: 0,
-      greenDotColor: 'green',
       radius: 75,
     }
   },
@@ -45,18 +41,10 @@ export default {
     clearInterval(this.intervalTarget);
     cancelAnimationFrame(this.animationFrameId);
   },
-  computed: {
-    rotationStyle() {
-      return {
-        transform: `rotate(${this.target}deg)`,
-        transition: 'transform 1s ease-in-out',
-      };
-    },
-  },
   mounted: function () {
     if (this.changeType !== 'inactive') {
       this.initTarget();
-      // this.executeTargetMovement();
+      this.executeTargetMovement();
     }
   },
   methods: {
@@ -67,8 +55,10 @@ export default {
 
       if (event.key === 'ArrowRight') {
         this.headingValue += this.changeValue;
+        this.target += this.changeValue;
       } else if (event.key === 'ArrowLeft') {
         this.headingValue -= this.changeValue;
+        this.target -= this.changeValue;
       }
     },
     getRandomInterval(min, max) {
@@ -94,8 +84,6 @@ export default {
     },
     initTarget() {
       this.animate();
-      this.greenDotX = this.width / 2;
-      this.greenDotY = this.height / 2;
     },
     drawTarget() {
       const canvas = this.$refs.targetCanvas;
@@ -138,7 +126,6 @@ export default {
       ctx.lineTo(point3X, point3Y); // Titik kanan bawah segitiga
       ctx.closePath(); // Menghubungkan titik terakhir dengan titik pertama
 
-      // Set the fill color to rgb(72, 200, 68)
       ctx.fillStyle = 'rgb(72, 200, 68)';
       ctx.fill();
     },
@@ -156,27 +143,6 @@ export default {
   left: 540px;
   top: 75px;
   z-index: -99;
-}
-
-.circle-container {
-  position: relative;
-  width: 180px; /* 2 * radius */
-  height: 180px; /* 2 * radius */
-  border: 1px solid #ddd;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.target {
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 8px solid rgb(72, 200, 68);
-  position: absolute;
-  left: 640px;
-  top: 105px;
-  transform: translate(-50%, -50%);
 }
 
 canvas {
