@@ -87,6 +87,10 @@ export default {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
     async executeTargetMovement() {
+      if (this.isPause || this.isTimesUp) {
+        return;
+      }
+
       let intervalTarget = this.defaultIntervalTarget; //in ms
       if (this.changeType === 'adjust_for_irregular_updates') {
         intervalTarget = this.getRandomInterval(this.minimumIntervalTarget, this.maximumIntervalTarget);
@@ -164,7 +168,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     checkDurationTarget() {
-      if (this.isTimesUp) {
+      if (this.isPause || this.isTimesUp) {
         return;
       }
 
