@@ -159,7 +159,9 @@ export default {
       this.isPause = false;
     },
     exit() {
-      this.$router.push('module');
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
@@ -232,6 +234,11 @@ export default {
     },
     async submitResult() {
       try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
