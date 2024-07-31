@@ -16,36 +16,56 @@ export default {
     isTimesUp: Boolean,
     isPause: Boolean,
     changeType: String,//inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
-    changeValue: Number,
+    speed: Number, // 0-100
   },
   data: function () {
     return {
       headingValue: 0,
       signRandoms: ['+', '-'],
-      defaultIntervalTarget: 500, //in ms
-      minimumIntervalTarget: 500, //in ms
-      maximumIntervalTarget: 2000, //in ms
+      defaultIntervalTarget: 3000, //in ms
+      minimumIntervalTarget: 3000, //in ms
+      maximumIntervalTarget: 5000, //in ms
       target: 0,
       targetIncrement: null,
       width: 200,
       height: 200,
       animationFrameId: null,
+      intervalTargetId: null,
       radius: 75,
+      greenStartTime: null,
+      greenDuration: 0,
     }
   },
   created() {
-    window.addEventListener('keyup', this.handleKeyPress);
+    window.addEventListener('keydown', this.handleKeyPress);
   },
   beforeUnmount() {
-    window.removeEventListener('keyup', this.handleKeyPress);
+    window.removeEventListener('keydown', this.handleKeyPress);
     clearInterval(this.intervalTarget);
     cancelAnimationFrame(this.animationFrameId);
   },
   mounted: function () {
     if (this.changeType !== 'inactive') {
-      this.initTarget();
+      if (this.changeType !== 'keep_indicator') {
+        this.initTarget();
+      }
       this.executeTargetMovement();
     }
+  },
+  watch: {
+    isTimesUp(newValue) {
+      if (newValue) {
+        this.checkDurationTarget();
+        window.removeEventListener('keydown', this.handleKeyPress);
+        clearInterval(this.intervalTargetId);
+        cancelAnimationFrame(this.animationFrameId);
+      }
+    },
+  },
+  computed: {
+    changeValue() {
+      return (this.speed / 100) * 19 + 1;
+    },
   },
   methods: {
     handleKeyPress(event) {
@@ -54,29 +74,36 @@ export default {
       }
 
       if (event.key === 'ArrowRight') {
-        this.headingValue += this.changeValue;
-        this.target += this.changeValue;
+        this.headingValue += 1;
+        this.target += 1;
       } else if (event.key === 'ArrowLeft') {
-        this.headingValue -= this.changeValue;
-        this.target -= this.changeValue;
+        this.headingValue -= 1;
+        this.target -= 1;
       }
+
+      this.checkDurationTarget();
     },
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
-    executeTargetMovement() {
-      const sign = this.getRandomOperator();
-      if (sign === '+') {
-        this.target += this.changeValue;
-      } else {
-        this.target -= this.changeValue;
-      }
-
+    async executeTargetMovement() {
       let intervalTarget = this.defaultIntervalTarget; //in ms
       if (this.changeType === 'adjust_for_irregular_updates') {
-        intervalTarget = this.getRandomInterval(this.minimumIntervalTarget, this/this.maximumIntervalTarget);
+        intervalTarget = this.getRandomInterval(this.minimumIntervalTarget, this.maximumIntervalTarget);
       }
-      setTimeout(this.executeTargetMovement, intervalTarget);
+      const sign = this.getRandomOperator();
+      for(let i=1;i<=this.changeValue;i++) {
+        if (sign === '+') {
+          this.target++;
+          this.headingValue++;
+        } else {
+          this.target--;
+          this.headingValue--;
+        }
+        await this.delay(this.intervalTarget/this.changeValue);
+      }
+      this.checkDurationTarget();
+      this.intervalTargetId = setTimeout(this.executeTargetMovement, intervalTarget);
     },
     getRandomOperator() {
       const randomIndex = Math.floor(Math.random() * this.signRandoms.length);
@@ -133,6 +160,29 @@ export default {
       this.drawTarget();
       this.animationFrameId = requestAnimationFrame(this.animate);
     },
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    checkDurationTarget() {
+      if (this.isTimesUp) {
+        return;
+      }
+
+      if (this.changeType === 'inactive' || this.changeType == 'keep_indicator') {
+        this.greenStartTime = null;
+        this.greenDuration = 0;
+
+        return;
+      }
+
+      if ((this.target < -2 || this.target > 2) && !this.greenStartTime) {
+        this.greenStartTime = new Date;
+      } else if ((this.target > -2 || this.target < 2) && this.greenStartTime) {
+        const currentTime = Date.now();
+        this.greenDuration += (currentTime - this.greenStartTime) / 1000;
+        this.greenStartTime = null;
+      }
+    }
   }
 }
 </script>

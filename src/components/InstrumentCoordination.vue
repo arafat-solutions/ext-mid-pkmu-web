@@ -17,14 +17,14 @@
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
-    <div id="main-view" v-show="!isShowModal">
+    <div id="main-view" v-if="!isShowModal && !isTimesUp">
       <div class="indicators">
         <Airspeed id="airspeed" class="indicator-bg" :size="200" :airspeed="airspeed" />
         <HeadingInstrument
           :isTimesUp="isTimesUp"
           :isPause="isPause"
           :changeType="config.heading.changeType"
-          :changeValue="config.heading.changeValue"
+          :speed="config.heading.speed"
         />
         <SoundQuestion
           ref="soundQuestionRef"
@@ -82,9 +82,8 @@ export default {
       soundQuestions: [],
       config: {
         heading: {
-          isActive: true, //true, false
-          changeType: 'adjust_for_consistent_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
-          changeValue: 5, //integer
+          changeType: 'adjust_for_irregular_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          speed: 50, //integer 1-100
         },
         soundQuestion: {
           isActive: false, //true, false
@@ -115,8 +114,9 @@ export default {
     },
   },
   methods: {
-    startTest() {
+    async startTest() {
       this.isShowModal = false;
+      await this.delay(100);
       this.$refs.soundQuestionRef.setupSound();
       this.startAgain();
     },
@@ -143,6 +143,9 @@ export default {
     },
     exit() {
       this.$router.push('module');
+    },
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
   }
 }
