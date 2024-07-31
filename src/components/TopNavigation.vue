@@ -1,115 +1,153 @@
 <template>
-    <div class="top-nav-bar">
-      <div class="user-info">
-        <img src="" alt="User Avatar" class="avatar" />
+  <div class="top-nav-bar divide-y-4 border-spacing-1">
+    <div class="user-info">
+      <div class="avatar">AW</div>
+      <div class="user-details">
         <span class="user-name">Andi Wijaya</span>
-        <div class="dropdown">
-          <button class="dropbtn">▼</button>
-          <div class="dropdown-content">
-            <a href="/profile">
-              <img src="" alt="Profile" class="icon" />
-              Profil Saya
-            </a>
-            <a href="#">
-              <img src="" alt="Logout" class="icon" />
-              Log Out
-            </a>
-          </div>
+        <span class="user-role">Peserta</span>
+      </div>
+      <div class="dropdown">
+        <button class="dropbtn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="dropdown-content">
+          <a href="/profile">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Profil Saya
+          </a>
+          <a href="#" @click.prevent="logout">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Log Out
+          </a>
         </div>
       </div>
-      <button class="extra-button">Siap Memulai Tes</button>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    name: "TopNavigation"
-  };
-  </script>
-  
-  <style scoped>
-  .top-nav-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 90%;
-    background-color: #ffffff;
-    padding: 10px 50px;
-    border-bottom: 1px solid #e0e0e0;
+    <button class="start-test-button">Mulai Test</button>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "TopNavigation",
+  methods: {
+    logout() {
+      // Implement logout logic here
+      console.log("Logging out...");
+    }
   }
-  
-  .user-info {
-    display: flex;
-    align-items: center;
-  }
-  
-  .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-  }
-  
-  .user-name {
-    margin-right: 10px;
-    font-weight: bold;
-  }
-  
-  .dropdown {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .dropbtn {
-    background: none;
-    border: none;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 0;
-  }
-  
-  .dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #ffffff;
-    min-width: 160px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-  }
-  
-  .dropdown-content a {
-    color: black;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-  }
-  
-  .dropdown-content a:hover {
-    background-color: #f1f1f1;
-  }
-  
-  .dropdown-content .icon {
-    width: 16px;
-    height: 16px;
-    margin-right: 8px;
-  }
-  
-  .dropdown:hover .dropdown-content {
-    display: block;
-  }
-  
-  .extra-button {
-    background-color: #6200ee;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 40px;
-    cursor: pointer;
-  }
-  
-  .extra-button:hover {
-    background-color: #3700b3;
-  }
-  </style>
-  
+};
+</script>
+
+<style scoped>
+.top-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #E6E0FF;
+  color: #6E4AE4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 0.75rem;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 0.5rem;
+}
+
+.user-name {
+  font-weight: bold;
+  color: #333;
+}
+
+.user-role {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropbtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #666;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: #ffffff;
+  min-width: 180px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dropdown-content a {
+  color: #333;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-content a:hover {
+  background-color: #f8f8f8;
+}
+
+.dropdown-content svg {
+  margin-right: 8px;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.start-test-button {
+  background-color: #6E4AE4;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.start-test-button:hover {
+  background-color: #5C3ED6;
+}
+</style>
