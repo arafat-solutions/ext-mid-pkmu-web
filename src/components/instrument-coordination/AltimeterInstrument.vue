@@ -1,16 +1,17 @@
 <template>
   <div>
-    <Heading id="heading" class="indicator-bg" :size="200" :heading="headingValue" />
+    <Altimeter id="altimeter" class="indicator-bg" :size="200" :altitude="altitude" />
+    <div class="altitude-value">{{altitude}}</div>
     <canvas ref="targetCanvas" :width="200" :height="200" />
   </div>
 </template>
 
 <script>
-import {Heading} from  'vue-flight-indicators';
+import {Altimeter} from  'vue-flight-indicators';
 
 export default {
   components: {
-    Heading,
+    Altimeter,
   },
   props: {
     isTimesUp: Boolean,
@@ -18,9 +19,9 @@ export default {
     changeType: String,//inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
     speed: Number, // 0-100
   },
-  data: function () {
+  data() {
     return {
-      headingValue: 0,
+      altitude: 1000,
       signRandoms: ['+', '-'],
       defaultIntervalTarget: 1000, //in ms
       minimumIntervalTarget: 1000, //in ms
@@ -42,6 +43,20 @@ export default {
     window.removeEventListener('keydown', this.handleKeyPress);
     cancelAnimationFrame(this.animationFrameId);
   },
+  watch: {
+    isTimesUp(newValue) {
+      if (newValue) {
+        this.checkDurationTarget();
+        window.removeEventListener('keydown', this.handleKeyPress);
+        cancelAnimationFrame(this.animationFrameId);
+      }
+    },
+  },
+  computed: {
+    changeValue() {
+      return (this.speed / 100) * 49 + 1;
+    },
+  },
   mounted: function () {
     if (this.changeType !== 'inactive') {
       if (this.changeType !== 'keep_indicator') {
@@ -50,31 +65,16 @@ export default {
       this.executeTargetMovement();
     }
   },
-  watch: {
-    isTimesUp(newValue) {
-      if (newValue) {
-        this.checkDurationTarget();
-        console.log('greenDuration', this.greenDuration);
-        window.removeEventListener('keydown', this.handleKeyPress);
-        cancelAnimationFrame(this.animationFrameId);
-      }
-    },
-  },
-  computed: {
-    changeValue() {
-      return (this.speed / 100) * 19 + 1;
-    },
-  },
   methods: {
     handleKeyPress(event) {
       if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
         return;
       }
 
-      if (event.key === 'ArrowRight') {
+      if (event.key === 'ArrowUp') {
         this.headingValue += 1;
         this.target += 1;
-      } else if (event.key === 'ArrowLeft') {
+      } else if (event.key === 'ArrowBottom') {
         this.headingValue -= 1;
         this.target -= 1;
       }
@@ -112,7 +112,6 @@ export default {
       return this.signRandoms[randomIndex];
     },
     initTarget() {
-      this.target = Math.floor(Math.random() * 361);
       this.animate();
     },
     drawTarget() {
@@ -191,16 +190,33 @@ export default {
 </script>
 
 <style scoped>
-#heading {
+#altimeter {
   position: absolute;
-  left: 540px;
-  top: 75px;
-  z-index: -99;
+  left: 780px;
+  top: 200px;
 }
 
 canvas {
   border: 0px solid black;
-  margin-top: 75px;
+  position: absolute;
+  left: 780px;
+  top: 200px;
   z-index: 999;
+}
+
+.altitude-value {
+  position: absolute;
+  left: 892px;
+  top: 290px;
+  color: #ffffff;
+  padding: 0px;
+  border:1px solid #ffffff;
+  font-weight: bold;
+  font-size: 13px;
+  min-width: 50.7px;
+}
+
+.needleSmall {
+  display: none;
 }
 </style>

@@ -33,8 +33,13 @@
           :isPause="isPause"
           :isActive="config.soundQuestion.isActive"
         />
-        <Altimeter id="altimeter" class="indicator-bg" :size="200" :altitude="altitude" :pressure="pressure" />
-        <AnalogClock id="clock" />
+        <AltimeterInstrument
+          :isTimesUp="isTimesUp"
+          :isPause="isPause"
+          :changeType="config.heading.changeType"
+          :speed="config.heading.speed"
+        />
+        <AnalogClock />
         <button id="button-plus" class="btn-plus-minus">+</button>
         <div id="airspeed-indicator"></div>
         <button id="button-minus" class="btn-plus-minus">-</button>
@@ -48,24 +53,25 @@
 </template>
 
 <script>
-import {Airspeed, Altimeter} from  'vue-flight-indicators';
+import {Airspeed} from  'vue-flight-indicators';
 import AnalogClock from './instrument-coordination/AnalogClock';
 import SoundQuestion from './instrument-coordination/SoundQuestion';
 import HeadingInstrument from './instrument-coordination/HeadingInstrument';
+import AltimeterInstrument from './instrument-coordination/AltimeterInstrument.vue';
 
 export default {
   components: {
     HeadingInstrument,
     Airspeed,
-    Altimeter,
     AnalogClock,
     SoundQuestion,
+    AltimeterInstrument,
   },
   data: function () {
     return {
       isLoading: false,
       minuteTime: null,
-      timeLeft: 20, // Countdown time in seconds
+      timeLeft: 120, // Countdown time in seconds
       intervalTimerTest: null,
       isPause: false,
       isConfigLoaded: false,
@@ -76,8 +82,6 @@ export default {
       pitch: 0,
       vario: 0,
       airspeed: 0,
-      altitude: 0,
-      pressure: 0,
       canAnswerSoundQuestion: false,
       soundQuestions: [],
       config: {
@@ -89,6 +93,10 @@ export default {
           isActive: false, //true, false
           speed: 'slow', //slow, medium, fast
         },
+        altimeter: {
+          changeType: 'adjust_for_irregular_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          speed: 50, //integer 1-100
+        }
       },
     }
   },
@@ -98,8 +106,6 @@ export default {
       this.pitch = 50*Math.sin(this.counter/20);
       this.vario = 2*Math.sin(this.counter/10);
       this.airspeed = 80+80*Math.sin(this.counter/10);
-      this.altitude = 10*this.counter;
-      this.pressure = 1000+3*Math.sin(this.counter/50);
       this.counter++;
     }, 35);
   },
@@ -116,7 +122,7 @@ export default {
   methods: {
     async startTest() {
       this.isShowModal = false;
-      await this.delay(100);
+      await this.$nextTick();
       this.$refs.soundQuestionRef.setupSound();
       this.startAgain();
     },
@@ -178,18 +184,6 @@ body {
   position: absolute;
   left: 300px;
   top: 200px;
-}
-
-#altimeter {
-  position: absolute;
-  left: 780px;
-  top: 200px;
-}
-
-#clock {
-  position: absolute;
-  left: 555px;
-  top: 350px;
 }
 
 #button-plus {

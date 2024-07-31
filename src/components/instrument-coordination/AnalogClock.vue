@@ -49,6 +49,9 @@ export default {
 }
 
 .clock {
+  position: absolute;
+  left: 555px;
+  top: 350px;
   min-height: 160px;
   min-width: 160px;
   display: flex;
