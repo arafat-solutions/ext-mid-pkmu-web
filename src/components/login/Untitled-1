@@ -1,0 +1,25 @@
+{
+  "Multitasking With Instrument": {
+    "Tank Warna": {
+      "Tangki Merah": {
+        "default": "Q",
+        "alt": "W"
+      },
+      "Tangki Hijau": {
+         "default": "Q",
+        "alt": "W"
+      }
+    },
+    "Lampu Peringatan": {
+      "Lampu 1": {
+         "default": "Q",
+        "alt": "W"
+      }
+    }
+  },
+  "Rotating Maze": {
+    "Umum": {
+      
+    }
+  }
+}

@@ -1,40 +1,49 @@
 <template>
-  <div class="login-container">
-    <div class="login-form">
-      <div class="config-link">
-        <router-link to="/config">
-          <i class="fas fa-cog"></i> Konfigurasi Device
-        </router-link>
-      </div>
-      <div class="header">
-        <h2>Login</h2>
-        <p>Silakan login menggunakan Email dan Kode akses yang sudah dikirimkan.</p>
-      </div>
-      <form @submit.prevent="login">
-        <div class="input-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" v-model="email" placeholder="Masukkan Email" required />
-        </div>
-        <div class="input-group">
-          <label for="code">Kode Akses</label>
-          <input type="text" id="code" v-model="code" placeholder="Masukkan code" required />
-        </div>
-        <button type="submit" :disabled="loading">
-          <span v-if="loading" class="spinner"></span>
-          <span v-else>Login</span>
+  <div class="flex h-screen">
+    <div class="w-7/12 bg-white flex items-center justify-center relative">
+      <div class="absolute top-4 right-4">
+        <button @click="openAdminLoginModal" class="text-[#6E4AE4] hover:text-[#5C3ED6] text-sm">
+          <i class="fas fa-cog mr-2"></i> Konfigurasi Device
         </button>
-      </form>
+      </div>
+      <div class="w-96 p-8 shadow-lg bg-white rounded-xl">
+        <h2 class="text-2xl font-bold mb-2 text-left">Login</h2>
+        <p class="text-gray-500 mb-6 text-left">Silakan login menggunakan Email dan Kode Akses yang sudah dikirimkan.</p>
+        <form @submit.prevent="login">
+          <div class="mb-4">
+            <label for="email" class="block text-gray-700 text-sm font-medium mb-2 text-left">Email</label>
+            <input type="email" id="email" v-model="email" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
+                   placeholder="Masukkan Email" required />
+          </div>
+          <div class="mb-6">
+            <label for="code" class="block text-gray-700 text-sm font-medium mb-2 text-left">Kode Akses</label>
+            <input type="text" id="code" v-model="code"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
+                   placeholder="Masukkan Kode Akses" required />
+          </div>
+          <button type="submit" :disabled="loading"
+                  class="w-full bg-[#6E4AE4] hover:bg-[#5C3ED6] text-white font-medium py-2 px-4 rounded-full focus:outline-none focus:shadow-outline">
+            <span v-if="loading" class="spinner"></span>
+            <span v-else>Login</span>
+          </button>
+        </form>
+      </div>
     </div>
-    <div class="welcome-section">
-      <img src="@/assets/logo.png" alt="Logo" />
-      <h2>Selamat Datang</h2>
-      <p>"Susthirabuddy Abhayagata"</p>
+    <div class="w-5/12 bg-[#6E4AE4] flex flex-col items-center justify-center text-white relative">
+      <img src="@/assets/image.png" alt="Background" class="absolute inset-0 w-full h-full object-cover" />
     </div>
+    <AdminLoginModal ref="adminLoginModal" />
   </div>
 </template>
 
 <script>
+import AdminLoginModal from '@/components/login/AdminModal.vue';
+
 export default {
+  components: {
+    AdminLoginModal
+  },
   data() {
     return {
       email: '',
@@ -43,35 +52,31 @@ export default {
     };
   },
   methods: {
+    openAdminLoginModal() {
+      this.$refs.adminLoginModal.openModal();
+    },
     async login() {
       this.loading = true;
       try {
-        // Mock login logic
-        console.log('Email:', this.email);
-        console.log('OTP:', this.code);
-        const res = await fetch("https://walrus-app-bfooa.ondigitalocean.app/api/scheduling/workstation-signin",
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              workstationId: 0,
-              email: this.email,
-              code: this.code
-            })
-          }
-        )
+        const res = await fetch("https://walrus-app-bfooa.ondigitalocean.app/api/scheduling/workstation-signin", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            workstationId: 0,
+            email: this.email,
+            code: this.code
+          })
+        });
         if (!res.ok) {
           throw new Error('Login failed');
         }
         const data = await res.json();
         console.log(data);
 
-        // Save mock data to localStorage
         localStorage.setItem('scheduleData', JSON.stringify(data));
 
-        // Redirect to test-module page
         this.$router.push('/module');
       } catch (error) {
         console.error(error);
@@ -85,137 +90,8 @@ export default {
 </script>
 
 <style scoped>
-@import '~@fortawesome/fontawesome-free/css/all.css';
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-.login-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-}
-
-.login-form {
-  width: 55%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  margin: auto;
-  position: relative;
-}
-
-.config-link {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  font-size: 14px;
-}
-
-.config-link a {
-  color: #6c5ce7;
-  text-decoration: none;
-}
-
-.header {
-  text-align: left;
-  margin-bottom: 20px;
-  color: #555;
-}
-
-.header h2 {
-  color: #000;
-}
-
-.input-group {
-  width: 100%;
-  margin-bottom: 15px;
-  text-align: left;
-}
-
-.input-group label {
-  font-weight: bold;
-  font-size: 16px;
-  color: #000;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 20px;
-  color: #555;
-  box-sizing: border-box;
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  background-color: #6c5ce7;
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-button .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-button:hover:not(:disabled) {
-  background-color: #5b4ac4;
-}
-
-.welcome-section {
-  width: 45%;
-  background-color: #6c5ce7;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.welcome-section img {
-  width: 100px;
-  margin-bottom: 20px;
-}
-
-.welcome-section h2 {
-  margin-bottom: 10px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-white border-solid rounded-full animate-spin;
+  border-top-color: transparent;
 }
 </style>

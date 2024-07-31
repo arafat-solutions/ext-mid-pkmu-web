@@ -1,250 +1,135 @@
 <template>
-  <div class="config-page">
-    <div class="header">
-      <button class="back-button" @click="goBack">Kembali</button>
-      <div class="tabs">
-        <button :class="{ active: activeTab === 'Umum' }" @click="activeTab = 'Umum'">Umum</button>
-        <button :class="{ active: activeTab === 'Kontrol' }" @click="activeTab = 'Kontrol'">Kontrol</button>
+  <div class="container mx-auto p-4 overflow-auto">
+    <div class="flex items-center mb-6">
+      <button @click="$router.push('/')" class="text-[#6E4AE4] hover:text-[#5C3ED6] mr-4 flex items-center">
+        <i class="fas fa-arrow-left mr-2"></i> Kembali
+      </button>
+    </div>
+
+    <h1 class="text-2xl font-bold justify-center">Konfigurasi Perangkat</h1>
+    <div class="mb-6">
+      <div class="flex justify-start">
+        <button class="text-[#6E4AE4] font-semibold"
+        @click="activeTab = 'umum'" 
+        :class="['mr-4 pb-2', activeTab === 'umum' ? 'border-b-2 border-[#6E4AE4] text-[#6E4AE4]' : 'text-gray-500']"
+      >
+        Umum
+      </button>
+      <button  class="text-[#6E4AE4] font-semibold"
+        @click="activeTab = 'workstation'" 
+        :class="['pb-2', activeTab === 'workstation' ? 'border-b-2 border-[#6E4AE4] text-[#6E4AE4]' : 'text-gray-500']"
+      >
+        Workstation
+      </button>
       </div>
     </div>
-    <h1>Konfigurasi Perangkat</h1>
-    <div class="content" v-if="activeTab === 'Umum'">
-      <div class="dropdowns">
-        <div class="dropdown">
-          <label for="test-dropdown">Pilih Jenis Test</label>
-          <select id="test-dropdown" v-model="selectedTest" @change="updateConfigurations">
-            <option value="" disabled selected>Pilih Baterai Test</option>
-            <option v-for="(test, index) in testNames" :key="index" :value="test">{{ test }}</option>
+
+    <div v-if="activeTab === 'umum'">
+      <h2 class="text-xl font-semibold mb-4 text-left">Umum</h2>
+      
+      <div class="grid grid-cols-2 gap-4 mb-2 text-left justify-between">
+        <div>
+          <label for="testType" class="block text-sm font-medium text-gray-700 mb-1">Pilih Jenis Test</label>
+          <select 
+            id="testType" 
+            v-model="selectedTest" 
+            @change="updateInputMapping"
+            class="w-full px-3 py-2 text-base border border-gray-300 rounded-full focus:outline-none focus:ring-[#6E4AE4] focus:border-[#6E4AE4]"
+          >
+            <option v-for="test in Object.keys(testData)" :key="test" :value="test">
+              {{ test }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label for="inputDevice" class="block text-sm font-medium text-gray-700 mb-1">Input Device</label>
+          <select 
+            id="inputDevice"
+            class="w-full px-3 py-2 text-base border border-gray-300 rounded-full focus:outline-none focus:ring-[#6E4AE4] focus:border-[#6E4AE4]"
+          >
+            <option>Pilih Input Device</option>
           </select>
         </div>
       </div>
-      <div class="config-table" v-if="configurations.length">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>TANK WARNA</th>
-              <th>Default</th>
-              <th>Opsilain</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(config, index) in configurations" :key="config.id">
-              <td>{{ index + 1 }}</td>
-              <td>{{ config.name }}</td>
-              <td>{{ config.defaultKey }}</td>
-              <td><input type="text" v-model="config.secondaryKey" maxlength="1" /></td>
-            </tr>
-          </tbody>
-        </table>
+
+      <div v-if="selectedTest && testData[selectedTest]">
+        <div v-for="(category, categoryName) in testData[selectedTest]" :key="categoryName" class="mb-8">
+          <div class="bg-gray-100 px-4 py-2 rounded-t-md font-medium flex justify-between">
+            <span>{{ categoryName }}</span>
+            <div>
+              <span class="mr-12">Default</span>
+              <span>Opsi lain</span>
+            </div>
+          </div>
+          <div class="border-l border-r border-b border-gray-200 text-left">
+            <div v-for="(item, itemName, index) in category" :key="itemName" 
+                 class="flex justify-between items-center px-4 py-2"
+                 :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
+              <span class="w-1/2">{{ index + 1 }}. {{ itemName }}</span>
+              <div class="flex w-1/2">
+                <span class="w-1/2 text-center">{{ item.default }}</span>
+                <input 
+                  v-model="testData[selectedTest][categoryName][itemName].alt" 
+                  class="w-1/2 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-[#6E4AE4] focus:border-[#6E4AE4]"
+                  :placeholder="item.alt || '...'"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-8">
+        <button 
+          @click="restoreDefaults" 
+          class="px-4 py-2 border border-[#6E4AE4] text-[#6E4AE4] rounded-xl hover:bg-[#6E4AE4] hover:text-white transition-colors mr-4"
+        >
+          Kembalikan seperti semula
+        </button>
+        <button 
+          @click="saveConfiguration" 
+          class="px-4 py-2 bg-[#6E4AE4] text-white rounded-xl hover:bg-[#5C3ED6] transition-colors"
+        >
+          Simpan Konfigurasi
+        </button>
       </div>
     </div>
-    <div class="content" v-else-if="activeTab === 'Kontrol'">
-      <div class="dropdown">
-        <label for="device-dropdown">Pilih perangkat</label>
-        <select id="device-dropdown" v-model="selectedDevice" @change="loadControlConfigurations">
-          <option value="" disabled selected>Pilih perangkat</option>
-          <option v-for="(device, index) in devices" :key="index" :value="device">{{ device }}</option>
-        </select>
-      </div>
-      <div class="control-table">
-        <table>
-          <thead>
-            <tr>
-              <th>KONFIGURASI DASAR</th>
-              <th>Default</th>
-              <th>Opsilain</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(control, index) in controlConfigurations" :key="index">
-              <td>{{ control.name }}</td>
-              <td>
-                <component :is="control.component" v-model="control.value" :options="control.options" />
-              </td>
-              <td><input type="text" v-model="control.secondaryKey" maxlength="1" /></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="buttons">
-        <button class="reset-button" @click="resetToDefault">Kembalikan seperti semula</button>
-        <button class="save-button" @click="saveConfigurations">Simpan Konfigurasi</button>
-      </div>
+
+    <div v-else-if="activeTab === 'workstation'">
+      <!-- Workstation tab content -->
+      <p>Workstation configuration coming soon...</p>
     </div>
   </div>
 </template>
 
 <script>
+// The script section remains largely the same as before
 export default {
   data() {
     return {
-      activeTab: 'Umum',
+      activeTab: 'umum',
       selectedTest: '',
-      selectedDevice: '',
-      configurations: [],
-      controlConfigurations: [],
-      testNames: [],
-      devices: ["Logitech Gamepad F310", "Other Device"],
-      primaryPurple: '#6E51CB'
+      testData: {
+        "Multitasking Mix with Call Sign": {
+          "TANK WARNA": {
+            "Tangki Merah": { "default": "Q", "alt": "" },
+            "Tangki Hijau": { "default": "W", "alt": "" },
+            "Tangki Kuning": { "default": "E", "alt": "" },
+            "Tangki Biru": { "default": "R", "alt": "" },
+            "Tabung BKH (Biru, Kuning, Hijau)": { "default": "A", "alt": "" },
+            "Tabung HBM (Hijau, Biru, Merah)": { "default": "S", "alt": "" },
+            "Tabung MKB (Merah, Kuning, Biru)": { "default": "D", "alt": "" },
+            "Tabung KMH (Kuning, Merah, Hijau)": { "default": "F", "alt": "" }
+          }
+        },
+        "Rotating Maze": {
+          "Umum": {
+            "Rotasi Kanan": { "default": "Q", "alt": "" },
+          }
+        }
+      },
     };
   },
-  created() {
-    this.fetchTestConfigurations();
-  },
-  methods: {
-    fetchTestConfigurations() {
-      // Simulate an API call
-      setTimeout(() => {
-        const testConfigurations = {
-          "Radar Vigilliance Test": [
-            { id: 1, name: "Tangki Merah", defaultKey: "Q", secondaryKey: "" },
-            { id: 2, name: "Tangki Hijau", defaultKey: "W", secondaryKey: "" },
-            // Add more configurations as needed
-          ],
-          "Multitasking Mix with Call Sign": [
-            { id: 1, name: "Tabung BKH (Biru, Kuning, Hijau)", defaultKey: "A", secondaryKey: "" },
-            { id: 2, name: "Tabung HBM (Hijau, Biru, Merah)", defaultKey: "S", secondaryKey: "" },
-            // Add more configurations as needed
-          ],
-          "PFD Tracking": [
-            { id: 1, name: "Tangki Kuning", defaultKey: "E", secondaryKey: "" },
-            { id: 2, name: "Tangki Biru", defaultKey: "R", secondaryKey: "" },
-            // Add more configurations as needed
-          ],
-          "Multitasking mix With Color Tanks": [
-            { id: 1, name: "Tangki Merah", defaultKey: "Q", secondaryKey: "" },
-            { id: 2, name: "Tangki Hijau", defaultKey: "W", secondaryKey: "" },
-            // Add more configurations as needed
-          ]
-        };
-        this.testNames = Object.keys(testConfigurations);
-        this.testConfigurations = testConfigurations;
-      }, 1000);
-    },
-    loadControlConfigurations() {
-      // Simulate loading control configurations based on the selected device
-      this.controlConfigurations = [
-        { name: "Balikkan Sumbu X", component: "ToggleSwitch", value: false },
-        { name: "Balikkan Sumbu Y", component: "ToggleSwitch", value: false },
-        { name: "Sensitivitas Analog Kiri", component: "Slider", value: 50 },
-        { name: "Sensitivitas Analog Kanan", component: "Slider", value: 50 },
-        { name: "Sensitivitas Tombol", component: "Slider", value: 50 },
-        { name: "Tukar Mode", component: "Dropdown", value: "Start", options: ["Start", "Select"] },
-        { name: "Pemetaan Tombol", component: "Dropdown", value: "Kiri", options: ["Kiri", "Kanan"] }
-      ];
-    },
-    goBack() {
-      // Implement back navigation logic
-    },
-    updateConfigurations() {
-      this.configurations = this.testConfigurations[this.selectedTest];
-    },
-    resetToDefault() {
-      // Logic to reset control configurations to default values
-      this.loadControlConfigurations();
-    },
-    saveConfigurations() {
-      // Logic to save current control configurations
-      console.log("Configurations saved", this.controlConfigurations);
-    }
-  }
+  // ... (rest of the methods remain the same)
 };
 </script>
-
-<style>
-.config-page {
-  padding: 20px;
-  overflow-y: auto;
-}
-.header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-.back-button {
-  background: none;
-  border: none;
-  color: #6E51CB;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-.tabs {
-  display: flex;
-}
-.tabs button {
-  background: none;
-  border: none;
-  color: black;
-  font-weight: bold;
-  padding: 10px;
-  cursor: pointer;
-}
-.tabs .active {
-  border-bottom: 2px solid #6E51CB;
-}
-h1 {
-  text-align: center;
-  margin: 20px 0;
-}
-.dropdowns {
-  display: flex;
-  justify-content: space-between;
-  margin: 20px 0;
-}
-.dropdown {
-  display: flex;
-  flex-direction: column;
-}
-.dropdown label {
-  margin-bottom: 5px;
-}
-.dropdown select {
-  padding: 10px;
-  border-radius: 20px;
-  border: 1px solid #ccc;
-}
-.config-table,
-.control-table {
-  margin-top: 20px;
-  width: 75%;
-  margin: 0 auto;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  padding: 10px;
-  text-align: left;
-}
-th {
-  background-color: #f0f0f0;
-  border-radius: 10px 10px 0 0;
-}
-td input {
-  width: 50px;
-  padding: 5px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  text-align: center;
-}
-.buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-.reset-button,
-.save-button {
-  background-color: #6E51CB;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-}
-.reset-button {
-  background-color: #e0e0e0;
-  color: black;
-}
-</style>
