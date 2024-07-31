@@ -1,17 +1,27 @@
 <template>
-  <div class="navigation">
-    <div class="logo">
-      <img src="@/assets/logo.png" alt="Logo" />
+  <div class="navigation bg-gradient-to-r from-[#6E4AE4] to-[#755AC9] h-screen w-1/5 flex flex-col text-white">
+    <div class="logo p-4 justify-left">
+      <img src="@/assets/logo.png" alt="Logo" class="w-16 h-16 mx-auto" />
     </div>
-    <div class="schedule">
-      <p class="schedule-title">{{scheduleData.name}}</p>
-      <p class="schedule-time">Waktu: {{scheduleData.startHour}}-{{scheduleData.endHour}}</p>
+    <div class="schedule text-left px-4 mb-6">
+      <p class="schedule-title text-xl font-bold">{{ scheduleData.name }}</p>
+      <p class="schedule-time text-xl font-semibold">Waktu: {{ scheduleData.startHour }}-{{ scheduleData.endHour }}</p>
     </div>
-    <ul class="menu">
-      <li v-for="(test, index) in scheduleData.tests" :key="test.name" @click="selectTest(test)">
-        <div class="menu-item" :class="{ active: isActive(test.name) }">
-           Baterai Test {{index + 1}}
-          <span class="status selesai" v-if="isCompleted(test.name)">Selesai</span>
+    <ul class="menu flex-grow overflow-auto px-2">
+      <li v-for="(test, index) in scheduleData.tests" :key="test.name" @click="selectTest(test)" class="mb-2">
+        <div 
+          class="menu-item h-24 py-2 px-4 mx-8 my-4 rounded-lg cursor-pointer transition-colors duration-200 flex justify-left items-center "
+          :class="{ 
+            'bg-white text-[#6E4AE4] border-l-4 border-[#6E4AE4]': isActive(test.name),
+            'bg-[#755AC9] text-white border-l-4 border-white': !isActive(test.name)
+          }"
+        >
+          <div class="text-semibold">
+            Baterai Test {{ index + 1 }}
+          </div>
+          <span v-if="isCompleted(test.name)" class="status selesai text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+            Selesai
+          </span>
         </div>
       </li>
     </ul>
@@ -22,113 +32,27 @@
 import EventBus from '@/eventBus';
 
 export default {
+  name: 'NavigationPage',
   data() {
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
     return {
-      scheduleData
+      scheduleData,
+      activeTest: null
     };
-  },  
-  name: 'NavigationPage',
+  },
   methods: {
-    isActive(routeName) {
-      return this.$route.name === routeName;
+    isActive(testName) {
+      return this.activeTest === testName;
     },
-    isCompleted(routeName) {
+    isCompleted(testName) {
       // Replace with actual logic to determine if the test is completed
-      return routeName === 'Baterai1'; // Example: only Baterai1 is completed
+      return testName === 'Baterai1'; // Example: only Baterai1 is completed
     },
     selectTest(test) {
-      console.log('selecting:', test.name)
+      console.log('selecting:', test.name);
+      this.activeTest = test.name;
       EventBus.$emit('testSelected', test);
     }
   }
 };
 </script>
-
-<style scoped>
-.navigation {
-  background-color: #6f42c1;
-  color: white;
-  padding: 0 20px; /* Remove padding from top, left, and bottom */
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 20%;
-  box-sizing: border-box;
-  overflow: auto;
-}
-
-
-.logo {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.logo img {
-  width: 100px;
-}
-
-.schedule {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.schedule-title {
-  font-size: 1.2em;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.schedule-time {
-  font-size: 0.9em;
-}
-
-.menu {
-  list-style: none;
-  padding: 0;
-  width: 100%;
-}
-
-.menu-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #834acb;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  text-decoration: none;
-  color: white;
-  font-weight: bold;
-  transition: background-color 0.3s;
-  cursor: pointer;
-}
-
-.menu-item:hover {
-  background-color: #6f42c1;
-}
-
-.menu-item.active {
-  background-color: #ffffff;
-  color: #6f42c1;
-}
-
-.menu-item.active .status {
-  background-color: #34c759;
-  color: white;
-}
-
-.status {
-  background-color: #6f42c1;
-  padding: 5px 10px;
-  border-radius: 12px;
-  font-size: 0.8em;
-}
-
-.status.selesai {
-  background-color: #34c759;
-}
-</style>

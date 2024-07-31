@@ -1,26 +1,30 @@
 <template>
-  <div class="battery-test-detail">
-    <div class="info-box">
-      <h1>{{ selectedTestTitle }}</h1>
-      <p>{{ selectedTestDescription }}</p>
-    </div>
-    <div class="test-list-box">
-      <h2>Available Tests</h2>
-      <ul>
-        <li v-for="test in tests" :key="test.id" class="test-item">
-          <div class="test-content">
-            <p>{{ test.name }}</p>
-            <router-link :to="this.url" class="test-button">Start Test</router-link>
-          </div>
-        </li>
-      </ul>
+  <div class="flex-1 p-8 overflow-auto">
+    <div class="flex gap-8">
+      <div class="w-2/3 bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-bold">{{ selectedTestTitle }}</h1>
+          <button class="bg-transparent text-[#5C3ED6] border-2 border-[#5C3ED6] px-4 py-2 rounded-full text-sm hover:bg-[#5C3ED6] transition-colors">
+            Tonton Tutorial
+          </button>
+        </div>
+       
+      </div>
+      
+      <div class="w-1/3 bg-white p-6 h-fit shadow-lg rounded-xl">
+        <div class=" bg-[#E2DBFA] px-4 py-4 rounded-xl border-2 border-[#6E4AE4]">
+          <div class="flex items-center mb-4">
+          <span class="text-[#6E4AE4] mr-2 text-2xl">🔆</span>
+          <h2 class="text-lg font-bold">Latihan Test</h2>
+        </div>
+        <p class="mb-4 text-[#6E4AE4] font-extralight">Kamu bisa mencoba test terlebih dahulu untuk latihan.</p>
+        <div class="bg-[#E2DBFA] border-2 border-[#6E4AE4] text-[#6E4AE4] px-4 py-2 rounded-full w-64">
+          <router-link :to="this.url" class="test-button">Start Test</router-link>
+        </div>
+        </div>
+      </div>
     </div>
   </div>
-  <!-- <div class="parent-container">
-    <button @click="showModal">Show Modal</button>
-    <ModalComponent :visible="isModalVisible" title="Apakah Anda yakin untuk Log Out?"
-      message="Apakah Anda yakin untuk Log Out?" @confirm="handleConfirm" @cancel="handleCancel" />
-  </div> -->
 </template>
 
 <script>
@@ -28,18 +32,11 @@ import EventBus from '@/eventBus';
 
 export default {
   name: 'RadarVigilanceMenu',
-
   data() {
     return {
-      isModalVisible: false,
-      selectedTestDescription: '',
-      selectedTestTitle: '',
-      tests: [
-        { id: 1, name: 'Test 1', link: '/battery-test-1' },
-        { id: 2, name: 'Test 2', link: '/battery-test-1' },
-        { id: 3, name: 'Test 3', link: '/battery-test-1' }
-        // Add more tests here if needed
-      ]
+      selectedTestTitle: 'Radar Vigiliance Test',
+      selectedTestDescription: 'Radar Vigiliance Test adalah tes perhatian dan kewaspadaan jangka panjang yang menggunakan desain tugas beban kerja rendah.',
+      url: ''
     };
   },
   created() {
@@ -60,59 +57,5 @@ export default {
 </script>
 
 <style scoped>
-.battery-test-detail {
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-}
-
-.info-box,
-.test-list-box {
-  background-color: white;
-  border-radius: 12px;
-  padding: 20px;
-  flex: 1;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.info-box h1,
-.test-list-box h2 {
-  margin-top: 0;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.test-item {
-  background-color: #f3e5f5;
-  border-radius: 12px;
-  margin: 10px 0;
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.test-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.test-button {
-  background-color: #6f42c1;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 24px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-
-.test-button:hover {
-  background-color: #5e37a6;
-}
+/* Add any additional styles here if needed */
 </style>
