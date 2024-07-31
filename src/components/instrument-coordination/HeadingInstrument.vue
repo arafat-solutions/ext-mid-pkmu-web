@@ -22,15 +22,14 @@ export default {
     return {
       headingValue: 0,
       signRandoms: ['+', '-'],
-      defaultIntervalTarget: 3000, //in ms
-      minimumIntervalTarget: 3000, //in ms
-      maximumIntervalTarget: 5000, //in ms
+      defaultIntervalTarget: 1000, //in ms
+      minimumIntervalTarget: 1000, //in ms
+      maximumIntervalTarget: 3000, //in ms
       target: 0,
       targetIncrement: null,
       width: 200,
       height: 200,
       animationFrameId: null,
-      intervalTargetId: null,
       radius: 75,
       greenStartTime: null,
       greenDuration: 0,
@@ -57,7 +56,6 @@ export default {
       if (newValue) {
         this.checkDurationTarget();
         window.removeEventListener('keydown', this.handleKeyPress);
-        clearInterval(this.intervalTargetId);
         cancelAnimationFrame(this.animationFrameId);
       }
     },
@@ -104,10 +102,10 @@ export default {
           this.target--;
           this.headingValue--;
         }
-        await this.delay(this.intervalTarget/this.changeValue);
+        this.checkDurationTarget();
+        await this.delay(intervalTarget/this.changeValue);
       }
-      this.checkDurationTarget();
-      this.intervalTargetId = setTimeout(this.executeTargetMovement, intervalTarget);
+      this.executeTargetMovement();
     },
     getRandomOperator() {
       const randomIndex = Math.floor(Math.random() * this.signRandoms.length);
@@ -179,9 +177,9 @@ export default {
         return;
       }
 
-      if ((this.target < -2 || this.target > 2) && !this.greenStartTime) {
+      if ((this.target < -3 || this.target > 3) && !this.greenStartTime) {
         this.greenStartTime = new Date;
-      } else if ((this.target > -2 || this.target < 2) && this.greenStartTime) {
+      } else if ((this.target > -3 && this.target < 3) && this.greenStartTime) {
         const currentTime = Date.now();
         this.greenDuration += (currentTime - this.greenStartTime) / 1000;
         this.greenStartTime = null;

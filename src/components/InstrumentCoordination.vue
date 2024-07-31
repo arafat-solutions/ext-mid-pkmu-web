@@ -17,7 +17,7 @@
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
-    <div id="main-view" v-if="!isShowModal && !isTimesUp">
+    <div id="main-view" v-if="!isShowModal" v-show="!isTimesUp">
       <div class="indicators">
         <Airspeed id="airspeed" class="indicator-bg" :size="200" :airspeed="airspeed" />
         <HeadingInstrument
@@ -65,7 +65,7 @@ export default {
     return {
       isLoading: false,
       minuteTime: null,
-      timeLeft: 120, // Countdown time in seconds
+      timeLeft: 20, // Countdown time in seconds
       intervalTimerTest: null,
       isPause: false,
       isConfigLoaded: false,
