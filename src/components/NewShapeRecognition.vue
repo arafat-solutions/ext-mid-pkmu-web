@@ -173,10 +173,23 @@ export default {
             drawRandomizedShapes(ctx, angle);
         }
 
+        function getScaleFactor(size) {
+            switch (size) {
+                case 'very_small': return 0.5;
+                case 'small': return 0.75;
+                case 'normal': return 1;
+                case 'large': return 1.25;
+                case 'very_large': return 1.5;
+                default: return 1;
+            }
+        }
+
         function drawRandomizedShapes(ctx, randomAngle) {
             const canvasWidth = shapeCanvas.value.width;
             const canvasHeight = shapeCanvas.value.height;
             const numShapes = 80; // Increased number of shapes
+
+            const scaleFactor = getScaleFactor(config.value.size);
 
             // Draw the correct shape first
             ctx.save();
@@ -184,8 +197,9 @@ export default {
             const correctY = Math.random() * (canvasHeight - 100) + 50;
             ctx.translate(correctX, correctY);
             ctx.rotate(randomAngle)
+            ctx.scale(scaleFactor, scaleFactor)
             ctx.beginPath();
-            ctx.strokeStyle = 'black';
+            ctx.strokeStyle = 'green';
             ctx.lineWidth = STROKE_WIDTH;
             shapes.value[correctShapeIndex.value](ctx);
             ctx.stroke();
@@ -491,10 +505,10 @@ export default {
         function initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
-            const { size, variation, id, time_per_question } = configShapeRecognition.config
+            const { size, variation, id, duration, time_per_question } = configShapeRecognition.config
 
             config.value = {
-                duration: 1 * 60,
+                duration: duration * 60,
                 size,
                 variation,
                 userId: scheduleData.userId,
@@ -543,6 +557,10 @@ export default {
         }
 
         function countDownTestTime() {
+            if (tesInterval.value) {
+                clearInterval(tesInterval.value);
+            }
+
             tesInterval.value = setInterval(async () => {
                 if (config.value.duration > 0) {
                     config.value.duration--;
