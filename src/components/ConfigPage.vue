@@ -97,25 +97,26 @@
 
     <div v-else-if="activeTab === 'workstation'">
       <h2 class="text-xl font-semibold mb-4 text-left">Workstation</h2>
-      
-      <div v-if="designatedWorkstation" class="bg-[#F3F0FF] p-4 rounded-lg">
-        <h3 class="text-lg font-medium mb-2">Perangkat Terdeteksi</h3>
-        <div class="flex items-center">
-          <i class="fas fa-desktop text-[#6E4AE4] mr-2"></i>
-          <span class="text-[#6E4AE4] font-semibold">PC {{ designatedWorkstation }}</span>
-        </div>
+    
+    <div v-if="designatedWorkstation" class="bg-[#F3F0FF] p-4 rounded-lg max-w-xs">
+      <h3 class="text-lg font-medium mb-2">Perangkat Terdeteksi</h3>
+      <div class="flex items-center">
+        <i class="fas fa-desktop text-[#6E4AE4] mr-2"></i>
+        <span class="text-[#6E4AE4] font-semibold">PC {{ designatedWorkstation }}</span>
       </div>
-      
-      <div v-else class="grid grid-cols-4 gap-4 mt-4">
-        <button 
-          v-for="n in 16" 
-          :key="n" 
-          @click="selectWorkstation(String(n).padStart(2, '0'))"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded"
-        >
-          PC {{ String(n).padStart(2, '0') }}
-        </button>
-      </div>
+    </div>
+    
+    <div v-else class="grid grid-cols-4 gap-4 mt-4">
+      <button 
+        v-for="n in 16" 
+        :key="n" 
+        @click="selectWorkstation(String(n).padStart(2, '0'))"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded flex items-center justify-center space-x-2 w-32"
+      >
+        <i class="fas fa-desktop"></i>
+        <span>PC {{ String(n).padStart(2, '0') }}</span>
+      </button>
+    </div>
     </div>
   </div>
 
