@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto p-4 h-screen overflow-y-auto">
     <div class="flex items-center mb-6">
-      <button @click="$router.push('/')" class="text-[#6E4AE4] hover:text-[#5C3ED6] mr-4 flex items-center">
+      <button @click="backToLogin" class="text-[#6E4AE4] hover:text-[#5C3ED6] mr-4 flex items-center">
         <i class="fas fa-arrow-left mr-2"></i> Kembali
       </button>
     </div>
@@ -99,7 +99,7 @@
       <h2 class="text-xl font-semibold mb-4 text-left">Workstation</h2>
     
     <div v-if="designatedWorkstation" class="bg-[#F3F0FF] p-4 rounded-lg max-w-xs">
-      <h3 class="text-lg font-medium mb-2">Perangkat Terdeteksi</h3>
+      <h3 class="text-lg text-left font-bold px-2 mb-2">Perangkat Terdeteksi</h3>
       <div class="flex items-center">
         <i class="fas fa-desktop text-[#6E4AE4] mr-2"></i>
         <span class="text-[#6E4AE4] font-semibold">PC {{ designatedWorkstation }}</span>
@@ -168,6 +168,10 @@ export default {
     this.loadDesignatedWorkstation();
   },
   methods: {
+    backToLogin() {
+      localStorage.removeItem('token');
+      this.$router.push('/');
+    },
     checkToken() {
       const token = localStorage.getItem('token');
       console.log('token', token);
