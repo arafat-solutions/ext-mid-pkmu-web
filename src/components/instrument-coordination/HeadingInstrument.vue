@@ -27,6 +27,7 @@ export default {
       maximumIntervalTarget: 3000, //in ms
       target: null,
       targetIncrement: null,
+      targetTolerance: 3,
       width: 200,
       height: 200,
       animationFrameId: null,
@@ -54,9 +55,9 @@ export default {
     isTimesUp(newValue) {
       if (newValue) {
         this.checkDurationTarget();
-        console.log('greenDuration', this.greenDuration);
         window.removeEventListener('keydown', this.handleKeyPress);
         cancelAnimationFrame(this.animationFrameId);
+        console.log('hading', this.greenDuration);
       }
     },
   },
@@ -178,9 +179,11 @@ export default {
         return;
       }
 
-      if ((this.target < -3 || this.target > 3) && !this.greenStartTime) {
+      const target = Math.abs(this.target) % 360;
+
+      if (target > this.targetTolerance && !this.greenStartTime) {
         this.greenStartTime = new Date;
-      } else if ((this.target > -3 && this.target < 3) && this.greenStartTime || (this.greenStartTime && this.isTimesUp)) {
+      } else if (((target <= this.targetTolerance) && this.greenStartTime) || (this.greenStartTime && this.isTimesUp)) {
         const currentTime = Date.now();
         this.greenDuration += (currentTime - this.greenStartTime) / 1000;
         this.greenStartTime = null;

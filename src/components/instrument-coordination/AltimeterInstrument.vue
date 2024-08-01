@@ -30,13 +30,13 @@ export default {
       maximumIntervalTarget: 5000, //in ms
       target: null,
       targetIncrement: null,
+      targetTolerance: 100,
       width: 200,
       height: 200,
       animationFrameId: null,
       radius: 75,
       greenStartTime: null,
       greenDuration: 0,
-      toleranceLimit: 10,
     }
   },
   created() {
@@ -52,6 +52,7 @@ export default {
         this.checkDurationTarget();
         window.removeEventListener('keydown', this.handleKeyPress);
         cancelAnimationFrame(this.animationFrameId);
+        console.log('altimeter', this.greenDuration);
       }
     },
   },
@@ -103,7 +104,7 @@ export default {
       }
       const sign = this.getRandomOperator();
       for(let i=0;i<=this.changeValue;i+=10) {
-        if (sign === '+') {
+        if (sign === '+' || ((this.altitude-10) < this.minimumAltitude)) {
           this.altitude += 10;
         } else {
           this.altitude -= 10;
@@ -190,7 +191,7 @@ export default {
       if (this.isPause) {
         return;
       }
-      console.log(this.target, this.altitude);
+
       if (this.changeType === 'inactive' || this.changeType == 'keep_indicator') {
         this.greenStartTime = null;
         this.greenDuration = 0;
@@ -200,11 +201,11 @@ export default {
 
       const diff = Math.abs(this.altitude - this.target);
 
-      if (diff > this.toleranceLimit && !this.greenStartTime) {
+      if (diff > this.targetTolerance && !this.greenStartTime) {
         this.greenStartTime = new Date;
       } else if (
-          diff <= this.toleranceLimit
-          && this.greenStartTime || (this.greenStartTime && this.isTimesUp)
+          diff <= this.targetTolerance && this.greenStartTime
+          || (this.greenStartTime && this.isTimesUp)
       ) {
         const currentTime = Date.now();
         this.greenDuration += (currentTime - this.greenStartTime) / 1000;

@@ -71,7 +71,7 @@ export default {
     return {
       isLoading: false,
       minuteTime: null,
-      timeLeft: 120, // Countdown time in seconds
+      timeLeft: 30, // Countdown time in seconds
       intervalTimerTest: null,
       isPause: false,
       isConfigLoaded: false,
