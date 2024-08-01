@@ -164,9 +164,17 @@ export default {
     };
   },
   mounted() {
+    this.checkToken();
     this.loadDesignatedWorkstation();
   },
   methods: {
+    checkToken() {
+      const token = localStorage.getItem('token');
+      console.log('token', token);
+      if (!token) {
+        this.$router.push('/');
+      }
+    },
     loadDesignatedWorkstation() {
       this.designatedWorkstation = localStorage.getItem('designatedWorkstation');
     },

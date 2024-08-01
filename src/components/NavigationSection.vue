@@ -3,23 +3,21 @@
     <div class="logo p-4 justify-left">
       <img src="@/assets/logo.png" alt="Logo" class="w-16 h-16 mx-auto" />
     </div>
-    <div class="schedule text-left px-4 mb-6">
+    <div class="schedule text-left px-10 mb-6">
       <p class="schedule-title text-xl font-bold">{{ scheduleData.name }}</p>
       <p class="schedule-time text-xl font-semibold">Waktu: {{ scheduleData.startHour }}-{{ scheduleData.endHour }}</p>
     </div>
     <ul class="menu flex-grow overflow-auto px-2">
       <li v-for="(test, index) in scheduleData.tests" :key="test.name" @click="selectTest(test)" class="mb-2">
-        <div 
-          class="menu-item h-24 py-2 px-4 mx-8 my-4 rounded-lg cursor-pointer transition-colors duration-200 flex justify-left items-center "
-          :class="{ 
-            'bg-white text-[#6E4AE4] border-l-4 border-[#6E4AE4]': isActive(test.name),
-            'bg-[#755AC9] text-white border-l-4 border-white': !isActive(test.name)
-          }"
-        >
-          <div class="text-semibold">
-            Baterai Test {{ index + 1 }}
-          </div>
-          <span v-if="isCompleted(test.name)" class="status selesai text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+        <div
+          class="menu-item h-16 py-2 px-4 mx-8 my-4 rounded-lg cursor-pointer transition-colors duration-200 flex justify-left items-center "
+          :class="{
+            'bg-white text-[#6E4AE4] font-semibold border-l-4 border-[#6E4AE4]': isActive(test.name),
+            'bg-[#755AC9] text-white font-semibold border-l-4 border-white': !isActive(test.name)
+          }">
+          Baterai Test {{ index + 1 }}
+          <span v-if="isCompleted(test.name)"
+            class="status selesai text-xs bg-green-500 text-white px-2 py-1 rounded-full">
             Selesai
           </span>
         </div>

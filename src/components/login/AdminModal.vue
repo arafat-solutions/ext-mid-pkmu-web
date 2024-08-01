@@ -69,8 +69,7 @@ export default {
         }
 
         const data = await response.json();
-        console.log('Login successful:', data);
-        
+        localStorage.setItem('token', data.access_token);
         this.closeModal();
         this.$router.push('/config');
       } catch (error) {
