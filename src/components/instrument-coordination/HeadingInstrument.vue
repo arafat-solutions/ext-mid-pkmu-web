@@ -105,7 +105,7 @@ export default {
         this.checkDurationTarget();
         await this.delay(intervalTarget/this.changeValue);
       }
-      this.executeTargetMovement();
+      return this.executeTargetMovement();
     },
     getRandomOperator() {
       const randomIndex = Math.floor(Math.random() * this.signRandoms.length);

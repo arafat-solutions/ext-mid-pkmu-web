@@ -21,11 +21,13 @@ export default {
   },
   data() {
     return {
-      altitude: 1000,
+      altitude: null,
+      minimumAltitude: 10000,
+      maximumAltitude: 20000,
       signRandoms: ['+', '-'],
-      defaultIntervalTarget: 1000, //in ms
-      minimumIntervalTarget: 1000, //in ms
-      maximumIntervalTarget: 3000, //in ms
+      defaultIntervalTarget: 3000, //in ms
+      minimumIntervalTarget: 2500, //in ms
+      maximumIntervalTarget: 5000, //in ms
       target: null,
       targetIncrement: null,
       width: 200,
@@ -34,6 +36,7 @@ export default {
       radius: 75,
       greenStartTime: null,
       greenDuration: 0,
+      toleranceLimit: 10,
     }
   },
   created() {
@@ -54,15 +57,22 @@ export default {
   },
   computed: {
     changeValue() {
-      return (this.speed / 100) * 49 + 1;
+      // Map speed (0-100) to (10-50)
+      let value = (this.speed / 100) * 40 + 10;
+
+      // Ensure the value is a multiple of 10
+      value = Math.round(value / 10) * 10;
+
+      return value;
     },
   },
   mounted: function () {
     if (this.changeType !== 'inactive') {
       if (this.changeType !== 'keep_indicator') {
+        this.initAltitude();
         this.initTarget();
       }
-      this.executeTargetMovement();
+      this.executeAltitudeMovement();
     }
   },
   methods: {
@@ -72,11 +82,9 @@ export default {
       }
 
       if (event.key === 'ArrowUp') {
-        this.headingValue += 1;
-        this.target += 1;
-      } else if (event.key === 'ArrowBottom') {
-        this.headingValue -= 1;
-        this.target -= 1;
+        this.altitude += 10;
+      } else if (event.key === 'ArrowDown') {
+        this.altitude -= 10;
       }
 
       this.checkDurationTarget();
@@ -84,7 +92,7 @@ export default {
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
-    async executeTargetMovement() {
+    async executeAltitudeMovement() {
       if (this.isPause || this.isTimesUp) {
         return;
       }
@@ -94,24 +102,37 @@ export default {
         intervalTarget = this.getRandomInterval(this.minimumIntervalTarget, this.maximumIntervalTarget);
       }
       const sign = this.getRandomOperator();
-      for(let i=1;i<=this.changeValue;i++) {
+      for(let i=0;i<=this.changeValue;i+=10) {
         if (sign === '+') {
-          this.target++;
-          this.headingValue++;
+          this.altitude += 10;
         } else {
-          this.target--;
-          this.headingValue--;
+          this.altitude -= 10;
         }
-        this.checkDurationTarget();
         await this.delay(intervalTarget/this.changeValue);
       }
-      this.executeTargetMovement();
+      this.checkDurationTarget();
+      return this.executeAltitudeMovement();
+    },
+    generateRandomNumber(min, max) {
+      // Generate a random number between 10000 and 15020
+      let number = Math.floor(Math.random() * (max - min + 1)) + 10000;
+
+      // Ensure the number is divisible by 10
+      if (number % 10 !== 0) {
+        number = number - (number % 10) + 10;
+      }
+
+      return number;
     },
     getRandomOperator() {
       const randomIndex = Math.floor(Math.random() * this.signRandoms.length);
       return this.signRandoms[randomIndex];
     },
+    initAltitude() {
+      this.altitude = this.generateRandomNumber(this.minimumAltitude, this.maximumAltitude);
+    },
     initTarget() {
+      this.target = this.generateRandomNumber(this.altitude-250, this.altitude+250);
       this.animate();
     },
     drawTarget() {
@@ -126,7 +147,7 @@ export default {
       const centerY = this.height / 2;
 
       // Adjust the target angle to make 0 degrees point upwards
-      const adjustedTarget = this.target - 90;
+      const adjustedTarget = (((this.target - this.minimumAltitude) / 9999) * 360) - 90;
 
       // Convert adjustedTarget from degrees to radians
       const targetRadians = adjustedTarget * (Math.PI / 180);
@@ -169,7 +190,7 @@ export default {
       if (this.isPause) {
         return;
       }
-
+      console.log(this.target, this.altitude);
       if (this.changeType === 'inactive' || this.changeType == 'keep_indicator') {
         this.greenStartTime = null;
         this.greenDuration = 0;
@@ -177,9 +198,14 @@ export default {
         return;
       }
 
-      if ((this.target < -3 || this.target > 3) && !this.greenStartTime) {
+      const diff = Math.abs(this.altitude - this.target);
+
+      if (diff > this.toleranceLimit && !this.greenStartTime) {
         this.greenStartTime = new Date;
-      } else if ((this.target > -3 && this.target < 3) && this.greenStartTime || (this.greenStartTime && this.isTimesUp)) {
+      } else if (
+          diff <= this.toleranceLimit
+          && this.greenStartTime || (this.greenStartTime && this.isTimesUp)
+      ) {
         const currentTime = Date.now();
         this.greenDuration += (currentTime - this.greenStartTime) / 1000;
         this.greenStartTime = null;
