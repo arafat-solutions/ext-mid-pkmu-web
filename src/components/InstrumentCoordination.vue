@@ -86,12 +86,12 @@ export default {
       soundQuestions: [],
       config: {
         heading: {
-          changeType: 'adjust_for_irregular_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          changeType: 'adjust_for_consistent_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_consistent_updates
           speed: 50, //integer 1-100
         },
         soundQuestion: {
-          isActive: false, //true, false
-          speed: 'slow', //slow, medium, fast
+          isActive: true, //true, false
+          speed: 'fast', //slow, medium, fast
         },
         altimeter: {
           changeType: 'adjust_for_irregular_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates

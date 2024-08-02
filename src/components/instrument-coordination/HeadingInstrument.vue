@@ -57,7 +57,7 @@ export default {
         this.checkDurationTarget();
         window.removeEventListener('keydown', this.handleKeyPress);
         cancelAnimationFrame(this.animationFrameId);
-        console.log('hading', this.greenDuration);
+        console.log('heading', this.greenDuration);
       }
     },
   },

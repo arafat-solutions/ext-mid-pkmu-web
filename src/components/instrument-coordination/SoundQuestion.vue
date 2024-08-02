@@ -49,6 +49,7 @@ export default {
       if (newValue) {
         clearInterval(this.intervalTimerSoundQuestion);
         window.speechSynthesis.cancel();
+        console.log('sound', this.result);
       }
     },
   },
@@ -59,35 +60,36 @@ export default {
       }
 
       if (event.key === 'Alt') {
-        this.checkAnswer('alt');
+        this.checkAnswer('odd', event.key);
       } else if (event.key.toLowerCase() === 'x') {
-        this.checkAnswer('x');
+        this.checkAnswer('odd', event.key);
       } else if (event.key.toLowerCase() === 'c') {
-        this.checkAnswer('c');
+        this.checkAnswer('even', event.key);
       }
     },
-    checkAnswer(key) {
+    async checkAnswer(numberType, key) {
       this.canAnswerSoundQuestion = false;
       this.result.clickedAnswers.push(key);
       const trueAnswer = this.result.needAnswers[this.result.needAnswers.length - 1];
+      let button = null;
+      if (numberType === 'odd') {
+        button = document.getElementById('btn-red');
 
-      if (key === 'alt' || key === 'x') {
-        const button = document.getElementById('btn-red');
-        if (button) {
-          button.click();
-        }
-      } else if (key === 'c') {
-        const button = document.getElementById('btn-green');
-        if (button) {
-          button.click();
-        }
+      } else if (numberType === 'even') {
+        button = document.getElementById('btn-green');
+      }
+
+      if (button) {
+        button.classList.add('active');
+        await this.delay(500);
+        button.classList.remove('active');
       }
 
       if (this.soundQuestionChecks.length > 0) {
         this.result.wrong++;
-      } else if ((key === 'alt' || key === 'x') && trueAnswer === 'odd') {
+      } else if (numberType === 'odd' && trueAnswer === 'odd') {
         this.result.correct++
-      } else if (key === 'c' && trueAnswer === 'even') {
+      } else if (numberType === 'even' && trueAnswer === 'even') {
         this.result.correct++
       } else {
         this.result.wrong++;
@@ -104,9 +106,14 @@ export default {
       this.intervalTimerSoundQuestion = setInterval(this.generateNumber, this.soundQuestionInterval);
     },
     generateNumber() {
+      //Check missed
+      if (this.result.clickedAnswers.length < this.result.needAnswers.length) {
+        this.result.clickedAnswers.push(null);
+        this.result.missed++;
+      }
+
       this.canAnswerSoundQuestion = false;
       const randomNumber = Math.floor(Math.random() * 99) + 1;
-      console.log(randomNumber);
       this.utterance.text = randomNumber.toString();
       window.speechSynthesis.speak(this.utterance);
       this.canAnswerSoundQuestion = true;
@@ -154,6 +161,9 @@ export default {
 
       return 1;
     },
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
   }
 }
 </script>
@@ -180,7 +190,7 @@ export default {
     transition: transform 0.1s;
   }
 
-  .btn-listening-action:active {
+  .btn-listening-action:active, .btn-listening-action.active {
     transform: translateY(4px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.2);
   }
