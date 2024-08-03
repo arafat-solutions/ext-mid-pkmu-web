@@ -75,12 +75,12 @@ export default {
       if (event.key === 'ArrowRight') {
         this.headingValue += 1;
         this.target += 1;
+        this.checkDurationTarget();
       } else if (event.key === 'ArrowLeft') {
         this.headingValue -= 1;
         this.target -= 1;
+        this.checkDurationTarget();
       }
-
-      this.checkDurationTarget();
     },
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

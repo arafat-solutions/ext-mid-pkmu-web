@@ -82,13 +82,13 @@ export default {
         return;
       }
 
-      if (event.key === 'ArrowUp') {
+      if (event.key === 'ArrowUp' && this.altitude <= this.maximumAltitude) {
         this.altitude += 10;
-      } else if (event.key === 'ArrowDown') {
+        this.checkDurationTarget();
+      } else if (event.key === 'ArrowDown' && this.altitude >= this.minimumAltitude) {
         this.altitude -= 10;
+        this.checkDurationTarget();
       }
-
-      this.checkDurationTarget();
     },
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;

@@ -19,7 +19,12 @@
     </div>
     <div id="main-view" v-if="!isShowModal" v-show="!isTimesUp">
       <div class="indicators">
-        <Airspeed id="airspeed" class="indicator-bg" :size="200" :airspeed="airspeed" />
+        <AirspeedInstrument
+          :isTimesUp="isTimesUp"
+          :isPause="isPause"
+          :isActive="config.airspeed.isActive"
+          :speed="config.airspeed.speed"
+        />
         <HeadingInstrument
           :isTimesUp="isTimesUp"
           :isPause="isPause"
@@ -40,9 +45,6 @@
           :speed="config.heading.speed"
         />
         <AnalogClock />
-        <button id="button-plus" class="btn-plus-minus">+</button>
-        <div id="airspeed-indicator"></div>
-        <button id="button-minus" class="btn-plus-minus">-</button>
       </div>
     </div>
     <div v-if="isLoading" class="loading-container">
@@ -53,16 +55,16 @@
 </template>
 
 <script>
-import {Airspeed} from  'vue-flight-indicators';
 import AnalogClock from './instrument-coordination/AnalogClock';
 import SoundQuestion from './instrument-coordination/SoundQuestion';
 import HeadingInstrument from './instrument-coordination/HeadingInstrument';
 import AltimeterInstrument from './instrument-coordination/AltimeterInstrument.vue';
+import AirspeedInstrument from './instrument-coordination/AirspeedInstrument.vue';
 
 export default {
   components: {
     HeadingInstrument,
-    Airspeed,
+    AirspeedInstrument,
     AnalogClock,
     SoundQuestion,
     AltimeterInstrument,
@@ -77,11 +79,6 @@ export default {
       isConfigLoaded: false,
       isTrial: this.$route.query.isTrial ?? false,
       isShowModal: true,
-      counter: 0,
-      roll: 0,
-      pitch: 0,
-      vario: 0,
-      airspeed: 0,
       canAnswerSoundQuestion: false,
       soundQuestions: [],
       config: {
@@ -96,18 +93,13 @@ export default {
         altimeter: {
           changeType: 'adjust_for_irregular_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
           speed: 50, //integer 1-100
+        },
+        airspeed: {
+          isActive: true, // true or false
+          speed: 100, //integer 1-100
         }
       },
     }
-  },
-  mounted: function () {
-    setInterval(() => {
-      this.roll = 30*Math.sin(this.counter/10);
-      this.pitch = 50*Math.sin(this.counter/20);
-      this.vario = 2*Math.sin(this.counter/10);
-      this.airspeed = 80+80*Math.sin(this.counter/10);
-      this.counter++;
-    }, 35);
   },
   computed: {
     isTimesUp() {
@@ -178,54 +170,6 @@ body {
   gap: 20px;
   width: 1280px;
   margin: 60px auto;
-}
-
-#airspeed {
-  position: absolute;
-  left: 300px;
-  top: 200px;
-}
-
-#button-plus {
-  position: absolute;
-  left: 250px;
-  top: 200px;
-}
-
-#button-minus {
-  position: absolute;
-  left: 250px;
-  top: 350px;
-}
-
-#airspeed-indicator {
-  position: absolute;
-  left: 250px;
-  top: 235px;
-  width: 33px;
-  height: 113px;
-  border: 1px solid #9e9e9e;
-  background: linear-gradient(to top, blue 50%, transparent 50%);
-}
-
-.btn-plus-minus {
-  min-width: 35px;
-  min-height: 35px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #9e9e9e; /* Grey color */
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: background-color 0.3s;
-  font-size: 22px;
-  font-weight: bold;
-  color: white;
-}
-
-.btn-plus-minus:hover {
-  background-color: #757575; /* Darker grey on hover */
 }
 
 .modal-overlay {
