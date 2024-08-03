@@ -1,9 +1,9 @@
 <template>
   <div>
     <Airspeed id="airspeed" class="indicator-bg" :size="200" :airspeed="airspeed" />
-    <button id="button-plus" class="btn-plus-minus">+</button>
-    <div id="airspeed-indicator"></div>
-    <button id="button-minus" class="btn-plus-minus">-</button>
+    <button id="button-plus" class="btn-plus-minus" @click="btnPlus">+</button>
+    <div id="airspeed-indicator" :style="indicatorStyle"></div>
+    <button id="button-minus" class="btn-plus-minus" @click="btnMinus">-</button>
   </div>
 </template>
 
@@ -50,6 +50,12 @@ export default {
 
       return value;
     },
+    indicatorStyle() {
+      const percentage = Math.round(this.airspeed / 180 * 100);
+      return {
+        background: `linear-gradient(to top, blue ${percentage}%, transparent ${percentage}%)`,
+      };
+    }
   },
   data: function () {
     return {
@@ -75,6 +81,14 @@ export default {
         this.checkRedDuration();
       }
     },
+    btnPlus() {
+      this.airspeed++;
+      this.checkRedDuration();
+    },
+    btnMinus() {
+      this.airspeed--;
+      this.checkRedDuration();
+    },
     async executeAirspeedMovement() {
       if (this.isPause || this.isTimesUp) {
         return;
@@ -94,7 +108,7 @@ export default {
       return this.executeAirspeedMovement();
     },
     getRandomOperator() {
-      const weights = [0.9, 0.1];
+      const weights = [0.8, 0.2];
       const cumulativeWeights = weights.map((sum => value => sum += value)(0));
       const random = Math.random();
       const randomIndex = cumulativeWeights.findIndex(cumulativeWeight => random < cumulativeWeight);
@@ -157,7 +171,6 @@ export default {
   width: 33px;
   height: 113px;
   border: 1px solid #9e9e9e;
-  background: linear-gradient(to top, blue 50%, transparent 50%);
 }
 
 .btn-plus-minus {
