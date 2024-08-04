@@ -30,8 +30,8 @@ const config = ref({
     directionChange: '',
     duration: 0,
     rectangleVisibility: {
-        showDuration: 3,
-        hideDuration: 2,
+        showDuration: 3, // in second
+        hideDuration: 2, // in second
     }
 });
 
@@ -151,17 +151,11 @@ function initConfig() {
     // const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
     // const { duration, rotation_frequency, id, size } = configRotatingMaze.config
 
-    // const ROTATION_FREQUENCY_VALUE = {
-    //     easy: 6000,
-    //     medium: 4000,
-    //     hard: 2000
-    // }
-
     config.value = {
-        duration: 10 * 2,
-        speed: "very_fast", //very_slow, slow, normal, fast, very_fast
-        speedChange: 'sudden', // none, slow, normal, sudden
-        directionChange: 'sudden', // none, slow, normal, sudden
+        duration: 10 * 60,
+        speed: "normal", //very_slow, slow, normal, fast, very_fast
+        speedChange: 'none', // none, slow, normal, sudden
+        directionChange: 'none', // none, slow, normal, sudden
         rectangleVisibility: {
             showDuration: 3, // seconds
             hideDuration: 5, // seconds
