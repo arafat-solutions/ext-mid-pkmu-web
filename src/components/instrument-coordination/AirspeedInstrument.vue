@@ -36,6 +36,7 @@ export default {
       if (newValue) {
         this.checkRedDuration();
         window.removeEventListener('keydown', this.handleKeyPress);
+        this.$emit('getResult', this.redDuration);
       }
     },
     isPause(newValue) {

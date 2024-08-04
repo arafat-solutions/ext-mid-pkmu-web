@@ -61,6 +61,7 @@ export default {
         window.removeEventListener('keydown', this.handleKeyDownPress);
         window.removeEventListener('keyup', this.handleKeyUpPress);
         cancelAnimationFrame(this.animationFrameId);
+        this.$emit('getResult', this.greenDuration);
       }
     },
     isPause(newValue) {
@@ -93,10 +94,11 @@ export default {
       }
     },
     handleKeyUpPress(event) {
-      if (event.key === 'ArrowRight') {
-        this.isPressed = false;
-        this.executeTargetMovement();
-      } else if (event.key === 'ArrowLeft') {
+      if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
+        return;
+      }
+
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
         this.isPressed = false;
         this.executeTargetMovement();
       }

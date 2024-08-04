@@ -200,7 +200,6 @@
       },
       gaugesMeterResult(result) {
         this.result.gaugesMeter = result;
-        console.log(this.result.gaugesMeter);
       },
       horizonResult(result) {
         this.result.horizon = result;

@@ -56,6 +56,7 @@ export default {
         window.removeEventListener('keydown', this.handleKeyDownPress);
         window.removeEventListener('keyup', this.handleKeyUpPress);
         cancelAnimationFrame(this.animationFrameId);
+        this.$emit('getResult', this.greenDuration);
       }
     },
     isPause(newValue) {
@@ -101,10 +102,11 @@ export default {
       }
     },
     handleKeyUpPress(event) {
-      if (event.key === 'ArrowUp') {
-        this.isPressed = false;
-        this.executeAltitudeMovement();
-      } else if (event.key === 'ArrowDown') {
+      if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
+        return;
+      }
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
         this.isPressed = false;
         this.executeAltitudeMovement();
       }

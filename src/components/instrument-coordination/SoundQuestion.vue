@@ -49,6 +49,10 @@ export default {
       if (newValue) {
         clearInterval(this.intervalTimerSoundQuestion);
         window.speechSynthesis.cancel();
+        this.$emit('getResult', {
+          correctAnswer: this.result.correct,
+          incorrectAnswer: this.result.wrong,
+        });
       }
     },
   },

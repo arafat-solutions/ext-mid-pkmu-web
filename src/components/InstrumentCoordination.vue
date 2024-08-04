@@ -24,12 +24,14 @@
           :isPause="isPause"
           :isActive="config.airspeed.isActive"
           :speed="config.airspeed.speed"
+          @getResult="airspeedResult"
         />
         <HeadingInstrument
           :isTimesUp="isTimesUp"
           :isPause="isPause"
           :changeType="config.heading.changeType"
           :speed="config.heading.speed"
+          @getResult="headingResult"
         />
         <SoundQuestion
           ref="soundQuestionRef"
@@ -37,12 +39,14 @@
           :speedSound="config.soundQuestion.speed"
           :isPause="isPause"
           :isActive="config.soundQuestion.isActive"
+          @getResult="soundResult"
         />
         <AltimeterInstrument
           :isTimesUp="isTimesUp"
           :isPause="isPause"
           :changeType="config.altimeter.changeType"
           :speed="config.altimeter.speed"
+          @getResult="altimeterResult"
         />
         <AnalogClock />
       </div>
@@ -60,6 +64,7 @@ import SoundQuestion from './instrument-coordination/SoundQuestion';
 import HeadingInstrument from './instrument-coordination/HeadingInstrument';
 import AltimeterInstrument from './instrument-coordination/AltimeterInstrument.vue';
 import AirspeedInstrument from './instrument-coordination/AirspeedInstrument.vue';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
 
 export default {
   components: {
@@ -99,6 +104,16 @@ export default {
           speed: null, //integer 1-100
         }
       },
+      result: {
+        compass: null,
+        altimeter: null,
+        airspeed: null,
+        gameDuration: null,
+        listening: {
+          correctAnswer: null,
+          incorrectAnswer: null
+        }
+      }
     }
   },
   computed: {
@@ -121,7 +136,9 @@ export default {
         try {
           const scheduleData = JSON.parse(data);
           const config = scheduleData.tests.find((t) => t.name === this.testName).config;
-          this.timeLeft = config.duration * 60;
+          this.minuteTime = 0.5;//config.duration;
+          this.timeLeft = this.minuteTime * 60;
+          this.result.gameDuration = this.timeLeft;
           this.config.heading.changeType = config.compass;
           this.config.heading.speed = config.green_dot_speed;
           this.config.soundQuestion.isActive = config.listening_task !== 'disabled';
@@ -157,6 +174,7 @@ export default {
         if (this.timeLeft > 0) {
           this.timeLeft -= 1;
         } else {
+          this.submitResult();
           clearInterval(this.interval);
         }
       }, 1000);
@@ -170,6 +188,62 @@ export default {
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    generatePayloadForSubmit() {
+      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+      const test = scheduleData.tests.find((t) => t.name === this.testName);
+      const payload = {
+        'testSessionId': scheduleData.sessionId,
+        'userId': scheduleData.userId,
+        'moduleId': scheduleData.moduleId,
+        'batteryTestConfigId': test.config.id,
+        'result': this.result
+      }
+
+      return payload;
+    },
+    async submitResult() {
+      try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
+        this.isLoading = true;
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = this.generatePayloadForSubmit();
+        const response = await fetch(`${API_URL}api/submission`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+
+        removeTestByNameAndUpdateLocalStorage(this.testName)
+        this.$router.push('/module');// Set isLoading to false when the submission is complete
+      }
+    },
+    airspeedResult(result) {
+      this.result.airspeed = result;
+    },
+    headingResult(result) {
+      this.result.compass = result;
+    },
+    soundResult(result) {
+      this.result.listening.correctAnswer = result.correctAnswer;
+      this.result.listening.incorrectAnswer = result.incorrectAnswer;
+    },
+    altimeterResult(result) {
+      this.result.altimeter = result;
     },
   }
 }
@@ -284,5 +358,49 @@ body {
 
 .ml-1 {
   margin-left: 1rem;
+}
+
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+
+.loading-spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
 }
 </style>
