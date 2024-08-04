@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="isShowModal" class="modal-overlay">
+    <div v-if="isShowModal === true" class="modal-overlay">
       <div class="modal-content">
         <p>
           <strong>
@@ -11,13 +11,13 @@
         <button @click="startTest">Ya</button>
       </div>
     </div>
-    <div v-if="timeLeft > 0 && !isShowModal" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+    <div v-if="timeLeft > 0 && isShowModal === false" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Time: {{ formattedTime }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
-    <div id="main-view" v-if="!isShowModal" v-show="!isTimesUp">
+    <div id="main-view" v-if="isShowModal === false" v-show="!isTimesUp">
       <div class="indicators">
         <AirspeedInstrument
           :isTimesUp="isTimesUp"
@@ -41,8 +41,8 @@
         <AltimeterInstrument
           :isTimesUp="isTimesUp"
           :isPause="isPause"
-          :changeType="config.heading.changeType"
-          :speed="config.heading.speed"
+          :changeType="config.altimeter.changeType"
+          :speed="config.altimeter.speed"
         />
         <AnalogClock />
       </div>
@@ -69,34 +69,34 @@ export default {
     SoundQuestion,
     AltimeterInstrument,
   },
-  data: function () {
+  data() {
     return {
+      testName: 'Monitoring & Instrument Koordination',
       isLoading: false,
       minuteTime: null,
       timeLeft: 30, // Countdown time in seconds
       intervalTimerTest: null,
       isPause: false,
-      isConfigLoaded: false,
       isTrial: this.$route.query.isTrial ?? false,
-      isShowModal: true,
+      isShowModal: null,
       canAnswerSoundQuestion: false,
       soundQuestions: [],
       config: {
         heading: {
-          changeType: 'adjust_for_consistent_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_consistent_updates
-          speed: 50, //integer 1-100
+          changeType: null, //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          speed: null, //integer 1-100
         },
         soundQuestion: {
-          isActive: true, //true, false
-          speed: 'fast', //slow, medium, fast
+          isActive: null, //true, false
+          speed: null, //slow, medium, fast
         },
         altimeter: {
-          changeType: 'adjust_for_irregular_updates', //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
-          speed: 50, //integer 1-100
+          changeType: null, //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
+          speed: null, //integer 1-100
         },
         airspeed: {
-          isActive: true, // true or false
-          speed: 100, //integer 1-100
+          isActive: null, // true or false
+          speed: null, //integer 1-100
         }
       },
     }
@@ -111,7 +111,33 @@ export default {
       return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     },
   },
+  mounted() {
+    this.loadConfig();
+  },
   methods: {
+    loadConfig() {
+      const data = localStorage.getItem('scheduleData');
+      if (data) {
+        try {
+          const scheduleData = JSON.parse(data);
+          const config = scheduleData.tests.find((t) => t.name === this.testName).config;
+          this.timeLeft = config.duration * 60;
+          this.config.heading.changeType = config.compass;
+          this.config.heading.speed = config.green_dot_speed;
+          this.config.soundQuestion.isActive = true;
+          this.config.soundQuestion.speed = config.listening_task;
+          this.config.altimeter.changeType = config.altimeter;
+          this.config.altimeter.speed = config.green_dot_speed;
+          this.config.airspeed.isActive = config.airspeed === 'active';
+          this.config.airspeed.speed = config.yaw_speed;
+          this.isShowModal = true;
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        }
+      }
+
+      console.warn('No schedule data found in localStorage.');
+    },
     async startTest() {
       this.isShowModal = false;
       await this.$nextTick();

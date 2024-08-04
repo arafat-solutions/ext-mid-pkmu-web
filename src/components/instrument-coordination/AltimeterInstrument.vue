@@ -26,7 +26,7 @@ export default {
       maximumAltitude: 20000,
       signRandoms: ['+', '-'],
       defaultIntervalTarget: 3000, //in ms
-      minimumIntervalTarget: 2500, //in ms
+      minimumIntervalTarget: 3000, //in ms
       maximumIntervalTarget: 5000, //in ms
       target: null,
       targetIncrement: null,
@@ -37,20 +37,24 @@ export default {
       radius: 75,
       greenStartTime: null,
       greenDuration: 0,
+      isPressed: false,
     }
   },
   created() {
-    window.addEventListener('keydown', this.handleKeyPress);
+    window.addEventListener('keydown', this.handleKeyDownPress);
+    window.addEventListener('keyup', this.handleKeyUpPress);
   },
   beforeUnmount() {
-    window.removeEventListener('keydown', this.handleKeyPress);
+    window.removeEventListener('keydown', this.handleKeyDownPress);
+    window.removeEventListener('keyup', this.handleKeyUpPress);
     cancelAnimationFrame(this.animationFrameId);
   },
   watch: {
     isTimesUp(newValue) {
       if (newValue) {
         this.checkDurationTarget();
-        window.removeEventListener('keydown', this.handleKeyPress);
+        window.removeEventListener('keydown', this.handleKeyDownPress);
+        window.removeEventListener('keyup', this.handleKeyUpPress);
         cancelAnimationFrame(this.animationFrameId);
         console.log('altimeter', this.greenDuration);
       }
@@ -77,24 +81,35 @@ export default {
     }
   },
   methods: {
-    handleKeyPress(event) {
+    handleKeyDownPress(event) {
       if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
         return;
       }
 
       if (event.key === 'ArrowUp' && this.altitude <= this.maximumAltitude) {
+        this.isPressed = true;
         this.altitude += 10;
         this.checkDurationTarget();
       } else if (event.key === 'ArrowDown' && this.altitude >= this.minimumAltitude) {
+        this.isPressed = true;
         this.altitude -= 10;
         this.checkDurationTarget();
+      }
+    },
+    handleKeyUpPress(event) {
+      if (event.key === 'ArrowUp') {
+        this.isPressed = false;
+        this.executeAltitudeMovement();
+      } else if (event.key === 'ArrowDown') {
+        this.isPressed = false;
+        this.executeAltitudeMovement();
       }
     },
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
     async executeAltitudeMovement() {
-      if (this.isPause || this.isTimesUp) {
+      if (this.isPause || this.isTimesUp || this.isPressed) {
         return;
       }
 
@@ -115,15 +130,16 @@ export default {
       return this.executeAltitudeMovement();
     },
     generateRandomNumber(min, max) {
-      // Generate a random number between 10000 and 15020
-      let number = Math.floor(Math.random() * (max - min + 1)) + 10000;
+      // Ensure the number is within the range [min, max]
+      let number = Math.floor(Math.random() * (max - min + 1)) + min;
 
-      // Ensure the number is divisible by 10
+      // Adjust to the nearest multiple of 10
       if (number % 10 !== 0) {
         number = number - (number % 10) + 10;
       }
 
-      return number;
+      // Ensure the adjusted number is still within the range [min, max]
+      return Math.min(Math.max(number, min), max);
     },
     getRandomOperator() {
       const randomIndex = Math.floor(Math.random() * this.signRandoms.length);
@@ -133,7 +149,7 @@ export default {
       this.altitude = this.generateRandomNumber(this.minimumAltitude, this.maximumAltitude);
     },
     initTarget() {
-      this.target = this.generateRandomNumber(this.altitude-250, this.altitude+250);
+      this.target = this.generateRandomNumber(this.altitude-1000, this.altitude+1000);
       this.animate();
     },
     drawTarget() {
