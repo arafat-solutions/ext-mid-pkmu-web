@@ -55,7 +55,7 @@ export default {
       return value;
     },
     indicatorStyle() {
-      const percentage = this.airspeed > 0 ? Math.round(this.airspeed / 180 * 100) : 0;
+      const percentage = this.airspeed > 0 ? Math.round(this.airspeed / 160 * 100) : 0;
       return {
         background: `linear-gradient(to top, blue ${percentage}%, transparent ${percentage}%)`,
       };
@@ -100,9 +100,9 @@ export default {
 
       const sign = this.getRandomOperator();
       for(let i=1;i<=this.changeValue;i++) {
-        if (sign === '+' || this.airspeed <= 160) {
+        if (sign === '+' && this.airspeed <= 160) {
           this.airspeed++;
-        } else if (sign === '-' || this.airspeed >= 1) {
+        } else if (sign === '-' && this.airspeed >= 1) {
           this.airspeed--;
         }
         this.checkRedDuration();

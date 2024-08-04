@@ -122,7 +122,7 @@ export default {
           const scheduleData = JSON.parse(data);
           const config = scheduleData.tests.find((t) => t.name === this.testName).config;
           this.timeLeft = config.duration * 60;
-          this.config.heading.changeType = config.altimeter;//config.compass;
+          this.config.heading.changeType = config.compass;
           this.config.heading.speed = config.green_dot_speed;
           this.config.soundQuestion.isActive = config.listening_task !== 'disabled';
           this.config.soundQuestion.speed = config.listening_task !== 'disabled' ? config.listening_task : null;
