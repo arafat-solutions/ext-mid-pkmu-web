@@ -39,6 +39,11 @@ export default {
         console.log('airspeed', this.redDuration);
       }
     },
+    isPause(newValue) {
+      if (!newValue) {
+        this.executeAirspeedMovement();
+      }
+    },
   },
   computed: {
     changeValue() {
@@ -51,7 +56,7 @@ export default {
       return value;
     },
     indicatorStyle() {
-      const percentage = Math.round(this.airspeed / 180 * 100);
+      const percentage = this.airspeed > 0 ? Math.round(this.airspeed / 180 * 100) : 0;
       return {
         background: `linear-gradient(to top, blue ${percentage}%, transparent ${percentage}%)`,
       };
@@ -76,7 +81,7 @@ export default {
       if ((event.key === 'q' || event.key === 'Shift') && this.airspeed <= 160) {
         this.airspeed++;
         this.checkRedDuration();
-      } else if (event.key === 'a' || event.key === 'Ctrl' && this.airspeed >= 1) {
+      } else if ((event.key === 'a' || event.key === 'Ctrl') && this.airspeed >= 1) {
         this.airspeed--;
         this.checkRedDuration();
       }

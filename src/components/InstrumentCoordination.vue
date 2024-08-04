@@ -124,8 +124,8 @@ export default {
           this.timeLeft = config.duration * 60;
           this.config.heading.changeType = config.compass;
           this.config.heading.speed = config.green_dot_speed;
-          this.config.soundQuestion.isActive = true;
-          this.config.soundQuestion.speed = config.listening_task;
+          this.config.soundQuestion.isActive = config.listening_task !== 'disabled';
+          this.config.soundQuestion.speed = config.listening_task !== 'disabled' ? config.listening_task : null;
           this.config.altimeter.changeType = config.altimeter;
           this.config.altimeter.speed = config.green_dot_speed;
           this.config.airspeed.isActive = config.airspeed === 'active';
@@ -268,5 +268,21 @@ body {
   font-weight: bold;
   border-bottom-left-radius: 15px;
   border-bottom-right-radius: 15px;
+}
+
+.mb-2 {
+  margin-bottom: 2rem;
+}
+
+.mt-3 {
+  margin-top: 3rem;
+}
+
+.ml-6 {
+  margin-left: 6rem;
+}
+
+.ml-1 {
+  margin-left: 1rem;
 }
 </style>

@@ -60,6 +60,11 @@ export default {
         console.log('heading', this.greenDuration);
       }
     },
+    isPause(newValue) {
+      if (!newValue) {
+        this.executeTargetMovement();
+      }
+    },
   },
   computed: {
     changeValue() {

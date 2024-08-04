@@ -59,6 +59,11 @@ export default {
         console.log('altimeter', this.greenDuration);
       }
     },
+    isPause(newValue) {
+      if (!newValue) {
+        this.executeAltitudeMovement();
+      }
+    },
   },
   computed: {
     changeValue() {
