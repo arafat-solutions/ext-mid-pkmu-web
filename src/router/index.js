@@ -111,7 +111,7 @@ const routes = [
     component: AccousticMemory
   },
   {
-    path: '/instrument-coordination-test',
+    path: '/monitoring-instrument-coordination-test',
     name: 'Instrument Coordination',
     component: InstrumentCoordination
   },

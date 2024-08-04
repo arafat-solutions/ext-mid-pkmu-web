@@ -56,7 +56,6 @@ export default {
         window.removeEventListener('keydown', this.handleKeyDownPress);
         window.removeEventListener('keyup', this.handleKeyUpPress);
         cancelAnimationFrame(this.animationFrameId);
-        console.log('altimeter', this.greenDuration);
       }
     },
     isPause(newValue) {

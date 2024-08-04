@@ -49,7 +49,6 @@ export default {
       if (newValue) {
         clearInterval(this.intervalTimerSoundQuestion);
         window.speechSynthesis.cancel();
-        console.log('sound', this.result);
       }
     },
   },

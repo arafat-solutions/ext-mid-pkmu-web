@@ -36,7 +36,6 @@ export default {
       if (newValue) {
         this.checkRedDuration();
         window.removeEventListener('keydown', this.handleKeyPress);
-        console.log('airspeed', this.redDuration);
       }
     },
     isPause(newValue) {
@@ -78,10 +77,10 @@ export default {
         return;
       }
 
-      if ((event.key === 'q' || event.key === 'Shift') && this.airspeed <= 160) {
+      if ((event.key.toLowerCase() === 'q' || event.key === 'Shift') && this.airspeed <= 160) {
         this.airspeed++;
         this.checkRedDuration();
-      } else if ((event.key === 'a' || event.key === 'Ctrl') && this.airspeed >= 1) {
+      } else if ((event.key.toLowerCase() === 'a' || event.key === 'Ctrl') && this.airspeed >= 1) {
         this.airspeed--;
         this.checkRedDuration();
       }

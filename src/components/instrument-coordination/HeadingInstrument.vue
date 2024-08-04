@@ -34,13 +34,16 @@ export default {
       radius: 75,
       greenStartTime: null,
       greenDuration: 0,
+      isPressed: false,
     }
   },
   created() {
-    window.addEventListener('keydown', this.handleKeyPress);
+    window.addEventListener('keydown', this.handleKeyDownPress);
+    window.addEventListener('keyup', this.handleKeyUpPress);
   },
   beforeUnmount() {
-    window.removeEventListener('keydown', this.handleKeyPress);
+    window.removeEventListener('keydown', this.handleKeyDownPress);
+    window.removeEventListener('keyup', this.handleKeyUpPress);
     cancelAnimationFrame(this.animationFrameId);
   },
   mounted: function () {
@@ -55,9 +58,9 @@ export default {
     isTimesUp(newValue) {
       if (newValue) {
         this.checkDurationTarget();
-        window.removeEventListener('keydown', this.handleKeyPress);
+        window.removeEventListener('keydown', this.handleKeyDownPress);
+        window.removeEventListener('keyup', this.handleKeyUpPress);
         cancelAnimationFrame(this.animationFrameId);
-        console.log('heading', this.greenDuration);
       }
     },
     isPause(newValue) {
@@ -72,26 +75,37 @@ export default {
     },
   },
   methods: {
-    handleKeyPress(event) {
+    handleKeyDownPress(event) {
       if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
         return;
       }
 
       if (event.key === 'ArrowRight') {
+        this.isPressed = true;
         this.headingValue += 1;
         this.target += 1;
         this.checkDurationTarget();
       } else if (event.key === 'ArrowLeft') {
+        this.isPressed = true;
         this.headingValue -= 1;
         this.target -= 1;
         this.checkDurationTarget();
+      }
+    },
+    handleKeyUpPress(event) {
+      if (event.key === 'ArrowRight') {
+        this.isPressed = false;
+        this.executeTargetMovement();
+      } else if (event.key === 'ArrowLeft') {
+        this.isPressed = false;
+        this.executeTargetMovement();
       }
     },
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     },
     async executeTargetMovement() {
-      if (this.isPause || this.isTimesUp) {
+      if (this.isPause || this.isTimesUp || this.isPressed) {
         return;
       }
 
