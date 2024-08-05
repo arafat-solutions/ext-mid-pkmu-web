@@ -19,6 +19,7 @@ import RunningMemorySpan from '@/components/RunningMemorySpan.vue';
 import ConfigPage from '@/components/ConfigPage.vue';
 import AccousticMemory from '@/components/AccousticMemory.vue';
 import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
+import SymbolAddition from '@/components/SymbolAddition.vue';
 
 const routes = [
   {
@@ -115,6 +116,11 @@ const routes = [
     path: '/monitoring-instrument-coordination-test',
     name: 'Instrument Coordination',
     component: InstrumentCoordination
+  },
+  {
+    path: '/symbol-addition-test',
+    name: 'Symbol Addition',
+    component: SymbolAddition
   },
 ];
 
