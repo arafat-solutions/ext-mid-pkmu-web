@@ -18,6 +18,7 @@ import ColorMultitask from '@/components/ColorMultitask.vue';
 import RunningMemorySpan from '@/components/RunningMemorySpan.vue';
 import ConfigPage from '@/components/ConfigPage.vue';
 import AccousticMemory from '@/components/AccousticMemory.vue';
+import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
 
 const routes = [
   {
@@ -109,6 +110,11 @@ const routes = [
     path: '/accoustic-memory-test',
     name: 'Accoustic Memory Test',
     component: AccousticMemory
+  },
+  {
+    path: '/monitoring-instrument-coordination-test',
+    name: 'Instrument Coordination',
+    component: InstrumentCoordination
   },
 ];
 
