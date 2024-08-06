@@ -19,6 +19,8 @@ export default {
       radioValues: [],
       totalRow: 10,
       choicesLength: 8,
+      queryBarLength: 16,
+      queryBars: []
     }
   },
   mounted() {
@@ -48,6 +50,7 @@ export default {
           console.error('Error parsing schedule data:', e);
         } finally {
           this.initiateRadioValues();
+          this.generateQueryBar();
         }
       }
       console.warn('No schedule data found in localStorage.');
@@ -55,6 +58,32 @@ export default {
     initiateRadioValues() {
       this.radioValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
     },
+    generateQueryBar() {
+      let tempSymbols = [...this.symbols];
+      let points = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      let tempResult = [];
+
+      while (tempResult.length < this.queryBarLength && tempSymbols.length > 0) {
+        let symbolIndex = Math.floor(Math.random() * tempSymbols.length);
+        let pointsIndex = Math.floor(Math.random() * points.length);
+
+        tempResult.push({
+          symbol: tempSymbols[symbolIndex],
+          points: points[pointsIndex]
+        });
+
+        // Remove the used symbol and point
+        tempSymbols.splice(symbolIndex, 1);
+        points.splice(pointsIndex, 1);
+
+        // Reset points array if empty
+        if (points.length === 0) {
+          points = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        }
+      }
+
+      this.queryBars = tempResult;
+    }
   }
 }
 </script>
