@@ -9,14 +9,52 @@
 export default {
   data() {
     return {
+      testName: 'Symbol Addition',
       currentTask: 1,
-      numberOfTask: null, //positive number
-      symbols: [
-        `"( (" ") ,,( (,, ,,) ),, '( (' ') )' ,( (, ,) ), -( (- -) )-`,
-        '+) (+ )+ +( :) (: ): :( *) (* )* *( =) (= )= =( + : * =',
-        'α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ ο σ τ',
-      ],
+      numberOfTask: null,
+      selectedSymbols: null,
+      resetQueryBarPerRow: null,
+      varianceSymbols: null,
+      isConfigLoaded: false,
+      radioValues: [],
+      totalRow: 10,
+      choicesLength: 8,
     }
+  },
+  mounted() {
+    this.loadConfig();
+  },
+  computed: {
+    symbols() {
+      return this.selectedSymbols.split(/\s+/);
+    },
+    totalColumn() {
+      return this.choicesLength * 3;
+    },
+  },
+  methods: {
+    loadConfig() {
+      const data = localStorage.getItem('scheduleData');
+      if (data) {
+        try {
+          const scheduleData = JSON.parse(data);
+          const config = scheduleData.tests.find((t) => t.name === this.testName).config;
+          this.numberOfTask = config.numberOfQuestion
+          this.selectedSymbols = config.symbols
+          this.resetQueryBarPerRow = config.resetQueryBar
+          this.varianceSymbols = config.variation
+          this.isConfigLoaded = true;
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        } finally {
+          this.initiateRadioValues();
+        }
+      }
+      console.warn('No schedule data found in localStorage.');
+    },
+    initiateRadioValues() {
+      this.radioValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
+    },
   }
 }
 </script>
