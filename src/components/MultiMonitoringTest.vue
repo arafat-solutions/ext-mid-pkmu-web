@@ -9,6 +9,18 @@
                 <p>Waktu: {{ formatTime(config.duration) }}</p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 w-full flex justify-center space-x-4 pb-4">
+            <button @click="playSound(1000, 1)" class="bg-blue-500 text-white px-4 py-2 rounded">Play 1000 Hz</button>
+            <button @click="playSound(200, 1)" class="bg-blue-500 text-white px-4 py-2 rounded">Play 200 Hz</button>
+        </div>
+
+        <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
+            <p>correctTime: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
+            <p>Button:</p>
+            <p>correct: {{ metrics.button_task.correct_answer }}</p>
+            <p>wrong: {{ metrics.button_task.incorrect_answer }}</p>
+            <p>total: {{ metrics.button_task.total_question }}</p>
+        </div>
     </div>
 </template>
 
@@ -17,7 +29,8 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 const canvas = ref(null);
 const ctx = ref(null);
-const testInterval = ref(null)
+const testInterval = ref(null);
+const rectangleInterval = ref(null);
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
     aim: { x: 0, y: 0, size: 20 },
@@ -30,16 +43,34 @@ const config = ref({
     directionChange: '',
     duration: 0,
     rectangleVisibility: {
-        showDuration: 3, // in second
-        hideDuration: 2, // in second
+        showDuration: 1, // in seconds
+        hideDuration: 2, // in seconds
     }
 });
+
+const metrics = ref({
+    tracking_task: {
+        correctTime: 0 // in seconds
+    },
+    // accoustic_task: {
+    //     correct_answer: 10,
+    //     total_question: 15,
+    //     incorrect_answer: 2
+    // },
+    button_task: {
+        correct_answer: 0,
+        total_question: 0,
+        incorrect_answer: 0
+    }
+})
 
 const gameState = ref({
     direction: { x: 1, y: 1 },
     currentSpeed: 3,
     baseSpeed: 3,
-    rectanglesVisible: true
+    rectanglesVisible: false,
+    lastRectangleTime: 0,
+    userAnswered: false
 });
 
 const speedMap = {
@@ -49,12 +80,6 @@ const speedMap = {
     fast: 4,
     very_fast: 5
 };
-
-function updateGame() {
-    moveCircle();
-    draw();
-    requestAnimationFrame(updateGame);
-}
 
 function moveCircle() {
     const { circle } = gameObjects.value;
@@ -146,25 +171,40 @@ function updateCircleSpeed() {
     gameState.value.currentSpeed = gameState.value.baseSpeed;
 }
 
+function toggleRectangles() {
+    gameState.value.rectanglesVisible = !gameState.value.rectanglesVisible;
+
+    if (!gameState.value.rectanglesVisible) {
+        gameObjects.value.rectangles = generateRectangles();
+        metrics.value.button_task.total_question++;
+    } else {
+        if (!gameState.value.userAnswered) {
+            metrics.value.button_task.incorrect_answer++;
+        }
+        gameState.value.userAnswered = false;
+    }
+
+    setTimeout(toggleRectangles, (gameState.value.rectanglesVisible ? config.value.rectangleVisibility.showDuration : config.value.rectangleVisibility.hideDuration) * 1000);
+}
+
 function initConfig() {
-    // const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-    // const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-    // const { duration, rotation_frequency, id, size } = configRotatingMaze.config
+    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+    const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
+    const { duration, id } = configMultiMonitoring.config
 
     config.value = {
-        duration: 10 * 60,
+        duration: duration * 60,
         speed: "normal", //very_slow, slow, normal, fast, very_fast
         speedChange: 'none', // none, slow, normal, sudden
         directionChange: 'none', // none, slow, normal, sudden
         rectangleVisibility: {
             showDuration: 3, // seconds
             hideDuration: 5, // seconds
-        }
-        // userId: scheduleData.userId,
-        // sessionId: scheduleData.sessionId,
-        // testId: id
+        },
+        userId: scheduleData.userId,
+        sessionId: scheduleData.sessionId,
+        testId: id
     }
-
 }
 
 function countDownTestTime() {
@@ -183,28 +223,70 @@ function countDownTestTime() {
     }, 1000)
 }
 
+function playSound(frequency, duration) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function handleKeydown(event) {
+    if (event.code === 'Space' && gameState.value.rectanglesVisible && !gameState.value.userAnswered) {
+        metrics.value.button_task.correct_answer++;
+        gameState.value.userAnswered = true;
+    }
+}
+
+function checkAimCollision(timestamp) {
+    const currentTimeInSeconds = timestamp / 1000; // Convert timestamp to seconds
+    const { circle, aim } = gameObjects.value;
+    const distance = Math.sqrt(
+        Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
+    );
+
+    if (distance <= circle.radius + aim.size / 2) {
+        const elapsedTime = currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
+        metrics.value.tracking_task.correctTime += elapsedTime;
+    }
+    metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
+}
+
+function initRectangleInterval() {
+    if (rectangleInterval.value) {
+        clearInterval(rectangleInterval.value);
+    }
+    toggleRectangles();
+}
+
+function gameLoop(timestamp) {
+    moveCircle();
+    checkAimCollision(timestamp);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
 onMounted(() => {
     if (canvas.value) {
         ctx.value = canvas.value.getContext('2d');
 
-        initConfig()
+        initConfig();
 
         gameObjects.value.rectangles = generateRectangles();
         updateCircleSpeed();
-        updateGame();
+        metrics.value.tracking_task.lastCheckTime = performance.now() / 1000; // Initialize in seconds
 
-        setInterval(() => {
-            gameState.value.rectanglesVisible = !gameState.value.rectanglesVisible;
-            if (gameState.value.rectanglesVisible) {
-                gameObjects.value.rectangles = generateRectangles();
-            }
-        }, (config.value.rectangleVisibility.showDuration + config.value.rectangleVisibility.hideDuration) * 1000);
+        requestAnimationFrame(gameLoop);
 
-        countDownTestTime()
+        countDownTestTime();
+        initRectangleInterval();
 
         canvas.value.addEventListener('mousemove', handleMouseMove);
         canvas.value.addEventListener('mouseenter', () => canvas.value.style.cursor = 'none');
         canvas.value.addEventListener('mouseleave', () => canvas.value.style.cursor = 'default');
+        window.addEventListener('keydown', handleKeydown);
     }
 });
 
@@ -213,6 +295,13 @@ onUnmounted(() => {
         canvas.value.removeEventListener('mousemove', handleMouseMove);
         canvas.value.removeEventListener('mouseenter', () => { });
         canvas.value.removeEventListener('mouseleave', () => { });
+        window.removeEventListener('keydown', handleKeydown);
+    }
+    if (testInterval.value) {
+        clearInterval(testInterval.value);
+    }
+    if (rectangleInterval.value) {
+        clearInterval(rectangleInterval.value);
     }
 });
 
