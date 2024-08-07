@@ -43,8 +43,8 @@ const config = ref({
     directionChange: '',
     duration: 0,
     rectangleVisibility: {
-        showDuration: 1, // in seconds
-        hideDuration: 2, // in seconds
+        showDuration: 0, // in seconds
+        hideDuration: 0, // in seconds
     }
 });
 
@@ -190,16 +190,16 @@ function toggleRectangles() {
 function initConfig() {
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
     const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
-    const { duration, id } = configMultiMonitoring.config
+    const { duration, id, speed, speed_change, direction_change } = configMultiMonitoring.config
 
     config.value = {
         duration: duration * 60,
-        speed: "normal", //very_slow, slow, normal, fast, very_fast
-        speedChange: 'none', // none, slow, normal, sudden
-        directionChange: 'none', // none, slow, normal, sudden
+        speed, //very_slow, slow, normal, fast, very_fast
+        speedChange: speed_change, // none, slow, normal, sudden
+        directionChange: direction_change, // none, slow, normal, sudden
         rectangleVisibility: {
-            showDuration: 3, // seconds
-            hideDuration: 5, // seconds
+            showDuration: 1, // seconds
+            hideDuration: 2, // seconds
         },
         userId: scheduleData.userId,
         sessionId: scheduleData.sessionId,
