@@ -22,7 +22,14 @@ export default {
       animationSpeed: 0.5,
       offset: { altitude: 0, speed: 0, heading: 0 },
       direction: { altitude: -1, speed: 1, heading: 1 },
-      config: {}
+      config: {
+        control: {
+          invert_throttle: false,
+          invert_y_axis: false
+        }
+      },
+      gamepadIndex: null,
+      
     };
   },
   mounted() {
@@ -34,6 +41,11 @@ export default {
     this.config = config?.config || { altimeter: [], compass: [], speed: [] };
     this.canvas = this.$refs.canvas;
     this.context = this.canvas.getContext('2d');
+
+    // check gamepad
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    this.checkGamepad();
     window.addEventListener('keydown', this.handleKeydown);
     this.startAnimation();
     window.addEventListener('resize', this.draw);
@@ -45,6 +57,50 @@ export default {
     window.removeEventListener('resize', this.draw);
   },
   methods: {
+    // gamepad related
+    onGamepadConnected(event) {
+      this.gamepadIndex = event.gamepad.index;
+      this.checkGamepad();
+    },
+    onGamepadDisconnected(event) {
+      if (this.gamepadIndex === event.gamepad.index) {
+        this.gamepadIndex = null;
+      }
+    },
+    checkGamepad() {
+      if (this.gamepadIndex !== null) {
+        const gamepad = navigator.getGamepads()[this.gamepadIndex];
+        if (gamepad) {
+          this.handleGamepadInput(gamepad);
+        }
+      }
+      requestAnimationFrame(this.checkGamepad);
+    },
+    handleGamepadInput(gamepad) {
+      const [leftStickX, leftStickY, rightStickY] = gamepad.axes;
+      console.log(leftStickX, leftStickY, rightStickY);
+      let movement = 2;
+      if (leftStickY < -0.5) {
+        this.config.control.invert_throttle ? this.altitudeDown(movement) : this.altitudeUp(movement);
+      } else if (leftStickY > 0.5) {
+        this.config.control.invert_throttle ? this.altitudeUp(movement) : this.altitudeDown(movement);
+      }
+
+      if (leftStickX < -0.5) {
+        this.headingLeft(movement);
+      } else if (leftStickX > 0.5) {
+        this.headingRight(movement);
+      }
+
+      if (rightStickY < -0.5) {
+        this.config.control.invert_y_axis ? this.altitudeDown(movement) : this.altitudeUp(movement);
+      } else if (rightStickY > 0.5) {
+        this.config.control.invert_y_axis ? this.altitudeUp(movement) : this.altitudeDown(movement);
+      }
+
+      this.draw();
+    },
+    // 
     playAltitude() {
       if (this.config.altimter == 'adjust_for_consistent_update') {
         // set interval to randomly increase OR decrease the target altitude between 100 - 1000 of the current altitude
@@ -132,29 +188,29 @@ export default {
       }
       this.draw();
     },
-    speedUp() {
-      this.speed += 10;
-      this.offset.speed += 10;
+    speedUp(speed = 10) {
+      this.speed += speed;
+      this.offset.speed += speed;
     },
-    speedDown() {
-      this.speed -= 10;
-      this.offset.speed -= 10;
+    speedDown(speed = 10) {
+      this.speed -= speed;
+      this.offset.speed -= speed;
     },
-    headingRight() {
-      this.heading -= 10;
-      this.offset.heading -= 10;
+    headingRight(speed = 10) {
+      this.heading -= speed;
+      this.offset.heading -= speed;
     },
-    headingLeft() {
-      this.heading += 10;
-      this.offset.heading += 10;
+    headingLeft(speed = 10) {
+      this.heading += speed;
+      this.offset.heading += speed;
     },
-    altitudeUp() {
-      this.altitude += 10;
-      this.offset.altitude += 10;
+    altitudeUp(speed = 10) {
+      this.altitude += speed;
+      this.offset.altitude += speed;
     },
-    altitudeDown() {
-      this.altitude -= 10;
-      this.offset.altitude -= 10;
+    altitudeDown(speed = 10) {
+      this.altitude -= speed;
+      this.offset.altitude -= speed;
     },
     ascend(targetAltitude) {
       console.log('ascend to', targetAltitude, 'from', this.altitude);
