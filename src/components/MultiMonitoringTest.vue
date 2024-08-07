@@ -18,9 +18,9 @@
             <p>wrong: {{ metrics.button_task.incorrect_answer }}</p>
             <p>total: {{ metrics.button_task.total_question }}</p>
             <p>Acoustic:</p>
-            <p>correct: {{ metrics.accoustic_task.correct_answer }}</p>
-            <p>wrong: {{ metrics.accoustic_task.incorrect_answer }}</p>
-            <p>total: {{ metrics.accoustic_task.total_question }}</p>
+            <p>correct: {{ metrics.acoustic_task.correct_answer }}</p>
+            <p>wrong: {{ metrics.acoustic_task.incorrect_answer }}</p>
+            <p>total: {{ metrics.acoustic_task.total_question }}</p>
         </div>
     </div>
 </template>
@@ -30,6 +30,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router'
 import ModalConfirmSound from './common/ModalConfirmSound.vue'
 
+// const loading = ref(false)
 const router = useRouter()
 const isModalVisible = ref(true)
 const canvas = ref(null);
@@ -62,7 +63,7 @@ const metrics = ref({
         correctTime: 0,
         lastCheckTime: 0
     },
-    accoustic_task: {
+    acoustic_task: {
         correct_answer: 0,
         total_question: 0,
         incorrect_answer: 0
@@ -81,7 +82,9 @@ const gameState = ref({
     rectanglesVisible: false,
     lastRectangleTime: 0,
     userAnswered: false,
-    lastFrameTime: 0
+    lastFrameTime: 0,
+    acousticAnswerAllowed: false,
+    lastAcousticPlayTime: 0
 });
 
 const speedMap = {
@@ -217,6 +220,39 @@ function initConfig() {
     }
 }
 
+// async function submitResult () {
+//     try {
+//                 loadingSubmit.value = true;
+//                 const API_URL = process.env.VUE_APP_API_URL;
+//                 const payload = {
+//                     testSessionId: config.value.sessionId,
+//                     userId: config.value.userId,
+//                     batteryTestConfigId: config.value.testId,
+//                     result: arrayMetrics.value
+//                 }
+
+//                 const response = await fetch(`${API_URL}api/submission`, {
+//                     method: 'POST',
+//                     headers: {
+//                         'Content-Type': 'application/json',
+//                     },
+//                     body: JSON.stringify(payload),
+//                 });
+
+//                 if (!response.ok) {
+//                     throw new Error(`Error: ${response.statusText}`);
+//                 }
+//                 removeTestByNameAndUpdateLocalStorage('Rotating Maze')
+//                 localStorage.removeItem('arrayMetrics')
+//                 router.push('/module');
+//             } catch (error) {
+//                 console.log(error, "<< error")
+//             } finally {
+//                 loadingSubmit.value = false; // Set loading to false when the submission is complete
+//             }
+// }
+
+
 function countDownTestTime() {
     if (testInterval.value) {
         clearInterval(testInterval.value);
@@ -245,10 +281,14 @@ function handleKeydown(event) {
         metrics.value.button_task.correct_answer++;
         gameState.value.userAnswered = true;
     } else if (event.code === 'Enter') {
-        if (isSoundSame.value) {
-            metrics.value.accoustic_task.correct_answer++
-        } else {
-            metrics.value.accoustic_task.incorrect_answer++
+        if (gameState.value.acousticAnswerAllowed) {
+            if (isSoundSame.value) {
+                metrics.value.acoustic_task.correct_answer++;
+            } else {
+                metrics.value.acoustic_task.incorrect_answer++;
+            }
+            isSoundSame.value = false;
+            gameState.value.acousticAnswerAllowed = false;
         }
     }
 }
@@ -297,11 +337,16 @@ function playRandomSounds() {
     }
 
     function playThreeTimes() {
+        // Check if user didn't answer the previous question
+        if (gameState.value.acousticAnswerAllowed) {
+            metrics.value.acoustic_task.incorrect_answer++;
+        }
+
         const randomDecision = Math.random();
-        metrics.value.accoustic_task.total_question++
+        metrics.value.acoustic_task.total_question++;
 
         if (randomDecision < 0.5) {
-            isSoundSame.value = false
+            isSoundSame.value = false;
 
             for (let i = 0; i < 3; i++) {
                 const selectedOption = getRandomSoundOption();
@@ -312,7 +357,7 @@ function playRandomSounds() {
                 }, i * (duration * 1000 + 1000));
             }
         } else {
-            isSoundSame.value = true
+            isSoundSame.value = true;
 
             const selectedOption = getRandomSoundOption();
             const { frequency, duration } = selectedOption;
@@ -323,6 +368,12 @@ function playRandomSounds() {
                 }, i * (duration * 1000 + 1000));
             }
         }
+
+        // Allow acoustic answer after the sounds have been played
+        setTimeout(() => {
+            gameState.value.acousticAnswerAllowed = true;
+            gameState.value.lastAcousticPlayTime = Date.now();
+        }, 3000); // Assuming 3 seconds for all sounds to play
     }
 
     function startSoundInterval() {
@@ -330,7 +381,9 @@ function playRandomSounds() {
             clearInterval(soundInterval.value);
         }
 
-        soundInterval.value = setInterval(playThreeTimes, config.value.playInterval);
+        soundInterval.value = setInterval(() => {
+            playThreeTimes();
+        }, config.value.playInterval);
     }
 
     startSoundInterval();
