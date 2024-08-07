@@ -1,5 +1,7 @@
 <template>
     <div class="relative h-full">
+        <ModalConfirmSound :visible="isModalVisible" title="Start Test"
+            message="Are you sure you want to start this test?" @confirm="handleConfirm" @cancel="handleCancel" />
         <div class="bg-black h-full w-full flex justify-center items-center">
             <canvas ref="canvas" class="border border-white" :width="500" :height="300"></canvas>
         </div>
@@ -9,28 +11,34 @@
                 <p>Waktu: {{ formatTime(config.duration) }}</p>
             </div>
         </div>
-        <div class="absolute bottom-0 left-0 w-full flex justify-center space-x-4 pb-4">
-            <button @click="playSound(1000, 1)" class="bg-blue-500 text-white px-4 py-2 rounded">Play 1000 Hz</button>
-            <button @click="playSound(200, 1)" class="bg-blue-500 text-white px-4 py-2 rounded">Play 200 Hz</button>
-        </div>
-
         <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
             <p>correctTime: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
             <p>Button:</p>
             <p>correct: {{ metrics.button_task.correct_answer }}</p>
             <p>wrong: {{ metrics.button_task.incorrect_answer }}</p>
             <p>total: {{ metrics.button_task.total_question }}</p>
+            <p>Acoustic:</p>
+            <p>correct: {{ metrics.accoustic_task.correct_answer }}</p>
+            <p>wrong: {{ metrics.accoustic_task.incorrect_answer }}</p>
+            <p>total: {{ metrics.accoustic_task.total_question }}</p>
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter } from 'vue-router'
+import ModalConfirmSound from './common/ModalConfirmSound.vue'
 
+const router = useRouter()
+const isModalVisible = ref(true)
 const canvas = ref(null);
 const ctx = ref(null);
 const testInterval = ref(null);
 const rectangleInterval = ref(null);
+const soundInterval = ref(null)
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const isSoundSame = ref(false)
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
     aim: { x: 0, y: 0, size: 20 },
@@ -43,20 +51,22 @@ const config = ref({
     directionChange: '',
     duration: 0,
     rectangleVisibility: {
-        showDuration: 0, // in seconds
-        hideDuration: 0, // in seconds
-    }
+        showDuration: 1,
+        hideDuration: 8,
+    },
+    playInterval: 10000
 });
 
 const metrics = ref({
     tracking_task: {
-        correctTime: 0 // in seconds
+        correctTime: 0,
+        lastCheckTime: 0
     },
-    // accoustic_task: {
-    //     correct_answer: 10,
-    //     total_question: 15,
-    //     incorrect_answer: 2
-    // },
+    accoustic_task: {
+        correct_answer: 0,
+        total_question: 0,
+        incorrect_answer: 0
+    },
     button_task: {
         correct_answer: 0,
         total_question: 0,
@@ -70,7 +80,8 @@ const gameState = ref({
     baseSpeed: 3,
     rectanglesVisible: false,
     lastRectangleTime: 0,
-    userAnswered: false
+    userAnswered: false,
+    lastFrameTime: 0
 });
 
 const speedMap = {
@@ -81,15 +92,17 @@ const speedMap = {
     very_fast: 5
 };
 
-function moveCircle() {
+function moveCircle(deltaTime) {
     const { circle } = gameObjects.value;
     const { direction, currentSpeed } = gameState.value;
 
     changeSpeed();
     changeDirection();
 
-    circle.x += direction.x * currentSpeed;
-    circle.y += direction.y * currentSpeed;
+    const moveDistance = currentSpeed * (deltaTime / 16.67); // Normalize for 60 FPS
+
+    circle.x += direction.x * moveDistance;
+    circle.y += direction.y * moveDistance;
 
     if (circle.x + circle.radius > 500 || circle.x - circle.radius < 0) direction.x *= -1;
     if (circle.y + circle.radius > 300 || circle.y - circle.radius < 0) direction.y *= -1;
@@ -193,17 +206,14 @@ function initConfig() {
     const { duration, id, speed, speed_change, direction_change } = configMultiMonitoring.config
 
     config.value = {
+        ...config.value,
         duration: duration * 60,
-        speed, //very_slow, slow, normal, fast, very_fast
-        speedChange: speed_change, // none, slow, normal, sudden
-        directionChange: direction_change, // none, slow, normal, sudden
-        rectangleVisibility: {
-            showDuration: 1, // seconds
-            hideDuration: 2, // seconds
-        },
+        speed,
+        speedChange: speed_change,
+        directionChange: direction_change,
         userId: scheduleData.userId,
         sessionId: scheduleData.sessionId,
-        testId: id
+        testId: id,
     }
 }
 
@@ -217,16 +227,13 @@ function countDownTestTime() {
             config.value.duration--;
         } else {
             clearInterval(testInterval.value);
-            // await submitResult();
             console.log("submit gan")
         }
     }, 1000)
 }
 
 function playSound(frequency, duration) {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
-
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
     oscillator.connect(audioContext.destination);
     oscillator.start();
@@ -237,11 +244,17 @@ function handleKeydown(event) {
     if (event.code === 'Space' && gameState.value.rectanglesVisible && !gameState.value.userAnswered) {
         metrics.value.button_task.correct_answer++;
         gameState.value.userAnswered = true;
+    } else if (event.code === 'Enter') {
+        if (isSoundSame.value) {
+            metrics.value.accoustic_task.correct_answer++
+        } else {
+            metrics.value.accoustic_task.incorrect_answer++
+        }
     }
 }
 
 function checkAimCollision(timestamp) {
-    const currentTimeInSeconds = timestamp / 1000; // Convert timestamp to seconds
+    const currentTimeInSeconds = timestamp / 1000;
     const { circle, aim } = gameObjects.value;
     const distance = Math.sqrt(
         Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
@@ -262,10 +275,77 @@ function initRectangleInterval() {
 }
 
 function gameLoop(timestamp) {
-    moveCircle();
+    const deltaTime = timestamp - gameState.value.lastFrameTime;
+    gameState.value.lastFrameTime = timestamp;
+
+    moveCircle(deltaTime);
     checkAimCollision(timestamp);
     draw();
     requestAnimationFrame(gameLoop);
+}
+
+function playRandomSounds() {
+    const soundOptions = [
+        { frequency: 200, duration: 0.2 },
+        { frequency: 200, duration: 0.5 },
+        { frequency: 1000, duration: 0.2 },
+        { frequency: 1000, duration: 0.5 }
+    ];
+
+    function getRandomSoundOption() {
+        return soundOptions[Math.floor(Math.random() * soundOptions.length)];
+    }
+
+    function playThreeTimes() {
+        const randomDecision = Math.random();
+        metrics.value.accoustic_task.total_question++
+
+        if (randomDecision < 0.5) {
+            isSoundSame.value = false
+
+            for (let i = 0; i < 3; i++) {
+                const selectedOption = getRandomSoundOption();
+                const { frequency, duration } = selectedOption;
+
+                setTimeout(() => {
+                    playSound(frequency, duration);
+                }, i * (duration * 1000 + 1000));
+            }
+        } else {
+            isSoundSame.value = true
+
+            const selectedOption = getRandomSoundOption();
+            const { frequency, duration } = selectedOption;
+
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    playSound(frequency, duration);
+                }, i * (duration * 1000 + 1000));
+            }
+        }
+    }
+
+    function startSoundInterval() {
+        if (soundInterval.value) {
+            clearInterval(soundInterval.value);
+        }
+
+        soundInterval.value = setInterval(playThreeTimes, config.value.playInterval);
+    }
+
+    startSoundInterval();
+}
+
+function handleConfirm() {
+    isModalVisible.value = false
+    countDownTestTime();
+    playRandomSounds();
+    gameState.value.lastFrameTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+function handleCancel() {
+    router.replace('/module')
 }
 
 onMounted(() => {
@@ -276,11 +356,8 @@ onMounted(() => {
 
         gameObjects.value.rectangles = generateRectangles();
         updateCircleSpeed();
-        metrics.value.tracking_task.lastCheckTime = performance.now() / 1000; // Initialize in seconds
+        metrics.value.tracking_task.lastCheckTime = performance.now() / 1000;
 
-        requestAnimationFrame(gameLoop);
-
-        countDownTestTime();
         initRectangleInterval();
 
         canvas.value.addEventListener('mousemove', handleMouseMove);
@@ -302,6 +379,9 @@ onUnmounted(() => {
     }
     if (rectangleInterval.value) {
         clearInterval(rectangleInterval.value);
+    }
+    if (soundInterval.value) {
+        clearInterval(soundInterval.value);
     }
 });
 
