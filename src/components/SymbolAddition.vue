@@ -1,9 +1,12 @@
 <template>
   <div>
-    <div class="main-view">
-      <h2 class="title-query-bar">Query Bar</h2>
-      <div class="query-bar-container">
-
+    <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
+      <h2 class="font-bold">Query Bar</h2>
+      <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
+        <div class="grid grid-rows-2 grid-cols-16 gap-2 p-2">
+          <div v-for="(queryBar, index) in queryBars" :key="index + '_' + queryBar.symbol">{{ queryBar.symbol }}</div>
+          <div v-for="(queryBar, index) in queryBars" :key="index + '_' + queryBar.points">{{ queryBar.points }}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -91,8 +94,3 @@ export default {
   }
 }
 </script>
-<style scoped>
-.main-view {
-  @apply relative text-center flex justify-center items-start gap-5 w-[1280px] m-auto mt-14;
-}
-</style>
