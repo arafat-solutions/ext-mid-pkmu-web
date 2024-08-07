@@ -1,7 +1,10 @@
 <template>
   <div>
-    <div id="main-view">
+    <div class="main-view">
+      <h2 class="title-query-bar">Query Bar</h2>
+      <div class="query-bar-container">
 
+      </div>
     </div>
   </div>
 </template>
@@ -51,6 +54,7 @@ export default {
         } finally {
           this.initiateRadioValues();
           this.generateQueryBar();
+          console.log(this.queryBars);
         }
       }
       console.warn('No schedule data found in localStorage.');
@@ -88,25 +92,7 @@ export default {
 }
 </script>
 <style scoped>
-body {
-  background-color: grey;
-  margin: 0; /* Ensure there is no margin around the body */
-  padding: 0; /* Ensure there is no padding around the body */
-  height: 100vh; /* Make the body take up the full viewport height */
-  width: 100vw; /* Make the body take up the full viewport width */
-  display: flex; /* To ensure it can contain flex children if needed */
-  justify-content: center; /* Optional: Center content horizontally */
-  align-items: center; /* Optional: Center content vertically */
-}
-
-#main-view {
-  position: relative;
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
-  width: 1280px;
-  margin: 60px auto;
+.main-view {
+  @apply relative text-center flex justify-center items-start gap-5 w-[1280px] m-auto mt-14;
 }
 </style>
