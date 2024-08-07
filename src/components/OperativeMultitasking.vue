@@ -58,6 +58,7 @@ export default {
         userId: '',
         batteryTestConfigId: '',
       },
+      gamepadIndex: null,
     };
   },
   computed: {
@@ -324,36 +325,80 @@ export default {
       }
 
       console.log(this.config)
-      const API_URL = process.env.VUE_APP_API_URL;
-      const payload = {
-        testSessionId: this.config.sessionId,
-        userId: this.config.userId,
-        batteryTestConfigId: this.config.batteryTestConfigId,
-        result: result,
-      }
+      console.log(result)
+      // const API_URL = process.env.VUE_APP_API_URL;
+      // const payload = {
+      //   testSessionId: this.config.sessionId,
+      //   userId: this.config.userId,
+      //   batteryTestConfigId: this.config.batteryTestConfigId,
+      //   result: result,
+      // }
 
-      const res = await fetch(`${API_URL}api/submission`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        }
-      )
+      // const res = await fetch(`${API_URL}api/submission`,
+      //   {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json'
+      //     },
+      //     body: JSON.stringify(payload)
+      //   }
+      // )
 
-      if (!res.ok) {
-        throw new Error('Failed Submit Test');
-      }
+      // if (!res.ok) {
+      //   throw new Error('Failed Submit Test');
+      // }
 
       this.showModal = true;
     },
     closeModal() {
       this.showModal = false;
       // Add any additional logic for closing the modal
-    }
+    },
+    handleGamepadInput(gamepad) {
+      const [leftStickX, leftStickY] = gamepad.axes;
+      console.log(leftStickX, leftStickY);
+      let movement = 0.5;
+      if (leftStickY < -0.5) {
+        this.aimWasd.y -= movement;
+        this.draw();
+      } else if (leftStickY > 0.5) {
+        this.aimWasd.y += movement;
+        this.draw();
+      }
+
+      if (leftStickX < -0.5) {
+        this.aimWasd.x -= movement;
+        this.draw();
+      } else if (leftStickX > 0.5) {
+        this.aimWasd.x += movement;
+        this.draw();
+      }
+    },
+    onGamepadConnected(event) {
+      this.gamepadIndex = event.gamepad.index;
+      this.checkGamepad();
+    },
+    onGamepadDisconnected(event) {
+      if (this.gamepadIndex === event.gamepad.index) {
+        this.gamepadIndex = null;
+      }
+    },
+    checkGamepad() {
+      if (this.gamepadIndex !== null) {
+        const gamepad = navigator.getGamepads()[this.gamepadIndex];
+        if (gamepad) {
+          this.handleGamepadInput(gamepad);
+        }
+      }
+      requestAnimationFrame(this.checkGamepad);
+    },
   },
   mounted() {
+    // check gamepad
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    this.checkGamepad();
+
     window.addEventListener('keydown', this.handleKeyPress);
     window.addEventListener('keydown', this.handleWasdKeyPress);
     window.addEventListener('keydown', this.handleArrowKeyPress);
@@ -365,12 +410,16 @@ export default {
     this.config = scheduleData;
     this.config.batteryTestConfigId = config?.config?.id;
     this.targetSpeed = config?.config?.speed;
-    this.duration = config?.config?.duration;
+    this.duration = config?.config?.duration * 60;
 
     console.log(this.config, 'config', this.targetSpeed, 'speed', this.duration, 'duration');
     this.startSimulation();
   },
   beforeUnmount() {
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    this.checkGamepad();
+
     window.removeEventListener('keydown', this.handleKeyPress);
     window.removeEventListener('keydown', this.handleWasdKeyPress);
     window.removeEventListener('keydown', this.handleArrowKeyPress);

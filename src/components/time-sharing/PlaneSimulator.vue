@@ -43,9 +43,20 @@ export default {
       gaugeIntervals: [],
       collisionCount: 0,
       lastCollisionTime: 0,
+      gamepadIndex: null,
+      duration: 600, // in minute
+      joystickState: {
+        x: 0,
+        y: 0
+      }
     };
   },
   mounted() {
+    // check gamepad
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    this.checkGamepad();
+
     window.addEventListener('keydown', this.handleKeydown);
     this.obstacleInterval = setInterval(this.moveObstacles, 30); // Faster interval
     this.generationInterval = setInterval(this.generateObstacles, 2000);
@@ -53,12 +64,58 @@ export default {
     this.animatePlane();
   },
   beforeUnmount() {
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    this.checkGamepad();
+
     window.removeEventListener('keydown', this.handleKeydown);
     clearInterval(this.obstacleInterval);
     clearInterval(this.generationInterval);
     this.gaugeIntervals.forEach(interval => clearInterval(interval));
   },
   methods: {
+    handleGamepadInput(gamepad) {
+      console.log(gamepad);
+      const [leftStickX, leftStickY] = gamepad.axes;
+      this.joystickState.x = leftStickX;
+      this.joystickState.y = leftStickY;
+    },
+    updatePlanePosition() {
+      const ease = 0.1;
+      const movement = 2;
+      
+      // Continuous horizontal movement
+      if (Math.abs(this.joystickState.x) > 0.1) {
+        this.plane.targetX += this.joystickState.x * movement;
+        this.plane.targetX = Math.max(0, Math.min(this.plane.targetX, 740));
+      }
+      
+      // Continuous vertical movement (already implemented)
+      if (Math.abs(this.joystickState.y) > 0.1) {
+        this.plane.y += this.joystickState.y * movement;
+        this.plane.y = Math.max(30, Math.min(this.plane.y, 370));
+      }
+      
+      this.plane.x += (this.plane.targetX - this.plane.x) * ease;
+    },
+    onGamepadConnected(event) {
+      this.gamepadIndex = event.gamepad.index;
+      this.checkGamepad();
+    },
+    onGamepadDisconnected(event) {
+      if (this.gamepadIndex === event.gamepad.index) {
+        this.gamepadIndex = null;
+      }
+    },
+    checkGamepad() {
+      if (this.gamepadIndex !== null) {
+        const gamepad = navigator.getGamepads()[this.gamepadIndex];
+        if (gamepad) {
+          this.handleGamepadInput(gamepad);
+        }
+      }
+      requestAnimationFrame(this.checkGamepad);
+    },
     animatePlane() {
       const canvas = this.$refs.simulationCanvas;
       const ctx = canvas.getContext('2d');
@@ -99,6 +156,15 @@ export default {
       ctx.fillStyle = '#eee';
       ctx.fill();
 
+      // Draw color indicator
+      ctx.beginPath();
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + (value / 100) * 2 * Math.PI;
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.lineTo(centerX, centerY);
+      ctx.fillStyle = this.getColorForValue(value);
+      ctx.fill();
+
       // Draw gauge needle
       ctx.beginPath();
       const angle = (value / 100) * 2 * Math.PI - Math.PI / 2;
@@ -107,6 +173,11 @@ export default {
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 2;
       ctx.stroke();
+    },
+    getColorForValue(value) {
+      if (value <= 33) return 'green';
+      if (value <= 66) return 'orange';
+      return 'red';
     },
     handleKeydown(event) {
       switch (event.key) {
@@ -133,10 +204,6 @@ export default {
         this.updateGauges();
       }
     },
-    updatePlanePosition() {
-      const ease = 0.1;
-      this.plane.x += (this.plane.targetX - this.plane.x) * ease;
-    },
     checkCollision() {
       const currentTime = Date.now();
       const planeRect = {
@@ -158,7 +225,7 @@ export default {
           planeRect.top < obstacleRect.bottom &&
           planeRect.bottom > obstacleRect.top
         ) {
-          if (currentTime - this.lastCollisionTime > 1000) { // 1 second delay between collision counts
+          if (currentTime - this.lastCollisionTime > 2000) { // 2 second delay between collision counts
             this.collisionCount++;
             this.lastCollisionTime = currentTime;
             console.log('Collision detected! Total collisions:', this.collisionCount);
@@ -218,28 +285,35 @@ export default {
   align-items: center;
   position: relative;
 }
+
 .instructions {
   position: absolute;
   top: 10px;
 }
+
 .instruments-left,
 .instruments-right {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 400px; /* Match the height of the simulation box */
+  height: 400px;
+  /* Match the height of the simulation box */
 }
+
 .instruments-left {
   margin-right: 10px;
 }
+
 .instruments-right {
   margin-left: 10px;
 }
+
 .instrument {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .simulation-box {
   position: relative;
   width: 800px;
@@ -247,6 +321,7 @@ export default {
   border: 2px solid black;
   overflow: hidden;
 }
+
 .collision-count {
   position: absolute;
   bottom: 10px;
