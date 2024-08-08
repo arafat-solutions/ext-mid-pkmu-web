@@ -11,7 +11,12 @@
                 <p>Waktu: {{ formatTime(config.duration) }}</p>
             </div>
         </div>
-        <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
+        <div v-if="loading"
+            class="w-screen h-screen bg-white absolute top-0 left-0 z-30 flex justify-center items-center flex-col">
+            <div class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"></div>
+            <p class="mt-12 text-2xl">Your result is submitting...</p>
+        </div>
+        <!-- <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
             <p>correctTime: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
             <p>Button:</p>
             <p>correct: {{ metrics.button_task.correct_answer }}</p>
@@ -21,7 +26,7 @@
             <p>correct: {{ metrics.acoustic_task.correct_answer }}</p>
             <p>wrong: {{ metrics.acoustic_task.incorrect_answer }}</p>
             <p>total: {{ metrics.acoustic_task.total_question }}</p>
-        </div>
+        </div> -->
     </div>
 </template>
 
@@ -29,8 +34,9 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router'
 import ModalConfirmSound from './common/ModalConfirmSound.vue'
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
-// const loading = ref(false)
+const loading = ref(false)
 const router = useRouter()
 const isModalVisible = ref(true)
 const canvas = ref(null);
@@ -55,7 +61,10 @@ const config = ref({
         showDuration: 1,
         hideDuration: 8,
     },
-    playInterval: 10000
+    playInterval: 10000,
+    userId: "",
+    sessionId: "",
+    testId: "",
 });
 
 const metrics = ref({
@@ -84,7 +93,8 @@ const gameState = ref({
     userAnswered: false,
     lastFrameTime: 0,
     acousticAnswerAllowed: false,
-    lastAcousticPlayTime: 0
+    lastAcousticPlayTime: 0,
+    lastPlayedFrequency: 0
 });
 
 const speedMap = {
@@ -220,38 +230,48 @@ function initConfig() {
     }
 }
 
-// async function submitResult () {
-//     try {
-//                 loadingSubmit.value = true;
-//                 const API_URL = process.env.VUE_APP_API_URL;
-//                 const payload = {
-//                     testSessionId: config.value.sessionId,
-//                     userId: config.value.userId,
-//                     batteryTestConfigId: config.value.testId,
-//                     result: arrayMetrics.value
-//                 }
+async function submitResult() {
+    try {
+        loading.value = true;
 
-//                 const response = await fetch(`${API_URL}api/submission`, {
-//                     method: 'POST',
-//                     headers: {
-//                         'Content-Type': 'application/json',
-//                     },
-//                     body: JSON.stringify(payload),
-//                 });
+        if (soundInterval.value) {
+            clearInterval(soundInterval.value);
+        }
+        audioContext.close();
 
-//                 if (!response.ok) {
-//                     throw new Error(`Error: ${response.statusText}`);
-//                 }
-//                 removeTestByNameAndUpdateLocalStorage('Rotating Maze')
-//                 localStorage.removeItem('arrayMetrics')
-//                 router.push('/module');
-//             } catch (error) {
-//                 console.log(error, "<< error")
-//             } finally {
-//                 loadingSubmit.value = false; // Set loading to false when the submission is complete
-//             }
-// }
+        const API_URL = process.env.VUE_APP_API_URL;
+        const result = {
+            ...metrics.value,
+            tracking_task: {
+                correctTime: Number(metrics.value.tracking_task.correctTime.toFixed(2))
+            },
+        }
+        const payload = {
+            testSessionId: config.value.sessionId,
+            userId: config.value.userId,
+            batteryTestConfigId: config.value.testId,
+            result
+        }
 
+        const response = await fetch(`${API_URL}api/submission`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+        removeTestByNameAndUpdateLocalStorage('Rotating Maze')
+        router.push('/module');
+    } catch (error) {
+        console.log(error, "<< error")
+    } finally {
+        loading.value = false; // Set loading to false when the submission is complete
+    }
+}
 
 function countDownTestTime() {
     if (testInterval.value) {
@@ -263,7 +283,8 @@ function countDownTestTime() {
             config.value.duration--;
         } else {
             clearInterval(testInterval.value);
-            console.log("submit gan")
+            await submitResult();
+
         }
     }, 1000)
 }
@@ -333,15 +354,15 @@ function playRandomSounds() {
     ];
 
     function getRandomSoundOption() {
-        return soundOptions[Math.floor(Math.random() * soundOptions.length)];
+        let selectedOption;
+        do {
+            selectedOption = soundOptions[Math.floor(Math.random() * soundOptions.length)];
+        } while (selectedOption.frequency === gameState.value.lastPlayedFrequency);
+        gameState.value.lastPlayedFrequency = selectedOption.frequency;
+        return selectedOption;
     }
 
     function playThreeTimes() {
-        // Check if user didn't answer the previous question
-        if (gameState.value.acousticAnswerAllowed) {
-            metrics.value.acoustic_task.incorrect_answer++;
-        }
-
         const randomDecision = Math.random();
         metrics.value.acoustic_task.total_question++;
 
@@ -369,11 +390,19 @@ function playRandomSounds() {
             }
         }
 
-        // Allow acoustic answer after the sounds have been played
+        // Check if user didn't answer the previous question
+        if (gameState.value.acousticAnswerAllowed) {
+            if (isSoundSame.value) {
+                metrics.value.acoustic_task.incorrect_answer++;
+            } else {
+                metrics.value.acoustic_task.correct_answer++;
+            }
+        }
+
         setTimeout(() => {
             gameState.value.acousticAnswerAllowed = true;
             gameState.value.lastAcousticPlayTime = Date.now();
-        }, 3000); // Assuming 3 seconds for all sounds to play
+        }, 3000);
     }
 
     function startSoundInterval() {
@@ -436,6 +465,7 @@ onUnmounted(() => {
     if (soundInterval.value) {
         clearInterval(soundInterval.value);
     }
+    audioContext.close();
 });
 
 watch(() => config.value.speed, updateCircleSpeed);
