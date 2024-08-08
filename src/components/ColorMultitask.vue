@@ -106,7 +106,7 @@ export default {
           colored_lower_tank: null,
           speed: null, //slow, medium, fast
           descend_speed: null, //slow, medium, fast
-          start_to_decrease_in: 3000,
+          start_to_decrease_in: 2000,
         },
       },
       result: {

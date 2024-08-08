@@ -129,6 +129,10 @@ export default {
         if (this.config.duration > 0) {
           this.config.duration--;
         } else {
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel()
+          }
+
           clearInterval(this.countdownInterval);
 
           // Submit Answer

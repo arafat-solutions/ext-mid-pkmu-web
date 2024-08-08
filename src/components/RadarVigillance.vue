@@ -435,6 +435,15 @@ export default {
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.config.duration > 0) {
+
+          //Remove Object when Duration Under 5 second
+          if (this.config.duration === 5) {
+            clearInterval(this.objectInterval);
+            this.objectInterval = null;
+
+            this.objects = []
+          }
+
           this.config.duration--;
         } else {
           clearInterval(this.countdownInterval);
