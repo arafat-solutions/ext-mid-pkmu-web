@@ -14,7 +14,12 @@
           <div v-for="(question, index) in questions" :key="index + '_answer'">
             <div v-if="index % 2 === 0">&nbsp;</div>
             <div v-else>
-              <input type="radio" />
+              <input
+                id="purple-radio"
+                type="radio"
+                name="colored-radio"
+                class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
               <input type="radio" />
               <input type="radio" />
             </div>
