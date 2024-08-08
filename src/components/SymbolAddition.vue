@@ -4,8 +4,21 @@
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
         <div class="grid grid-rows-2 grid-cols-16 gap-2 p-2">
-          <div v-for="(queryBar, index) in queryBars" :key="index + '_' + queryBar.symbol">{{ queryBar.symbol }}</div>
-          <div v-for="(queryBar, index) in queryBars" :key="index + '_' + queryBar.points">{{ queryBar.points }}</div>
+          <div v-for="(queryBar, index) in queryBars" :key="index + '_query_symbol'">{{ queryBar.symbol }}</div>
+          <div v-for="(queryBar, index) in queryBars" :key="index + '_query_points'" class="font-bold">{{ queryBar.points }}</div>
+        </div>
+      </div>
+      <div class="w-4/5 mx-auto mt-5">
+        <div class="grid grid-rows-2 grid-cols-17 gap-2">
+          <div v-for="(question, index) in questions" :key="index + '_question'" :class="index % 2 === 0 ? '' : 'font-bold'">{{ index % 2 === 0 ? question.symbol : question }}</div>
+          <div v-for="(question, index) in questions" :key="index + '_answer'">
+            <div v-if="index % 2 === 0">&nbsp;</div>
+            <div v-else>
+              <input type="radio" />
+              <input type="radio" />
+              <input type="radio" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -26,7 +39,9 @@ export default {
       totalRow: 10,
       choicesLength: 8,
       queryBarLength: 16,
-      queryBars: []
+      queryBars: [],
+      questions: [],
+      totalQuestionPerRow: 8,
     }
   },
   mounted() {
@@ -57,7 +72,9 @@ export default {
         } finally {
           this.initiateRadioValues();
           this.generateQueryBar();
+          this.generateQuestion();
           console.log(this.queryBars);
+          console.log(this.questions);
         }
       }
       console.warn('No schedule data found in localStorage.');
@@ -90,6 +107,22 @@ export default {
       }
 
       this.queryBars = tempResult;
+    },
+    generateQuestion() {
+      const symbolsLength = this.queryBars.length;
+
+      for (let i = 0; i < this.totalQuestionPerRow; i++) {
+          // Add symbol
+          this.questions.push(this.queryBars[i % symbolsLength]);
+          // Add random number
+          this.questions.push(this.getRandomNumberQuestion());
+      }
+
+      // Add the final symbol
+      this.questions.push(this.queryBars[this.totalQuestionPerRow % symbolsLength]);
+    },
+    getRandomNumberQuestion() {
+        return Math.floor(Math.random() * 16) + 2;
     }
   }
 }
