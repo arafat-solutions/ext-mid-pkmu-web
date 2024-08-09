@@ -79,7 +79,7 @@ export default {
       testName: 'Monitoring & Instrument Koordination',
       isLoading: false,
       minuteTime: null,
-      timeLeft: 30, // Countdown time in seconds
+      timeLeft: null, // Countdown time in seconds
       intervalTimerTest: null,
       isPause: false,
       isTrial: this.$route.query.isTrial ?? false,
@@ -136,7 +136,7 @@ export default {
         try {
           const scheduleData = JSON.parse(data);
           const config = scheduleData.tests.find((t) => t.name === this.testName).config;
-          this.minuteTime = 0.5;//config.duration;
+          this.minuteTime = config.duration;
           this.timeLeft = this.minuteTime * 60;
           this.result.gameDuration = this.timeLeft;
           this.config.heading.changeType = config.compass;

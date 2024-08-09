@@ -190,7 +190,7 @@ export default {
 
 			// Draw Circle in the Middle
 			ctx.beginPath();
-			ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2);
+			ctx.arc(this.circleShiftX, 0, this.circleRadius + 5, 0, Math.PI * 2);
 			ctx.closePath();
 			ctx.fillStyle = 'rgba(0, 0, 0, 0)';
 			ctx.fill();
@@ -292,7 +292,7 @@ export default {
 
 			// Memeriksa apakah mouse berada dalam radius lingkaran
 			const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
-			if (distance <= this.circleRadius) {
+			if (distance <= (this.circleRadius + 5)) {
 				if (!this.greenLineStartTime) {
 					this.greenLineStartTime = Date.now();
 				}

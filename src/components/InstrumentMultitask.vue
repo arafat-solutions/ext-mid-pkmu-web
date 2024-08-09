@@ -30,6 +30,7 @@
           :isPause="isPause"
           :isActive="config.arithmetic.isActive"
           :useSound="config.arithmetic.useSound"
+          :canPressAnswer="config.arithmetic.canPressAnswer"
           :allowSound="allowSound"
           @getResult="arithmeticResult"
           @startAgain="startAgain"
@@ -97,6 +98,7 @@
             useSound: null, //true,false
             difficulty: null, //easy,medium,difficult
             isActive: null, //true,false
+            canPressAnswer: false, //true,false
           },
           gaugesMeter: {
             frequency: null, //low,medium,high
