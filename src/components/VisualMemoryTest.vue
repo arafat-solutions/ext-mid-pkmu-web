@@ -7,11 +7,6 @@
         </div>
         <input v-if="input.input1.visible" :style="input.input1.style" v-model="input.input1.userInput" ref="input1">
         <input v-if="input.input2.visible" :style="input.input2.style" v-model="input.input2.userInput" ref="input2">
-        <div class="absolute bottom-0 flex space-x-4">
-            <p>noOfQuestionDisplayed: {{ result.noOfQuestionDisplayed }}</p>
-            <p>unansweredQuestion: {{ result.unansweredQuestion }}</p>
-            <p>correctAnswer: {{ result.correctAnswer }}</p>
-        </div>
         <div v-if="loading" class="loading-container">
             <div class="loading-spinner"></div>
             <div class="loading-text">Your result is submitting</div>
@@ -211,6 +206,42 @@ export default {
                         case 'arrow':
                             this.drawArrow({ ctx, shape: item, x: pos.x, y: pos.y });
                             break;
+                        case 'octagon':
+                            this.drawOctagon({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'star':
+                            this.drawStar({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'parallelogram':
+                            this.drawParallelogram({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'leftArrow':
+                            this.drawLeftArrow({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'hexagon':
+                            this.drawHexagon({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'chevronLeft':
+                            this.drawChevronLeft({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'plane':
+                            this.drawPlane({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'returnArrow':
+                            this.drawReturnArrow({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'heart':
+                            this.drawHeart({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 's':
+                            this.drawS({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'l':
+                            this.drawL({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 't':
+                            this.drawT({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
                     }
                 }
             });
@@ -263,6 +294,237 @@ export default {
             ctx.fill();
             ctx.restore();
         },
+        // new
+        drawOctagon({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                const px = 40 * Math.cos(angle);
+                const py = 40 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawStar({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI) / 5;
+                const px = 40 * Math.cos(angle);
+                const py = 40 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawParallelogram({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(-40, -20);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(40, 20);
+            ctx.lineTo(-20, 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawLeftArrow({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(20, -30);
+            ctx.lineTo(-20, 0);
+            ctx.lineTo(20, 30);
+            ctx.lineTo(20, 15);
+            ctx.lineTo(40, 15);
+            ctx.lineTo(40, -15);
+            ctx.lineTo(20, -15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawHexagon({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const px = 35 * Math.cos(angle);
+                const py = 35 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawChevronLeft({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(30, 0);
+            ctx.lineTo(-40, -50);
+            ctx.lineTo(-40, -20);
+            ctx.lineTo(-10, 0);
+            ctx.lineTo(-40, 20);
+            ctx.lineTo(-40, 50);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawPlane({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-30, -30);
+            ctx.lineTo(40, -20);
+            ctx.lineTo(50, 0);
+            ctx.lineTo(40, 20);
+            ctx.lineTo(10, 10);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(0, 50);
+            ctx.lineTo(-20, 40);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawReturnArrow({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.6, 0.6);
+            ctx.beginPath();
+            ctx.moveTo(-60, -50);
+            ctx.lineTo(50, -50);
+            ctx.lineTo(70, -30);
+            ctx.lineTo(70, 30);
+            ctx.lineTo(50, 50);
+            ctx.lineTo(-60, 50);
+            ctx.lineTo(-60, 20);
+            ctx.lineTo(20, 20);
+            ctx.lineTo(40, 0);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(-60, -20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawHeart({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y - 50)
+            ctx.rotate(shape.angle * Math.PI / 180);
+            const width = 80;
+            const height = 90;
+            const topCurveHeight = height * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(0, topCurveHeight);
+            ctx.bezierCurveTo(
+                0, 0,
+                -width / 2, 0,
+                -width / 2, topCurveHeight
+            );
+            ctx.bezierCurveTo(
+                -width / 2, (height + topCurveHeight) / 2,
+                0, (height + topCurveHeight) / 2,
+                0, height
+            );
+            ctx.bezierCurveTo(
+                0, (height + topCurveHeight) / 2,
+                width / 2, (height + topCurveHeight) / 2,
+                width / 2, topCurveHeight
+            );
+            ctx.bezierCurveTo(
+                width / 2, 0,
+                0, 0,
+                0, topCurveHeight
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawS({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-50, 40);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(20, 10);
+            ctx.lineTo(shape.variant ? 90 : 60, 10);
+            ctx.lineTo(shape.variant ? 90 : 60, -20);
+            ctx.lineTo(-10, -20);
+            ctx.lineTo(-10, 10);
+            ctx.lineTo(-50, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawL({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-40, 40);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(20, 10);
+            ctx.lineTo(-10, 10);
+            ctx.lineTo(-10, -40);
+            ctx.lineTo(-40, -40);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawT({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.6, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-60, 40);
+            ctx.lineTo(60, 40);
+            ctx.lineTo(60, 10);
+            ctx.lineTo(20, 10);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(-20, -20);
+            ctx.lineTo(-20, 10);
+            ctx.lineTo(-60, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        // new
         calculateInputPositions() {
             if (!this.canvasRect) {
                 return null;
@@ -327,8 +589,8 @@ export default {
                             this.innerConfig[randomIndex] = { type: 'shape', shapeName: 'questionMark' }
                             this.questionMarkPositions.push(randomIndex);
                         }
-
                     }
+                    this.questionMarkPositions = this.questionMarkPositions.sort((a, b) => a - b)
                     this.canAnswer = true
                     this.drawVisual()
                 }
@@ -489,20 +751,32 @@ export default {
             return { type: 'number', text: number }
         },
         getRandomShape() {
-            const shapes = ['triangle', 'rectangle', 'arrow', 'circle'];
+            const shapes = ['triangle', 'rectangle', 'arrow', 'circle', 'octagon', 'star', 'parallelogram', 'leftArrow', 'hexagon', 'chevronLeft', 'plane', 'returnArrow', 'heart', 's', 'l', 't'];
             const shape = shapes[Math.floor(Math.random() * shapes.length)];
-            const commonAttributes = { type: 'shape', shapeName: shape, color: this.getRandomColor() };
+            const commonAttributes = { type: 'shape', shapeName: shape, color: this.getRandomColor(), };
 
             const isSquare = Math.random() < 0.5;
             switch (shape) {
-                case 'triangle':
-                    return { ...commonAttributes, width: 80, height: 80, angle: this.getRandomAngle() };
                 case 'rectangle':
                     return { ...commonAttributes, width: isSquare ? 100 : 130, height: isSquare ? 100 : 50 };
+                case 'heart':
+                    return { ...commonAttributes, width: 80, height: 80 };
+                case 'triangle':
                 case 'arrow':
-                    return { ...commonAttributes, width: 60, height: 80, angle: this.getRandomAngle() };
                 case 'circle':
-                    return { ...commonAttributes, width: 70 };
+                case 'octagon':
+                case 'star':
+                case 'parallelogram':
+                case 'leftArrow':
+                case 'hexagon':
+                case 'chevronLeft':
+                case 'plane':
+                case 'returnArrow':
+                case 'l':
+                case 't':
+                    return { ...commonAttributes, width: 80, height: 80, angle: this.getRandomAngle() };
+                case 's':
+                    return { ...commonAttributes, width: 80, height: 80, variant: Math.random() < 0.5, angle: this.getRandomAngle() };
                 default:
                     throw new Error('Unknown shape type');
             }
