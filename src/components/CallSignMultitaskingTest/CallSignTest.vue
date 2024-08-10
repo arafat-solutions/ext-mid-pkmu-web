@@ -42,9 +42,6 @@ export default {
     },
     beforeUnmount() {
         this.cleanup();
-        if (window.speechSynthesis) {
-            window.speechSynthesis.cancel();
-        }
         window.removeEventListener('keydown', this.checkAnswer);
     },
     methods: {
@@ -198,9 +195,13 @@ export default {
             }, this.intervalTime);
         },
         cleanup() {
-            window.speechSynthesis.cancel();
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
             if (this.intervalId) {
                 clearInterval(this.intervalId);
+                this.intervalId = null;
+                this.intervalTime = 0
             }
         },
         startSpeechTest() {
@@ -241,7 +242,7 @@ export default {
 
 .input-group {
     position: absolute;
-    top: -50%;
+    top: 0%;
     right: 20%;
     padding-left: 10px;
     display: flex;
@@ -256,6 +257,7 @@ input {
     width: 70px;
     height: 24px;
     margin-right: 10px;
+    border: 1px solid black;
 }
 
 input[type=number]::-webkit-inner-spin-button,
