@@ -38,6 +38,7 @@ export default {
             currentShiftY: 0,
             intervalRandomTilt: null,
             intervalRandomShift: null,
+            gamepadIndex: null,
         };
     },
     mounted() {
@@ -45,6 +46,8 @@ export default {
     },
     unmounted() {
         this.stopAnimations();
+        window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+        window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
     },
     methods: {
         initializeTest() {
@@ -53,6 +56,10 @@ export default {
             if (this.horizonData.play) {
                 this.startAnimations();
             }
+
+            window.addEventListener('gamepadconnected', this.onGamepadConnected);
+            window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+            this.checkGamepad();
         },
         initVisual() {
             const canvas = this.$refs.horizonCanvas;
@@ -278,6 +285,43 @@ export default {
                 this.lastCorrectStartTime = null;
             }
         },
+        // for gamepad
+        onGamepadConnected(event) {
+            this.gamepadIndex = event.gamepad.index;
+            this.checkGamepad();
+        },
+        onGamepadDisconnected(event) {
+            if (this.gamepadIndex === event.gamepad.index) {
+                this.gamepadIndex = null;
+            }
+        },
+        checkGamepad() {
+            if (this.gamepadIndex !== null) {
+                const gamepad = navigator.getGamepads()[this.gamepadIndex];
+                if (gamepad) {
+                    this.handleGamepadInput(gamepad);
+                }
+            }
+            requestAnimationFrame(this.checkGamepad);
+        },
+        handleGamepadInput(gamepad) {
+            const [leftStickX, leftStickY] = gamepad.axes;
+
+            const canvasWidth = this.$refs.horizonCanvas.width;
+            const canvasHeight = this.$refs.horizonCanvas.height;
+
+            const sensitivity = 5;  // You can adjust this value to control how fast the focus line moves
+
+            this.config.focusX += leftStickX * sensitivity;
+            this.config.focusY += leftStickY * sensitivity;
+
+            // Clamp the focusX and focusY to stay within the canvas bounds
+            this.config.focusX = Math.max(0, Math.min(this.config.focusX, canvasWidth));
+            this.config.focusY = Math.max(0, Math.min(this.config.focusY, canvasHeight));
+
+            this.drawVisual();
+        },
+
     },
 };
 </script>
