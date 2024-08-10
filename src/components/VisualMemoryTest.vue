@@ -57,6 +57,7 @@ export default {
             // this config is use to render the question
             innerConfig: [],
             questions: [],
+            questionMarkPositions: [],
             canAnswer: false,
             result: {
                 noOfQuestionDisplayed: 1,
@@ -265,17 +266,18 @@ export default {
             const canvasTop = this.canvasRect.top;
             const canvasLeft = this.canvasRect.left;
             const inputWidth = 100;
-            const margin = 50;
             const verticalOffset = 40;
+
+            const positions = this.calculatePositions();
 
             return {
                 input1: {
-                    top: canvasTop + (this.canvasHeight / 4) + verticalOffset,
-                    left: canvasLeft + this.canvasWidth - inputWidth - margin
+                    top: positions[this.questionMarkPositions[0]].y + canvasTop + verticalOffset,
+                    left: positions[this.questionMarkPositions[0]].x + canvasLeft - inputWidth / 2
                 },
                 input2: {
-                    top: canvasTop + (this.canvasHeight * 3 / 4) + verticalOffset,
-                    left: canvasLeft + this.canvasWidth - inputWidth - margin
+                    top: positions[this.questionMarkPositions[1]].y + canvasTop + verticalOffset,
+                    left: positions[this.questionMarkPositions[1]].x + canvasLeft - inputWidth / 2
                 }
             };
         },
@@ -313,8 +315,15 @@ export default {
                     this.drawVisual()
                 } else {
                     clearInterval(this.timerInterval);
-                    this.innerConfig[3] = { type: 'shape', shapeName: 'questionMark' }
-                    this.innerConfig[7] = { type: 'shape', shapeName: 'questionMark' }
+
+                    while (this.questionMarkPositions.length < 2) {
+                        const randomIndex = Math.floor(Math.random() * 8);
+                        if (this.innerConfig[randomIndex].type === 'text' || this.innerConfig[randomIndex].type === 'number') {
+                            this.innerConfig[randomIndex] = { type: 'shape', shapeName: 'questionMark' }
+                            this.questionMarkPositions.push(randomIndex);
+                        }
+
+                    }
                     this.canAnswer = true
                     this.drawVisual()
                 }
@@ -394,6 +403,7 @@ export default {
                         input2.userInput = ''
                         resultQuestion1 = false
                         resultQuestion2 = false
+                        this.questionMarkPositions = []
 
                         if (this.testTime > 0) {
                             this.result.noOfQuestionDisplayed += 1
@@ -412,34 +422,24 @@ export default {
         createRandomQuestion() {
             const { display } = this.configBe
             const arrQuestion = []
+            let textOrNumberCount = 0
 
             for (let i = 0; i < 8; i++) {
-                if (i === 3 || i === 7) {
-                    // Always return type "text" or "number" when i is 3 or 7
-                    if (Math.random() < 0.5) {
-                        const number = this.generateRandomNumbers();
-                        arrQuestion.push(number);
-                    } else {
-                        const text = this.generateRandomLetters()
-                        arrQuestion.push(text);
-                    }
-                } else if (display.alphanumeric && display.shape) {
-                    // Randomly decide between alphanumeric and shape
-                    if (Math.random() < 0.5) {
-                        // Randomly choose to push "number" or "text"
+                if (display.alphanumeric && display.shape) {
+                    if (Math.random() < 0.5 || textOrNumberCount < 2) {
                         if (Math.random() < 0.5) {
-                            const number = this.generateRandomNumbers();
-                            arrQuestion.push(number);
+                            const number = this.generateRandomNumbers()
+                            arrQuestion.push(number)
                         } else {
                             const text = this.generateRandomLetters()
                             arrQuestion.push(text);
                         }
+                        textOrNumberCount++
                     } else {
                         const shape = this.getRandomShape();
                         arrQuestion.push(shape);
                     }
                 } else if (display.alphanumeric) {
-                    // Randomly choose to push "number" or "text"
                     if (Math.random() < 0.5) {
                         const number = this.generateRandomNumbers();
                         arrQuestion.push(number);
@@ -447,10 +447,23 @@ export default {
                         const text = this.generateRandomLetters()
                         arrQuestion.push(text);
                     }
+                    textOrNumberCount++;
                 } else if (display.shape) {
-                    // Push a random shape
                     const shape = this.getRandomShape();
                     arrQuestion.push(shape);
+                }
+            }
+
+            // Ensure at least 2 text or number elements
+            while (textOrNumberCount < 2) {
+                const randomIndex = Math.floor(Math.random() * 8);
+                if (arrQuestion[randomIndex].type === 'shape') {
+                    if (Math.random() < 0.5) {
+                        arrQuestion[randomIndex] = this.generateRandomNumbers();
+                    } else {
+                        arrQuestion[randomIndex] = this.generateRandomLetters();
+                    }
+                    textOrNumberCount++;
                 }
             }
 
