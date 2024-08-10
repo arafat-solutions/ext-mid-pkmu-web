@@ -1,5 +1,5 @@
 <template>
-    <div class="visual-container">
+    <div class="visual-container relative">
         <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
         <div class="timer">
             <p>Waktu:</p>
@@ -57,6 +57,7 @@ export default {
             // this config is use to render the question
             innerConfig: [],
             questions: [],
+            questionMarkPositions: [],
             canAnswer: false,
             result: {
                 noOfQuestionDisplayed: 1,
@@ -205,6 +206,42 @@ export default {
                         case 'arrow':
                             this.drawArrow({ ctx, shape: item, x: pos.x, y: pos.y });
                             break;
+                        case 'octagon':
+                            this.drawOctagon({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'star':
+                            this.drawStar({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'parallelogram':
+                            this.drawParallelogram({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'leftArrow':
+                            this.drawLeftArrow({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'hexagon':
+                            this.drawHexagon({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'chevronLeft':
+                            this.drawChevronLeft({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'plane':
+                            this.drawPlane({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'returnArrow':
+                            this.drawReturnArrow({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'heart':
+                            this.drawHeart({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 's':
+                            this.drawS({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 'l':
+                            this.drawL({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
+                        case 't':
+                            this.drawT({ ctx, shape: item, x: pos.x, y: pos.y });
+                            break;
                     }
                 }
             });
@@ -257,6 +294,237 @@ export default {
             ctx.fill();
             ctx.restore();
         },
+        // new
+        drawOctagon({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = i * Math.PI / 4;
+                const px = 40 * Math.cos(angle);
+                const py = 40 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawStar({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI) / 5;
+                const px = 40 * Math.cos(angle);
+                const py = 40 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawParallelogram({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(-40, -20);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(40, 20);
+            ctx.lineTo(-20, 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawLeftArrow({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(20, -30);
+            ctx.lineTo(-20, 0);
+            ctx.lineTo(20, 30);
+            ctx.lineTo(20, 15);
+            ctx.lineTo(40, 15);
+            ctx.lineTo(40, -15);
+            ctx.lineTo(20, -15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawHexagon({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const px = 35 * Math.cos(angle);
+                const py = 35 * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawChevronLeft({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(30, 0);
+            ctx.lineTo(-40, -50);
+            ctx.lineTo(-40, -20);
+            ctx.lineTo(-10, 0);
+            ctx.lineTo(-40, 20);
+            ctx.lineTo(-40, 50);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawPlane({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-30, -30);
+            ctx.lineTo(40, -20);
+            ctx.lineTo(50, 0);
+            ctx.lineTo(40, 20);
+            ctx.lineTo(10, 10);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(0, 50);
+            ctx.lineTo(-20, 40);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawReturnArrow({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.6, 0.6);
+            ctx.beginPath();
+            ctx.moveTo(-60, -50);
+            ctx.lineTo(50, -50);
+            ctx.lineTo(70, -30);
+            ctx.lineTo(70, 30);
+            ctx.lineTo(50, 50);
+            ctx.lineTo(-60, 50);
+            ctx.lineTo(-60, 20);
+            ctx.lineTo(20, 20);
+            ctx.lineTo(40, 0);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(-60, -20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawHeart({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y - 50)
+            ctx.rotate(shape.angle * Math.PI / 180);
+            const width = 80;
+            const height = 90;
+            const topCurveHeight = height * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(0, topCurveHeight);
+            ctx.bezierCurveTo(
+                0, 0,
+                -width / 2, 0,
+                -width / 2, topCurveHeight
+            );
+            ctx.bezierCurveTo(
+                -width / 2, (height + topCurveHeight) / 2,
+                0, (height + topCurveHeight) / 2,
+                0, height
+            );
+            ctx.bezierCurveTo(
+                0, (height + topCurveHeight) / 2,
+                width / 2, (height + topCurveHeight) / 2,
+                width / 2, topCurveHeight
+            );
+            ctx.bezierCurveTo(
+                width / 2, 0,
+                0, 0,
+                0, topCurveHeight
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawS({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-50, 40);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(20, 10);
+            ctx.lineTo(shape.variant ? 90 : 60, 10);
+            ctx.lineTo(shape.variant ? 90 : 60, -20);
+            ctx.lineTo(-10, -20);
+            ctx.lineTo(-10, 10);
+            ctx.lineTo(-50, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawL({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.8, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-40, 40);
+            ctx.lineTo(20, 40);
+            ctx.lineTo(20, 10);
+            ctx.lineTo(-10, 10);
+            ctx.lineTo(-10, -40);
+            ctx.lineTo(-40, -40);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        drawT({ ctx, shape, x, y }) {
+            ctx.fillStyle = shape.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(shape.angle * Math.PI / 180);
+            ctx.scale(0.6, 0.8);
+            ctx.beginPath();
+            ctx.moveTo(-60, 40);
+            ctx.lineTo(60, 40);
+            ctx.lineTo(60, 10);
+            ctx.lineTo(20, 10);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(-20, -20);
+            ctx.lineTo(-20, 10);
+            ctx.lineTo(-60, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        },
+        // new
         calculateInputPositions() {
             if (!this.canvasRect) {
                 return null;
@@ -265,17 +533,18 @@ export default {
             const canvasTop = this.canvasRect.top;
             const canvasLeft = this.canvasRect.left;
             const inputWidth = 100;
-            const margin = 50;
             const verticalOffset = 40;
+
+            const positions = this.calculatePositions();
 
             return {
                 input1: {
-                    top: canvasTop + (this.canvasHeight / 4) + verticalOffset,
-                    left: canvasLeft + this.canvasWidth - inputWidth - margin
+                    top: positions[this.questionMarkPositions[0]].y + canvasTop + verticalOffset,
+                    left: positions[this.questionMarkPositions[0]].x + canvasLeft - inputWidth / 2
                 },
                 input2: {
-                    top: canvasTop + (this.canvasHeight * 3 / 4) + verticalOffset,
-                    left: canvasLeft + this.canvasWidth - inputWidth - margin
+                    top: positions[this.questionMarkPositions[1]].y + canvasTop + verticalOffset,
+                    left: positions[this.questionMarkPositions[1]].x + canvasLeft - inputWidth / 2
                 }
             };
         },
@@ -313,8 +582,15 @@ export default {
                     this.drawVisual()
                 } else {
                     clearInterval(this.timerInterval);
-                    this.innerConfig[3] = { type: 'shape', shapeName: 'questionMark' }
-                    this.innerConfig[7] = { type: 'shape', shapeName: 'questionMark' }
+
+                    while (this.questionMarkPositions.length < 2) {
+                        const randomIndex = Math.floor(Math.random() * 8);
+                        if (this.innerConfig[randomIndex].type === 'text' || this.innerConfig[randomIndex].type === 'number') {
+                            this.innerConfig[randomIndex] = { type: 'shape', shapeName: 'questionMark' }
+                            this.questionMarkPositions.push(randomIndex);
+                        }
+                    }
+                    this.questionMarkPositions = this.questionMarkPositions.sort((a, b) => a - b)
                     this.canAnswer = true
                     this.drawVisual()
                 }
@@ -363,22 +639,22 @@ export default {
                         }
 
                         // check if answer is correct
-                        if (this.questions[3].type === 'number') {
-                            if (Number(input1.userInput) === this.questions[3].text) {
+                        if (this.questions[this.questionMarkPositions[0]].type === 'number') {
+                            if (Number(input1.userInput) === this.questions[this.questionMarkPositions[0]].text) {
                                 resultQuestion1 = true
                             }
-                        } else if (this.questions[3].type === 'text') {
-                            if (input1.userInput.toUpperCase() === this.questions[3].text) {
+                        } else if (this.questions[this.questionMarkPositions[0]].type === 'text') {
+                            if (input1.userInput.toUpperCase() === this.questions[this.questionMarkPositions[0]].text) {
                                 resultQuestion1 = true
                             }
                         }
 
-                        if (this.questions[7].type === 'number') {
-                            if (Number(input2.userInput) === this.questions[7].text) {
+                        if (this.questions[this.questionMarkPositions[1]].type === 'number') {
+                            if (Number(input2.userInput) === this.questions[this.questionMarkPositions[1]].text) {
                                 resultQuestion2 = true
                             }
-                        } else if (this.questions[7].type === 'text') {
-                            if (input2.userInput.toUpperCase() === this.questions[7].text) {
+                        } else if (this.questions[this.questionMarkPositions[1]].type === 'text') {
+                            if (input2.userInput.toUpperCase() === this.questions[this.questionMarkPositions[1]].text) {
                                 resultQuestion2 = true
                             }
                         }
@@ -394,6 +670,7 @@ export default {
                         input2.userInput = ''
                         resultQuestion1 = false
                         resultQuestion2 = false
+                        this.questionMarkPositions = []
 
                         if (this.testTime > 0) {
                             this.result.noOfQuestionDisplayed += 1
@@ -412,34 +689,24 @@ export default {
         createRandomQuestion() {
             const { display } = this.configBe
             const arrQuestion = []
+            let textOrNumberCount = 0
 
             for (let i = 0; i < 8; i++) {
-                if (i === 3 || i === 7) {
-                    // Always return type "text" or "number" when i is 3 or 7
-                    if (Math.random() < 0.5) {
-                        const number = this.generateRandomNumbers();
-                        arrQuestion.push(number);
-                    } else {
-                        const text = this.generateRandomLetters()
-                        arrQuestion.push(text);
-                    }
-                } else if (display.alphanumeric && display.shape) {
-                    // Randomly decide between alphanumeric and shape
-                    if (Math.random() < 0.5) {
-                        // Randomly choose to push "number" or "text"
+                if (display.alphanumeric && display.shape) {
+                    if (Math.random() < 0.5 || textOrNumberCount < 2) {
                         if (Math.random() < 0.5) {
-                            const number = this.generateRandomNumbers();
-                            arrQuestion.push(number);
+                            const number = this.generateRandomNumbers()
+                            arrQuestion.push(number)
                         } else {
                             const text = this.generateRandomLetters()
                             arrQuestion.push(text);
                         }
+                        textOrNumberCount++
                     } else {
                         const shape = this.getRandomShape();
                         arrQuestion.push(shape);
                     }
                 } else if (display.alphanumeric) {
-                    // Randomly choose to push "number" or "text"
                     if (Math.random() < 0.5) {
                         const number = this.generateRandomNumbers();
                         arrQuestion.push(number);
@@ -447,10 +714,23 @@ export default {
                         const text = this.generateRandomLetters()
                         arrQuestion.push(text);
                     }
+                    textOrNumberCount++;
                 } else if (display.shape) {
-                    // Push a random shape
                     const shape = this.getRandomShape();
                     arrQuestion.push(shape);
+                }
+            }
+
+            // Ensure at least 2 text or number elements
+            while (textOrNumberCount < 2) {
+                const randomIndex = Math.floor(Math.random() * 8);
+                if (arrQuestion[randomIndex].type === 'shape') {
+                    if (Math.random() < 0.5) {
+                        arrQuestion[randomIndex] = this.generateRandomNumbers();
+                    } else {
+                        arrQuestion[randomIndex] = this.generateRandomLetters();
+                    }
+                    textOrNumberCount++;
                 }
             }
 
@@ -471,20 +751,32 @@ export default {
             return { type: 'number', text: number }
         },
         getRandomShape() {
-            const shapes = ['triangle', 'rectangle', 'arrow', 'circle'];
+            const shapes = ['triangle', 'rectangle', 'arrow', 'circle', 'octagon', 'star', 'parallelogram', 'leftArrow', 'hexagon', 'chevronLeft', 'plane', 'returnArrow', 'heart', 's', 'l', 't'];
             const shape = shapes[Math.floor(Math.random() * shapes.length)];
-            const commonAttributes = { type: 'shape', shapeName: shape, color: this.getRandomColor() };
+            const commonAttributes = { type: 'shape', shapeName: shape, color: this.getRandomColor(), };
 
             const isSquare = Math.random() < 0.5;
             switch (shape) {
-                case 'triangle':
-                    return { ...commonAttributes, width: 80, height: 80, angle: this.getRandomAngle() };
                 case 'rectangle':
                     return { ...commonAttributes, width: isSquare ? 100 : 130, height: isSquare ? 100 : 50 };
+                case 'heart':
+                    return { ...commonAttributes, width: 80, height: 80 };
+                case 'triangle':
                 case 'arrow':
-                    return { ...commonAttributes, width: 60, height: 80, angle: this.getRandomAngle() };
                 case 'circle':
-                    return { ...commonAttributes, width: 70 };
+                case 'octagon':
+                case 'star':
+                case 'parallelogram':
+                case 'leftArrow':
+                case 'hexagon':
+                case 'chevronLeft':
+                case 'plane':
+                case 'returnArrow':
+                case 'l':
+                case 't':
+                    return { ...commonAttributes, width: 80, height: 80, angle: this.getRandomAngle() };
+                case 's':
+                    return { ...commonAttributes, width: 80, height: 80, variant: Math.random() < 0.5, angle: this.getRandomAngle() };
                 default:
                     throw new Error('Unknown shape type');
             }
