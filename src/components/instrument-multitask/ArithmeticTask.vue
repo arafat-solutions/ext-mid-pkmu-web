@@ -3,7 +3,9 @@
     <p class="problem">{{ isActive ? problem.num1 : '?' }} {{ problem.operator }} {{ isActive ? problem.num2 : '?' }} = ?</p>
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
-        <button class="btn-answer">{{ index + 1 }}</button><span class="label-choice">{{ isActive ? choice : '?' }}</span>
+        <button class="btn-answer can-press" v-if="canPressAnswer" @click="chooseAnswer(index)">{{ index + 1 }}</button>
+        <button class="btn-answer" v-else>{{ index + 1 }}</button>
+        <span class="label-choice">{{ isActive ? choice : '?' }}</span>
       </div>
     </div>
   </div>
@@ -34,6 +36,7 @@
       isActive: Boolean,
       useSound: Boolean,
       allowSound: Boolean,
+      canPressAnswer: Boolean,
     },
     mounted() {
       if ((this.useSound && this.allowSound) || (!this.useSound || !this.isActive)) {
@@ -74,7 +77,7 @@
     },
     methods: {
       handleKeyPress(event) {
-        if (this.isPause || this.isTimesUp || !this.isActive) {
+        if (this.isPause || this.isTimesUp || !this.isActive || this.canPressAnswer) {
           return;
         }
 
@@ -275,6 +278,10 @@
     font-weight: bold;
     background-color: aqua;
     border-radius: 5px;
+  }
+
+  .btn-answer.can-press {
+    color: aqua;
   }
 
   .label-choice {
