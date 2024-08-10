@@ -129,4 +129,13 @@ const router = createRouter({
   routes
 });
 
+router.beforeEach((to, from, next) => {
+  // Call stopSpeech on every route change
+  if (window.speechSynthesis && window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    console.log('Speech synthesis stopped and queue cleared.');
+  }
+  next();
+});
+
 export default router;

@@ -31,28 +31,35 @@ export default {
                 horizonOffsetY: 0,
                 horizonOffsetX: 0
             },
-            correct_time: 0,
             isCurrentlyCorrect: false,
             lastCorrectStartTime: null,
-            maxAngleChange: 0,
-            maxOffsetChange: 0,
-            changeProb: 0,
-            angleChangeProb: 0.3,
-            heightChangeProb: 0.3,
-            widthChangeProb: 0.3,
+            currentTilt: 0,
+            currentShiftX: 0,
+            currentShiftY: 0,
+            intervalRandomTilt: null,
+            intervalRandomShift: null,
+            gamepadIndex: null,
         };
     },
     mounted() {
         this.initializeTest();
     },
+    unmounted() {
+        this.stopAnimations();
+        window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+        window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    },
     methods: {
         initializeTest() {
-            this.setSpeedParameters();
             this.initVisual();
             this.drawVisual();
             if (this.horizonData.play) {
-                this.animate();
+                this.startAnimations();
             }
+
+            window.addEventListener('gamepadconnected', this.onGamepadConnected);
+            window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+            this.checkGamepad();
         },
         initVisual() {
             const canvas = this.$refs.horizonCanvas;
@@ -80,10 +87,10 @@ export default {
             ctx.stroke();
             ctx.clip();
 
-            const angleInRadians = config.angle * Math.PI / 180;
+            const angleInRadians = this.currentTilt * Math.PI / 180;
 
             ctx.translate(config.x + config.width / 2, config.y + config.height / 2);
-            ctx.translate(config.horizonOffsetX, config.horizonOffsetY);
+            ctx.translate(this.currentShiftX, this.currentShiftY);
             ctx.rotate(angleInRadians);
             ctx.translate(-config.x - config.width / 2, -config.y - config.height / 2);
 
@@ -154,7 +161,7 @@ export default {
         },
         drawFocusLine() {
             const { ctx, config } = this;
-            const { x, y, width, height, focusX, focusY, horizonOffsetX, horizonOffsetY } = config;
+            const { x, y, width, height, focusX, focusY } = config;
 
             ctx.save();
             ctx.beginPath();
@@ -164,8 +171,8 @@ export default {
             const centerX = x + width / 2;
             const centerY = y + height / 2;
 
-            const circleX = centerX + horizonOffsetX;
-            const circleY = centerY + horizonOffsetY;
+            const circleX = centerX + this.currentShiftX;
+            const circleY = centerY + this.currentShiftY;
             const radius = 15;
 
             const distanceToCircle = Math.sqrt((focusX - circleX) ** 2 + (focusY - circleY) ** 2);
@@ -197,30 +204,68 @@ export default {
 
             ctx.restore();
         },
-        setAngle() {
-            if (Math.random() < this.changeProb) {
-                const change = (Math.random() - 0.5) * 2 * this.maxAngleChange;
-                this.config.angle = Math.max(-70, Math.min(70, this.config.angle + change));
-            }
+        startAnimations() {
+            this.intervalRandomTilt = setInterval(() => {
+                this.randomTilt();
+            }, this.getSpeedInterval());
+            this.intervalRandomShift = setInterval(() => {
+                this.randomShift();
+            }, this.getSpeedInterval());
         },
-        setHeight() {
-            if (Math.random() < this.changeProb) {
-                const change = (Math.random() - 0.5) * 2 * this.maxOffsetChange;
-                this.config.horizonOffsetY = Math.max(-70, Math.min(70, this.config.horizonOffsetY + change));
-            }
+        stopAnimations() {
+            clearInterval(this.intervalRandomTilt);
+            clearInterval(this.intervalRandomShift);
         },
-        setWidth() {
-            if (Math.random() < this.changeProb) {
-                const change = (Math.random() - 0.5) * 2 * this.maxOffsetChange;
-                this.config.horizonOffsetX = Math.max(-70, Math.min(70, this.config.horizonOffsetX + change));
-            }
+        randomTilt() {
+            const targetTilt = this.getRandom(-70, 70);
+            this.animateValue(this.currentTilt, targetTilt, this.getSpeedInterval(), (value) => {
+                this.currentTilt = value;
+                this.drawVisual();
+            });
         },
-        animate() {
-            this.drawVisual();
-            this.setAngle();
-            this.setHeight();
-            this.setWidth();
-            requestAnimationFrame(this.animate);
+        randomShift() {
+            const targetShiftX = this.getRandom(-70, 70);
+            const targetShiftY = this.getRandom(-70, 70);
+            this.animateValue(this.currentShiftX, targetShiftX, this.getSpeedInterval(), (value) => {
+                this.currentShiftX = value;
+                this.drawVisual();
+            });
+            this.animateValue(this.currentShiftY, targetShiftY, this.getSpeedInterval(), (value) => {
+                this.currentShiftY = value;
+                this.drawVisual();
+            });
+        },
+        getRandom(min, max) {
+            return Math.random() * (max - min) + min;
+        },
+        animateValue(start, end, duration, callback) {
+            const startTime = performance.now();
+
+            const step = (currentTime) => {
+                const elapsedTime = currentTime - startTime;
+                const progress = Math.min(elapsedTime / duration, 1);
+                const easedProgress = this.easeInOutCubic(progress);
+
+                const value = start + (end - start) * easedProgress;
+                callback(value);
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            };
+
+            requestAnimationFrame(step);
+        },
+        easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        },
+        getSpeedInterval() {
+            const speedMap = {
+                slow: 5000,
+                medium: 4000,
+                fast: 3000
+            };
+            return speedMap[this.horizonData.speed] || 4000;
         },
         handleMouseEnter(event) {
             const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
@@ -236,44 +281,47 @@ export default {
                 this.lastCorrectStartTime = currentTime;
             } else if (!isCorrect && this.isCurrentlyCorrect) {
                 this.isCurrentlyCorrect = false;
-                // this.correct_time += currentTime - this.lastCorrectStartTime;
                 this.updateResults('horizon', { correct_time: currentTime - this.lastCorrectStartTime });
                 this.lastCorrectStartTime = null;
             }
         },
-        setSpeedParameters() {
-            const { speed } = this.horizonData;
-            switch (speed) {
-                case 'slow':
-                    this.maxAngleChange = 2;
-                    this.maxOffsetChange = 3;
-                    this.changeProb = 0.3;
-                    break;
-                case 'medium':
-                    this.maxAngleChange = 2;
-                    this.maxOffsetChange = 3;
-                    this.changeProb = 0.6;
-                    break;
-                case 'fast':
-                    this.maxAngleChange = 2;
-                    this.maxOffsetChange = 3;
-                    this.changeProb = 0.9;
-                    break;
-                default:
-                    console.warn('Invalid speed setting, defaulting to medium');
-                    this.maxAngleChange = 1;
-                    this.maxOffsetChange = 2;
-                    this.changeProb = 0.2;
+        // for gamepad
+        onGamepadConnected(event) {
+            this.gamepadIndex = event.gamepad.index;
+            this.checkGamepad();
+        },
+        onGamepadDisconnected(event) {
+            if (this.gamepadIndex === event.gamepad.index) {
+                this.gamepadIndex = null;
             }
         },
-    },
-    watch: {
-        horizonData: {
-            handler() {
-                this.setSpeedParameters();
-            },
-            deep: true
-        }
+        checkGamepad() {
+            if (this.gamepadIndex !== null) {
+                const gamepad = navigator.getGamepads()[this.gamepadIndex];
+                if (gamepad) {
+                    this.handleGamepadInput(gamepad);
+                }
+            }
+            requestAnimationFrame(this.checkGamepad);
+        },
+        handleGamepadInput(gamepad) {
+            const [leftStickX, leftStickY] = gamepad.axes;
+
+            const canvasWidth = this.$refs.horizonCanvas.width;
+            const canvasHeight = this.$refs.horizonCanvas.height;
+
+            const sensitivity = 5;  // You can adjust this value to control how fast the focus line moves
+
+            this.config.focusX += leftStickX * sensitivity;
+            this.config.focusY += leftStickY * sensitivity;
+
+            // Clamp the focusX and focusY to stay within the canvas bounds
+            this.config.focusX = Math.max(0, Math.min(this.config.focusX, canvasWidth));
+            this.config.focusY = Math.max(0, Math.min(this.config.focusY, canvasHeight));
+
+            this.drawVisual();
+        },
+
     },
 };
 </script>
