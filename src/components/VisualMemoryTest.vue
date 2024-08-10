@@ -1,5 +1,5 @@
 <template>
-    <div class="visual-container">
+    <div class="visual-container relative">
         <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
         <div class="timer">
             <p>Waktu:</p>
@@ -7,6 +7,11 @@
         </div>
         <input v-if="input.input1.visible" :style="input.input1.style" v-model="input.input1.userInput" ref="input1">
         <input v-if="input.input2.visible" :style="input.input2.style" v-model="input.input2.userInput" ref="input2">
+        <div class="absolute bottom-0 flex space-x-4">
+            <p>noOfQuestionDisplayed: {{ result.noOfQuestionDisplayed }}</p>
+            <p>unansweredQuestion: {{ result.unansweredQuestion }}</p>
+            <p>correctAnswer: {{ result.correctAnswer }}</p>
+        </div>
         <div v-if="loading" class="loading-container">
             <div class="loading-spinner"></div>
             <div class="loading-text">Your result is submitting</div>
@@ -372,22 +377,22 @@ export default {
                         }
 
                         // check if answer is correct
-                        if (this.questions[3].type === 'number') {
-                            if (Number(input1.userInput) === this.questions[3].text) {
+                        if (this.questions[this.questionMarkPositions[0]].type === 'number') {
+                            if (Number(input1.userInput) === this.questions[this.questionMarkPositions[0]].text) {
                                 resultQuestion1 = true
                             }
-                        } else if (this.questions[3].type === 'text') {
-                            if (input1.userInput.toUpperCase() === this.questions[3].text) {
+                        } else if (this.questions[this.questionMarkPositions[0]].type === 'text') {
+                            if (input1.userInput.toUpperCase() === this.questions[this.questionMarkPositions[0]].text) {
                                 resultQuestion1 = true
                             }
                         }
 
-                        if (this.questions[7].type === 'number') {
-                            if (Number(input2.userInput) === this.questions[7].text) {
+                        if (this.questions[this.questionMarkPositions[1]].type === 'number') {
+                            if (Number(input2.userInput) === this.questions[this.questionMarkPositions[1]].text) {
                                 resultQuestion2 = true
                             }
-                        } else if (this.questions[7].type === 'text') {
-                            if (input2.userInput.toUpperCase() === this.questions[7].text) {
+                        } else if (this.questions[this.questionMarkPositions[1]].type === 'text') {
+                            if (input2.userInput.toUpperCase() === this.questions[this.questionMarkPositions[1]].text) {
                                 resultQuestion2 = true
                             }
                         }
