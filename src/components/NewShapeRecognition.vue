@@ -1,11 +1,13 @@
 <template>
-    <div class="shapeContainer">
-        <canvas id="shapeCanvas" ref="shapeCanvas" width="500" height="300"></canvas>
-        <div class="buttonContainer">
-            <div class="buttonGroup" v-for="(shape, index) in shapes.slice(0, 5)" :key="index"
-                @click="checkAnswer(index)">
+    <div class="w-full h-full max-w-[1200px] mx-auto relative flex flex-col items-center justify-center max-h-[1000px]">
+        <canvas id="shapeCanvas" ref="shapeCanvas" width="500" height="300"
+            class="border-[1px] border-black mt-[8%] mx-auto"></canvas>
+        <div class="w-[80%] flex items-center justify-between mx-auto mt-[40px]">
+            <div class="flex flex-col items-center justify-center" v-for="(shape, index) in shapes.slice(0, 5)"
+                :key="index" @click="checkAnswer(index)">
                 <canvas :ref="el => buttonCanvases[index] = el" width="200" height="100"></canvas>
-                <button>
+                <button
+                    class="cursor-pointer mt-[10px] h-[30px] w-[60px] bg-gray-200 border border-gray-300 rounded-sm">
                     {{ ['A', 'B', 'C', 'D', 'E'][index] }}
                 </button>
             </div>
@@ -71,7 +73,13 @@ export default {
             totalQuestion: 30,
             avgResponseTime: 0 //in seconds
         })
+        const difficulty = ref('normal') //easy, normal, hard
 
+        const DIFFICULTY_MAP = {
+            easy: 0.7,
+            normal: 0.5,
+            hard: 0.2
+        }
         const STROKE_WIDTH = 2;
         const ANGLES = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
 
@@ -89,7 +97,10 @@ export default {
             generateT,
             generateHeart,
             generateS,
-            generateL
+            generateL,
+            generateTriangle,
+            generateSquare,
+            generateCircle
         ];
 
         function drawShape(ctx, shapeGenerator, canvasWidth, canvasHeight, angle) {
@@ -100,7 +111,6 @@ export default {
             ctx.translate(canvasWidth / 2, canvasHeight / 2);
             const scale = Math.min(canvasWidth, canvasHeight) * 0.7;
             ctx.scale(scale / 100, scale / 100);
-            console.log(angle)
             ctx.rotate(angle);
             ctx.beginPath();
             shapeGenerator(ctx);
@@ -187,7 +197,6 @@ export default {
         function drawRandomizedShapes(ctx, randomAngle) {
             const canvasWidth = shapeCanvas.value.width;
             const canvasHeight = shapeCanvas.value.height;
-            const numShapes = 80; // Increased number of shapes
 
             const scaleFactor = getScaleFactor(config.value.size);
 
@@ -199,57 +208,153 @@ export default {
             ctx.rotate(randomAngle)
             ctx.scale(scaleFactor, scaleFactor)
             ctx.beginPath();
-            ctx.strokeStyle = 'green';
+            ctx.strokeStyle = 'black';
             ctx.lineWidth = STROKE_WIDTH;
             shapes.value[correctShapeIndex.value](ctx);
             ctx.stroke();
             ctx.restore();
 
-            // // Draw random abstract shapes
-            for (let i = 1; i < numShapes; i++) {
-                ctx.save();
-                ctx.translate(
-                    Math.random() * canvasWidth,
-                    Math.random() * canvasHeight
-                );
-                ctx.beginPath();
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = STROKE_WIDTH;
-
-                // Generate a truly random abstract shape
-                const points = Math.floor(Math.random() * 3) + 2; // 2 to 4 points
-                const size = Math.random() * 300 + 50; // Increased size range
-
-                for (let j = 0; j < points; j++) {
-                    const x = Math.random() * size - size / 2;
-                    const y = Math.random() * size - size / 2;
-                    if (j === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        // Always use lineTo for simpler shapes
-                        ctx.lineTo(x, y);
-                    }
-                }
-
-                ctx.stroke();
-                ctx.restore();
-            }
+            // draw random layer
+            drawRandomLayer(ctx)
         }
 
-        // function generateTriangle(ctx) {
-        //     ctx.moveTo(0, -50);
-        //     ctx.lineTo(43.3, 25);
-        //     ctx.lineTo(-43.3, 25);
-        //     ctx.closePath();
-        // }
+        function drawVerticalLineLayer(ctx, canvasWidth, canvasHeight) {
+            const margin = 20; // Margin between lines
+            const maxLength = canvasHeight * 0.8; // Maximum line length
+            const minLength = canvasHeight * 0.2; // Minimum line length
 
-        // function generateSquare(ctx) {
-        //     ctx.rect(-35, -35, 70, 70);
-        // }
+            ctx.save(); // Save the current context state
 
-        // function generateCircle(ctx) {
-        //     ctx.arc(0, 0, 40, 0, 2 * Math.PI);
-        // }
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = STROKE_WIDTH
+            ctx.globalAlpha = 1; // Set the opacity of the lines
+
+            for (let x = 0; x < canvasWidth; x += margin) {
+                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                    const startY = Math.random() * (canvasHeight - maxLength);
+                    const length = minLength + Math.random() * (maxLength - minLength);
+
+                    ctx.beginPath();
+                    ctx.moveTo(x, startY);
+                    ctx.lineTo(x, startY + length);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore(); // Restore the previous context state
+        }
+
+        function drawHorizontalLineLayer(ctx, canvasWidth, canvasHeight) {
+            const margin = 20; // Margin between lines
+            const maxLength = canvasWidth * 0.8; // Maximum line length
+            const minLength = canvasWidth * 0.2; // Minimum line length
+
+            ctx.save(); // Save the current context state
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = STROKE_WIDTH
+            ctx.globalAlpha = 1; // Set the opacity of the lines
+
+            for (let y = 0; y < canvasHeight; y += margin) {
+                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                    const startX = Math.random() * (canvasWidth - maxLength);
+                    const length = minLength + Math.random() * (maxLength - minLength);
+
+                    ctx.beginPath();
+                    ctx.moveTo(startX, y);
+                    ctx.lineTo(startX + length, y);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawDiagonalRightLineLayer(ctx, canvasWidth, canvasHeight) {
+            const margin = 20; // Margin between lines
+
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = STROKE_WIDTH
+            ctx.globalAlpha = 1;
+
+            for (let i = 0; i < canvasWidth + canvasHeight; i += margin) {
+                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                    ctx.beginPath();
+                    if (i < canvasHeight) {
+                        ctx.moveTo(0, i);
+                        ctx.lineTo(Math.min(canvasWidth, i), 0);
+                    } else {
+                        ctx.moveTo(i - canvasHeight, canvasHeight);
+                        ctx.lineTo(canvasWidth, i - canvasWidth);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawDiagonalLeftLineLayer(ctx, canvasWidth, canvasHeight) {
+            const margin = 20; // Margin between lines
+
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = STROKE_WIDTH
+            ctx.globalAlpha = 1;
+
+            for (let i = 0; i < canvasWidth + canvasHeight; i += margin) {
+                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                    ctx.beginPath();
+                    if (i < canvasHeight) {
+                        ctx.moveTo(canvasWidth, i);
+                        ctx.lineTo(Math.max(0, canvasWidth - i), 0);
+                    } else {
+                        ctx.moveTo(canvasWidth - (i - canvasHeight), canvasHeight);
+                        ctx.lineTo(0, i - canvasWidth);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawRandomLayer(ctx) {
+            const canvasWidth = shapeCanvas.value.width;
+            const canvasHeight = shapeCanvas.value.height;
+
+            ctx.save(); // Save the current context state
+
+            // Draw vertical lines
+            drawVerticalLineLayer(ctx, canvasWidth, canvasHeight);
+
+            // Draw horizontal lines
+            drawHorizontalLineLayer(ctx, canvasWidth, canvasHeight);
+
+            // Draw diagonal right lines
+            drawDiagonalRightLineLayer(ctx, canvasWidth, canvasHeight);
+
+            // Draw diagonal left lines
+            drawDiagonalLeftLineLayer(ctx, canvasWidth, canvasHeight);
+
+            ctx.restore(); // Restore the previous context state
+        }
+
+        function generateTriangle(ctx) {
+            ctx.moveTo(0, -50);
+            ctx.lineTo(43.3, 25);
+            ctx.lineTo(-43.3, 25);
+            ctx.closePath();
+        }
+
+        function generateSquare(ctx) {
+            ctx.rect(-35, -35, 70, 70);
+        }
+
+        function generateCircle(ctx) {
+            ctx.arc(0, 0, 40, 0, 2 * Math.PI);
+        }
 
         function generateOctagon(ctx) {
             for (let i = 0; i < 8; i++) {
@@ -623,47 +728,6 @@ export default {
 </script>
 
 <style scoped>
-.shapeContainer {
-    width: 100%;
-    height: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    position: relative;
-    /* Add space for the settings panel */
-
-}
-
-#shapeCanvas {
-    border: 1px solid black;
-    margin-top: 8%;
-}
-
-.buttonContainer {
-    width: 80%;
-    margin: 60px auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.buttonGroup {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-/* .buttonGroup canvas {
-    border: 1px solid black;
-} */
-
-.buttonGroup button {
-    margin-top: 10px;
-    width: 60px;
-    height: 30px;
-    cursor: pointer;
-}
-
 .settings {
     position: fixed;
     width: 15%;
