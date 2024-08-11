@@ -105,6 +105,8 @@ const speedMap = {
     very_fast: 5
 };
 
+const gamepadIndex = ref(null)
+
 function moveCircle(deltaTime) {
     const { circle } = gameObjects.value;
     const { direction, currentSpeed } = gameState.value;
@@ -430,6 +432,45 @@ function handleCancel() {
     router.replace('/module')
 }
 
+// for gamepad
+function onGamepadConnected(event) {
+    gamepadIndex.value = event.gamepad.index;
+    checkGamepad();
+}
+
+function onGamepadDisconnected(event) {
+    if (gamepadIndex.value === event.gamepad.index) {
+        gamepadIndex.value = null;
+    }
+}
+
+function checkGamepad() {
+    if (gamepadIndex.value !== null) {
+        const gamepad = navigator.getGamepads()[gamepadIndex.value];
+        if (gamepad) {
+            handleGamepadInput(gamepad);
+        }
+    }
+    requestAnimationFrame(checkGamepad);
+}
+
+function handleGamepadInput(gamepad) {
+    const [leftStickX, leftStickY] = gamepad.axes;
+
+    const canvasRect = canvas.value.getBoundingClientRect();
+    const canvasWidth = canvasRect.width;
+    const canvasHeight = canvasRect.height;
+
+    const sensitivity = 5;  // You can adjust this value to control how fast the aim moves
+
+    gameObjects.value.aim.x += leftStickX * sensitivity;
+    gameObjects.value.aim.y += leftStickY * sensitivity;
+
+    // Clamp the aim position to stay within the canvas bounds
+    gameObjects.value.aim.x = Math.max(0, Math.min(gameObjects.value.aim.x, canvasWidth));
+    gameObjects.value.aim.y = Math.max(0, Math.min(gameObjects.value.aim.y, canvasHeight));
+}
+
 onMounted(() => {
     if (canvas.value) {
         ctx.value = canvas.value.getContext('2d');
@@ -446,6 +487,10 @@ onMounted(() => {
         canvas.value.addEventListener('mouseenter', () => canvas.value.style.cursor = 'none');
         canvas.value.addEventListener('mouseleave', () => canvas.value.style.cursor = 'default');
         window.addEventListener('keydown', handleKeydown);
+
+        window.addEventListener('gamepadconnected', onGamepadConnected);
+        window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
+        checkGamepad();
     }
 });
 
@@ -455,6 +500,9 @@ onUnmounted(() => {
         canvas.value.removeEventListener('mouseenter', () => { });
         canvas.value.removeEventListener('mouseleave', () => { });
         window.removeEventListener('keydown', handleKeydown);
+
+        window.removeEventListener('gamepadconnected', onGamepadConnected);
+        window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
     }
     if (testInterval.value) {
         clearInterval(testInterval.value);
@@ -464,8 +512,11 @@ onUnmounted(() => {
     }
     if (soundInterval.value) {
         clearInterval(soundInterval.value);
+        soundInterval.value = null;
     }
-    audioContext.close();
+    if (audioContext) {
+        audioContext.close();
+    }
 });
 
 watch(() => config.value.speed, updateCircleSpeed);
