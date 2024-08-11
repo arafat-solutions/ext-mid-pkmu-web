@@ -73,13 +73,6 @@ export default {
             totalQuestion: 30,
             avgResponseTime: 0 //in seconds
         })
-        const difficulty = ref('normal') //easy, normal, hard
-
-        const DIFFICULTY_MAP = {
-            easy: 0.7,
-            normal: 0.5,
-            hard: 0.2
-        }
         const STROKE_WIDTH = 2;
         const ANGLES = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
 
@@ -194,6 +187,17 @@ export default {
             }
         }
 
+        function settingDifficultyLayer(size) {
+            switch (size) {
+                case 'very_small': return 0.2;
+                case 'small': return 0.4;
+                case 'normal': return 0.6;
+                case 'large': return 0.8;
+                case 'very_large': return 0.9;
+                default: return 0.9;
+            }
+        }
+
         function drawRandomizedShapes(ctx, randomAngle) {
             const canvasWidth = shapeCanvas.value.width;
             const canvasHeight = shapeCanvas.value.height;
@@ -230,7 +234,7 @@ export default {
             ctx.globalAlpha = 1; // Set the opacity of the lines
 
             for (let x = 0; x < canvasWidth; x += margin) {
-                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                if (Math.random() > settingDifficultyLayer(config.value.size)) {
                     const startY = Math.random() * (canvasHeight - maxLength);
                     const length = minLength + Math.random() * (maxLength - minLength);
 
@@ -256,7 +260,7 @@ export default {
             ctx.globalAlpha = 1; // Set the opacity of the lines
 
             for (let y = 0; y < canvasHeight; y += margin) {
-                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                if (Math.random() > settingDifficultyLayer(config.value.size)) {
                     const startX = Math.random() * (canvasWidth - maxLength);
                     const length = minLength + Math.random() * (maxLength - minLength);
 
@@ -279,7 +283,7 @@ export default {
             ctx.globalAlpha = 1;
 
             for (let i = 0; i < canvasWidth + canvasHeight; i += margin) {
-                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                if (Math.random() > settingDifficultyLayer(config.value.size)) {
                     ctx.beginPath();
                     if (i < canvasHeight) {
                         ctx.moveTo(0, i);
@@ -304,7 +308,7 @@ export default {
             ctx.globalAlpha = 1;
 
             for (let i = 0; i < canvasWidth + canvasHeight; i += margin) {
-                if (Math.random() > DIFFICULTY_MAP[difficulty.value]) {
+                if (Math.random() > settingDifficultyLayer(config.value.size)) {
                     ctx.beginPath();
                     if (i < canvasHeight) {
                         ctx.moveTo(canvasWidth, i);
@@ -614,7 +618,7 @@ export default {
 
             config.value = {
                 duration: duration * 60,
-                size,
+                size, // very_small, small, normal, large, very_large
                 variation,
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
