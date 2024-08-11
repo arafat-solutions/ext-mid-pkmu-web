@@ -89,8 +89,8 @@
 				}
 
 				this.updateHorizon();
-				canvas.addEventListener('mousemove', this.checkMousePosition);
-				this.checkMousePosition();
+				canvas.addEventListener('mousemove', this.checkPosition);
+				this.checkPosition();
 			},
 			updateHorizon() {
 				const canvas = this.$refs.horizonCanvas;
@@ -232,7 +232,7 @@
 					this.updateHorizon();
 				});
 
-				this.checkMousePosition();
+				this.checkPosition();
 			},
 			setSpeed() {
 				if (this.speed === 'very_slow') {
@@ -268,7 +268,7 @@
 
 				this.updateHorizon();
 			},
-			checkMousePosition(event = null) {
+			checkPosition(event = null) {
 				if (!this.isYellowLineMoved) {
 					return;
 				}

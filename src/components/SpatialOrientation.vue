@@ -63,13 +63,11 @@ export default {
       height: 480,
       rightTurns: 0,
       leftTurns: 0,
-      collisions: 0,
-      direction: 0,
       drawIndex: 0,
       drawIndexRemoval: 0,
       lines: [],
+      linesUsed: [],
       optionAnswers: [],
-      directions: [[1, 0], [0, 1], [-1, 0], [0, -1]],
       question: null,
       answer: null,
       drawLineinterval: null,
@@ -237,132 +235,51 @@ export default {
       this.answer = null;
       this.isShowAnswerBox = false
 
+      this.question = null;
+      if (this.config.left_turn && this.config.right_turn) {
+        this.question = Math.random() < 0.5 ? 'right' : 'left';
+      } else if (this.config.left_turn) {
+        this.question = 'left';
+      } else if (this.config.right_turn) {
+        this.question = 'right';
+      }
+
       if (this.config.full_image) {
         await this.drawLineFull();
       } else {
         await this.drawLineOneByOne();
       }
     },
-    async checkLines() {
-      try {
-        if (this.lines.length > 0) {
-          // Start Reset Coordinat If Not Keep in The Bounds
-          for (let i = 0; i < this.lines.length; i++) {
-            if (this.lines[i].x < 39 || this.lines[i].x > 441 || this.lines[i].y < 39 || this.lines[i].y > 441) {
-              return false;
-            }
-          }
-          // End Reset Coordinat If Not Keep in The Bounds
-
-          if (this.config.crash > 0) {
-            // Start Reset Coordinat Same More than Two
-            const frequencyMap = {};
-
-            this.lines.forEach(coord => {
-              const key = `${coord.x},${coord.y}`;
-              if (frequencyMap[key]) {
-                frequencyMap[key]++;
-              } else {
-                frequencyMap[key] = 1;
-              }
-            });
-
-            for (const key in frequencyMap) {
-              if (frequencyMap[key] > 2) {
-                return false;
-              }
-            }
-            // End Reset Coordinat Same More than Two
-          }
-        }
-
-        // Start Reset Coordinat If Line Go Back Previous
-        if (this.lines.length > 4) {
-          if (
-            (this.lines[this.lines.length - 1].x === this.lines[this.lines.length - 4].x && this.lines[this.lines.length - 1].y === this.lines[this.lines.length - 4].y) ||
-            (this.lines[this.lines.length - 1].x === this.lines[this.lines.length - 2].x && this.lines[this.lines.length - 1].y === this.lines[this.lines.length - 2].y)
-          ) {
-            return false;
-          }
-        }
-        // End Reset Coordinat If Line Go Back Previous
-
-        return true;
-      } catch (error) {
-        return false;
-      }
-    },
     async generateCoordinat() {
-      this.lines = [];
-      this.collisions = 0;
-
-      const length = 40;
-      const visitedCoordinates = new Set();
-
-      let x = this.width / 2;
-      let y = this.height / 2;
-      this.lines.push({ x, y });
-      visitedCoordinates.add(`${x},${y}`);
-
-      if (this.config.crash === 0) {
-        const totalLength = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
-        for (let i = 0; i < totalLength; i++) {
-          let newX, newY, validCoordinate;
-
-          do {
-            const turn = Math.random() < 0.5 ? -1 : 1;
-            this.direction = (this.direction + turn + 4) % 4;
-
-            newX = x + this.directions[this.direction][0] * length;
-            newY = y + this.directions[this.direction][1] * length;
-
-            validCoordinate = !visitedCoordinates.has(`${newX},${newY}`) && !(newX === x && newY === y);
-          } while (!validCoordinate);
-
-          x = newX;
-          y = newY;
-          this.lines.push({ x, y });
-          visitedCoordinates.add(`${x},${y}`);
-        }
-      }
-
-      if (this.config.crash > 0) {
-        this.collisions = 0;
-
-        while (this.collisions < this.config.crash) {
-          let newX, newY, validCoordinate;
-
-          do {
-            const turn = Math.random() < 0.5 ? -1 : 1;
-            this.direction = (this.direction + turn + 4) % 4;
-
-            newX = x + this.directions[this.direction][0] * length;
-            newY = y + this.directions[this.direction][1] * length;
-
-            validCoordinate = visitedCoordinates.has(`${newX},${newY}`);
-
-            if (validCoordinate) {
-              this.collisions++;
-              this.lines.push({ x: newX, y: newY });
-            } else {
-              x = newX;
-              y = newY;
-              this.lines.push({ x, y });
-              visitedCoordinates.add(`${x},${y}`);
-            }
-          } while (!validCoordinate);
-
-          if (this.collisions >= this.config.crash) {
-            break;
+      try {
+        const res = await fetch('/scenario.json',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
           }
-        }
-      }
+        )
+        const data = await res.json();
 
-      let checkLines = await this.checkLines();
-      if (!checkLines) {
-        this.generateCoordinat();
-      } else {
+        const choosenlines = data[this.config.crash];
+        let randomIndex = Math.floor(Math.random() * choosenlines.length);
+
+        // Change Question Crash
+        if (this.linesUsed.length === this.lines.length) {
+          this.config.crash = this.config.crash - 1;
+        }
+
+        if (this.linesUsed.includes(Number(randomIndex))) {
+          this.generateCoordinat();
+        }
+
+        this.linesUsed.push(randomIndex)
+        this.lines = choosenlines[randomIndex]
+
         this.generateLines()
+      } catch (error) {
+        console.log(error)
       }
     },
     async drawLineFull() {
@@ -376,7 +293,7 @@ export default {
           ctx.moveTo(this.lines[i].x, this.lines[i].y);
         } else {
           ctx.lineTo(this.lines[i].x, this.lines[i].y);
-          this.countTurns(i);
+          this.countTurns(i)
         }
       }
 
@@ -392,7 +309,7 @@ export default {
 
       this.timeoutIdRemoveInterval = setTimeout(() => {
         this.startTailDisappearance();
-      }, 3000);
+      }, 2000);
     },
     async drawLineOneByOne(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
@@ -401,6 +318,7 @@ export default {
       ctx.clearRect(0, 0, this.width, this.height);
 
       let i = startIndex;
+
       this.drawLineinterval = setInterval(() => {
         if (this.isPause) {
           clearInterval(this.drawLineinterval);
@@ -410,30 +328,41 @@ export default {
         if (i === 0) {
           ctx.beginPath();
           ctx.moveTo(this.lines[i].x, this.lines[i].y);
-        } else {
+          i++;
+        } else if (i === 1 || i === 2 || i === 3) {
           ctx.lineTo(this.lines[i].x, this.lines[i].y);
           this.countTurns(i);
+
+          i++;
+        } else if (i === 4 || i < this.lines.length) {
+          ctx.clearRect(0, 0, this.width, this.height);
+          ctx.beginPath();
+          ctx.moveTo(this.lines[i - 4].x, this.lines[i - 4].y);
+          ctx.lineTo(this.lines[i - 3].x, this.lines[i - 3].y);
+          ctx.lineTo(this.lines[i - 2].x, this.lines[i - 2].y);
+          ctx.lineTo(this.lines[i - 1].x, this.lines[i - 1].y);
+          ctx.lineTo(this.lines[i].x, this.lines[i].y);
+          this.countTurns(i);
+
+          i++;
         }
 
         ctx.strokeStyle = "black";
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        if (i < this.lines.length - 1) {
-          i++
-        } else {
-          this.stopInterval();
+        if (i === this.lines.length) {
+          clearInterval(this.drawLineinterval);
           this.drawArrowHead('init');
-
           this.totalQuestion++;
           this.responseQuestion = Date.now();
-          this.setAnswerOption();
 
-          this.timeoutIdRemoveInterval = setTimeout(() => {
-            this.startTailDisappearance();
-          }, 3000);
+          if (!this.isShowAnswerBox) {
+            this.setAnswerOption();
+          }
+        } else {
+          this.drawIndex = i;
         }
-        this.drawIndex = i;
       }, this.config.speed);
     },
     countTurns(index) {
@@ -547,65 +476,105 @@ export default {
       const ctx = canvas.getContext('2d');
 
       let i = startIndex;
-      const halfLength = Math.floor(this.lines.length/2);
 
-      const tailRemove = () => {
-        if (this.isPause) {
-          clearInterval(this.tailRemoveInterval);
-          return;
-        }
+      if (this.config.full_image) {
+        const halfLength = Math.floor(this.lines.length/2);
 
-        if (i < halfLength) {
-          ctx.clearRect(0, 0, this.width, this.height);
-
-          ctx.beginPath();
-          ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
-
-          for (let j = i + 2; j < this.lines.length - 1; j++) {
-            ctx.lineTo(this.lines[j].x, this.lines[j].y);
+        const tailRemove = () => {
+          if (this.isPause) {
+            clearInterval(this.tailRemoveInterval);
+            return;
           }
 
-          ctx.strokeStyle = "black";
-          ctx.lineWidth = 2;
-          ctx.stroke();
+          if (i < halfLength) {
+            ctx.clearRect(0, 0, this.width, this.height);
 
-          this.drawArrowHead();
+            ctx.beginPath();
+            ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
 
-          i++;
-        } else if (i < this.lines.length - 2 && i >= halfLength) {
-          ctx.clearRect(0, 0, this.width, this.height);
+            for (let j = i + 2; j < this.lines.length - 1; j++) {
+              ctx.lineTo(this.lines[j].x, this.lines[j].y);
+            }
 
-          ctx.beginPath();
-          ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
 
-          for (let j = i + 2; j < this.lines.length - 1; j++) {
-            ctx.lineTo(this.lines[j].x, this.lines[j].y);
+            this.drawArrowHead();
+
+            i++;
+          } else if (i < this.lines.length - 2 && i >= halfLength) {
+            ctx.clearRect(0, 0, this.width, this.height);
+
+            ctx.beginPath();
+            ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
+
+            for (let j = i + 2; j < this.lines.length - 1; j++) {
+              ctx.lineTo(this.lines[j].x, this.lines[j].y);
+            }
+
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            this.drawArrowHead();
+
+            i++;
+          } else {
+            clearInterval(this.tailRemoveInterval);
+            this.tailRemoveInterval = null;
           }
 
-          ctx.strokeStyle = "black";
-          ctx.lineWidth = 2;
-          ctx.stroke();
+          if (i === halfLength && this.config.speed_increasing) {
+            clearInterval(this.tailRemoveInterval);
 
-          this.drawArrowHead();
+            // Increase Speed Remove
+            this.tailRemoveInterval = setInterval(tailRemove, 2000/2);
+          }
 
-          i++;
-        } else {
-          clearInterval(this.tailRemoveInterval);
-          this.tailRemoveInterval = null;
-        }
+          this.drawIndexRemoval = i;
+        };
 
-        if (i === halfLength && this.config.speed_increasing) {
-          clearInterval(this.tailRemoveInterval);
+        // Speed Remove
+        this.tailRemoveInterval = setInterval(tailRemove, 2000);
+      }
 
-          // Increase Speed Remove
-          this.tailRemoveInterval = setInterval(tailRemove, 2000/2);
-        }
+      if (!this.config.full_image) {
+        const tailRemove = () => {
+          if (this.isPause) {
+            clearInterval(this.tailRemoveInterval);
+            return;
+          }
 
-        this.drawIndexRemoval = i;
-      };
+          if (i < this.lines.length - 2) {
+            ctx.clearRect(0, 0, this.width, this.height);
 
-      // Speed Remove
-      this.tailRemoveInterval = setInterval(tailRemove, 2000);
+            ctx.beginPath();
+            ctx.moveTo(this.lines[i + 1].x, this.lines[i + 1].y);
+
+            for (let j = i + 2; j < this.lines.length - 1; j++) {
+              ctx.lineTo(this.lines[j].x, this.lines[j].y);
+            }
+
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            this.drawArrowHead();
+
+            i++;
+          } else {
+            clearInterval(this.tailRemoveInterval);
+            this.tailRemoveInterval = null;
+          }
+
+          this.drawIndexRemoval = i;
+        };
+
+        // Speed Remove
+        this.tailRemoveInterval = setInterval(tailRemove, 1000);
+      }
+
     },
     pressAnswer(value) {
       if (this.isPause) {
