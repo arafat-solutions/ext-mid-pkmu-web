@@ -11,17 +11,17 @@
       <div class="w-4/5 mx-auto mt-5">
         <div class="grid grid-rows-2 grid-cols-17 gap-2">
           <div v-for="(question, index) in questions" :key="index + '_question'" :class="index % 2 === 0 ? '' : 'font-bold'">{{ index % 2 === 0 ? question.symbol : question }}</div>
-          <div v-for="(question, index) in questions" :key="index + '_answer'">
+          <div v-for="(_, index) in questions" :key="index + '_answer'">
             <div v-if="index % 2 === 0">&nbsp;</div>
             <div v-else>
               <input
-                id="purple-radio"
+                :name="'answer-' + index"
                 type="radio"
-                name="colored-radio"
-                class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                class="accent-violet-500"
+                v-for="n in 3"
+                :key="n"
+                :class="n % 2 === 0 ? 'mx-1' : ''"
               />
-              <input type="radio" />
-              <input type="radio" />
             </div>
           </div>
         </div>
@@ -114,17 +114,19 @@ export default {
       this.queryBars = tempResult;
     },
     generateQuestion() {
-      const symbolsLength = this.queryBars.length;
+      for (let i = 0; i < this.numberOfTask; i++) {
+        const symbolsLength = this.queryBars.length;
 
-      for (let i = 0; i < this.totalQuestionPerRow; i++) {
-          // Add symbol
-          this.questions.push(this.queryBars[i % symbolsLength]);
-          // Add random number
-          this.questions.push(this.getRandomNumberQuestion());
+        for (let j = 0; j < this.totalQuestionPerRow; j++) {
+            // Add symbol
+            this.questions.push(this.queryBars[j % symbolsLength]);
+            // Add random number
+            this.questions.push(this.getRandomNumberQuestion());
+        }
+
+        // Add the final symbol
+        this.questions.push(this.queryBars[this.totalQuestionPerRow % symbolsLength]);
       }
-
-      // Add the final symbol
-      this.questions.push(this.queryBars[this.totalQuestionPerRow % symbolsLength]);
     },
     getRandomNumberQuestion() {
         return Math.floor(Math.random() * 16) + 2;
