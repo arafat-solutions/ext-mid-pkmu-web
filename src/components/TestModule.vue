@@ -8,7 +8,8 @@
             Tonton Tutorial
           </button>
         </div>
-       
+        <!-- inject html selectedTestDescription -->
+        <div v-html="selectedTestDescription"></div>
       </div>
       
       <div class="w-1/3 bg-white p-6 h-fit shadow-lg rounded-xl">
