@@ -41,7 +41,92 @@ export default {
       thrust: 0,
       timeRemaining: 0,
       lastUpdateTime: 0,
+      lastTargetUpdateTime: 0,
+      turbulence: { x: 0, y: 0 },
     });
+    
+    const drawMovingIndicator = (x, y, width, height, stateKey, label, isVertical = true) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, width, height);
+      ctx.clip();
+
+      ctx.fillStyle = '#555';
+      ctx.fillRect(x, y, width, height);
+
+      const isHeading = stateKey === 'heading';
+      ctx.font = '10px Arial';
+      state[stateKey].labels.forEach(label => {
+        const pos = isVertical
+          ? y + height / 2 + label.offset + (stateKey === 'altitude' ? state.turbulence.y : 0)
+          : x + width / 2 + label.offset + (stateKey === 'heading' ? state.turbulence.x : 0);
+
+        const color = getLabelColor(label.value, state[stateKey].target, state[stateKey].targetRange, isHeading);
+        ctx.fillStyle = color;
+
+        if (isVertical) {
+          ctx.fillRect(x, pos, width / 3, 1);
+          ctx.fillText(label.value.toFixed(0), x + width / 2, pos);
+        } else {
+          ctx.fillRect(pos, y, 1, height / 3);
+          ctx.save();
+          ctx.translate(pos, y + height / 2);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText(label.value.toFixed(0), 0, 0);
+          ctx.restore();
+        }
+      });
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '14px Arial';
+      ctx.fillText(label, isVertical ? x : x + width / 2, isVertical ? y + height + 20 : y - 10);
+
+      ctx.fillStyle = 'blue';
+      if (isVertical) {
+        ctx.fillRect(x, y + height / 2 + (stateKey === 'altitude' ? state.turbulence.y : 0), width, 3);
+      } else {
+        ctx.fillRect(x + width / 2 + (stateKey === 'heading' ? state.turbulence.x : 0), y, 3, height);
+      }
+
+      ctx.restore();
+    };
+
+    const drawThrustGauge = (x, y, width, height, thrust, speed) => {
+      const normalizedThrust = (thrust - MIN_THRUST) / (MAX_THRUST - MIN_THRUST);
+
+      ctx.fillStyle = 'blue';
+      const barHeight = normalizedThrust * height;
+      ctx.fillRect(x, y + height - barHeight, width, barHeight);
+
+      ctx.fillStyle = 'white';
+      ctx.font = '12px Arial';
+      ctx.fillText(`${speed.toFixed(0)} kts`, x, y - 10);
+      ctx.fillText(`Thrust: ${(thrust * 100).toFixed(0)}%`, x, y - 25);
+    };
+
+    const drawCountdown = () => {
+      const timerWidth = 100;
+      const timerHeight = 40;
+      const timerX = canvas.value.width / 2 - timerWidth / 2;
+      const timerY = 0;
+
+      // Draw blue background
+      ctx.fillStyle = 'blue';
+      ctx.fillRect(timerX, timerY, timerWidth, timerHeight);
+
+      // Draw timer text
+      ctx.fillStyle = 'white';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const minutes = Math.floor(state.timeRemaining / 60);
+      const seconds = Math.floor(state.timeRemaining % 60);
+      ctx.fillText(
+        `${minutes}:${seconds.toString().padStart(2, '0')}`,
+        canvas.value.width / 2,
+        timerY + timerHeight / 2
+      );
+    };
 
     const generateLabels = (current, count, isVertical, isHeading = false) => {
       const step = isVertical ? 100 : 10;
@@ -105,89 +190,6 @@ export default {
       return `hsl(${hue}, 100%, 50%)`;
     };
 
-    const drawMovingIndicator = (x, y, width, height, stateKey, label, isVertical = true) => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(x, y, width, height);
-      ctx.clip();
-
-      ctx.fillStyle = '#555';
-      ctx.fillRect(x, y, width, height);
-
-      const isHeading = stateKey === 'heading';
-      ctx.font = '10px Arial'; // Reduced font size
-      state[stateKey].labels.forEach(label => {
-        const pos = isVertical
-          ? y + height / 2 + label.offset
-          : x + width / 2 + label.offset;
-
-        const color = getLabelColor(label.value, state[stateKey].target, state[stateKey].targetRange, isHeading);
-        ctx.fillStyle = color;
-
-        if (isVertical) {
-          ctx.fillRect(x, pos, width / 3, 1);
-          ctx.fillText(label.value.toFixed(0), x + width / 2, pos);
-        } else {
-          ctx.fillRect(pos, y, 1, height / 3);
-          ctx.save();
-          ctx.translate(pos, y + height / 2);
-          ctx.rotate(-Math.PI / 2);
-          ctx.fillText(label.value.toFixed(0), 0, 0);
-          ctx.restore();
-        }
-      });
-
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px Arial'; // Slightly larger font for the main label
-      ctx.fillText(label, isVertical ? x : x + width / 2, isVertical ? y + height + 20 : y - 10);
-
-      ctx.fillStyle = 'blue';
-      if (isVertical) {
-        ctx.fillRect(x, y + height / 2, width, 3);
-      } else {
-        ctx.fillRect(x + width / 2, y, 3, height);
-      }
-
-      ctx.restore();
-    };
-
-    const drawThrustGauge = (x, y, width, height, thrust, speed) => {
-      const normalizedThrust = (thrust - MIN_THRUST) / (MAX_THRUST - MIN_THRUST);
-      
-      ctx.fillStyle = 'blue';
-      const barHeight = normalizedThrust * height;
-      ctx.fillRect(x, y + height - barHeight, width, barHeight);
-
-      ctx.fillStyle = 'white';
-      ctx.font = '12px Arial';
-      ctx.fillText(`${speed.toFixed(0)} kts`, x, y - 10);
-      ctx.fillText(`Thrust: ${(thrust * 100).toFixed(0)}%`, x, y - 25);
-    };
-
-    const drawCountdown = () => {
-      const timerWidth = 100;
-      const timerHeight = 40;
-      const timerX = canvas.value.width / 2 - timerWidth / 2;
-      const timerY = 0;
-
-      // Draw blue background
-      ctx.fillStyle = 'blue';
-      ctx.fillRect(timerX, timerY, timerWidth, timerHeight);
-
-      // Draw timer text
-      ctx.fillStyle = 'white';
-      ctx.font = '24px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const minutes = Math.floor(state.timeRemaining / 60);
-      const seconds = Math.floor(state.timeRemaining % 60);
-      ctx.fillText(
-        `${minutes}:${seconds.toString().padStart(2, '0')}`,
-        canvas.value.width / 2,
-        timerY + timerHeight / 2
-      );
-    };
-
     const draw = () => {
       ctx.fillStyle = '#777';
       ctx.fillRect(0, 0, canvas.value.width, canvas.value.height);
@@ -225,9 +227,21 @@ export default {
     };
 
     const updateTargets = () => {
-      state.altitude.target = Math.floor(Math.random() * 10000);
-      state.speed.target = Math.floor(Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED);
-      state.heading.target = Math.floor(Math.random() * 360);
+      console.log('Targets:', state.altitude.target, state.speed.target, state.heading.target);
+      const altitudeChange = (Math.random() - 0.5) * 200;
+      const speedChange = (Math.random() - 0.5) * 100;
+      const headingChange = (Math.random() - 0.5) * 20;
+
+      state.altitude.target = Math.max(0, Math.min(10000, state.altitude.target + altitudeChange));
+      state.speed.target = Math.max(MIN_SPEED, Math.min(MAX_SPEED, state.speed.target + speedChange));
+      state.heading.target = (state.heading.target + headingChange + 360) % 360;
+    };
+
+    const updateTurbulence = () => {
+      console.log('Turbulence:', state.turbulence);
+      const turbulenceIntensity = config.value.simulator.turbulence / 100;
+      state.turbulence.x = (Math.random() - 0.5) * 10 * turbulenceIntensity;
+      state.turbulence.y = (Math.random() - 0.5) * 10 * turbulenceIntensity;
     };
 
     const updateScore = (currentTime) => {
@@ -261,8 +275,15 @@ export default {
       updateSpeed();
       updateScore(currentTime);
 
-      if (currentTime - state.lastUpdateTime > 5000) {
+      // Update targets every 5 seconds
+      if (currentTime - state.lastTargetUpdateTime > 5000) {
         updateTargets();
+        state.lastTargetUpdateTime = currentTime;
+      }
+
+      // Update turbulence every 100ms
+      if (currentTime - state.lastUpdateTime > 100) {
+        updateTurbulence();
       }
 
       state.lastUpdateTime = currentTime;
@@ -282,6 +303,7 @@ export default {
       initializeLabels();
       state.timeRemaining = parseFloat(config.value.duration) * 60;
       state.lastUpdateTime = performance.now();
+      state.lastTargetUpdateTime = performance.now();
       draw();
       gameLoop(performance.now());
 
