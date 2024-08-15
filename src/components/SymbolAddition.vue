@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="!isTimesUp">
     <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
       Task: {{ currentTask }} / {{ numberOfTask }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="w-4/5 mx-auto mt-5">
-        <div class="grid grid-rows-2 grid-cols-17 gap-2 mb-3 p-2" v-for="(questionRows, indexRow) in questions.slice((currentPage-1) * totalRow, totalRow)" :key="indexRow + '_grid'" :class="(indexRow+1) === currentTask ? 'border border-violet-500 rounded' : ''">
+        <div class="grid grid-rows-2 grid-cols-17 gap-2 mb-3 p-2" v-for="(questionRows, indexRow) in questions.slice((currentPage-1) * totalRow, (currentPage-1) * totalRow + totalRow)" :key="indexRow + '_grid'" :class="(indexRow+1) === (((currentTask - 1) % totalRow) + 1) ? 'border border-violet-500 rounded' : ''">
           <div v-for="(question, indexColumn) in questionRows" :key="indexColumn + '_question'" :class="indexColumn % 2 === 0 ? '' : 'font-bold'">{{ indexColumn % 2 === 0 ? question.symbol : question }}</div>
           <div v-for="(_, indexColumn) in questionRows" :key="indexColumn + '_answer'">
             <div v-if="indexColumn % 2 === 0">&nbsp;</div>
@@ -41,7 +41,6 @@ export default {
     return {
       testName: 'Symbol Addition',
       currentTask: 1,
-      currentPage: 1,
       numberOfTask: null,
       selectedSymbols: null,
       resetQueryBarPerRow: null,
@@ -57,13 +56,16 @@ export default {
       timeLeftAnswer: 5, // in seconds
       queryBars: [],
       questions: [],
-      intervalId: null
+      intervalId: null,
     }
   },
   mounted() {
     this.loadConfig();
   },
   computed: {
+    isTimesUp() {
+      return this.currentTask === this.numberOfTask && this.timeLeftAnswer < 1;
+    },
     symbols() {
       return this.selectedSymbols.split(/\s+/);
     },
@@ -77,6 +79,9 @@ export default {
 
       return this.queryBars[Math.floor(this.currentTask/this.numberOfTask)];
     },
+    currentPage() {
+      return Math.ceil(this.currentTask/this.totalRow);
+    }
   },
   methods: {
     loadConfig() {
@@ -170,6 +175,11 @@ export default {
         if (this.timeLeftAnswer > 0) {
           this.timeLeftAnswer--;
         } else {
+          if (this.currentTask === this.numberOfTask) {
+            clearInterval(this.intervalId);
+            alert('Submit API');
+            return;
+          }
           this.currentTask++;
           this.timeLeftAnswer = this.durationAnswer;
           console.log(this.questions);
@@ -190,15 +200,5 @@ export default {
 
   .timer-container {
     @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#0349D0] px-20 py-6 text-white font-bold rounded-bl-[15px] rounded-br-[15px];
-  }
-
-  @keyframes blink {
-    0% { color: transparent; }
-    50% { color: #8B5CF6; } /* Adjust the color as needed */
-    100% { color: transparent; }
-  }
-
-  .animate-blink {
-    animation: blink 1s infinite;
   }
 </style>
