@@ -23,7 +23,7 @@ export default {
         max_yaw_and_climb_rate: 50,
         turbulence: 20,
       }
-    })
+    });
     let ctx;
     let animationFrameId;
 
@@ -31,14 +31,16 @@ export default {
     const MIN_SPEED = 10;
     const MAX_THRUST = 1;
     const MIN_THRUST = -1;
-    const MOVEMENT_SPEED = ref(0.5); // Adjustable movement speed
-    const ACCELERATION_FACTOR = 0.001; // Controls how quickly speed changes
+    const MOVEMENT_SPEED = ref(0.5);
+    const ACCELERATION_FACTOR = 0.001;
 
     const state = reactive({
-      altitude: { current: 8050, target: 8100, display: 8050, labels: [] },
-      speed: { current: 150, display: 150, labels: [] },
-      heading: { current: 345, target: 350, display: 345, labels: [] },
-      thrust: 0, // Current thrust level (-1 to 1)
+      altitude: { current: 8050, target: 8000, display: 8050, labels: [], offTargetTime: 0, targetRange: 400 },
+      speed: { current: 150, target: 900, display: 150, labels: [], offTargetTime: 0, targetRange: 400 },
+      heading: { current: 345, target: 250, display: 345, labels: [], offTargetTime: 0, targetRange: 100 },
+      thrust: 0,
+      timeRemaining: 0,
+      lastUpdateTime: 0,
     });
 
     const generateLabels = (current, count, isVertical, isHeading = false) => {
@@ -93,6 +95,16 @@ export default {
       state[stateKey].display += diff;
     };
 
+    const getLabelColor = (value, target, targetRange, isHeading = false) => {
+      let diff = Math.abs(value - target);
+      if (isHeading) {
+        diff = Math.min(diff, 360 - diff);
+      }
+      const ratio = Math.min(diff / targetRange, 1);
+      const hue = (1 - ratio) * 120; // 120 is green, 0 is red
+      return `hsl(${hue}, 100%, 50%)`;
+    };
+
     const drawMovingIndicator = (x, y, width, height, stateKey, label, isVertical = true) => {
       ctx.save();
       ctx.beginPath();
@@ -102,11 +114,15 @@ export default {
       ctx.fillStyle = '#555';
       ctx.fillRect(x, y, width, height);
 
-      ctx.fillStyle = '#fff';
+      const isHeading = stateKey === 'heading';
+      ctx.font = '10px Arial'; // Reduced font size
       state[stateKey].labels.forEach(label => {
         const pos = isVertical
           ? y + height / 2 + label.offset
           : x + width / 2 + label.offset;
+
+        const color = getLabelColor(label.value, state[stateKey].target, state[stateKey].targetRange, isHeading);
+        ctx.fillStyle = color;
 
         if (isVertical) {
           ctx.fillRect(x, pos, width / 3, 1);
@@ -122,6 +138,7 @@ export default {
       });
 
       ctx.fillStyle = '#fff';
+      ctx.font = '14px Arial'; // Slightly larger font for the main label
       ctx.fillText(label, isVertical ? x : x + width / 2, isVertical ? y + height + 20 : y - 10);
 
       ctx.fillStyle = 'blue';
@@ -135,18 +152,40 @@ export default {
     };
 
     const drawThrustGauge = (x, y, width, height, thrust, speed) => {
-      // Map thrust from -1 to 1 range to 0 to 1 range for drawing
       const normalizedThrust = (thrust - MIN_THRUST) / (MAX_THRUST - MIN_THRUST);
-
-      // Draw thrust bar
+      
       ctx.fillStyle = 'blue';
       const barHeight = normalizedThrust * height;
       ctx.fillRect(x, y + height - barHeight, width, barHeight);
 
-      // Draw speed text
       ctx.fillStyle = 'white';
+      ctx.font = '12px Arial';
       ctx.fillText(`${speed.toFixed(0)} kts`, x, y - 10);
       ctx.fillText(`Thrust: ${(thrust * 100).toFixed(0)}%`, x, y - 25);
+    };
+
+    const drawCountdown = () => {
+      const timerWidth = 100;
+      const timerHeight = 40;
+      const timerX = canvas.value.width / 2 - timerWidth / 2;
+      const timerY = 0;
+
+      // Draw blue background
+      ctx.fillStyle = 'blue';
+      ctx.fillRect(timerX, timerY, timerWidth, timerHeight);
+
+      // Draw timer text
+      ctx.fillStyle = 'white';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const minutes = Math.floor(state.timeRemaining / 60);
+      const seconds = Math.floor(state.timeRemaining % 60);
+      ctx.fillText(
+        `${minutes}:${seconds.toString().padStart(2, '0')}`,
+        canvas.value.width / 2,
+        timerY + timerHeight / 2
+      );
     };
 
     const draw = () => {
@@ -157,6 +196,7 @@ export default {
       drawMovingIndicator(850, 50, 100, 500, 'speed', 'SPEED');
       drawThrustGauge(960, 50, 40, 500, state.thrust, state.speed.current);
       drawMovingIndicator(200, 530, 600, 50, 'heading', 'HEADING', false);
+      drawCountdown();
 
       animationFrameId = requestAnimationFrame(draw);
     };
@@ -167,29 +207,66 @@ export default {
 
       if (gamepad) {
         const headingChange = gamepad.axes[0] * 2;
-        const altitudeChange = -gamepad.axes[1] * 10;
-        const thrustChange = -gamepad.axes[6];
+        const altitudeChange = config.value.control.invert_y_axis ? gamepad.axes[1] * 10 : -gamepad.axes[1] * 10;
+        const thrustChange = config.value.control.invert_throttle ? -gamepad.axes[6] : gamepad.axes[6];
 
         updateLabels('heading', (state.heading.display + headingChange + 360) % 360, false, true);
         updateLabels('altitude', Math.max(0, state.altitude.display + altitudeChange), true);
 
-        // Update thrust based on gamepad axis input
-        // Map the axis input (-1 to 1) to our thrust range (-1 to 1)
         state.thrust = thrustChange;
       }
     };
 
     const updateSpeed = () => {
-      // Map thrust from -1 to 1 to speed range
       const targetSpeed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * ((state.thrust + 1) / 2);
       const speedDiff = targetSpeed - state.speed.current;
       state.speed.current += speedDiff * ACCELERATION_FACTOR;
       updateLabels('speed', state.speed.current, true);
     };
 
-    const gameLoop = () => {
+    const updateTargets = () => {
+      state.altitude.target = Math.floor(Math.random() * 10000);
+      state.speed.target = Math.floor(Math.random() * (MAX_SPEED - MIN_SPEED) + MIN_SPEED);
+      state.heading.target = Math.floor(Math.random() * 360);
+    };
+
+    const updateScore = (currentTime) => {
+      const timeDiff = currentTime - state.lastUpdateTime;
+
+      ['altitude', 'speed', 'heading'].forEach(key => {
+        let diff = Math.abs(state[key].current - state[key].target);
+        if (key === 'heading') {
+          diff = Math.min(diff, 360 - diff);
+        }
+        if (diff > state[key].targetRange) {
+          state[key].offTargetTime += timeDiff;
+        }
+      });
+    };
+
+    const gameLoop = (currentTime) => {
+      const deltaTime = currentTime - state.lastUpdateTime;
+      state.timeRemaining -= deltaTime / 1000;
+
+      if (state.timeRemaining <= 0) {
+        cancelAnimationFrame(animationFrameId);
+        console.log("Game Over. Off-target times:");
+        console.log("Altitude:", state.altitude.offTargetTime.toFixed(2), "ms");
+        console.log("Speed:", state.speed.offTargetTime.toFixed(2), "ms");
+        console.log("Heading:", state.heading.offTargetTime.toFixed(2), "ms");
+        return;
+      }
+
       handleGamepad();
       updateSpeed();
+      updateScore(currentTime);
+
+      if (currentTime - state.lastUpdateTime > 5000) {
+        updateTargets();
+      }
+
+      state.lastUpdateTime = currentTime;
+
       requestAnimationFrame(gameLoop);
     };
 
@@ -198,13 +275,15 @@ export default {
       if (testData) {
         const scheduleData = JSON.parse(testData);
         const pfdConfig = scheduleData.tests.find(data => data.name === 'PFD Tracking Test');
-        config.value = pfdConfig.config
-        console.log(config.value, 'CONFIG')
+        config.value = pfdConfig.config;
+        console.log(config.value, 'CONFIG');
       }
       ctx = canvas.value.getContext('2d');
       initializeLabels();
+      state.timeRemaining = parseFloat(config.value.duration) * 60;
+      state.lastUpdateTime = performance.now();
       draw();
-      gameLoop();
+      gameLoop(performance.now());
 
       window.addEventListener('gamepadconnected', (e) => {
         console.log("Gamepad connected:", e.gamepad.id);
@@ -232,7 +311,6 @@ export default {
   width: 100%;
   height: 100vh;
   background-color: #777;
-  /* Match the canvas background color */
 }
 
 .canvas {
