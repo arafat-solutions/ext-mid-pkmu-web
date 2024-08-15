@@ -156,7 +156,7 @@ export default {
       if (gamepad) {
         const headingChange = gamepad.axes[0] * 2;
         const altitudeChange = -gamepad.axes[1] * 10;
-        const thrustChange = gamepad.axes[6];
+        const thrustChange = -gamepad.axes[6];
 
         updateLabels('heading', (state.heading.display + headingChange + 360) % 360, false, true);
         updateLabels('altitude', Math.max(0, state.altitude.display + altitudeChange), true);
