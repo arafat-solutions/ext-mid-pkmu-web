@@ -21,12 +21,15 @@
             <div v-if="indexColumn % 2 === 0">&nbsp;</div>
             <div v-else>
               <input
-                :name="'answer-' + indexColumn"
+                :name="`answer-${indexRow}-${indexColumn}`"
                 type="radio"
                 class="accent-violet-500"
                 v-for="n in 3"
                 :key="n"
                 :class="n % 2 === 0 ? 'mx-1' : ''"
+                :value="n"
+                :disabled="(indexRow+1) !== (((currentTask - 1) % totalRow) + 1)"
+                v-model="radioValues[indexRow][indexColumn]"
               />
             </div>
           </div>
@@ -57,6 +60,10 @@ export default {
       queryBars: [],
       questions: [],
       intervalId: null,
+      result: {
+        correct: 0,
+
+      }
     }
   },
   mounted() {
@@ -68,9 +75,6 @@ export default {
     },
     symbols() {
       return this.selectedSymbols.split(/\s+/);
-    },
-    totalColumn() {
-      return this.choicesLength * 3;
     },
     currentQueryBar() {
       if (this.resetQueryBarPerRow) {
@@ -107,7 +111,7 @@ export default {
       console.warn('No schedule data found in localStorage.');
     },
     initiateRadioValues() {
-      this.radioValues = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
+      this.radioValues = Array.from({ length: this.totalRow }, () => Array(this.choicesLength).fill(null));
     },
     generateQueryBar() {
       let totalQueryBar = this.numberOfTask;
@@ -161,7 +165,6 @@ export default {
         const finalRandomSymbolIndex = Math.floor(Math.random() * symbolsLength);
         this.questions[i].push(this.currentQueryBar[finalRandomSymbolIndex]);
       }
-      console.log(this.questions);
     },
     getRandomNumberQuestion() {
         return Math.floor(Math.random() * 16) + 2;
@@ -175,6 +178,7 @@ export default {
         if (this.timeLeftAnswer > 0) {
           this.timeLeftAnswer--;
         } else {
+          console.log(this.radioValues);
           if (this.currentTask === this.numberOfTask) {
             clearInterval(this.intervalId);
             alert('Submit API');
@@ -182,9 +186,11 @@ export default {
           }
           this.currentTask++;
           this.timeLeftAnswer = this.durationAnswer;
-          console.log(this.questions);
         }
       }, 1000);
+    },
+    exit() {
+      this.$router.push('module');
     },
   }
 }
