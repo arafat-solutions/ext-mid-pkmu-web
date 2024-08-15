@@ -12,6 +12,18 @@ import { ref, onMounted, onUnmounted, reactive } from 'vue';
 export default {
   setup() {
     const canvas = ref(null);
+    const config = ref({
+      duration: "2",
+      control: {
+        invert_throttle: true,
+        invert_y_axis: true,
+      },
+      simulator: {
+        green_dot_speed: 50,
+        max_yaw_and_climb_rate: 50,
+        turbulence: 20,
+      }
+    })
     let ctx;
     let animationFrameId;
 
@@ -55,7 +67,7 @@ export default {
       const step = isVertical ? 100 : 10;
       const pixelsPerUnit = isVertical ? 500 / 1000 : 600 / 360;
       const labelHeight = isVertical ? 500 / labels.length : 600 / labels.length;
-      
+
       const diff = (newValue - state[stateKey].display) * MOVEMENT_SPEED.value;
       labels.forEach(label => {
         label.offset -= diff * pixelsPerUnit;
@@ -64,17 +76,17 @@ export default {
       while (labels[0].offset < -labelHeight * Math.floor(labels.length / 2)) {
         const lastValue = labels[labels.length - 1].value;
         labels.shift();
-        labels.push({ 
-          value: isHeading ? ((lastValue + step) % 360) : (lastValue + step), 
-          offset: labels[labels.length - 1].offset + labelHeight 
+        labels.push({
+          value: isHeading ? ((lastValue + step) % 360) : (lastValue + step),
+          offset: labels[labels.length - 1].offset + labelHeight
         });
       }
       while (labels[labels.length - 1].offset > labelHeight * Math.floor(labels.length / 2)) {
         const firstValue = labels[0].value;
         labels.pop();
-        labels.unshift({ 
-          value: isHeading ? ((firstValue - step + 360) % 360) : (firstValue - step), 
-          offset: labels[0].offset - labelHeight 
+        labels.unshift({
+          value: isHeading ? ((firstValue - step + 360) % 360) : (firstValue - step),
+          offset: labels[0].offset - labelHeight
         });
       }
 
@@ -125,7 +137,7 @@ export default {
     const drawThrustGauge = (x, y, width, height, thrust, speed) => {
       // Map thrust from -1 to 1 range to 0 to 1 range for drawing
       const normalizedThrust = (thrust - MIN_THRUST) / (MAX_THRUST - MIN_THRUST);
-      
+
       // Draw thrust bar
       ctx.fillStyle = 'blue';
       const barHeight = normalizedThrust * height;
@@ -182,6 +194,13 @@ export default {
     };
 
     onMounted(() => {
+      const testData = localStorage.getItem('scheduleData');
+      if (testData) {
+        const scheduleData = JSON.parse(testData);
+        const pfdConfig = scheduleData.tests.find(data => data.name === 'PFD Tracking Test');
+        config.value = pfdConfig.config
+        console.log(config.value, 'CONFIG')
+      }
       ctx = canvas.value.getContext('2d');
       initializeLabels();
       draw();
