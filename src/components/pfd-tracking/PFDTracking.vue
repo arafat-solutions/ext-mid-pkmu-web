@@ -15,14 +15,18 @@ export default {
     let ctx;
     let animationFrameId;
 
-    const MAX_SPEED = 200;
-    const MIN_SPEED = 100;
-    const MOVEMENT_SPEED = ref(0.1); // Adjustable movement speed
+    const MAX_SPEED = 2000;
+    const MIN_SPEED = 10;
+    const MAX_THRUST = 1;
+    const MIN_THRUST = -1;
+    const MOVEMENT_SPEED = ref(0.5); // Adjustable movement speed
+    const ACCELERATION_FACTOR = 0.001; // Controls how quickly speed changes
 
     const state = reactive({
       altitude: { current: 8050, target: 8100, display: 8050, labels: [] },
-      speed: { current: 150, target: 155, display: 150, acceleration: 0, labels: [] },
+      speed: { current: 150, display: 150, labels: [] },
       heading: { current: 345, target: 350, display: 345, labels: [] },
+      thrust: 0, // Current thrust level (-1 to 1)
     });
 
     const generateLabels = (current, count, isVertical, isHeading = false) => {
@@ -118,16 +122,19 @@ export default {
       ctx.restore();
     };
 
-    const drawSpeedGauge = (x, y, width, height, current, acceleration) => {
-      const normalizedSpeed = (current - MIN_SPEED) / (MAX_SPEED - MIN_SPEED);
-      const barHeight = normalizedSpeed * height;
-
+    const drawThrustGauge = (x, y, width, height, thrust, speed) => {
+      // Map thrust from -1 to 1 range to 0 to 1 range for drawing
+      const normalizedThrust = (thrust - MIN_THRUST) / (MAX_THRUST - MIN_THRUST);
+      
+      // Draw thrust bar
       ctx.fillStyle = 'blue';
+      const barHeight = normalizedThrust * height;
       ctx.fillRect(x, y + height - barHeight, width, barHeight);
 
+      // Draw speed text
       ctx.fillStyle = 'white';
-      ctx.fillText(`${current.toFixed(0)} kts`, x, y - 10);
-      ctx.fillText(`Acc: ${acceleration.toFixed(2)}`, x, y - 25);
+      ctx.fillText(`${speed.toFixed(0)} kts`, x, y - 10);
+      ctx.fillText(`Thrust: ${(thrust * 100).toFixed(0)}%`, x, y - 25);
     };
 
     const draw = () => {
@@ -136,7 +143,7 @@ export default {
 
       drawMovingIndicator(50, 50, 100, 500, 'altitude', 'ALTITUDE');
       drawMovingIndicator(850, 50, 100, 500, 'speed', 'SPEED');
-      drawSpeedGauge(960, 50, 40, 500, state.speed.current, state.speed.acceleration);
+      drawThrustGauge(960, 50, 40, 500, state.thrust, state.speed.current);
       drawMovingIndicator(200, 530, 600, 50, 'heading', 'HEADING', false);
 
       animationFrameId = requestAnimationFrame(draw);
@@ -149,18 +156,22 @@ export default {
       if (gamepad) {
         const headingChange = gamepad.axes[0] * 2;
         const altitudeChange = -gamepad.axes[1] * 10;
+        const thrustChange = gamepad.axes[6];
 
         updateLabels('heading', (state.heading.display + headingChange + 360) % 360, false, true);
         updateLabels('altitude', Math.max(0, state.altitude.display + altitudeChange), true);
 
-        state.speed.acceleration = gamepad.buttons[7].value;
+        // Update thrust based on gamepad axis input
+        // Map the axis input (-1 to 1) to our thrust range (-1 to 1)
+        state.thrust = thrustChange;
       }
     };
 
     const updateSpeed = () => {
-      const maxAcceleration = 0.1;
-      const acceleration = state.speed.acceleration * maxAcceleration;
-      state.speed.current = Math.max(MIN_SPEED, Math.min(MAX_SPEED, state.speed.current + acceleration));
+      // Map thrust from -1 to 1 to speed range
+      const targetSpeed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * ((state.thrust + 1) / 2);
+      const speedDiff = targetSpeed - state.speed.current;
+      state.speed.current += speedDiff * ACCELERATION_FACTOR;
       updateLabels('speed', state.speed.current, true);
     };
 
