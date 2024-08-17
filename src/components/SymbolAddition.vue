@@ -1,21 +1,21 @@
 <template>
-  <div v-if="!isTimesUp">
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
-      Task: {{ currentTask }} / {{ numberOfTask }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
-    </div>
-    <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-24" v-if="isConfigLoaded">
+  <div :class="isTrial ? 'timer-container-trial' : 'timer-container' " v-if="!isTimesUp">
+    Task: {{ currentTask }} / {{ numberOfTask }}
+    <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
+    <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
+    <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+  </div>
+  <div v-if="!isTimesUp" v-show="!isPause">
+    <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
-        <div class="grid grid-rows-2 grid-cols-16 gap-2 p-2">
+        <div class="grid grid-rows-2 grid-cols-16 gap-1 p-1">
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_symbol'">{{ queryBar.symbol }}</div>
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_points'" class="font-bold">{{ queryBar.points }}</div>
         </div>
       </div>
       <div class="w-4/5 mx-auto mt-5">
-        <div class="grid grid-rows-2 grid-cols-17 gap-2 mb-3 p-2" v-for="(questionRows, indexRow) in questions.slice((currentPage-1) * totalRow, (currentPage-1) * totalRow + totalRow)" :key="indexRow + '_grid'" :class="(indexRow+1) === currentRow ? 'border border-violet-500 rounded' : ''">
+        <div class="grid grid-rows-2 grid-cols-17 gap-1 mb-3 p-1" v-for="(questionRows, indexRow) in questions.slice((currentPage-1) * totalRow, (currentPage-1) * totalRow + totalRow)" :key="indexRow + '_grid'" :class="(indexRow+1) === currentRow ? 'border border-violet-500 rounded' : ''">
           <div v-for="(question, indexColumn) in questionRows" :key="indexColumn + '_question'" :class="indexColumn % 2 === 0 ? '' : 'font-bold'">{{ indexColumn % 2 === 0 ? question.symbol : question }}</div>
           <div v-for="(_, indexColumn) in questionRows" :key="indexColumn + '_answer'">
             <div v-if="indexColumn % 2 === 0">&nbsp;</div>
@@ -37,6 +37,10 @@
       </div>
     </div>
   </div>
+  <div v-if="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Your result is submitting</div>
+  </div>
 </template>
 <script>
 export default {
@@ -49,14 +53,15 @@ export default {
       resetQueryBarPerRow: null,
       varianceSymbols: null,
       isPause: false,
+      isLoading: false,
       isTrial: this.$route.query.isTrial ?? false,
       isConfigLoaded: false,
       radioValues: [],
       totalRow: 8,
       choicesLength: 8,
       queryBarLength: 16,
-      durationAnswer: 5, // in seconds
-      timeLeftAnswer: 5, // in seconds
+      durationAnswer: 2, // in seconds
+      timeLeftAnswer: 2, // in seconds
       queryBars: [],
       questions: [],
       answers: [],
@@ -83,7 +88,7 @@ export default {
         return this.queryBars[this.currentTask-1];
       }
 
-      return this.queryBars[Math.floor(this.currentTask/this.numberOfTask)];
+      return this.queryBars[Math.ceil(this.currentTask/this.totalRow)-1];
     },
     currentPage() {
       return Math.ceil(this.currentTask/this.totalRow);
@@ -104,10 +109,10 @@ export default {
         try {
           const scheduleData = JSON.parse(data);
           const config = scheduleData.tests.find((t) => t.name === this.testName).config;
-          this.numberOfTask = config.numberOfQuestion
-          this.selectedSymbols = config.symbols
-          this.resetQueryBarPerRow = config.resetQueryBar
-          this.varianceSymbols = config.variation
+          this.numberOfTask = config.numberOfQuestion;
+          this.selectedSymbols = config.symbols;
+          this.resetQueryBarPerRow = false//config.resetQueryBar;
+          this.varianceSymbols = config.variation;
           this.isConfigLoaded = true;
         } catch (e) {
           console.error('Error parsing schedule data:', e);
@@ -207,7 +212,6 @@ export default {
           this.result.wrong++;
         }
       }
-      console.log(this.result);
     },
     getRandomNumberQuestion() {
         return Math.floor(Math.random() * 16) + 2;
@@ -224,6 +228,7 @@ export default {
           this.checkRowAnswers();
           if (this.currentTask === this.numberOfTask) {
             clearInterval(this.intervalId);
+            this.isLoading = true;
             alert('Submit API');
             return;
           }
@@ -235,6 +240,14 @@ export default {
     exit() {
       this.$router.push('module');
     },
+    pause() {
+      clearInterval(this.intervalId);
+      this.isPause = true;
+    },
+    startAgain() {
+      this.isPause = false;
+      this.startCountdown();
+    }
   }
 }
 </script>
@@ -243,11 +256,33 @@ export default {
     @apply absolute right-0 top-0 bg-[#0349D0] p-3 text-white font-bold rounded-bl-[15px];
 
     button {
-      @apply text-black font-bold py-2 rounded-md border-transparent min-w-[100px] cursor-pointer;
+      @apply text-black font-bold py-2 rounded-md border-transparent min-w-[100px] cursor-pointer bg-gray-200;
     }
   }
 
   .timer-container {
-    @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#0349D0] px-20 py-6 text-white font-bold rounded-bl-[15px] rounded-br-[15px];
+    @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#0349D0] px-20 py-3 text-white font-bold rounded-bl-[15px] rounded-br-[15px];
+  }
+
+  .loading-container {
+    @apply absolute inset-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-[1000];
+  }
+
+  .loading-spinner {
+    @apply border-[8px] border-solid border-[rgba(255,255,255,0.3)] border-t-white rounded-full w-[60px] h-[60px] animate-spin;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-text {
+    @apply text-white mt-5 text-[1.2em];
   }
 </style>
