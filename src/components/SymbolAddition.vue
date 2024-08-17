@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="w-4/5 mx-auto mt-5">
-        <div class="grid grid-rows-2 grid-cols-17 gap-2 mb-3 p-2" v-for="(questionRows, indexRow) in questions.slice((currentPage-1) * totalRow, (currentPage-1) * totalRow + totalRow)" :key="indexRow + '_grid'" :class="(indexRow+1) === (((currentTask - 1) % totalRow) + 1) ? 'border border-violet-500 rounded' : ''">
+        <div class="grid grid-rows-2 grid-cols-17 gap-2 mb-3 p-2" v-for="(questionRows, indexRow) in questions.slice((currentPage-1) * totalRow, (currentPage-1) * totalRow + totalRow)" :key="indexRow + '_grid'" :class="(indexRow+1) === currentRow ? 'border border-violet-500 rounded' : ''">
           <div v-for="(question, indexColumn) in questionRows" :key="indexColumn + '_question'" :class="indexColumn % 2 === 0 ? '' : 'font-bold'">{{ indexColumn % 2 === 0 ? question.symbol : question }}</div>
           <div v-for="(_, indexColumn) in questionRows" :key="indexColumn + '_answer'">
             <div v-if="indexColumn % 2 === 0">&nbsp;</div>
@@ -28,7 +28,7 @@
                 :key="n"
                 :class="n % 2 === 0 ? 'mx-1' : ''"
                 :value="n"
-                :disabled="(indexRow+1) !== (((currentTask - 1) % totalRow) + 1)"
+                :disabled="(indexRow+1) !== currentRow"
                 v-model="radioValues[indexRow][indexColumn]"
               />
             </div>
@@ -59,10 +59,12 @@ export default {
       timeLeftAnswer: 5, // in seconds
       queryBars: [],
       questions: [],
+      answers: [],
       intervalId: null,
       result: {
         correct: 0,
-
+        missed: 0,
+        wrong: 0,
       }
     }
   },
@@ -85,6 +87,14 @@ export default {
     },
     currentPage() {
       return Math.ceil(this.currentTask/this.totalRow);
+    },
+    currentRow() {
+      return (((this.currentTask - 1) % this.totalRow) + 1);
+    }
+  },
+  watch: {
+    currentPage() {
+      this.initiateRadioValues();
     }
   },
   methods: {
@@ -165,6 +175,39 @@ export default {
         const finalRandomSymbolIndex = Math.floor(Math.random() * symbolsLength);
         this.questions[i].push(this.currentQueryBar[finalRandomSymbolIndex]);
       }
+
+      this.generateAnswers();
+    },
+    generateAnswers() {
+      for (let i = 0; i < this.questions.length; i++) {
+        this.answers[i] = [];
+        for (let j = 0; j < this.questions[i].length; j++) {
+          const value = this.questions[i][j];
+          if (typeof value === 'number') {
+            const answer = this.questions[i][j-1].points + this.questions[i][j+1].points;
+            if (answer > value) {
+              this.answers[i].push(3);
+            } else if (answer < value) {
+              this.answers[i].push(1);
+            } else {
+              this.answers[i].push(2);
+            }
+          }
+        }
+      }
+    },
+    checkRowAnswers() {
+      const rowIndex = this.currentRow - 1;
+      for (let [index, radioValue] of this.radioValues[rowIndex].entries()) {
+        if (!radioValue) {
+          this.result.missed++;
+        } else if (radioValue === this.answers[rowIndex][index]) {
+          this.result.correct++;
+        } else {
+          this.result.wrong++;
+        }
+      }
+      console.log(this.result);
     },
     getRandomNumberQuestion() {
         return Math.floor(Math.random() * 16) + 2;
@@ -178,7 +221,7 @@ export default {
         if (this.timeLeftAnswer > 0) {
           this.timeLeftAnswer--;
         } else {
-          console.log(this.radioValues);
+          this.checkRowAnswers();
           if (this.currentTask === this.numberOfTask) {
             clearInterval(this.intervalId);
             alert('Submit API');
