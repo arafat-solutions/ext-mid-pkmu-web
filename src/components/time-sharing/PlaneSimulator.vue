@@ -48,11 +48,13 @@ export default {
         { key: 'B', value: 0, targetValue: 0 },
       ],
       gaugeUpdateFunctions: [],
+      gaugeSpeed: '',
+      increaseFrequency: '',
       collisionCount: 0,
       lastCollisionTime: 0,
       gamepadIndex: null,
       duration: 600, // in seconds
-      remainingTime: 600,
+      remainingTime: 10,
       joystickState: {
         x: 0,
         y: 0
@@ -147,7 +149,9 @@ export default {
           case 'very_fast': this.obstacleSpeed = 3; break;
         }
 
-
+        // gauge cluster
+        this.gaugeSpeed = timeSharing.config.observer.speed;
+        this.increaseFrequency = timeSharing.config.observer.frequency;
       }
     },
     getObstacleGenerationInterval() {
@@ -431,14 +435,44 @@ export default {
         currentX += width;
       }
     },
+    // Updated randomGaugeIncrease function
     randomGaugeIncrease() {
       if (this.isPaused) return;
+
+      const increaseChance = this.getIncreaseChance();
+      const increaseAmount = this.getIncreaseAmount();
+
       [...this.instrumentsLeft, ...this.instrumentsRight].forEach(instrument => {
-        if (Math.random() < 0.5) {
-          instrument.targetValue = Math.min(instrument.targetValue + Math.random() * 5, 100);
+        if (Math.random() < increaseChance) {
+          instrument.targetValue = Math.min(instrument.targetValue + increaseAmount, 100);
         }
       });
     },
+
+    // Helper method to determine increase chance based on frequency
+    getIncreaseChance() {
+      switch (this.increaseFrequency) {
+        case 'very_seldom': return 0.1;
+        case 'seldom': return 0.25;
+        case 'moderate': return 0.5;
+        case 'frequent': return 0.75;
+        case 'very_frequent': return 0.9;
+        default: return 0.5;
+      }
+    },
+
+    // Helper method to determine increase amount based on speed
+    getIncreaseAmount() {
+      switch (this.gaugeSpeed) {
+        case 'very_slow': return Math.random() * 2 + 1;  // 1-3
+        case 'slow': return Math.random() * 3 + 2;       // 2-5
+        case 'medium': return Math.random() * 4 + 3;     // 3-7
+        case 'fast': return Math.random() * 5 + 5;       // 5-10
+        case 'very_fast': return Math.random() * 7 + 8;  // 8-15
+        default: return Math.random() * 4 + 3;           // 3-7 (medium)
+      }
+    },
+
     startTimer() {
       this.timerInterval = setInterval(() => {
         if (this.isPaused) return;
@@ -446,7 +480,7 @@ export default {
           this.remainingTime--;
         } else {
           clearInterval(this.timerInterval);
-          this.$emit('time-up');
+          this.finishGame();
         }
       }, 1000);
     },
@@ -454,6 +488,15 @@ export default {
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    },
+    finishGame() {
+      this.pauseGame();
+      console.log('Game finished');
+      console.log(`Collisions: ${this.collisionCount}`);
+      console.log(`Late time for C: ${this.gaugeLateTime.C}ms`);
+      console.log(`Late time for V: ${this.gaugeLateTime.V}ms`);
+      console.log(`Late time for N: ${this.gaugeLateTime.N}ms`);
+      console.log(`Late time for B: ${this.gaugeLateTime.B}ms`);
     }
   }
 };
