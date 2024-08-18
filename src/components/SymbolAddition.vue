@@ -9,7 +9,7 @@
     <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
-        <div class="grid grid-rows-2 grid-cols-16 gap-1 p-1">
+        <div :class="varianceSymbols ? `grid grid-rows-2 grid-cols-${varianceSymbols} gap-1 p-1` : ''">
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_symbol'">{{ queryBar.symbol }}</div>
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_points'" class="font-bold">{{ queryBar.points }}</div>
         </div>
@@ -20,21 +20,25 @@
           <div v-for="(_, indexColumn) in questionRows" :key="indexColumn + '_answer'">
             <div v-if="indexColumn % 2 === 0">&nbsp;</div>
             <div v-else>
-              <input
-                :name="`answer-${indexRow}-${indexColumn}`"
-                type="radio"
-                class="accent-violet-500"
-                v-for="n in 3"
-                :key="n"
-                :class="n % 2 === 0 ? 'mx-1' : ''"
-                :value="n"
-                :disabled="(indexRow+1) !== currentRow"
-                v-model="radioValues[indexRow][indexColumn]"
-              />
+              <div
+              :class="this.radioValues[indexRow][Math.floor(indexColumn/2)] !== this.answers[indexRow][Math.floor(indexColumn/2)] && this.currentRowDisabled && (indexRow+1) === currentRow && this.radioValues[indexRow][Math.floor(indexColumn/2)]? 'border border-red-600 rounded' : ''">
+                <input
+                  :name="`answer-${indexRow}-${indexColumn}`"
+                  type="radio"
+                  class="accent-violet-500"
+                  v-for="n in 3"
+                  :key="n"
+                  :class="n % 2 === 0 ? 'mx-1' : ''"
+                  :value="n"
+                  :disabled="(indexRow+1) !== currentRow || currentRowDisabled"
+                  v-model="radioValues[indexRow][Math.floor(indexColumn/2)]"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
+      <div class="inline-block text-red-600 font-bold text-lg text-left ml-6 mt-5" v-if="currentWrong">{{ currentWrong }} answer{{ currentWrong > 1 ? 's' : '' }} wrong</div>
     </div>
   </div>
   <div v-if="isLoading" class="loading-container">
@@ -60,17 +64,19 @@ export default {
       totalRow: 8,
       choicesLength: 8,
       queryBarLength: 16,
-      durationAnswer: 2, // in seconds
-      timeLeftAnswer: 2, // in seconds
+      durationAnswer: 20, // in seconds
+      timeLeftAnswer: 20, // in seconds
+      moveNextTaskDuration: 5, // in seconds
       queryBars: [],
       questions: [],
       answers: [],
-      intervalId: null,
+      currentWrong: null,
+      currentRowDisabled: false,
       result: {
         correct: 0,
         missed: 0,
         wrong: 0,
-      }
+      },
     }
   },
   mounted() {
@@ -111,8 +117,8 @@ export default {
           const config = scheduleData.tests.find((t) => t.name === this.testName).config;
           this.numberOfTask = config.numberOfQuestion;
           this.selectedSymbols = config.symbols;
-          this.resetQueryBarPerRow = false//config.resetQueryBar;
-          this.varianceSymbols = config.variation;
+          this.resetQueryBarPerRow = config.resetQueryBar;
+          this.varianceSymbols = this.getVariation(10);
           this.isConfigLoaded = true;
         } catch (e) {
           console.error('Error parsing schedule data:', e);
@@ -133,9 +139,10 @@ export default {
       if (!this.resetQueryBarPerRow) {
         totalQueryBar = Math.ceil(this.numberOfTask / this.totalRow);
       }
-
+      const randomSymbols = this.getRandomSymbols();
+      console.log(randomSymbols);
       for (let i=0;i<totalQueryBar;i++) {
-        let tempSymbols = [...this.symbols];
+        let tempSymbols = [...randomSymbols];
         let points = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         let tempResult = [];
 
@@ -160,6 +167,23 @@ export default {
 
         this.queryBars.push(tempResult);
       }
+      console.log(this.queryBars);
+    },
+    getVariation(variation) {
+      if (variation < 9) {
+        return 9;
+      }
+
+      if (variation > this.symbols.length) {
+        return this.symbols.length;
+      }
+
+      return variation;
+    },
+    getRandomSymbols() {
+      const shuffledArray = this.symbols.sort(() => Math.random() - 0.5);
+
+      return shuffledArray.slice(0, this.varianceSymbols);
     },
     generateQuestion() {
       for (let i = 0; i < this.numberOfTask; i++) {
@@ -203,6 +227,7 @@ export default {
     },
     checkRowAnswers() {
       const rowIndex = this.currentRow - 1;
+      let wrong = 0;
       for (let [index, radioValue] of this.radioValues[rowIndex].entries()) {
         if (!radioValue) {
           this.result.missed++;
@@ -210,44 +235,51 @@ export default {
           this.result.correct++;
         } else {
           this.result.wrong++;
+          wrong++;
         }
       }
+      this.currentWrong = wrong;
     },
     getRandomNumberQuestion() {
         return Math.floor(Math.random() * 16) + 2;
     },
-    startCountdown() {
-      if (this.isPause) {
+    async startCountdown() {
+      if (this.isPause || this.currentRowDisabled || this.isTimesUp) {
         return;
       }
 
-      this.intervalId = setInterval(() => {
-        if (this.timeLeftAnswer > 0) {
-          this.timeLeftAnswer--;
-        } else {
-          this.checkRowAnswers();
-          if (this.currentTask === this.numberOfTask) {
-            clearInterval(this.intervalId);
-            this.isLoading = true;
-            alert('Submit API');
-            return;
-          }
-          this.currentTask++;
-          this.timeLeftAnswer = this.durationAnswer;
+      if (this.timeLeftAnswer > 0) {
+        this.timeLeftAnswer--;
+      } else {
+        this.checkRowAnswers();
+        this.currentRowDisabled = true;
+        await this.delay(this.moveNextTaskDuration * 1000);
+        this.currentRowDisabled = false;
+        this.currentWrong = null;
+        if (this.currentTask === this.numberOfTask) {
+          this.isLoading = true;
+          alert('Submit API');
+          return;
         }
-      }, 1000);
+        this.currentTask++;
+        this.timeLeftAnswer = this.durationAnswer;
+      }
+      await this.delay(1000);
+      this.startCountdown();
     },
     exit() {
       this.$router.push('module');
     },
     pause() {
-      clearInterval(this.intervalId);
       this.isPause = true;
     },
     startAgain() {
       this.isPause = false;
       this.startCountdown();
-    }
+    },
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
   }
 }
 </script>
