@@ -135,7 +135,10 @@ export default {
       const testData = localStorage.getItem('scheduleData');
       if (testData) {
         const scheduleData = JSON.parse(testData);
+        
         const timeSharing = scheduleData.tests.find(data => data.name === 'Time Sharing Test 2023');
+        this.duration = timeSharing.config.duration * 60;
+        this.remainingTime = this.duration;
         this.obstacleDensity = timeSharing.config.navigation.density;
         this.controlPerspective = timeSharing.config.navigation.control_perspective;
         const speed = timeSharing.config.navigation.speed;
