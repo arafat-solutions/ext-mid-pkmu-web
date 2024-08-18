@@ -1,27 +1,33 @@
 <template>
-  <div class="plane-simulation-container">
-    <div class="timer" style="width: 20%; background-color: blue">{{ formatTime(remainingTime) }}</div>
-    <div class="instructions">Press 'Space bar' to switch tasks</div>
-    <div class="instruments-left">
-      <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index">
-        <canvas :ref="'gauge' + index" width="80" height="80"></canvas>
-        <div>{{ instrument.key }}</div>
+  <div class="plane-simulation-wrapper">
+    <div class="plane-simulation-container">
+      <div class="timer" :style="{ width: timerWidth + '%' }">{{ formatTime(remainingTime) }}</div>
+      <div class="instructions">Press 'Space bar' to switch tasks</div>
+      <div class="game-content">
+        <div class="instruments-left">
+          <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index">
+            <svg :ref="'gauge' + index" width="120" height="120" viewBox="0 0 120 120"></svg>
+            <div class="instrument-key">{{ instrument.key }}</div>
+          </div>
+        </div>
+        <div class="simulation-box">
+          <canvas ref="simulationCanvas" width="800" height="500"></canvas>
+        </div>
+        <div class="instruments-right">
+          <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index">
+            <svg :ref="'gauge' + (index + 2)" width="120" height="120" viewBox="0 0 120 120"></svg>
+            <div class="instrument-key">{{ instrument.key }}</div>
+          </div>
+        </div>
       </div>
+      <div class="collision-count">Collisions: {{ collisionCount }}</div>
     </div>
-    <div class="simulation-box">
-      <canvas ref="simulationCanvas" width="800" height="500"></canvas>
-    </div>
-    <div class="instruments-right">
-      <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index">
-        <canvas :ref="'gauge' + (index + 2)" width="80" height="80"></canvas>
-        <div>{{ instrument.key }}</div>
-      </div>
-    </div>
-    <div class="collision-count">Collisions: {{ collisionCount }}</div>
   </div>
 </template>
 
 <script>
+import * as d3 from 'd3';
+
 export default {
   name: 'PlaneSimulation',
   data() {
@@ -41,7 +47,7 @@ export default {
         { key: 'N', value: 0, targetValue: 0 },
         { key: 'B', value: 0, targetValue: 0 },
       ],
-      gaugeIntervals: [],
+      gaugeUpdateFunctions: [],
       collisionCount: 0,
       lastCollisionTime: 0,
       gamepadIndex: null,
@@ -66,10 +72,11 @@ export default {
     window.addEventListener('keydown', this.handleKeydown);
     this.obstacleInterval = setInterval(this.moveObstacles, 30);
     this.generationInterval = setInterval(this.generateObstacles, 2000);
-    this.gaugeInterval = setInterval(this.updateGauges, 50);  // Update gauges every 50ms
-    this.randomGaugeInterval = setInterval(this.randomGaugeIncrease, 2000);  // Random increase every 2 seconds
+    this.gaugeInterval = setInterval(this.updateGauges, 50);
+    this.randomGaugeInterval = setInterval(this.randomGaugeIncrease, 2000);
     this.animatePlane();
     this.startTimer();
+    this.initGauges();
   },
   beforeUnmount() {
     window.removeEventListener('gamepadconnected', this.onGamepadConnected);
@@ -90,17 +97,17 @@ export default {
     updatePlanePosition() {
       const ease = 0.1;
       const movement = 2;
-      
+
       if (Math.abs(this.joystickState.x) > 0.1) {
         this.plane.targetX += this.joystickState.x * movement;
         this.plane.targetX = Math.max(0, Math.min(this.plane.targetX, 740));
       }
-      
+
       if (Math.abs(this.joystickState.y) > 0.1) {
         this.plane.y += this.joystickState.y * movement;
         this.plane.y = Math.max(30, Math.min(this.plane.y, 370));
       }
-      
+
       this.plane.x += (this.plane.targetX - this.plane.x) * ease;
     },
     onGamepadConnected(event) {
@@ -148,45 +155,107 @@ export default {
         ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
       }
     },
-    drawGauge(canvas, value) {
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = Math.min(centerX, centerY) - 5;
-
-      // Draw gauge background
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = this.getColorForValue(value);
-      ctx.fill();
-
-      // Draw gauge border
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Draw gauge needle
-      ctx.beginPath();
-      const angle = (value / 100) * 2 * Math.PI - Math.PI / 2;
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Draw value text
-      ctx.fillStyle = '#000';
-      ctx.font = '14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(Math.round(value), centerX, centerY + 20);
+    initGauges() {
+      const gauges = [...this.instrumentsLeft, ...this.instrumentsRight];
+      this.gaugeUpdateFunctions = gauges.map((instrument, index) => {
+        const svg = d3.select(this.$refs[`gauge${index}`][0]);
+        return this.createGauge(svg, instrument);
+      });
     },
-    getColorForValue(value) {
-      if (value <= 33) return 'green';
-      if (value <= 66) return 'orange';
-      return 'red';
+    createGauge(svg, instrument) {
+      const width = 120;
+      const height = 120;
+      const radius = Math.min(width, height) / 2;
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      // Background circle
+      svg.append('circle')
+        .attr('cx', centerX)
+        .attr('cy', centerY)
+        .attr('r', radius)
+        .attr('fill', '#f0f0f0');
+
+      // Color sections
+      const sections = [
+        { startAngle: -Math.PI / 2, endAngle: -Math.PI / 4, color: '#4CAF50' },  // Green
+        { startAngle: -Math.PI / 4, endAngle: 0, color: '#FFEB3B' },             // Yellow
+        { startAngle: 0, endAngle: Math.PI / 4, color: '#FF9800' },              // Orange
+        { startAngle: Math.PI / 4, endAngle: Math.PI / 2, color: '#F44336' }     // Red
+      ];
+
+      const arc = d3.arc()
+        .innerRadius(radius * 0.6)
+        .outerRadius(radius * 0.8);
+
+      sections.forEach(section => {
+        svg.append('path')
+          .attr('d', arc({ startAngle: section.startAngle, endAngle: section.endAngle }))
+          .attr('fill', section.color)
+          .attr('transform', `translate(${centerX},${centerY})`);
+      });
+
+      // Needle
+      const needle = svg.append('line')
+        .attr('x1', centerX)
+        .attr('y1', centerY)
+        .attr('x2', centerX)
+        .attr('y2', centerY - radius * 0.7)
+        .attr('stroke', 'black')
+        .attr('stroke-width', 2)
+        .attr('transform', `rotate(0, ${centerX}, ${centerY})`);
+
+      // Value text
+      const valueText = svg.append('text')
+        .attr('x', centerX)
+        .attr('y', centerY + 20)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '16px')
+        .attr('font-weight', 'bold');
+
+      const updateGauge = (value) => {
+        const angle = this.valueToAngle(value);
+        needle.attr('transform', `rotate(${angle}, ${centerX}, ${centerY})`);
+        valueText.text(Math.round(value));
+      };
+
+      updateGauge(instrument.value);
+      return updateGauge;
+    },
+
+    valueToAngle(value) {
+      // Convert value (0-100) to angle (-90 to 90 degrees)
+      return ((value / 100) * 180) - 90;
+    },
+
+    updateGauges() {
+      [...this.instrumentsLeft, ...this.instrumentsRight].forEach((instrument, index) => {
+        if (Math.abs(instrument.value - instrument.targetValue) > 0.1) {
+          instrument.value += (instrument.targetValue - instrument.value) * 0.1;
+        } else {
+          instrument.value = instrument.targetValue;
+        }
+        const updateGauge = this.gaugeUpdateFunctions[index];
+        if (updateGauge) {
+          updateGauge(instrument.value);
+        }
+      });
+    },
+
+    handleInstrumentKey(key) {
+      const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
+      if (instrument) {
+        instrument.targetValue = Math.max(instrument.targetValue - 10, 0);
+        this.updateGauges();
+      }
+    },
+
+    randomGaugeIncrease() {
+      [...this.instrumentsLeft, ...this.instrumentsRight].forEach(instrument => {
+        if (Math.random() < 0.5) {
+          instrument.targetValue = Math.min(instrument.targetValue + Math.random() * 5, 100);
+        }
+      });
     },
     handleKeydown(event) {
       switch (event.key) {
@@ -201,17 +270,19 @@ export default {
         case ' ':
           this.$emit('switch-task');
           break;
-        default:
+        case 'c':
+        case 'C':
+        case 'v':
+        case 'V':
+        case 'n':
+        case 'N':
+        case 'b':
+        case 'B':
           this.handleInstrumentKey(event.key.toUpperCase());
           break;
       }
     },
-    handleInstrumentKey(key) {
-      const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
-      if (instrument) {
-        instrument.targetValue = Math.max(instrument.targetValue - 10, 0);
-      }
-    },
+    
     checkCollision() {
       const currentTime = Date.now();
       const planeRect = {
@@ -251,35 +322,31 @@ export default {
       }
     },
     generateObstacles() {
-      const numberOfObstacles = Math.floor(Math.random() * 5) + 1;
+      const numberOfObstacles = Math.floor(Math.random() * 3) + 1;
+      const minGap = 100;
+      const maxWidth = 150;
+      const availableWidth = 800 - (numberOfObstacles * minGap);
+
+      let obstacleWidths = [];
       for (let i = 0; i < numberOfObstacles; i++) {
-        const width = Math.floor(Math.random() * 100) + 20;
-        const x = Math.floor(Math.random() * (800 - width));
+        const maxPossibleWidth = Math.min(maxWidth, availableWidth / numberOfObstacles);
+        obstacleWidths.push(Math.floor(Math.random() * (maxPossibleWidth - 20)) + 20);
+      }
+
+      let currentX = 0;
+      for (let i = 0; i < numberOfObstacles; i++) {
+        const width = obstacleWidths[i];
+        const gap = (800 - obstacleWidths.reduce((a, b) => a + b, 0)) / (numberOfObstacles + 1);
+        currentX += gap;
         this.obstacles.push({
           id: Date.now() + i,
-          y: 400,
-          x: x,
+          y: 500,
+          x: currentX,
           width: width,
           height: 10,
         });
+        currentX += width;
       }
-    },
-    updateGauges() {
-      [...this.instrumentsLeft, ...this.instrumentsRight].forEach((instrument, index) => {
-        if (Math.abs(instrument.value - instrument.targetValue) > 0.1) {
-          instrument.value += (instrument.targetValue - instrument.value) * 0.1;
-        } else {
-          instrument.value = instrument.targetValue;
-        }
-        this.drawGauge(this.$refs[`gauge${index}`][0], instrument.value);
-      });
-    },
-    randomGaugeIncrease() {
-      [...this.instrumentsLeft, ...this.instrumentsRight].forEach(instrument => {
-        if (Math.random() < 0.5) {  // 50% chance of increase for each gauge
-          instrument.targetValue = Math.min(instrument.targetValue + Math.random() * 5, 200);
-        }
-      });
     },
     startTimer() {
       this.timerInterval = setInterval(() => {
@@ -301,18 +368,28 @@ export default {
 </script>
 
 <style scoped>
-.plane-simulation-container {
+.plane-simulation-wrapper {
   display: flex;
-  flex-direction: row;
   justify-content: center;
   align-items: center;
-  position: relative;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+}
+
+.plane-simulation-container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.game-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .timer {
-  position: absolute;
-  top: 0;
-  left: 0;
   height: 30px;
   background-color: #3498db;
   color: white;
@@ -321,27 +398,21 @@ export default {
   justify-content: center;
   font-weight: bold;
   transition: width 1s linear;
+  border-radius: 5px;
+  margin-bottom: 10px;
 }
 
 .instructions {
-  position: absolute;
-  top: 40px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .instruments-left,
 .instruments-right {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  height: 400px;
-}
-
-.instruments-left {
-  margin-right: 10px;
-}
-
-.instruments-right {
-  margin-left: 10px;
+  justify-content: space-around;
+  height: 500px;
 }
 
 .instrument {
@@ -350,16 +421,23 @@ export default {
   align-items: center;
 }
 
+.instrument-key {
+  margin-top: 5px;
+  font-weight: bold;
+}
+
 .simulation-box {
   position: relative;
   width: 800px;
-  height: 400px;
+  height: 500px;
   border: 2px solid black;
   overflow: hidden;
+  margin: 0 20px;
 }
 
 .collision-count {
-  position: absolute;
-  bottom: 10px;
+  text-align: center;
+  margin-top: 20px;
+  font-weight: bold;
 }
 </style>

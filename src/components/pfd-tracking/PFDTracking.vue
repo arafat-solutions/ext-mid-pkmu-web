@@ -35,9 +35,9 @@ export default {
     const ACCELERATION_FACTOR = 0.001;
 
     const state = reactive({
-      altitude: { current: 8050, target: 8000, display: 8050, labels: [], offTargetTime: 0, targetRange: 400 },
-      speed: { current: 150, target: 900, display: 150, labels: [], offTargetTime: 0, targetRange: 400 },
-      heading: { current: 345, target: 250, display: 345, labels: [], offTargetTime: 0, targetRange: 100 },
+      altitude: { current: 8050, target: 8000, display: 8050, labels: [], offTargetTime: 0, targetRange: 400, desiredTarget: 8000 },
+      speed: { current: 150, target: 900, display: 150, labels: [], offTargetTime: 0, targetRange: 400, desiredTarget: 900 },
+      heading: { current: 345, target: 250, display: 345, labels: [], offTargetTime: 0, targetRange: 100, desiredTarget: 250 },
       thrust: 0,
       timeRemaining: 0,
       lastUpdateTime: 0,
@@ -110,11 +110,9 @@ export default {
       const timerX = canvas.value.width / 2 - timerWidth / 2;
       const timerY = 0;
 
-      // Draw blue background
       ctx.fillStyle = 'blue';
       ctx.fillRect(timerX, timerY, timerWidth, timerHeight);
 
-      // Draw timer text
       ctx.fillStyle = 'white';
       ctx.font = '24px Arial';
       ctx.textAlign = 'center';
@@ -219,22 +217,28 @@ export default {
       }
     };
 
-    const updateSpeed = () => {
+    const updateSpeed = (deltaTime) => {
       const targetSpeed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * ((state.thrust + 1) / 2);
       const speedDiff = targetSpeed - state.speed.current;
-      state.speed.current += speedDiff * ACCELERATION_FACTOR;
+      state.speed.current += speedDiff * ACCELERATION_FACTOR * deltaTime;
       updateLabels('speed', state.speed.current, true);
     };
 
-    const updateTargets = () => {
-      console.log('Targets:', state.altitude.target, state.speed.target, state.heading.target);
-      const altitudeChange = (Math.random() - 0.5) * 200;
-      const speedChange = (Math.random() - 0.5) * 100;
-      const headingChange = (Math.random() - 0.5) * 20;
+    const moveTowardsTarget = (current, target, maxChange) => {
+      const diff = target - current;
+      const change = Math.sign(diff) * Math.min(Math.abs(diff), maxChange);
+      return current + change;
+    };
 
-      state.altitude.target = Math.max(0, Math.min(10000, state.altitude.target + altitudeChange));
-      state.speed.target = Math.max(MIN_SPEED, Math.min(MAX_SPEED, state.speed.target + speedChange));
-      state.heading.target = (state.heading.target + headingChange + 360) % 360;
+    const updateTargets = () => {
+      console.log('Updating desired targets:', state.altitude.desiredTarget, state.speed.desiredTarget, state.heading.desiredTarget);
+      const altitudeChange = (Math.random() - 0.5) * 800;
+      const speedChange = (Math.random() - 0.5) * 200;
+      const headingChange = (Math.random() - 0.5) * 40;
+
+      state.altitude.desiredTarget = Math.max(0, Math.min(10000, state.altitude.desiredTarget + altitudeChange));
+      state.speed.desiredTarget = Math.max(MIN_SPEED, Math.min(MAX_SPEED, state.speed.desiredTarget + speedChange));
+      state.heading.desiredTarget = (state.heading.desiredTarget + headingChange + 360) % 360;
     };
 
     const updateTurbulence = () => {
@@ -258,6 +262,28 @@ export default {
       });
     };
 
+    const updateCurrentValues = (deltaTime) => {
+      // Update altitude
+      const maxAltitudeChange = (50 * deltaTime) / 1000; // 50 feet per second
+      state.altitude.current = moveTowardsTarget(state.altitude.current, state.altitude.target, maxAltitudeChange);
+      
+      // Update heading
+      const maxHeadingChange = (20 * deltaTime) / 1000; // 20 degrees per second
+      state.heading.current = moveTowardsTarget(state.heading.current, state.heading.target, maxHeadingChange);
+      state.heading.current = (state.heading.current + 360) % 360;
+    };
+
+    const updateTargetValues = (deltaTime) => {
+      // Move targets gradually towards desired targets
+      const maxTargetChange = (400 * deltaTime) / 1000; // 400 units per second
+      state.altitude.target = moveTowardsTarget(state.altitude.target, state.altitude.desiredTarget, maxTargetChange);
+      state.speed.target = moveTowardsTarget(state.speed.target, state.speed.desiredTarget, maxTargetChange);
+      
+      const maxHeadingTargetChange = (100 * deltaTime) / 1000; // 100 degrees per second
+      state.heading.target = moveTowardsTarget(state.heading.target, state.heading.desiredTarget, maxHeadingTargetChange);
+      state.heading.target = (state.heading.target + 360) % 360;
+    };
+
     const gameLoop = (currentTime) => {
       const deltaTime = currentTime - state.lastUpdateTime;
       state.timeRemaining -= deltaTime / 1000;
@@ -272,11 +298,14 @@ export default {
       }
 
       handleGamepad();
-      updateSpeed();
+      updateSpeed(deltaTime);
+      updateCurrentValues(deltaTime);
+      updateTargetValues(deltaTime);
       updateScore(currentTime);
 
-      // Update targets every 5 seconds
+      // Update desired targets every 5 seconds
       if (currentTime - state.lastTargetUpdateTime > 5000) {
+        console.log('Updating targets');
         updateTargets();
         state.lastTargetUpdateTime = currentTime;
       }
@@ -318,6 +347,8 @@ export default {
 
     onUnmounted(() => {
       cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('gamepadconnected', () => {});
+      window.removeEventListener('gamepaddisconnected', () => {});
     });
 
     return { canvas, MOVEMENT_SPEED };
