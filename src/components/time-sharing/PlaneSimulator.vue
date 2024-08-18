@@ -1,7 +1,7 @@
 <template>
   <div class="plane-simulation-wrapper">
     <div class="plane-simulation-container">
-      <div class="timer" :style="{ width: timerWidth + '%' }">{{ formatTime(remainingTime) }}</div>
+      <div class="timer" :style="{ width: '20%' }">{{ formatTime(remainingTime) }}</div>
       <div class="instructions">Press 'Space bar' to switch tasks</div>
       <div class="game-content">
         <div class="instruments-left">
@@ -29,7 +29,7 @@
 import * as d3 from 'd3';
 
 export default {
-  name: 'PlaneSimulation',
+  name: 'PlaneSimulator',
   data() {
     return {
       plane: {
@@ -56,6 +56,22 @@ export default {
       joystickState: {
         x: 0,
         y: 0
+      },
+      isPaused: false,
+      obstacleSpeed: 2,
+      obstacleDensity: 'medium',
+      controlPerspective: 'cockpit_crew',
+      gaugeTimers: {
+        C: null,
+        V: null,
+        N: null,
+        B: null
+      },
+      gaugeLateTime: {
+        C: 0,
+        V: 0,
+        N: 0,
+        B: 0
       }
     };
   },
@@ -65,36 +81,97 @@ export default {
     }
   },
   mounted() {
-    window.addEventListener('gamepadconnected', this.onGamepadConnected);
-    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-    this.checkGamepad();
-
-    window.addEventListener('keydown', this.handleKeydown);
-    this.obstacleInterval = setInterval(this.moveObstacles, 30);
-    this.generationInterval = setInterval(this.generateObstacles, 2000);
-    this.gaugeInterval = setInterval(this.updateGauges, 50);
-    this.randomGaugeInterval = setInterval(this.randomGaugeIncrease, 2000);
-    this.animatePlane();
-    this.startTimer();
-    this.initGauges();
+    this.initializeGame();
   },
-  beforeUnmount() {
-    window.removeEventListener('gamepadconnected', this.onGamepadConnected);
-    window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-    window.removeEventListener('keydown', this.handleKeydown);
-    clearInterval(this.obstacleInterval);
-    clearInterval(this.generationInterval);
-    clearInterval(this.gaugeInterval);
-    clearInterval(this.randomGaugeInterval);
-    clearInterval(this.timerInterval);
+  activated() {
+    this.resumeGame();
+  },
+  deactivated() {
+    this.pauseGame();
   },
   methods: {
+    initializeGame() {
+      this.setRandomObstacleConfig();
+      this.initGauges();
+      this.startGameLoops();
+      this.setupEventListeners();
+    },
+    startGameLoops() {
+      this.obstacleInterval = setInterval(this.moveObstacles, 30);
+      this.generationInterval = setInterval(this.generateObstacles, this.getObstacleGenerationInterval());
+      this.gaugeInterval = setInterval(this.updateGauges, 50);
+      this.randomGaugeInterval = setInterval(this.randomGaugeIncrease, 2000);
+      this.animatePlane();
+      this.startTimer();
+    },
+    setupEventListeners() {
+      window.addEventListener('gamepadconnected', this.onGamepadConnected);
+      window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      window.addEventListener('keydown', this.handleKeydown);
+      this.checkGamepad();
+    },
+    removeEventListeners() {
+      window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+      window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      window.removeEventListener('keydown', this.handleKeydown);
+    },
+    pauseGame() {
+      this.isPaused = true;
+      clearInterval(this.obstacleInterval);
+      clearInterval(this.generationInterval);
+      clearInterval(this.gaugeInterval);
+      clearInterval(this.randomGaugeInterval);
+      clearInterval(this.timerInterval);
+      this.removeEventListeners();
+    },
+    resumeGame() {
+      this.isPaused = false;
+      this.startGameLoops();
+      this.setupEventListeners();
+    },
+    setRandomObstacleConfig() {
+      const testData = localStorage.getItem('scheduleData');
+      if (testData) {
+        const scheduleData = JSON.parse(testData);
+        const timeSharing = scheduleData.tests.find(data => data.name === 'Time Sharing Test 2023');
+        this.obstacleDensity = timeSharing.config.navigation.density;
+        this.controlPerspective = timeSharing.config.navigation.control_perspective;
+        const speed = timeSharing.config.navigation.speed;
+        this.obstacleDensity = timeSharing.config.navigation.density;
+
+        switch (speed) {
+          case 'very_slow': this.obstacleSpeed = 1; break;
+          case 'slow': this.obstacleSpeed = 1.5; break;
+          case 'medium': this.obstacleSpeed = 2; break;
+          case 'fast': this.obstacleSpeed = 2.5; break;
+          case 'very_fast': this.obstacleSpeed = 3; break;
+        }
+
+
+      }
+    },
+    getObstacleGenerationInterval() {
+      switch (this.obstacleDensity) {
+        case 'very_slow': return 3000;
+        case 'slow': return 2500;
+        case 'medium': return 2000;
+        case 'fast': return 1500;
+        case 'very_fast': return 1000;
+      }
+    },
     handleGamepadInput(gamepad) {
       const [leftStickX, leftStickY] = gamepad.axes;
-      this.joystickState.x = leftStickX;
-      this.joystickState.y = leftStickY;
+      if (this.controlPerspective === 'observer') {
+        this.joystickState.x = -leftStickX;
+        this.joystickState.y = -leftStickY;
+      } else {
+        this.joystickState.x = leftStickX;
+        this.joystickState.y = leftStickY;
+      }
     },
     updatePlanePosition() {
+      if (this.isPaused) return;
+
       const ease = 0.1;
       const movement = 2;
 
@@ -169,19 +246,19 @@ export default {
       const centerX = width / 2;
       const centerY = height / 2;
 
-      // Background circle
+      svg.selectAll("*").remove();
+
       svg.append('circle')
         .attr('cx', centerX)
         .attr('cy', centerY)
         .attr('r', radius)
         .attr('fill', '#f0f0f0');
 
-      // Color sections
       const sections = [
-        { startAngle: -Math.PI / 2, endAngle: -Math.PI / 4, color: '#4CAF50' },  // Green
-        { startAngle: -Math.PI / 4, endAngle: 0, color: '#FFEB3B' },             // Yellow
-        { startAngle: 0, endAngle: Math.PI / 4, color: '#FF9800' },              // Orange
-        { startAngle: Math.PI / 4, endAngle: Math.PI / 2, color: '#F44336' }     // Red
+        { startAngle: -Math.PI / 2, endAngle: -Math.PI / 4, color: '#4CAF50' },
+        { startAngle: -Math.PI / 4, endAngle: 0, color: '#FFEB3B' },
+        { startAngle: 0, endAngle: Math.PI / 4, color: '#FF9800' },
+        { startAngle: Math.PI / 4, endAngle: Math.PI / 2, color: '#F44336' }
       ];
 
       const arc = d3.arc()
@@ -195,7 +272,6 @@ export default {
           .attr('transform', `translate(${centerX},${centerY})`);
       });
 
-      // Needle
       const needle = svg.append('line')
         .attr('x1', centerX)
         .attr('y1', centerY)
@@ -205,7 +281,6 @@ export default {
         .attr('stroke-width', 2)
         .attr('transform', `rotate(0, ${centerX}, ${centerY})`);
 
-      // Value text
       const valueText = svg.append('text')
         .attr('x', centerX)
         .attr('y', centerY + 20)
@@ -217,17 +292,23 @@ export default {
         const angle = this.valueToAngle(value);
         needle.attr('transform', `rotate(${angle}, ${centerX}, ${centerY})`);
         valueText.text(Math.round(value));
+
+        if (value >= 75 && !this.gaugeTimers[instrument.key]) {
+          this.gaugeTimers[instrument.key] = setInterval(() => {
+            this.gaugeLateTime[instrument.key] += 10;
+          }, 10);
+        } else if (value < 75 && this.gaugeTimers[instrument.key]) {
+          clearInterval(this.gaugeTimers[instrument.key]);
+          this.gaugeTimers[instrument.key] = null;
+        }
       };
 
       updateGauge(instrument.value);
       return updateGauge;
     },
-
     valueToAngle(value) {
-      // Convert value (0-100) to angle (-90 to 90 degrees)
       return ((value / 100) * 180) - 90;
     },
-
     updateGauges() {
       [...this.instrumentsLeft, ...this.instrumentsRight].forEach((instrument, index) => {
         if (Math.abs(instrument.value - instrument.targetValue) > 0.1) {
@@ -241,23 +322,14 @@ export default {
         }
       });
     },
-
-    handleInstrumentKey(key) {
-      const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
-      if (instrument) {
-        instrument.targetValue = Math.max(instrument.targetValue - 10, 0);
-        this.updateGauges();
-      }
-    },
-
-    randomGaugeIncrease() {
-      [...this.instrumentsLeft, ...this.instrumentsRight].forEach(instrument => {
-        if (Math.random() < 0.5) {
-          instrument.targetValue = Math.min(instrument.targetValue + Math.random() * 5, 100);
-        }
-      });
-    },
     handleKeydown(event) {
+      if (event.key === ' ') {
+        this.$emit('switch-task');
+        return;
+      }
+
+      if (this.isPaused) return;
+
       switch (event.key) {
         case 'a':
         case 'A':
@@ -266,9 +338,6 @@ export default {
         case 'd':
         case 'D':
           this.plane.targetX = Math.min(this.plane.x + 20, 740);
-          break;
-        case ' ':
-          this.$emit('switch-task');
           break;
         case 'c':
         case 'C':
@@ -282,7 +351,20 @@ export default {
           break;
       }
     },
-    
+    handleInstrumentKey(key) {
+      const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
+      if (instrument) {
+        instrument.targetValue = Math.max(instrument.targetValue - 10, 0);
+        this.updateGauges();
+
+        if (this.gaugeTimers[key]) {
+          clearInterval(this.gaugeTimers[key]);
+          this.gaugeTimers[key] = null;
+          console.log(`Late time for ${key}: ${this.gaugeLateTime[key]}ms`);
+          this.gaugeLateTime[key] = 0;
+        }
+      }
+    },
     checkCollision() {
       const currentTime = Date.now();
       const planeRect = {
@@ -313,15 +395,16 @@ export default {
       }
     },
     moveObstacles() {
+      if (this.isPaused) return;
       for (const obstacle of this.obstacles) {
-        obstacle.y -= 2;
+        obstacle.y -= this.obstacleSpeed;
         if (obstacle.y < -20) {
           const index = this.obstacles.indexOf(obstacle);
           this.obstacles.splice(index, 1);
         }
       }
-    },
-    generateObstacles() {
+    }, generateObstacles() {
+      if (this.isPaused) return;
       const numberOfObstacles = Math.floor(Math.random() * 3) + 1;
       const minGap = 100;
       const maxWidth = 150;
@@ -348,8 +431,17 @@ export default {
         currentX += width;
       }
     },
+    randomGaugeIncrease() {
+      if (this.isPaused) return;
+      [...this.instrumentsLeft, ...this.instrumentsRight].forEach(instrument => {
+        if (Math.random() < 0.5) {
+          instrument.targetValue = Math.min(instrument.targetValue + Math.random() * 5, 100);
+        }
+      });
+    },
     startTimer() {
       this.timerInterval = setInterval(() => {
+        if (this.isPaused) return;
         if (this.remainingTime > 0) {
           this.remainingTime--;
         } else {
@@ -363,7 +455,7 @@ export default {
       const remainingSeconds = seconds % 60;
       return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
-  },
+  }
 };
 </script>
 
@@ -390,7 +482,7 @@ export default {
 }
 
 .timer {
-  height: 30px;
+  height: 50px;
   background-color: #3498db;
   color: white;
   display: flex;
