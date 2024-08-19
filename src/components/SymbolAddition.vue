@@ -9,7 +9,7 @@
     <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
-        <div :class="varianceSymbols ? `grid grid-rows-2 grid-cols-${varianceSymbols} gap-1 p-1` : ''">
+        <div class="grid grid-rows-2 grid-cols-18 gap-1 p-1`">
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_symbol'">{{ queryBar.symbol }}</div>
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_points'" class="font-bold">{{ queryBar.points }}</div>
         </div>
@@ -63,7 +63,6 @@ export default {
       radioValues: [],
       totalRow: 8,
       choicesLength: 8,
-      queryBarLength: 16,
       durationAnswer: 20, // in seconds
       timeLeftAnswer: 20, // in seconds
       moveNextTaskDuration: 5, // in seconds
@@ -118,7 +117,8 @@ export default {
           this.numberOfTask = config.numberOfQuestion;
           this.selectedSymbols = config.symbols;
           this.resetQueryBarPerRow = config.resetQueryBar;
-          this.varianceSymbols = this.getVariation(10);
+          this.varianceSymbols = this.getVariation(18);//config.variation
+          console.log(this.varianceSymbols, this.symbols, this.symbols.length);
           this.isConfigLoaded = true;
         } catch (e) {
           console.error('Error parsing schedule data:', e);
@@ -140,13 +140,13 @@ export default {
         totalQueryBar = Math.ceil(this.numberOfTask / this.totalRow);
       }
       const randomSymbols = this.getRandomSymbols();
-      console.log(randomSymbols);
+
       for (let i=0;i<totalQueryBar;i++) {
         let tempSymbols = [...randomSymbols];
         let points = [1, 2, 3, 4, 5, 6, 7, 8, 9];
         let tempResult = [];
 
-        while (tempResult.length < this.queryBarLength && tempSymbols.length > 0) {
+        while (tempResult.length < this.varianceSymbols && tempSymbols.length > 0) {
           let symbolIndex = Math.floor(Math.random() * tempSymbols.length);
           let pointsIndex = Math.floor(Math.random() * points.length);
 
@@ -167,7 +167,7 @@ export default {
 
         this.queryBars.push(tempResult);
       }
-      console.log(this.queryBars);
+      console.log(randomSymbols, randomSymbols.length, this.queryBars[0]);
     },
     getVariation(variation) {
       if (variation < 9) {
