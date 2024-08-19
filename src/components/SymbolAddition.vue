@@ -65,8 +65,8 @@ export default {
       radioValues: [],
       totalRow: 8,
       choicesLength: 8,
-      durationAnswer: 2, // in seconds
-      timeLeftAnswer: 2, // in seconds
+      durationAnswer: 20, // in seconds
+      timeLeftAnswer: 20, // in seconds
       moveNextTaskDuration: 5, // in seconds
       queryBars: [],
       questions: [],
@@ -75,7 +75,6 @@ export default {
       currentRowDisabled: false,
       result: {
         correct: 0,
-        missed: 0,
         wrong: 0,
       },
     }
@@ -237,11 +236,9 @@ export default {
       const rowIndex = this.currentRow - 1;
       let wrong = 0;
       for (let [index, radioValue] of this.radioValues[rowIndex].entries()) {
-        if (!radioValue) {
-          this.result.missed++;
-        } else if (radioValue === this.answers[rowIndex][index]) {
+        if (radioValue === this.answers[rowIndex][index]) {
           this.result.correct++;
-        } else {
+        } else if (radioValue && radioValue !== this.answers[rowIndex][index]){
           this.result.wrong++;
           wrong++;
         }
@@ -286,6 +283,8 @@ export default {
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
       const test = scheduleData.tests.find((t) => t.name === this.testName);
+      const totalQuestion = this.numberOfTask * this.choicesLength;
+      const skippedQuestion = totalQuestion - this.result.correct - this.result.wrong;
       const payload = {
         'testSessionId': scheduleData.sessionId,
         'userId': scheduleData.userId,
@@ -293,8 +292,8 @@ export default {
         'batteryTestConfigId': test.config.id,
         'result': {
           'correctAnswer': this.result.correct,
-          'totalQuestion': this.numberOfTask * this.choicesLength,
-          'skippedQuestion': this.result.missed,
+          'totalQuestion': totalQuestion,
+          'skippedQuestion': skippedQuestion,
           'incorrectAnswer': this.result.wrong
         }
       }
