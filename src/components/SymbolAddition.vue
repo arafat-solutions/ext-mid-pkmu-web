@@ -9,7 +9,7 @@
     <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
-        <div class="grid grid-rows-2 grid-cols-18 gap-1 p-1`">
+        <div :class="classQueryBar">
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_symbol'">{{ queryBar.symbol }}</div>
           <div v-for="(queryBar, index) in currentQueryBar" :key="index + '_query_points'" class="font-bold">{{ queryBar.points }}</div>
         </div>
@@ -47,6 +47,8 @@
   </div>
 </template>
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+
 export default {
   data() {
     return {
@@ -63,8 +65,8 @@ export default {
       radioValues: [],
       totalRow: 8,
       choicesLength: 8,
-      durationAnswer: 20, // in seconds
-      timeLeftAnswer: 20, // in seconds
+      durationAnswer: 2, // in seconds
+      timeLeftAnswer: 2, // in seconds
       moveNextTaskDuration: 5, // in seconds
       queryBars: [],
       questions: [],
@@ -100,11 +102,19 @@ export default {
     },
     currentRow() {
       return (((this.currentTask - 1) % this.totalRow) + 1);
+    },
+    classQueryBar() {
+      return `grid grid-rows-2 grid-cols-${this.varianceSymbols} gap-1 p-1`;
     }
   },
   watch: {
     currentPage() {
       this.initiateRadioValues();
+    },
+    isTimesUp(value) {
+      if (value) {
+        this.submitResult();
+      }
     }
   },
   methods: {
@@ -117,8 +127,7 @@ export default {
           this.numberOfTask = config.numberOfQuestion;
           this.selectedSymbols = config.symbols;
           this.resetQueryBarPerRow = config.resetQueryBar;
-          this.varianceSymbols = this.getVariation(18);//config.variation
-          console.log(this.varianceSymbols, this.symbols, this.symbols.length);
+          this.varianceSymbols = this.getVariation(config.variation);
           this.isConfigLoaded = true;
         } catch (e) {
           console.error('Error parsing schedule data:', e);
@@ -167,7 +176,6 @@ export default {
 
         this.queryBars.push(tempResult);
       }
-      console.log(randomSymbols, randomSymbols.length, this.queryBars[0]);
     },
     getVariation(variation) {
       if (variation < 9) {
@@ -256,11 +264,6 @@ export default {
         await this.delay(this.moveNextTaskDuration * 1000);
         this.currentRowDisabled = false;
         this.currentWrong = null;
-        if (this.currentTask === this.numberOfTask) {
-          this.isLoading = true;
-          alert('Submit API');
-          return;
-        }
         this.currentTask++;
         this.timeLeftAnswer = this.durationAnswer;
       }
@@ -280,6 +283,53 @@ export default {
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
+    generatePayloadForSubmit() {
+      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+      const test = scheduleData.tests.find((t) => t.name === this.testName);
+      const payload = {
+        'testSessionId': scheduleData.sessionId,
+        'userId': scheduleData.userId,
+        'moduleId': scheduleData.moduleId,
+        'batteryTestConfigId': test.config.id,
+        'result': {
+          'correctAnswer': this.result.correct,
+          'totalQuestion': this.numberOfTask * this.choicesLength,
+          'skippedQuestion': this.result.missed,
+          'incorrectAnswer': this.result.wrong
+        }
+      }
+
+      return payload;
+    },
+    async submitResult() {
+      try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
+        this.isLoading = true;
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = this.generatePayloadForSubmit();
+        const response = await fetch(`${API_URL}api/submission`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+        removeTestByNameAndUpdateLocalStorage(this.testName)
+        this.$router.push('/module');// Set isLoading to false when the submission is complete
+      }
+    }
   }
 }
 </script>
@@ -316,5 +366,57 @@ export default {
 
   .loading-text {
     @apply text-white mt-5 text-[1.2em];
+  }
+
+  .grid-cols-9 {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+
+  .grid-cols-10 {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .grid-cols-11 {
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+  }
+
+  .grid-cols-12 {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .grid-cols-13 {
+    grid-template-columns: repeat(13, minmax(0, 1fr));
+  }
+
+  .grid-cols-13 {
+    grid-template-columns: repeat(13, minmax(0, 1fr));
+  }
+
+  .grid-cols-14 {
+    grid-template-columns: repeat(14, minmax(0, 1fr));
+  }
+
+  .grid-cols-15 {
+    grid-template-columns: repeat(15, minmax(0, 1fr));
+  }
+
+  .grid-cols-16 {
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+  }
+
+  .grid-cols-17 {
+    grid-template-columns: repeat(17, minmax(0, 1fr));
+  }
+
+  .grid-cols-18 {
+    grid-template-columns: repeat(18, minmax(0, 1fr));
+  }
+
+  .grid-cols-19 {
+    grid-template-columns: repeat(19, minmax(0, 1fr));
+  }
+
+  .grid-cols-20 {
+    grid-template-columns: repeat(20, minmax(0, 1fr));
   }
 </style>
