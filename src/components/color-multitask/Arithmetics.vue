@@ -61,6 +61,10 @@
     },
 		watch: {
       isTimesUp() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel()
+        }
+
         this.$emit('getResult', {
           correctAnswer: this.correctAnswer,
 					totalQuestion: this.totalQuestion,

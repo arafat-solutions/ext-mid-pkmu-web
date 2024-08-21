@@ -42,7 +42,7 @@
 					this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
 					this.greenLineStartTime = null; // Reset start time when exiting circle
 				}
-        
+
 				this.$emit('getResult', {
           correctTime: this.greenLineDuration,
         });
@@ -89,8 +89,8 @@
 				}
 
 				this.updateHorizon();
-				canvas.addEventListener('mousemove', this.checkMousePosition);
-				this.checkMousePosition();
+				canvas.addEventListener('mousemove', this.checkPosition);
+				this.checkPosition();
 			},
 			updateHorizon() {
 				const canvas = this.$refs.horizonCanvas;
@@ -168,7 +168,7 @@
 
 				// Draw Circle in the Middle
 				ctx.beginPath();
-				ctx.arc(this.circleShiftX, 0, this.circleRadius, 0, Math.PI * 2);
+				ctx.arc(this.circleShiftX, 0, this.circleRadius + 5, 0, Math.PI * 2);
 				ctx.closePath();
 				ctx.fillStyle = 'rgba(0, 0, 0, 0)';
 				ctx.fill();
@@ -232,7 +232,7 @@
 					this.updateHorizon();
 				});
 
-				this.checkMousePosition();
+				this.checkPosition();
 			},
 			setSpeed() {
 				if (this.speed === 'very_slow') {
@@ -268,7 +268,7 @@
 
 				this.updateHorizon();
 			},
-			checkMousePosition(event = null) {
+			checkPosition(event = null) {
 				if (!this.isYellowLineMoved) {
 					return;
 				}
@@ -293,7 +293,7 @@
 					Math.pow(rotatedX - this.circleShiftX, 2) + Math.pow(rotatedY, 2)
 				);
 
-				if (distance <= this.circleRadius) {
+				if (distance <= this.circleRadius + 5) {
 					if (!this.greenLineStartTime) {
 						this.greenLineStartTime = Date.now();
 					}
