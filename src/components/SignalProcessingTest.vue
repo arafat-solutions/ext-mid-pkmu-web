@@ -1,23 +1,151 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen">
-    <div class="grid grid-cols-2 gap-4">
-      <div class="bg-gray-500 h-24 w-24"></div>
-      <div class="bg-gray-500 h-24 w-24"></div>
-      <div class="bg-gray-500 h-24 w-24"></div>
-      <div class="bg-gray-500 h-24 w-24"></div>
+  <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+    Time: {{ formattedTime }}
+    <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
+    <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
+    <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+  </div>
+  <div class="relative w-[1280px] m-auto" v-if="!isTimesUp">
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="h-24 w-24 hover:cursor-pointer" :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'" v-for="i in 4" :key="i" @click="checkAnswer(i)"/>
+      </div>
+      <div class="text-red-600 font-bold text-lg text-left ml-6 mt-5" v-if="isWrongAnswer">The wrong response</div>
     </div>
+  </div>
+  <div v-if="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Your result is submitting</div>
   </div>
 </template>
 <script>
 export default {
   data() {
     return {
+      testName: 'Signal Processing Test',
+      currentIndexQuestion: 0,
+      isLoading: false,
+      secondTime: null,
+      timeLeft: null, // Countdown time in seconds
+      isPause: false,
+      isConfigLoaded: false,
+      intervalCountdownId: null,
+      intervalQuestionId: null,
+      clickedAnswer: false,
+      isWrongAnswer: true,
+      isTrial: this.$route.query.isTrial ?? false,
       colors: ['red', 'green', 'blue'],
       positions: [1, 2, 3, 4],
-      levels: ['very_easy', 'easy', 'medium', 'difficult', 'very_difficult'],
+      level: null, //very_easy, easy, medium, difficult, very_difficult
+      frequent: null, //never, very_rarely, rarely, normal, often, very_often
+      questions: [],
+      result: {
+        correct: 0,
+        wrong: 0,
+      },
+      greenCorrectAnswer: {
+        1: 3,
+        2: 4,
+        3: 1,
+        4: 2,
+      },
+      blueCorrectAnswer: {
+        1: 2,
+        2: 1,
+        3: 4,
+        4: 3,
+      },
     };
   },
+  mounted() {
+    this.loadConfig();
+  },
+  computed: {
+    isTimesUp() {
+      return this.timeLeft < 1;
+    },
+    formattedTime() {
+      const minutes = Math.floor(this.timeLeft / 60);
+      const seconds = this.timeLeft % 60;
+      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    },
+    intervalChangeQuestion() {
+      const intervalMap = {
+        never: null, // or a very high number, or skip entirely
+        very_rarely: 10, // 10 seconds
+        rarely: 8,       // 8 seconds
+        normal: 6,       // 6 seconds
+        often: 4,        // 4 seconds
+        very_often: 2    // 2 seconds
+      };
+
+      return intervalMap[this.frequent];
+    },
+    lengthQuestion() {
+      if (!this.intervalChangeQuestion) {
+        return 1;
+      }
+
+      return Math.ceil(this.secondTime/this.intervalChangeQuestion);
+    },
+    currentQuestion() {
+      if (!this.intervalChangeQuestion) {
+        return this.questions[0];
+      }
+
+
+      return this.questions[this.currentIndexQuestion];
+    },
+    resultMissed() {
+      return this.currentIndexQuestion + 1 - this.result.correct - this.result.wrong;
+    }
+  },
+  watch: {
+    isTimesUp(value) {
+      if (value) {
+        clearInterval(this.intervalCountdownId);
+        clearInterval(this.intervalQuestionId);
+        console.log(this.result, this.resultMissed);
+        alert('Submit Result')
+      }
+    }
+  },
   methods: {
+    loadConfig() {
+      try {
+        this.secondTime = 300;
+        this.timeLeft = this.secondTime;
+        this.level = 'very_difficult';
+        this.frequent = 'very_often';
+        this.isConfigLoaded = true;
+        this.generateQuestions();
+        this.startCountdown();
+        this.startChangeQuestion();
+      } catch (e) {
+        console.error('Error parsing schedule data:', e);
+      }
+    },
+    startCountdown() {
+      if (this.isPause) {
+        return;
+      }
+
+      this.intervalCountdownId = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft -= 1;
+        }
+      }, 1000);
+    },
+    startChangeQuestion() {
+      if (this.isPause || !this.intervalChangeQuestion) {
+        return;
+      }
+
+      this.intervalQuestionId = setInterval(() => {
+        this.currentIndexQuestion++;
+        this.clickedAnswer = false;
+      }, (this.intervalChangeQuestion * 1000));
+    },
     getRandomWeightedColor(level) {
       const weights = {
         very_easy: { red: 5, green: 3, blue: 2 },
@@ -51,30 +179,79 @@ export default {
       const changeChance = levelChangeProbability[level];
       if (Math.random() < changeChance) {
         return this.positions[Math.floor(Math.random() * this.positions.length)];
+      }
+
+      return this.positions[0];
+    },
+    generateQuestions() {
+      const questions = [];
+
+      for (let i = 0; i < this.lengthQuestion; i++) {
+        let newQuestion;
+
+        do {
+          newQuestion = {
+            color: this.getRandomWeightedColor(this.level),
+            position: this.getRandomPosition(this.level),
+          };
+        } while (i > 0 && newQuestion.color === questions[i - 1].color && newQuestion.position === questions[i - 1].position);
+
+        questions.push(newQuestion);
+      }
+
+      this.questions = questions;
+    },
+    checkAnswer(n) {
+      if (this.clickedAnswer) {
+        return;
+      }
+
+      this.clickedAnswer = true;
+      if (this.currentQuestion.color === 'red' && this.currentQuestion.position === n) {
+        this.result.correct++;
+      } else if (this.currentQuestion.color === 'green' && this.greenCorrectAnswer[this.currentQuestion.position] === n) {
+        this.result.correct++;
+      } else if (this.currentQuestion.color === 'blue' && this.blueCorrectAnswer[this.currentQuestion.position] === n) {
+        this.result.correct++;
       } else {
-        return this.positions[0]; // Default position or any other logic
+        this.result.wrong++;
       }
     },
-    generateRandomArray(level, length) {
-      const randomArray = [];
-
-      for (let i = 0; i < length; i++) {
-        randomArray.push({
-          color: this.getRandomWeightedColor(level),
-          position: this.getRandomPosition(level),
-        });
-      }
-
-      return randomArray;
-    },
-  },
-  created() {
-    // Example usage
-    const level = 'very_difficult'; // This can be any difficulty level
-    const length = 10; // Desired length of the resulting array
-    const randomizedArray = this.generateRandomArray(level, length);
-    console.log(randomizedArray);
   },
 };
-
 </script>
+<style scoped>
+  .timer-container-trial {
+    @apply absolute right-0 top-0 bg-[#0349D0] p-3 text-white font-bold rounded-bl-[15px];
+
+    button {
+      @apply text-black font-bold py-2 rounded-md border-transparent min-w-[100px] cursor-pointer bg-gray-200;
+    }
+  }
+
+  .timer-container {
+    @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#0349D0] px-20 py-3 text-white font-bold rounded-bl-[15px] rounded-br-[15px];
+  }
+
+  .loading-container {
+    @apply absolute inset-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-[1000];
+  }
+
+  .loading-spinner {
+    @apply border-[8px] border-solid border-[rgba(255,255,255,0.3)] border-t-white rounded-full w-[60px] h-[60px] animate-spin;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-text {
+    @apply text-white mt-5 text-[1.2em];
+  }
+</style>

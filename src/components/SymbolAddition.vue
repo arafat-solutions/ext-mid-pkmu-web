@@ -387,10 +387,6 @@ export default {
     grid-template-columns: repeat(13, minmax(0, 1fr));
   }
 
-  .grid-cols-13 {
-    grid-template-columns: repeat(13, minmax(0, 1fr));
-  }
-
   .grid-cols-14 {
     grid-template-columns: repeat(14, minmax(0, 1fr));
   }
