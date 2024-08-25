@@ -6,12 +6,12 @@
     <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
   </div>
   <div class="relative w-[1280px] m-auto" v-if="!isTimesUp">
-    <div class="flex items-center justify-center min-h-screen">
+    <div class="flex items-center justify-center mt-[300px]">
       <div class="grid grid-cols-2 gap-4">
         <div class="h-24 w-24 hover:cursor-pointer" :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'" v-for="i in 4" :key="i" @click="checkAnswer(i)"/>
       </div>
-      <div class="text-red-600 font-bold text-lg text-left ml-6 mt-5" v-if="isWrongAnswer">The wrong response</div>
     </div>
+    <div class="text-red-600 font-bold text-lg text-center mt-5" v-if="isWrongAnswer">The wrong response</div>
   </div>
   <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner"></div>
@@ -19,29 +19,34 @@
   </div>
 </template>
 <script>
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+
 export default {
   data() {
     return {
       testName: 'Signal Processing Test',
       currentIndexQuestion: 0,
       isLoading: false,
-      secondTime: null,
+      minuteTime: null,
       timeLeft: null, // Countdown time in seconds
       isPause: false,
       isConfigLoaded: false,
       intervalCountdownId: null,
       intervalQuestionId: null,
+      displayDuration: null, // in seconds
       clickedAnswer: false,
-      isWrongAnswer: true,
+      isWrongAnswer: false,
       isTrial: this.$route.query.isTrial ?? false,
       colors: ['red', 'green', 'blue'],
       positions: [1, 2, 3, 4],
       level: null, //very_easy, easy, medium, difficult, very_difficult
       frequent: null, //never, very_rarely, rarely, normal, often, very_often
       questions: [],
+      startTimeAnswer: null,
       result: {
         correct: 0,
         wrong: 0,
+        answerTimes: [],
       },
       greenCorrectAnswer: {
         1: 3,
@@ -82,14 +87,14 @@ export default {
       return intervalMap[this.frequent];
     },
     lengthQuestion() {
-      if (!this.intervalChangeQuestion) {
+      if (!this.displayDuration) {
         return 1;
       }
 
-      return Math.ceil(this.secondTime/this.intervalChangeQuestion);
+      return Math.ceil((this.minuteTime * 60) / this.displayDuration);
     },
     currentQuestion() {
-      if (!this.intervalChangeQuestion) {
+      if (!this.displayDuration) {
         return this.questions[0];
       }
 
@@ -98,6 +103,12 @@ export default {
     },
     resultMissed() {
       return this.currentIndexQuestion + 1 - this.result.correct - this.result.wrong;
+    },
+    averageAnswerTime() {
+      if (this.result.answerTimes.length === 0) return 0; // Handle empty this.result.answerTimesay case
+      const sum = this.result.answerTimes.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+      const average = sum / this.result.answerTimes.length;
+      return parseFloat(average.toFixed(2));
     }
   },
   watch: {
@@ -105,25 +116,32 @@ export default {
       if (value) {
         clearInterval(this.intervalCountdownId);
         clearInterval(this.intervalQuestionId);
-        console.log(this.result, this.resultMissed);
-        alert('Submit Result')
+        this.submitResult();
       }
     }
   },
   methods: {
     loadConfig() {
-      try {
-        this.secondTime = 300;
-        this.timeLeft = this.secondTime;
-        this.level = 'very_difficult';
-        this.frequent = 'very_often';
-        this.isConfigLoaded = true;
-        this.generateQuestions();
-        this.startCountdown();
-        this.startChangeQuestion();
-      } catch (e) {
-        console.error('Error parsing schedule data:', e);
+      const data = localStorage.getItem('scheduleData');
+      if (data) {
+        try {
+          const scheduleData = JSON.parse(data);
+          const config = scheduleData.tests.find((t) => t.name === this.testName).config;
+          this.minuteTime = Number(config.duration);
+          this.timeLeft = this.minuteTime * 60;
+          this.level = config.difficulty;
+          this.displayDuration = config.display_duration;
+          // this.frequent = config.frequency_change;
+          this.isConfigLoaded = true;
+          this.generateQuestions();
+          this.startCountdown();
+          this.startChangeQuestion();
+        } catch (e) {
+          console.error('Error parsing schedule data:', e);
+        }
       }
+
+      console.warn('No schedule data found in localStorage.');
     },
     startCountdown() {
       if (this.isPause) {
@@ -137,14 +155,16 @@ export default {
       }, 1000);
     },
     startChangeQuestion() {
-      if (this.isPause || !this.intervalChangeQuestion) {
+      if (this.isPause || !this.displayDuration) {
         return;
       }
 
       this.intervalQuestionId = setInterval(() => {
+        this.startTimeAnswer = new Date();
+        this.isWrongAnswer = false;
         this.currentIndexQuestion++;
         this.clickedAnswer = false;
-      }, (this.intervalChangeQuestion * 1000));
+      }, (this.displayDuration * 1000));
     },
     getRandomWeightedColor(level) {
       const weights = {
@@ -206,6 +226,14 @@ export default {
         return;
       }
 
+      // calculate diff answer
+      if (this.startTimeAnswer) {
+        const endTime = new Date(); // End time after operation
+        const differenceInMilliseconds = endTime.getTime() - this.startTimeAnswer.getTime();
+        this.result.answerTimes.push(differenceInMilliseconds);
+        this.startTimeAnswer = null;
+      }
+
       this.clickedAnswer = true;
       if (this.currentQuestion.color === 'red' && this.currentQuestion.position === n) {
         this.result.correct++;
@@ -215,8 +243,56 @@ export default {
         this.result.correct++;
       } else {
         this.result.wrong++;
+        this.isWrongAnswer = true;
       }
     },
+    generatePayloadForSubmit() {
+      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+      const test = scheduleData.tests.find((t) => t.name === this.testName);
+      const totalQuestion = this.currentIndexQuestion + 1;
+      const payload = {
+        'testSessionId': scheduleData.sessionId,
+        'userId': scheduleData.userId,
+        'moduleId': scheduleData.moduleId,
+        'batteryTestConfigId': test.config.id,
+        'result': {
+          'totalQuestion': totalQuestion,
+          'correctAnswer': this.result.correct,
+          'avgResponseTIme': this.averageAnswerTime
+        }
+      }
+
+      return payload;
+    },
+    async submitResult() {
+      try {
+        if (this.isTrial) {
+          this.$router.push('/module');
+          return;
+        }
+
+        this.isLoading = true;
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = this.generatePayloadForSubmit();
+        const response = await fetch(`${API_URL}api/submission`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+        removeTestByNameAndUpdateLocalStorage(this.testName)
+        this.$router.push('/module');// Set isLoading to false when the submission is complete
+      }
+    }
   },
 };
 </script>
@@ -253,5 +329,21 @@ export default {
 
   .loading-text {
     @apply text-white mt-5 text-[1.2em];
+  }
+
+  .bg-gray-500 {
+    background-color: #6B7280;
+  }
+
+  .bg-green-500 {
+    background-color: #22C55E;
+  }
+
+  .bg-blue-500 {
+    background-color: #3B82F6;
+  }
+
+  .bg-red-500 {
+    background-color: #EF4444;
   }
 </style>
