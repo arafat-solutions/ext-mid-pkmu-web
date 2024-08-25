@@ -259,33 +259,33 @@ export default {
     },
     setFrequency() {
       if (this.config.frequency === 'very_often') {
-        return 200;
+        return 100;
       }
       if (this.config.frequency === 'often') {
-        return 300;
+        return 200;
       }
       if (this.config.frequency === 'sometimes') {
-        return 400;
+        return 300;
       }
       if (this.config.frequency === 'sheldom') {
-        return 500;
+        return 400;
       }
       if (this.config.frequency === 'very_seldom') {
-        return 600;
+        return 500;
       }
     },
     setSpeed() {
       if (this.config.speed === 'very_slow') {
-        return 0.01;
+        return 0.02;
       }
       if (this.config.speed === 'slow') {
-        return 0.03;
+        return 0.04;
       }
       if (this.config.speed === 'medium') {
-        return 0.05;
+        return 0.06;
       }
       if (this.config.speed === 'fast') {
-        return 0.07;
+        return 0.08;
       }
       if (this.config.speed === 'very_fast') {
         return 0.1;
@@ -378,14 +378,30 @@ export default {
       const scannerStartAngle = this.scannerAngle;
       const scannerEndAngle = this.scannerAngle + Math.PI / 6;
       const normalizedAngle = angle < 0 ? angle + 2 * Math.PI : angle;
-      return distance <= radius && normalizedAngle >= scannerStartAngle && normalizedAngle <= scannerEndAngle;
+      const normalizedScannerEndAngle = scannerEndAngle > 2 * Math.PI ? scannerEndAngle - 2 * Math.PI : scannerEndAngle;
+      const withinRadius = distance <= radius;
+      const withinAngle = (
+        (scannerStartAngle <= normalizedAngle && normalizedAngle <= normalizedScannerEndAngle) ||
+        (scannerEndAngle > 2 * Math.PI && (normalizedAngle >= scannerStartAngle || normalizedAngle <= (scannerEndAngle - 2 * Math.PI)))
+      );
+
+      return withinRadius && withinAngle;
     },
     addShape() {
       const radius = Math.min(this.width, this.height) / 2;
-      const angle = Math.random() * 2 * Math.PI;
-      const distance = Math.random() * radius;
-      const x = this.width / 2 + distance * Math.cos(angle);
-      const y = this.height / 2 + distance * Math.sin(angle);
+      const minDistance = 50;
+      let angle, distance, x, y;
+
+      do {
+        angle = Math.random() * 2 * Math.PI;
+        distance = minDistance + Math.random() * (radius - minDistance);
+
+        x = this.width / 2 + distance * Math.cos(angle);
+        y = this.height / 2 + distance * Math.sin(angle);
+      } while (
+        this.isInScannedArea(angle, distance, radius) ||
+        distance < minDistance + 20
+      );
 
       //Set Object Showed
       const type = this.config.shapes[Math.floor(Math.random() * this.config.shapes.length)];
@@ -393,7 +409,7 @@ export default {
       this.objects.push({ x, y, type, detected: false, sweepCount: 0 });
 
       //Remove old objects
-      if (this.objects.length > 50) {
+      if (this.objects.length > 100) {
         this.objects.shift();
       }
     },
