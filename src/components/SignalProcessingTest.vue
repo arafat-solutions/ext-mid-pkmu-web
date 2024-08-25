@@ -5,7 +5,7 @@
     <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
     <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
   </div>
-  <div class="relative w-[1280px] m-auto" v-if="!isTimesUp">
+  <div class="relative w-[1280px] m-auto" v-if="!isTimesUp && !isPause">
     <div class="flex items-center justify-center mt-[300px]">
       <div class="grid grid-cols-2 gap-4">
         <div class="h-24 w-24 hover:cursor-pointer" :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'" v-for="i in 4" :key="i" @click="checkAnswer(i)"/>
@@ -245,6 +245,19 @@ export default {
         this.result.wrong++;
         this.isWrongAnswer = true;
       }
+    },
+    exit() {
+      this.$router.push('module');
+    },
+    pause() {
+      this.isPause = true;
+      clearInterval(this.intervalCountdownId);
+      clearInterval(this.intervalQuestionId);
+    },
+    startAgain() {
+      this.isPause = false;
+      this.startCountdown();
+      this.startChangeQuestion();
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
