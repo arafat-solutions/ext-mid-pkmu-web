@@ -5,18 +5,15 @@
 				<strong> Listen to task and enter your answer </strong>
 			</div>
 			<ul class="options">
-				<div v-for="(option, index) in optionAnswerAudios" :key="index">
-					<li>
-							<label>
-								<span class="option-answer">
-									{{ option.key }}
-								</span>
-
-								{{ option.value }}
-							</label>
-					</li>
-				</div>
-			</ul>
+        <li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item">
+          <label>
+            <span class="option-answer">
+              {{ option.key }}
+            </span>
+            {{ option.value }}
+          </label>
+        </li>
+      </ul>
 		</div>
 	</div>
 </template>
@@ -221,12 +218,16 @@
 		margin-bottom: 10px;
 	}
 	.options {
-		list-style-type: none;
-		padding: 0;
-	}
-	.options li {
-		margin-bottom: 8px;
-	}
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+  }
+  .option-item {
+    display: flex;
+    align-items: center;
+  }
 	.option-answer {
 		background-color: grey;
 		padding: 10px;

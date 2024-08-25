@@ -29,8 +29,6 @@
         :isTimesUp="isTimesUp"
         :speed="config.color_tank.speed"
         :coloredLowerTank="config.color_tank.colored_lower_tank"
-        :descendSpeed="config.color_tank.descend_speed"
-        :startToDecreaseIn="config.color_tank.start_to_decrease_in"
         :isNegativeScore="config.color_tank.negative_score"
         :isPause="isPause"
         :isActive="config.subtask.color_tank"
@@ -105,8 +103,6 @@ export default {
           negative_score: null,
           colored_lower_tank: null,
           speed: null, //slow, medium, fast
-          descend_speed: null, //slow, medium, fast
-          start_to_decrease_in: 2000,
         },
       },
       result: {
@@ -193,7 +189,6 @@ export default {
           if (this.config.subtask.color_tank) {
             this.config.color_tank.negative_score = colorMultitask.color_tank.negative_score
             this.config.color_tank.speed = colorMultitask.color_tank.speed
-            this.config.color_tank.descend_speed = colorMultitask.color_tank.descend_speed
             this.config.color_tank.colored_lower_tank = colorMultitask.color_tank.colored_lower_tank
           }
 
