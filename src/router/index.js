@@ -21,6 +21,7 @@ import AccousticMemory from '@/components/AccousticMemory.vue';
 import MultiMonitoringTest from '@/components/MultiMonitoringTest.vue'
 import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
 import SymbolAddition from '@/components/SymbolAddition.vue';
+import SignalProcessingTest from '@/components/SignalProcessingTest.vue';
 
 const routes = [
   {
@@ -127,6 +128,11 @@ const routes = [
     path: '/symbol-addition-test',
     name: 'Symbol Addition',
     component: SymbolAddition
+  },
+  {
+    path: '/signal-processing-test',
+    name: 'Signal Processing Test',
+    component: SignalProcessingTest
   },
 ];
 
