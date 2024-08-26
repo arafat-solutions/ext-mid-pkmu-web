@@ -189,6 +189,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemory')),
           result: this.result,
         }
 
@@ -210,7 +211,8 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Running Memory Span Test')
+        removeTestByNameAndUpdateLocalStorage('Running Memory Span Test');
+        localStorage.removeItem('reloadCountRunningMemory');
         this.$router.push('/module');
       }
     },
@@ -359,6 +361,13 @@ export default {
     }
   },
   mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemory') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
+    })
+
     this.initConfig();
   }
 };

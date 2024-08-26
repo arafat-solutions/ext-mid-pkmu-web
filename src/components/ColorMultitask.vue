@@ -121,6 +121,13 @@ export default {
     };
   },
   async mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountColorTankMultitask') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
+    })
+
     this.initConfig();
   },
   beforeUnmount() {
@@ -241,6 +248,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountColorTankMultitask')),
           result: this.result,
         }
 
@@ -263,6 +271,7 @@ export default {
         this.isLoading = false;
 
         removeTestByNameAndUpdateLocalStorage('Multi Tasking With Color')
+        localStorage.removeItem('reloadCountColorTankMultitask');
         this.$router.push('/module');
       }
     },

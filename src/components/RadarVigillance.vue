@@ -60,6 +60,13 @@ export default {
     };
   },
   mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountRadarVigilance') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
+    })
+
     this.initConfig();
   },
   created() {
@@ -69,9 +76,6 @@ export default {
     window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
-    capitalizeFirstLetter(string) {
-      return string.charAt(0).toUpperCase() + string.slice(1);
-    },
     pause() {
       this.stopRadar();
       clearInterval(this.countdownInterval);
@@ -509,6 +513,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountRadarVigilance')),
           result: this.result,
         }
 
@@ -530,7 +535,8 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Radar Vigilance Test')
+        removeTestByNameAndUpdateLocalStorage('Radar Vigilance Test');
+        localStorage.removeItem('reloadCountRadarVigilance');
         this.$router.push('/module');
       }
     },

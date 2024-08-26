@@ -14,14 +14,14 @@
 
     <div class="line-container">
 
-      <div class="left-content" style="width: 60%;">
+      <div class="left-content" style="width: 55%;">
         <div class="line-turns">
-          <canvas ref="lineCanvas" :width="width" :height="height"></canvas>
+          <canvas class="center" ref="lineCanvas" :width="width" :height="height"></canvas>
         </div>
       </div>
 
-      <div class="right-content" style="width: 40%;">
-        <div class="question">
+      <div class="right-content" style="width: 45%;">
+        <div class="question" style="margin-right: 30%;">
           <p v-if="question === 'left'">
             How many Left Turns in the line?
           </p>
@@ -54,6 +54,7 @@ export default {
   name: 'SpatialOrientation',
   data() {
     return {
+      isButtonDisabled: false,
       isConfigLoaded: false,
       isLoading: false,
       isTrial: this.$route.query.isTrial ?? false,
@@ -65,6 +66,7 @@ export default {
       leftTurns: 0,
       drawIndex: 0,
       drawIndexRemoval: 0,
+      data: [],
       lines: [],
       linesUsed: [],
       optionAnswers: [],
@@ -96,6 +98,13 @@ export default {
     };
   },
   async mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountSpatial') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountSpatial', reloadCount.toString())
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountSpatial', reloadCount.toString())
+    })
+
     this.initConfig();
   },
   methods: {
@@ -144,12 +153,14 @@ export default {
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
-          this.config.crash = spatialOrientation.crash
-          this.config.full_image = spatialOrientation.full_image, //true or false
-          this.config.left_turn = spatialOrientation.left_turn, //true or false
-          this.config.right_turn = spatialOrientation.right_turn, //true or false
+          // this.config.crash = spatialOrientation.crash
+          this.config.crash = 20
+
+          this.config.full_image = spatialOrientation.full_image,
+          this.config.left_turn = spatialOrientation.left_turn,
+          this.config.right_turn = spatialOrientation.right_turn,
           this.config.speed = this.setSpeed(spatialOrientation.speed),
-          this.config.speed_increasing = spatialOrientation.speed_increasing, //true or false,
+          this.config.speed_increasing = spatialOrientation.speed_increasing,
 
           this.isConfigLoaded = true;
         } catch (e) {
@@ -201,6 +212,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountSpatial')),
           result: this.result,
         }
 
@@ -223,6 +235,7 @@ export default {
         this.isLoading = false;
 
         removeTestByNameAndUpdateLocalStorage('Spatial Orientation')
+        localStorage.removeItem('reloadCountSpatial');
         this.$router.push('/module');
       }
     },
@@ -252,27 +265,23 @@ export default {
     },
     async generateCoordinat() {
       try {
-        const res = await fetch('/scenario.json',
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-          }
-        )
-        const data = await res.json();
+        if (this.data.length === 0) {
+          const res = await fetch('/scenario.json',
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+            }
+          )
+          this.data = await res.json();
+        }
 
-        const choosenlines = data[this.config.crash];
+        const choosenlines = this.linesUsed.length + 1 === this.data[this.config.crash] ?
+          this.data[this.config.crash - 1] :
+          this.data[this.config.crash];
+
         let randomIndex = Math.floor(Math.random() * choosenlines.length);
-
-        // Change Question Crash
-        if (this.linesUsed.length === this.lines.length) {
-          this.config.crash = this.config.crash - 1;
-        }
-
-        if (this.linesUsed.includes(Number(randomIndex))) {
-          this.generateCoordinat();
-        }
 
         this.linesUsed.push(randomIndex)
         this.lines = choosenlines[randomIndex]
@@ -302,7 +311,6 @@ export default {
       ctx.stroke();
 
       this.drawArrowHead('init');
-
       this.totalQuestion++;
       this.responseQuestion = Date.now();
       this.setAnswerOption();
@@ -356,10 +364,7 @@ export default {
           this.drawArrowHead('init');
           this.totalQuestion++;
           this.responseQuestion = Date.now();
-
-          if (!this.isShowAnswerBox) {
-            this.setAnswerOption();
-          }
+          this.setAnswerOption();
         } else {
           this.drawIndex = i;
         }
@@ -411,19 +416,40 @@ export default {
       }
 
       const totalNumbers = this.answer === 0 ? 10 : 11;
-      const halfBefore = Math.min(this.answer - 1, Math.floor((totalNumbers - 1) / 2));
-      const halfAfter = totalNumbers - 1 - halfBefore;
+      let positions = []
 
-      for (let i = 0; i < halfBefore; i++) {
-        this.optionAnswers.push(this.answer - halfBefore + i);
-      }
-      this.optionAnswers.push(this.answer);
-
-      for (let i = 1; i <= halfAfter; i++) {
-        this.optionAnswers.push(this.answer + i);
+      // Pilih posisi jawaban secara acak (awal, tengah, atau akhir)
+      if (this.answer > 11) {
+        positions = ['start', 'middle', 'end'];
+      } else {
+        positions = ['start', 'middle'];
       }
 
-      this.isShowAnswerBox = true
+      const selectedPosition = positions[Math.floor(Math.random() * positions.length)];
+
+      let answerIndex;
+      if (selectedPosition === 'start') {
+        answerIndex = 0; // Jawaban di awal
+      } else if (selectedPosition === 'end') {
+        answerIndex = totalNumbers - 1; // Jawaban di akhir
+      } else {
+        answerIndex = Math.floor(totalNumbers / 2); // Jawaban di tengah
+      }
+
+      this.optionAnswers = [];
+
+      for (let i = 0; i < totalNumbers; i++) {
+        if (i === answerIndex) {
+          this.optionAnswers.push(this.answer);
+        } else {
+          const option = i < answerIndex ? this.answer - (answerIndex - i) : this.answer + (i - answerIndex);
+          this.optionAnswers.push(option);
+        }
+      }
+
+      this.isButtonDisabled = false;
+      this.isShowAnswerBox = true;
+      console.log(this.answer, 'answer')
     },
     drawArrowHead(isInit = false) {
       const canvas = this.$refs.lineCanvas;
@@ -577,9 +603,11 @@ export default {
 
     },
     pressAnswer(value) {
-      if (this.isPause) {
+      if (this.isPause || this.isButtonDisabled) {
         return;
       }
+
+      this.isButtonDisabled = true;
 
       if (value !== 'next') {
         if (this.answer === value) {
@@ -589,14 +617,14 @@ export default {
         }
       }
 
-      clearTimeout(this.timeoutIdRemoveInterval);
-      this.timeoutIdRemoveInterval = null;
-
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
 
       clearInterval(this.drawLineinterval);
       this.drawLineinterval = null;
+
+      clearTimeout(this.timeoutIdRemoveInterval);
+      this.timeoutIdRemoveInterval = null;
 
       setTimeout(() => {
         this.generateCoordinat();
@@ -703,6 +731,11 @@ export default {
     color: #ffffff;
     margin-top: 20px;
     font-size: 1.2em;
+  }
+  .center {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
   }
   .line-container {
     display: flex;
