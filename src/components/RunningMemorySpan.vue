@@ -23,7 +23,7 @@
     <div class="input-simulation-container">
       <div v-if="isShowQuestion">
         <div class="question">
-          <p> Numbers from the end </p>
+          <p class="text-question"> Urutkan dari angka terakhir </p>
         </div>
 
         <div class="calculator">
@@ -46,7 +46,7 @@
       </div>
 
       <div v-else style="margin-top: 20%;">
-        <p>Listen to item presentation!</p>
+        <p class="text-question">Dengarkan angka yang disebutkan!</p>
       </div>
 
     </div>
@@ -482,6 +482,9 @@ export default {
   }
   .question {
     margin: 30px;
+  }
+  .text-question {
+    font-weight: bolder;
   }
   .calculator {
     max-width: 300px;

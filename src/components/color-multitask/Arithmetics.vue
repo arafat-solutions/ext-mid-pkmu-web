@@ -2,7 +2,7 @@
 	<div class="arithmetic">
 		<div class="question-container">
 			<div class="question">
-				<strong> Listen to task and enter your answer </strong>
+				<strong> Dengarkan dan masukkan jawaban Anda </strong>
 			</div>
 			<ul class="options">
         <li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item">
