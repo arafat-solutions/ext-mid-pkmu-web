@@ -3,7 +3,7 @@
         <ModalConfirmSound :visible="isModalVisible" title="Start Test"
             message="Are you sure you want to start this test?" @confirm="handleConfirm" @cancel="handleCancel" />
         <div class="bg-black h-full w-full flex justify-center items-center">
-            <canvas ref="canvas" class="border border-white" :width="500" :height="300"></canvas>
+            <canvas ref="canvas" class="border border-white" :width="canvasWidth" :height="canvasHeight"></canvas>
         </div>
         <div class="absolute top-0 left-0 w-full flex justify-center">
             <div
@@ -37,6 +37,8 @@ import ModalConfirmSound from './common/ModalConfirmSound.vue'
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 const loading = ref(false)
+const canvasWidth = ref(700)  
+const canvasHeight= ref(500)
 const router = useRouter()
 const isModalVisible = ref(true)
 const canvas = ref(null);
@@ -58,7 +60,7 @@ const config = ref({
     directionChange: '',
     duration: 0,
     rectangleVisibility: {
-        showDuration: 1,
+        showDuration: 5,
         hideDuration: 8,
     },
     playInterval: 10000,
@@ -119,11 +121,11 @@ function moveCircle(deltaTime) {
     circle.x += direction.x * moveDistance;
     circle.y += direction.y * moveDistance;
 
-    if (circle.x + circle.radius > 500 || circle.x - circle.radius < 0) direction.x *= -1;
-    if (circle.y + circle.radius > 300 || circle.y - circle.radius < 0) direction.y *= -1;
+    if (circle.x + circle.radius > canvasWidth.value || circle.x - circle.radius < 0) direction.x *= -1;
+    if (circle.y + circle.radius > canvasHeight.value || circle.y - circle.radius < 0) direction.y *= -1;
 
-    circle.x = Math.max(circle.radius, Math.min(500 - circle.radius, circle.x));
-    circle.y = Math.max(circle.radius, Math.min(300 - circle.radius, circle.y));
+    circle.x = Math.max(circle.radius, Math.min(canvasWidth.value - circle.radius, circle.x));
+    circle.y = Math.max(circle.radius, Math.min(canvasHeight.value - circle.radius, circle.y));
 }
 
 function changeSpeed() {
@@ -150,7 +152,7 @@ function changeDirection() {
 }
 
 function draw() {
-    ctx.value.clearRect(0, 0, 500, 300);
+    ctx.value.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
 
     if (gameState.value.rectanglesVisible) {
         ctx.value.fillStyle = '#1C97FF';
@@ -189,8 +191,8 @@ function formatTime(seconds) {
 
 function generateRectangles() {
     return Array.from({ length: 2 }, () => ({
-        x: Math.random() * 470,
-        y: Math.random() * 270
+        x: Math.random() * (canvasWidth.value - 30),
+        y: Math.random() * (canvasHeight.value  - 30)
     }));
 }
 
