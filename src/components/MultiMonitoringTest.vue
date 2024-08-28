@@ -101,10 +101,10 @@ const gameState = ref({
 
 const speedMap = {
     very_slow: 1,
-    slow: 2,
-    normal: 3,
-    fast: 4,
-    very_fast: 5
+    slow: 1.2,
+    medium: 1.6,
+    fast: 2,
+    very_fast: 2.5
 };
 
 const gamepadIndex = ref(null)
@@ -114,18 +114,25 @@ function moveCircle(deltaTime) {
     const { direction, currentSpeed } = gameState.value;
 
     changeSpeed();
-    changeDirection();
+    changeDirection(); // This handles the random "edge collision" behavior
 
     const moveDistance = currentSpeed * (deltaTime / 16.67); // Normalize for 60 FPS
 
-    circle.x += direction.x * moveDistance;
-    circle.y += direction.y * moveDistance;
+    let newX = circle.x + direction.x * moveDistance;
+    let newY = circle.y + direction.y * moveDistance;
 
-    if (circle.x + circle.radius > canvasWidth.value || circle.x - circle.radius < 0) direction.x *= -1;
-    if (circle.y + circle.radius > canvasHeight.value || circle.y - circle.radius < 0) direction.y *= -1;
+    // Check for actual canvas edge collisions and bounce
+    if (newX - circle.radius < 0 || newX + circle.radius > canvasWidth.value) {
+        direction.x *= -1;
+        newX = Math.max(circle.radius, Math.min(canvasWidth.value - circle.radius, newX));
+    }
+    if (newY - circle.radius < 0 || newY + circle.radius > canvasHeight.value) {
+        direction.y *= -1;
+        newY = Math.max(circle.radius, Math.min(canvasHeight.value - circle.radius, newY));
+    }
 
-    circle.x = Math.max(circle.radius, Math.min(canvasWidth.value - circle.radius, circle.x));
-    circle.y = Math.max(circle.radius, Math.min(canvasHeight.value - circle.radius, circle.y));
+    circle.x = newX;
+    circle.y = newY;
 }
 
 function changeSpeed() {
@@ -136,19 +143,32 @@ function changeSpeed() {
 }
 
 function changeDirection() {
-    const changeRates = { none: 0, slow: 0.01, normal: 0.05, sudden: 0.2 };
+    const changeRates = { none: 0, slow: 0.01, medium: 0.05, sudden: 0.2 };
     const rate = changeRates[config.value.directionChange];
-    const angle = (Math.random() - 0.5) * 2 * Math.PI * rate;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
 
-    const { direction } = gameState.value;
-    const newX = direction.x * cos - direction.y * sin;
-    const newY = direction.x * sin + direction.y * cos;
+    // Simulate random edge collision
+    if (Math.random() < rate) {
+        // Randomly choose to "bounce" off either a vertical or horizontal edge
+        if (Math.random() < 0.5) {
+            // Simulate vertical edge collision
+            gameState.value.direction.x *= -1;
+        } else {
+            // Simulate horizontal edge collision
+            gameState.value.direction.y *= -1;
+        }
 
-    const magnitude = Math.sqrt(newX * newX + newY * newY);
-    direction.x = newX / magnitude;
-    direction.y = newY / magnitude;
+        // Add a small random adjustment to avoid getting stuck in a repeating pattern
+        const randomAdjustment = (Math.random() - 0.5) * 0.2;
+        gameState.value.direction.x += randomAdjustment;
+        gameState.value.direction.y += randomAdjustment;
+
+        // Normalize the direction vector
+        const magnitude = Math.sqrt(
+            gameState.value.direction.x ** 2 + gameState.value.direction.y ** 2
+        );
+        gameState.value.direction.x /= magnitude;
+        gameState.value.direction.y /= magnitude;
+    }
 }
 
 function draw() {
