@@ -85,12 +85,18 @@ export default {
         window.addEventListener('resize', this.handleResize);
         this.initializeTest()
         document.addEventListener('keydown', this.handleGlobalKeydown);
+
+        this.$refs.visualCanvas.addEventListener('click', this.handleTouchOrClick);
+        this.$refs.visualCanvas.addEventListener('touchstart', this.handleTouchOrClick);
     },
     beforeUnmount() {
         window.removeEventListener('keydown', this.handleGlobalKeydown);
         window.removeEventListener('resize', this.handleResize);
         clearInterval(this.tesInterval)
         clearInterval(this.timerInterval)
+
+        this.$refs.visualCanvas.removeEventListener('click', this.handleTouchOrClick);
+        this.$refs.visualCanvas.removeEventListener('touchstart', this.handleTouchOrClick);
     },
     methods: {
         initVisual() {
@@ -831,6 +837,83 @@ export default {
                 console.log(error, "<< error")
             } finally {
                 this.loading = false; // Set loading to false when the submission is complete
+            }
+        },
+        // for touchscreen
+        handleTouchOrClick() {
+            if (this.memoryTime === 0 && this.canAnswer) {
+                if (this.renderInput === 0) {
+                    this.renderInput = 1;
+                    this.drawInput({ input: this.input.input1, inputType: 'input1' });
+                    this.$nextTick(() => {
+                        if (this.$refs.input1) {
+                            this.$refs.input1.focus();
+                        }
+                    });
+                } else if (this.renderInput === 1) {
+                    this.renderInput = 2;
+                    this.drawInput({ input: this.input.input2, inputType: 'input2' });
+                    this.$nextTick(() => {
+                        if (this.$refs.input2) {
+                            this.$refs.input2.focus();
+                        }
+                    });
+                } else if (this.renderInput === 2) {
+                    this.processAnswers();
+                }
+            }
+        },
+        processAnswers() {
+            const input1 = this.input.input1;
+            const input2 = this.input.input2;
+
+            let resultQuestion1 = false;
+            let resultQuestion2 = false;
+
+            // Check if the answer is empty
+            if (input1.userInput === '' && input2.userInput === '') {
+                this.result.unansweredQuestion += 1;
+            }
+
+            // Check if answers are correct
+            if (this.questions[this.questionMarkPositions[0]].type === 'number') {
+                if (Number(input1.userInput) === this.questions[this.questionMarkPositions[0]].text) {
+                    resultQuestion1 = true;
+                }
+            } else if (this.questions[this.questionMarkPositions[0]].type === 'text') {
+                if (input1.userInput.toUpperCase() === this.questions[this.questionMarkPositions[0]].text) {
+                    resultQuestion1 = true;
+                }
+            }
+
+            if (this.questions[this.questionMarkPositions[1]].type === 'number') {
+                if (Number(input2.userInput) === this.questions[this.questionMarkPositions[1]].text) {
+                    resultQuestion2 = true;
+                }
+            } else if (this.questions[this.questionMarkPositions[1]].type === 'text') {
+                if (input2.userInput.toUpperCase() === this.questions[this.questionMarkPositions[1]].text) {
+                    resultQuestion2 = true;
+                }
+            }
+
+            if (resultQuestion1 && resultQuestion2) {
+                this.result.correctAnswer += 1;
+            }
+
+            this.renderInput = 0;
+            input1.visible = false;
+            input2.visible = false;
+            input1.userInput = '';
+            input2.userInput = '';
+            this.questionMarkPositions = [];
+
+            if (this.testTime > 0) {
+                this.result.noOfQuestionDisplayed += 1;
+                this.createRandomQuestion();
+                this.canAnswer = false;
+                this.memoryTime = this.configBe.questionInterval;
+                this.drawVisual();
+                this.countDownMemoryTime();
             }
         },
 
