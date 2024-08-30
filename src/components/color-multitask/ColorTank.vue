@@ -38,19 +38,19 @@
 				lineTankCanvasHeight: 250,
 				lines: [
 					// Q
-					{ x1: 13, y1: 10, x2: 13, y2: 280 },
-					{ x1: 35, y1: 25, x2: 35, y2: 50, x3: 120, y3: 220, x4: 120, y4: 230, startText: 'Q', endText: 'S', },
-					{ x1: 55, y1: 10, x2: 55, y2: 50, x3: 180, y3: 220, x4: 180, y4: 280},
+					{ x1: 30, y1: 10, x2: 30, y2: 280 },
+					{ x1: 50, y1: 25, x2: 50, y2: 50, x3: 130, y3: 220, x4: 130, y4: 230, startText: 'Q', endText: 'S', },
+					{ x1: 70, y1: 10, x2: 70, y2: 50, x3: 185, y3: 220, x4: 185, y4: 280},
 					// W
-					{ x1: 100, y1: 10, x2: 100, y2: 50, x3: 60, y3: 220, x4: 60, y4: 280 },
-					{ x1: 120, y1: 25, x2: 95, y2: 260, startText: 'W'},
-					{ x1: 140, y1: 10, x2: 140, y2: 50, x3: 290, y3: 220, x4: 290, y4: 230, endText: 'F'},
+					{ x1: 110, y1: 10, x2: 110, y2: 50, x3: 70, y3: 220, x4: 70, y4: 280 },
+					{ x1: 130, y1: 25, x2: 105, y2: 260, startText: 'W'},
+					{ x1: 150, y1: 10, x2: 150, y2: 50, x3: 290, y3: 220, x4: 290, y4: 230, endText: 'F'},
 					// E
-					{ x1: 185, y1: 10, x2: 185, y2: 50, x3: 145, y3: 220, x4: 145, y4: 280 },
-					{ x1: 205, y1: 25, x2: 205, y2: 50, x3: 230, y3: 220, x4: 230, y4: 260, startText: 'E'},
-					{ x1: 225, y1: 10, x2: 225, y2: 50, x3: 315, y3: 220, x4: 315, y4: 280 },
+					{ x1: 190, y1: 10, x2: 190, y2: 50, x3: 150, y3: 220, x4: 150, y4: 280 },
+					{ x1: 210, y1: 25, x2: 210, y2: 50, x3: 230, y3: 220, x4: 230, y4: 260, startText: 'E'},
+					{ x1: 230, y1: 10, x2: 230, y2: 50, x3: 310, y3: 220, x4: 310, y4: 280 },
 					// R
-					{ x1: 270, y1: 10, x2: 270, y2: 50, x3: 35, y3: 220, x4: 35, y4: 230, endText: 'A' },
+					{ x1: 270, y1: 10, x2: 270, y2: 50, x3:50, y3: 220, x4:50, y4: 230, endText: 'A' },
 					{ x1: 290, y1: 25, x2: 290, y2: 50, x3: 205, y3: 220, x4: 205, y4: 230, startText: 'R', endText: 'D'},
 					{ x1: 310, y1: 10, x2: 310, y2: 50, x3: 265, y3: 220, x4: 265, y4: 280, },
 				],
@@ -68,9 +68,7 @@
       isPause: Boolean,
       isActive: Boolean,
       isNegativeScore: Boolean,
-			startToDecreaseIn: Number,
 			coloredLowerTank: Boolean,
-			descendSpeed: String,
     },
 		async mounted() {
 			this.initLineTank();
@@ -277,7 +275,7 @@
 					if (selectedTank.height === '100%' && selectedTank.color !== 'black' && selectedTank.status === 'run') {
 						setTimeout(() => {
 							this.runningInterval('start-empty-tank');
-						}, this.startToDecreaseIn);
+						}, 1000);
 					} else {
 						findTankToEmpty();
 					}
@@ -305,17 +303,17 @@
 			},
 			decreaseSpeed() {
 				if (this.speed === 'slow') {
-					return 4;
+					return 3;
 				}
 				if (this.speed === 'medium') {
-					return 7;
+          return Math.random() * (5 - 3) + 3;
 				}
 				if (this.speed === 'fast') {
-					return 10;
+          return Math.random() * (7 - 5) + 5;
 				}
 			},
 			fillTank(tankIndex, tankItem) {
-				const increment = 10;
+				const increment = 150;
 				const tank = this.lowerTanks[tankIndex][tankItem];
 
 				let currentFill = parseFloat(tank['height'].replace('%', ''));
@@ -418,26 +416,15 @@
 				if (type === 'start-empty-tank') {
 					this.intervalId = setInterval(() => {
 						this.decreaseTankLevels(this.tankIndex, this.tankItem);
-					}, this.descendingSpeed());
+					}, 1000);
 				}
 
 				if (type === 'continue-empty-tank') {
 					this.continueIntervalId = setInterval(() => {
 						this.decreaseTankToEmpty();
-					}, this.descendingSpeed());
+					}, 1000);
 				}
 			},
-			descendingSpeed() {
-				if (this.descendSpeed === 'slow') {
-					return 5000;
-				}
-				if (this.descendSpeed === 'medium') {
-					return 4000;
-				}
-				if (this.descendSpeed === 'fast') {
-					return 3000;
-				}
-			}
 		},
 	};
 </script>

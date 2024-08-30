@@ -23,7 +23,7 @@
     <div class="input-simulation-container">
       <div v-if="isShowQuestion">
         <div class="question">
-          <p> Numbers from the end </p>
+          <p class="text-question"> Urutkan dari angka terakhir </p>
         </div>
 
         <div class="calculator">
@@ -46,7 +46,7 @@
       </div>
 
       <div v-else style="margin-top: 20%;">
-        <p>Listen to item presentation!</p>
+        <p class="text-question">Dengarkan angka yang disebutkan!</p>
       </div>
 
     </div>
@@ -189,6 +189,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemory')),
           result: this.result,
         }
 
@@ -210,7 +211,8 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Running Memory Span Test')
+        removeTestByNameAndUpdateLocalStorage('Running Memory Span Test');
+        localStorage.removeItem('reloadCountRunningMemory');
         this.$router.push('/module');
       }
     },
@@ -359,6 +361,13 @@ export default {
     }
   },
   mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemory') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
+    })
+
     this.initConfig();
   }
 };
@@ -473,6 +482,9 @@ export default {
   }
   .question {
     margin: 30px;
+  }
+  .text-question {
+    font-weight: bolder;
   }
   .calculator {
     max-width: 300px;

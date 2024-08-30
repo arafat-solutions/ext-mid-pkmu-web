@@ -29,8 +29,6 @@
         :isTimesUp="isTimesUp"
         :speed="config.color_tank.speed"
         :coloredLowerTank="config.color_tank.colored_lower_tank"
-        :descendSpeed="config.color_tank.descend_speed"
-        :startToDecreaseIn="config.color_tank.start_to_decrease_in"
         :isNegativeScore="config.color_tank.negative_score"
         :isPause="isPause"
         :isActive="config.subtask.color_tank"
@@ -105,8 +103,6 @@ export default {
           negative_score: null,
           colored_lower_tank: null,
           speed: null, //slow, medium, fast
-          descend_speed: null, //slow, medium, fast
-          start_to_decrease_in: 2000,
         },
       },
       result: {
@@ -125,6 +121,13 @@ export default {
     };
   },
   async mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountColorTankMultitask') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
+    })
+
     this.initConfig();
   },
   beforeUnmount() {
@@ -193,7 +196,6 @@ export default {
           if (this.config.subtask.color_tank) {
             this.config.color_tank.negative_score = colorMultitask.color_tank.negative_score
             this.config.color_tank.speed = colorMultitask.color_tank.speed
-            this.config.color_tank.descend_speed = colorMultitask.color_tank.descend_speed
             this.config.color_tank.colored_lower_tank = colorMultitask.color_tank.colored_lower_tank
           }
 
@@ -246,6 +248,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountColorTankMultitask')),
           result: this.result,
         }
 
@@ -268,6 +271,7 @@ export default {
         this.isLoading = false;
 
         removeTestByNameAndUpdateLocalStorage('Multi Tasking With Color')
+        localStorage.removeItem('reloadCountColorTankMultitask');
         this.$router.push('/module');
       }
     },
