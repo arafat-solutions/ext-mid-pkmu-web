@@ -38,6 +38,7 @@ export default {
             ],
             decreaseInterval: 1000, // Time in ms between each decrease animation
             decreaseDuration: 1000, // Duration of each decrease animation
+            increaseDuration: 2000, // New property for controlling increase speed
             minHeight: 4, // Minimum height before stopping the animation
             finishedDecreasing: [],
             colorsInProgress: [],
@@ -298,10 +299,45 @@ export default {
                         // this.below_line_responses++;
                     }
 
-                    this.increaseColor(key);
+                    this.startIncreaseColor(tankIndex, colorIndex);
                 }
 
             }
+        },
+        startIncreaseColor(tankIndex, colorIndex) {
+            const currentHeight = this.currentHeights[tankIndex][colorIndex];
+            if (currentHeight >= 100) {
+                return; // Don't increase if already at max height
+            }
+
+            // Cancel any ongoing animation for this color
+            if (this.colorsInProgress[tankIndex][colorIndex]) {
+                cancelAnimationFrame(this.colorsInProgress[tankIndex][colorIndex]);
+            }
+
+            const startHeight = currentHeight;
+            const targetHeight = 100;
+            const startTime = performance.now();
+
+            const animateIncrease = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / this.increaseDuration, 1);
+
+                if (progress < 1) {
+                    const newHeight = startHeight + (progress * (targetHeight - startHeight));
+                    this.currentHeights[tankIndex][colorIndex] = Math.min(targetHeight, newHeight);
+                    this.drawSpecificTank(tankIndex);
+                    this.colorsInProgress[tankIndex][colorIndex] = requestAnimationFrame(animateIncrease);
+                } else {
+                    this.currentHeights[tankIndex][colorIndex] = targetHeight;
+                    this.colorsInProgress[tankIndex][colorIndex] = null;
+                    this.finishedDecreasing[tankIndex][colorIndex] = false;
+                    this.drawSpecificTank(tankIndex);
+                    this.restartDecreaseAnimation();
+                }
+            };
+
+            this.colorsInProgress[tankIndex][colorIndex] = requestAnimationFrame(animateIncrease);
         },
         increaseColor(tankLetter) {
             const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === tankLetter);
