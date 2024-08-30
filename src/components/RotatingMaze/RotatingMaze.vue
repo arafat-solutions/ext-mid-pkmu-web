@@ -28,19 +28,19 @@
     </div> -->
     <div id="containerMaze">
         <div class="circularBaseMaze" :style="{
-        position: 'fixed',
-        left: '50%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
-    }">
+            position: 'fixed',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+        }">
             <div id="visualizerMaze" :style="{
-        width: `${mazeWidth}px`,
-        height: `${mazeHeight}px`,
-        position: 'absolute',
-        left: '50%',
-        top: '50%',
-        transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`
-    }">
+                width: `${mazeWidth}px`,
+                height: `${mazeHeight}px`,
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`
+            }">
                 <div id="gridMaze" :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
                 </div>
                 <div class="rotationIndicatorMaze"></div>
@@ -877,11 +877,11 @@ export default {
 
 .rotationIndicatorMaze {
     position: absolute;
-    top: 50%;
-    right: -40px;
+    top: -10%;
+    right: 50%;
     width: 0;
     height: 0;
-    transform: translateY(-50%);
+    transform: translateX(50%) rotate(-90deg);
 
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
