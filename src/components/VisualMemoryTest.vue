@@ -77,10 +77,11 @@ export default {
                 userId: ''
             },
             timerInterval: null,
-            tesInterval: null
+            tesInterval: null,
+            refreshCount: 0
         };
     },
-    mounted() {
+    async mounted() {
         this.updateCanvasDimensions();
         window.addEventListener('resize', this.handleResize);
         this.initializeTest()
@@ -88,6 +89,15 @@ export default {
 
         this.$refs.visualCanvas.addEventListener('click', this.handleTouchOrClick);
         this.$refs.visualCanvas.addEventListener('touchstart', this.handleTouchOrClick);
+
+        // Load the refresh count from localStorage
+        this.refreshCount = parseInt(localStorage.getItem('refreshCountVisualMemoryTest') || '0');
+        // Increment the refresh count
+        this.refreshCount++;
+        // Save the updated count to localStorage
+        localStorage.setItem('refreshCountVisualMemoryTest', this.refreshCount.toString());
+        // Add event listener for beforeunload
+        window.addEventListener('beforeunload', this.handleBeforeUnload);
     },
     beforeUnmount() {
         window.removeEventListener('keydown', this.handleGlobalKeydown);
@@ -97,6 +107,8 @@ export default {
 
         this.$refs.visualCanvas.removeEventListener('click', this.handleTouchOrClick);
         this.$refs.visualCanvas.removeEventListener('touchstart', this.handleTouchOrClick);
+        // Remove the beforeunload event listener
+        window.removeEventListener('beforeunload', this.handleBeforeUnload);
     },
     methods: {
         initVisual() {
@@ -818,7 +830,8 @@ export default {
                     testSessionId: this.configBe.sessionId,
                     userId: this.configBe.userId,
                     batteryTestConfigId: this.configBe.testId,
-                    result: this.result
+                    result: this.result,
+                    refreshCount: this.refreshCount
                 }
                 const response = await fetch(`${API_URL}api/submission`, {
                     method: 'POST',
@@ -832,6 +845,8 @@ export default {
                     throw new Error(`Error: ${response.statusText}`);
                 }
                 removeTestByNameAndUpdateLocalStorage('Visual Memory Test')
+                // Remove the refresh count in localStorage after successful submission
+                localStorage.removeItem('refreshCountVisualMemoryTest');
                 this.$router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
@@ -916,7 +931,10 @@ export default {
                 this.countDownMemoryTime();
             }
         },
-
+        handleBeforeUnload() {
+            // Save the current refresh count to localStorage before the page unloads
+            localStorage.setItem('refreshCountVisualMemoryTest', this.refreshCount.toString());
+        },
     },
     computed: {
         canvasDimensions() {
