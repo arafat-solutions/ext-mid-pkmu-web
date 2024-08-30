@@ -45,6 +45,13 @@ export default {
             selectedColor: null,
             minRefillThreshold: 25,
             animationInterval: null,
+            decreaseSpeedRanges: {
+                slow: [10000, 9000, 8000],
+                medium: [7000, 7500, 6500],
+                fast: [6000, 5500, 5000]
+            },
+            currentDescendSpeed: 'medium',
+
         };
     },
     mounted() {
@@ -69,20 +76,16 @@ export default {
             this.ctx = canvas.getContext("2d");
         },
         initConfig() {
-            const DECREASE_SPEED = {
-                slow: 8000,
-                medium: 6000,
-                fast: 4000
-            };
             const DECREASE_INTERVAL = {
                 slow: 2000,
                 medium: 2000,
                 fast: 2000
             }
             const { descend_speed, speed } = this.colorTankData;
-            this.decreaseDuration = DECREASE_SPEED[descend_speed]
-            this.decreaseInterval = DECREASE_INTERVAL[speed]
+            this.currentDescendSpeed = descend_speed || 'medium'; // Set default if undefined
+            this.decreaseInterval = DECREASE_INTERVAL[speed] || 2000; // Set default if undefined
         },
+
         drawVisual() {
             this.clearCanvas();
             this.rectangles.forEach(rect => this.drawRectangle(rect));
@@ -380,44 +383,44 @@ export default {
             this.drawHorizontalLineMinimum({ x: rect.x, y: rect.y, width: rect.width, height: rect.height });
         },
         startDecreaseAnimationForColor(rectIndex, colorIndex) {
-
             const startHeight = this.currentHeights[rectIndex][colorIndex];
             const targetHeight = this.minHeight;
-            const startTime = Date.now();
+            const startTime = performance.now();
+
+            // Use the currentDescendSpeed instead of accessing colorTankData directly
+            const speedRange = this.decreaseSpeedRanges[this.currentDescendSpeed] || this.decreaseSpeedRanges.medium;
+
+            // Randomly select a duration from the speed range
+            const decreaseDuration = speedRange[Math.floor(Math.random() * speedRange.length)];
 
             this.colorsInProgress[rectIndex][colorIndex] = true;
             this.finishedDecreasing[rectIndex][colorIndex] = false;
 
-            const animateDecrease = () => {
+            const animateDecrease = (currentTime) => {
                 if (!this.colorsInProgress[rectIndex][colorIndex]) {
                     return;
                 }
 
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / this.decreaseDuration, 1);
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / decreaseDuration, 1);
 
-                if (this.currentHeights[rectIndex][colorIndex] > this.minHeight) {
+                if (progress < 1) {
                     const currentHeight = startHeight - (progress * (startHeight - targetHeight));
                     this.currentHeights[rectIndex][colorIndex] = Math.max(this.minHeight, currentHeight);
 
                     this.drawSpecificTank(rectIndex);
 
-                    if (progress < 1) {
-                        requestAnimationFrame(animateDecrease);
-                    } else {
-                        this.colorsInProgress[rectIndex][colorIndex] = false;
-                        if (this.currentHeights[rectIndex][colorIndex] <= this.minHeight) {
-                            this.finishedDecreasing[rectIndex][colorIndex] = true;
-                        }
-                    }
+                    this.colorsInProgress[rectIndex][colorIndex] = requestAnimationFrame(animateDecrease);
                 } else {
-                    this.colorsInProgress[rectIndex][colorIndex] = false;
+                    this.currentHeights[rectIndex][colorIndex] = this.minHeight;
+                    this.colorsInProgress[rectIndex][colorIndex] = null;
                     this.finishedDecreasing[rectIndex][colorIndex] = true;
+                    this.drawSpecificTank(rectIndex);
                 }
             };
 
-            animateDecrease();
-        }
+            this.colorsInProgress[rectIndex][colorIndex] = requestAnimationFrame(animateDecrease);
+        },
     }
 }
 </script>
