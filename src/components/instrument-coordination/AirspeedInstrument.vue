@@ -46,14 +46,15 @@ export default {
     },
   },
   computed: {
-    changeValue() {
-      // Map speed (0-100) to (1-30)
-      let value = (this.speed / 100) * 29 + 1;
+    intervalMovement() {
+      const minInput = 1;
+      const maxInput = 100;
+      const minOutput = 1;
+      const maxOutput = 100;
 
-      // Ensure the value is a whole number (optional)
-      value = Math.round(value);
-
-      return value;
+      // Apply the conversion formula
+      const output = maxOutput - ((this.speed - minInput) / (maxInput - minInput)) * (maxOutput - minOutput);
+      return output;
     },
     indicatorStyle() {
       const percentage = this.airspeed > 0 ? Math.round(this.airspeed / 160 * 100) : 0;
@@ -65,7 +66,6 @@ export default {
   data: function () {
     return {
       airspeed: 0,
-      intervalMovement: 1000,
       redStartTime: null,
       redDuration: 0,
       limitRedAirSpeed: 140,
@@ -98,13 +98,11 @@ export default {
         return;
       }
 
-      for(let i=1;i<=this.changeValue;i++) {
-        if (this.airspeed < 160) {
-          this.airspeed += Math.random();
-        }
-        this.checkRedDuration();
-        await this.delay(this.intervalMovement/this.changeValue);
+      if (this.airspeed < 160) {
+        this.airspeed += Math.random();
       }
+      this.checkRedDuration();
+      await this.delay(this.intervalMovement);
 
       return this.executeAirspeedMovement();
     },

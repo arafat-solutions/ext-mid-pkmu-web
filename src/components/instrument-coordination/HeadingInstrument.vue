@@ -22,9 +22,6 @@ export default {
     return {
       headingValue: 0,
       signRandoms: ['+', '-'],
-      defaultIntervalTarget: 1000, //in ms
-      minimumIntervalTarget: 1000, //in ms
-      maximumIntervalTarget: 3000, //in ms
       target: null,
       targetIncrement: null,
       targetTolerance: 3,
@@ -35,6 +32,7 @@ export default {
       greenStartTime: null,
       greenDuration: 0,
       isPressed: false,
+      currentOperator: null,
     }
   },
   created() {
@@ -71,8 +69,15 @@ export default {
     },
   },
   computed: {
-    changeValue() {
-      return (this.speed / 100) * 19 + 1;
+    intervalMovement() {
+      const minInput = 1;
+      const maxInput = 100;
+      const minOutput = 50;
+      const maxOutput = 150;
+
+      // Apply the conversion formula
+      const output = maxOutput - ((this.speed - minInput) / (maxInput - minInput)) * (maxOutput - minOutput);
+      return output;
     },
   },
   methods: {
@@ -111,22 +116,28 @@ export default {
         return;
       }
 
-      let intervalTarget = this.defaultIntervalTarget; //in ms
-      if (this.changeType === 'adjust_for_irregular_updates') {
-        intervalTarget = this.getRandomInterval(this.minimumIntervalTarget, this.maximumIntervalTarget);
+      if (!this.currentOperator) {
+        this.currentOperator = this.getRandomOperator();
       }
-      const sign = this.getRandomOperator();
-      for(let i=1;i<=this.changeValue;i++) {
-        if (sign === '+') {
-          this.target++;
-          this.headingValue++;
-        } else {
-          this.target--;
-          this.headingValue--;
-        }
-        this.checkDurationTarget();
-        await this.delay(intervalTarget/this.changeValue);
+      const randomNumber = Math.random();
+      if (this.currentOperator === '+' && (this.changeType === 'adjust_for_consistent_updates' || this.changeType === 'keep_indicator')) {
+        this.target += randomNumber;
+        this.headingValue += randomNumber;
       }
+      if (this.currentOperator === '-' && (this.changeType === 'adjust_for_consistent_updates' || this.changeType === 'keep_indicator')) {
+        this.target -= randomNumber;
+        this.headingValue -= randomNumber;
+      }
+
+      if (this.currentOperator === '+' && this.changeType === 'adjust_for_irregular_updates') {
+        this.target += randomNumber;
+      }
+      if (this.currentOperator === '-' && this.changeType === 'adjust_for_irregular_updates') {
+        this.target -= randomNumber;
+      }
+
+      this.checkDurationTarget();
+      await this.delay(this.intervalMovement);
       return this.executeTargetMovement();
     },
     getRandomOperator() {
