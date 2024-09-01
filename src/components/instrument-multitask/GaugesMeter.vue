@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import VueSpeedometer from "vue-speedometer"
+import VueSpeedometer from "vue-speedometer";
 
 export default {
   name: 'GaugesMeter',
