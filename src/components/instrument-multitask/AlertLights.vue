@@ -99,17 +99,17 @@
         // Adjust ranges based on difficulty level
         switch (this.speed) {
           case 'very_slow':
-            return 5000;
+            return 7000;
           case 'slow':
-            return 4000;
+            return 6000;
           case 'medium':
-            return 3000;
+            return 5000;
           case 'fast':
-            return 2000;
+            return 4000;
           case 'very_fast':
-            return 1000;
-          default:
             return 3000;
+          default:
+            return 5000;
         }
       },
       getFrequency() {
