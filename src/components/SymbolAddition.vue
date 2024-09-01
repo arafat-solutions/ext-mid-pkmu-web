@@ -80,6 +80,13 @@ export default {
     }
   },
   mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountSymbolAddition') || '0');
+    reloadCount++;
+    localStorage.setItem('reloadCountSymbolAddition', reloadCount.toString());
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountSymbolAddition', reloadCount.toString());
+    });
+
     this.loadConfig();
   },
   computed: {
@@ -290,6 +297,7 @@ export default {
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
         'batteryTestConfigId': test.config.id,
+        'refreshCount': parseInt(localStorage.getItem('reloadCountSymbolAddition')),
         'result': {
           'correctAnswer': this.result.correct,
           'totalQuestion': totalQuestion,
@@ -325,7 +333,8 @@ export default {
         console.error(error);
       } finally {
         this.isLoading = false;
-        removeTestByNameAndUpdateLocalStorage(this.testName)
+        removeTestByNameAndUpdateLocalStorage(this.testName);
+        localStorage.removeItem('reloadCountSymbolAddition');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
     }

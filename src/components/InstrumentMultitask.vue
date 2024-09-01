@@ -231,6 +231,7 @@
           'userId': scheduleData.userId,
           'moduleId': scheduleData.moduleId,
           'batteryTestConfigId': test.config.id,
+          'refreshCount': parseInt(localStorage.getItem('reloadCountInstrumentMultitask')),
           'result': {
             'arithmetics': {
               'total_questions': this.result.arithmetic.totalQuestion,
@@ -282,12 +283,20 @@
         } finally {
           this.isLoading = false;
 
-          removeTestByNameAndUpdateLocalStorage(this.testName)
+          removeTestByNameAndUpdateLocalStorage(this.testName);
+          localStorage.removeItem('reloadCountInstrumentMultitask');
           this.$router.push('/module');
         }
       }
     },
     mounted() {
+      let reloadCount = parseInt(localStorage.getItem('reloadCountInstrumentMultitask') || '0')
+      reloadCount++
+      localStorage.setItem('reloadCountInstrumentMultitask', reloadCount.toString())
+      window.addEventListener('beforeunload', () => {
+        localStorage.setItem('reloadCountInstrumentMultitask', reloadCount.toString())
+      })
+
       this.loadConfig();
     },
     beforeUnmount() {
