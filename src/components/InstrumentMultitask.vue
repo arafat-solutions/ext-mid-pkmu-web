@@ -98,7 +98,7 @@
             useSound: null, //true,false
             difficulty: null, //easy,medium,difficult
             isActive: null, //true,false
-            canPressAnswer: false, //true,false
+            canPressAnswer: true, //true,false
           },
           gaugesMeter: {
             frequency: null, //low,medium,high
