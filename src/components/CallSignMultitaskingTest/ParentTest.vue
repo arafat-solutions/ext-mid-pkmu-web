@@ -124,11 +124,21 @@ export default {
             sessionId: '',
             userId: '',
             seeResults: false, // untuk hide show debugging
-            isModalVisible: true
+            isModalVisible: true,
+            refreshCount: 0
         }
     },
-    mounted() {
+    async mounted() {
         this.initConfig()
+
+        // Load the refresh count from localStorage
+        this.refreshCount = parseInt(localStorage.getItem('refreshCallsignMultitaskTest') || '0');
+        // Increment the refresh count
+        this.refreshCount++;
+        // Save the updated count to localStorage
+        localStorage.setItem('refreshCallsignMultitaskTest', this.refreshCount.toString());
+        // Add event listener for beforeunload
+        window.addEventListener('beforeunload', this.handleBeforeUnload);
     },
     beforeUnmount() {
         clearInterval(this.tesInterval);
@@ -216,7 +226,8 @@ export default {
                     userId: this.userId,
                     moduleId: this.moduleId,
                     batteryTestConfigId: this.testId,
-                    result: this.results
+                    result: this.results,
+                    refreshCount: this.refreshCount
                 }
                 const response = await fetch(`${API_URL}api/submission`, {
                     method: 'POST',
@@ -230,13 +241,19 @@ export default {
                     throw new Error(`Error: ${response.statusText}`);
                 }
                 removeTestByNameAndUpdateLocalStorage('Multitasking Mix With Call Sign')
+                // Remove the refresh count in localStorage after successful submission
+                localStorage.removeItem('refreshCallsignMultitaskTest');
                 this.$router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
             } finally {
                 this.loading = false; // Set loading to false when the submission is complete
             }
-        }
+        },
+        handleBeforeUnload() {
+            // Save the current refresh count to localStorage before the page unloads
+            localStorage.setItem('refreshCallsignMultitaskTest', this.refreshCount.toString());
+        },
     },
     components: {
         ColorTest,
