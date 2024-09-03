@@ -1,4 +1,5 @@
 export const removeTestByNameAndUpdateLocalStorage = (testName) => {
+    // Retrieve schedule data from localStorage
     const scheduleDataString = localStorage.getItem('scheduleData');
 
     if (!scheduleDataString) {
@@ -13,11 +14,17 @@ export const removeTestByNameAndUpdateLocalStorage = (testName) => {
         return;
     }
 
-    scheduleData.tests = scheduleData.tests.filter(test => test.name !== testName);
+    // Find the test and mark it as completed
+    const test = scheduleData.tests.find(test => test.name === testName);
 
+    if (test) {
+        test.completed = true;
+    } else {
+        console.error('Test not found.');
+        return;
+    }
+
+    // Save the updated schedule data back to localStorage
     const updatedScheduleDataString = JSON.stringify(scheduleData);
-
     localStorage.setItem('scheduleData', updatedScheduleDataString);
-
-    console.log('Test removed and schedule data updated in localStorage.');
 }
