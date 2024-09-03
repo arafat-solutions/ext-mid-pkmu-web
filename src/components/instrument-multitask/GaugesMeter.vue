@@ -1,23 +1,13 @@
 <template>
   <div class="speedometer-content">
-    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers" class="speedometer-container" :key="index">
-      <vue-speedometer
-        :segmentColors="segmentColors"
-        :segments="customSegmentLabels.length"
-        :value="speedometer.value"
-        :minValue="0"
-        :maxValue="customSegmentLabels.length"
-        :customSegmentLabels="customSegmentLabels"
-        :currentValueText="speedometer.label"
-        :width="250"
-        :height="250"
-        :ringWidth="30"
-        :paddingHorizontal="-20"
-        :paddingVertical="-20"
-        :needleHeightRatio="0.75"
-        :needleTransitionDuration="1500"
-        needleTransition="easeCubicInOut"
-      />
+    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers"
+      class="speedometer-container" :key="index">
+      <vue-speedometer :segmentColors="segmentColors" :segments="customSegmentLabels.length"
+        :value="speedometer.displayValue" :minValue="0" :maxValue="customSegmentLabels.length"
+        :customSegmentLabels="customSegmentLabels" :width="150" :height="150" :ringWidth="20" :paddingHorizontal="-10"
+        :paddingVertical="-10" :needleHeightRatio="0.7" :needleTransitionDuration="1500" needleTransition="easeElastic"
+        :labelFontSize="14" :valueTextFontSize="0" />
+      <div class="gauge-label">{{ speedometer.label }}</div>
     </div>
   </div>
 </template>
@@ -39,30 +29,12 @@ export default {
   data() {
     return {
       speedometers: [
-        {
-          label: 'W',
-          value: 0
-        },
-        {
-          label: 'V',
-          value: 0
-        },
-        {
-          label: 'X',
-          value: 0
-        },
-        {
-          label: 'Y',
-          value: 0
-        },
-        {
-          label: 'Z',
-          value: 0
-        },
-        {
-          label: 'A',
-          value: 0
-        },
+        { label: 'W', value: 0, displayValue: 0, speed: 0.5 },
+        { label: 'V', value: 0, displayValue: 0, speed: 0.7 },
+        { label: 'X', value: 0, displayValue: 0, speed: 0.3 },
+        { label: 'Y', value: 0, displayValue: 0, speed: 0.6 },
+        { label: 'Z', value: 0, displayValue: 0, speed: 0.4 },
+        { label: 'A', value: 0, displayValue: 0, speed: 0.8 },
       ],
       startColor: '#33CC33',
       endColor: '#FF471A',
@@ -151,11 +123,13 @@ export default {
     this.modifySVG();
     if (this.isActive) {
       this.startUpdating();
+      this.startContinuousMovement();
     }
     window.addEventListener('keydown', this.handleKeyPress);
   },
   beforeUnmount() {
     clearInterval(this.intervalId);
+    clearInterval(this.continuousMovementInterval);
     window.removeEventListener('keydown', this.handleKeyPress);
   },
   computed: {
@@ -205,6 +179,17 @@ export default {
     }
   },
   methods: {
+    startContinuousMovement() {
+      this.continuousMovementInterval = setInterval(() => {
+        this.speedometers.forEach(speedometer => {
+          if (speedometer.displayValue < speedometer.value) {
+            speedometer.displayValue = Math.min(speedometer.displayValue + speedometer.speed, speedometer.value);
+          } else if (speedometer.displayValue > speedometer.value) {
+            speedometer.displayValue = Math.max(speedometer.displayValue - speedometer.speed, speedometer.value);
+          }
+        });
+      }, 50);
+    },
     // For change position label W,V,X,Y,Z,A
     modifySVG() {
       // Find the target 'g' element and modify it
@@ -226,7 +211,7 @@ export default {
       return Math.random() * 2;
     },
     getRandomSign() {
-        return Math.random() < 0.5 ? '+' : '-';
+      return Math.random() < 0.5 ? '+' : '-';
     },
     updateSpeedometers() {
       const frequencyConfig = this.frequencyLevels[this.frequency] || this.frequencyLevels.normal;
@@ -325,25 +310,26 @@ export default {
   },
 };
 </script>
+<style scoped>
+.speedometer-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px;
+}
 
-<style>
 .speedometer-container {
-  display: inline-block;
-  margin-right: 30px;
-  margin-bottom: 20px;
+  margin: 5px;
 }
 
 .speedometer {
-  border: 2px solid black;
+  border: 1px solid black;
   border-radius: 50%;
   box-sizing: border-box;
 }
 
 .current-value {
-  margin-top: 2rem;
-}
-
-.speedometer-content {
-  padding-left: 75px;
+  margin-top: 1rem;
+  font-size: 14px;
 }
 </style>
