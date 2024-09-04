@@ -120,7 +120,9 @@ export default {
       if (this.isPause || this.isTimesUp || this.isPressed) {
         return;
       }
-      this.altitude += 1;
+      if (this.altitude < this.maximumAltitude) {
+        this.altitude += 1;
+      }
       await this.delay(this.intervalMovement);
       this.checkDurationTarget();
       return this.executeAltitudeMovement();
