@@ -146,8 +146,8 @@ export default {
           this.minuteTime = config.duration;
           this.timeLeft = this.minuteTime * 60;
           this.result.gameDuration = this.timeLeft;
-          this.config.heading.changeType = 'adjust_for_irregular_updates';//config.compass;
-          this.config.heading.speed = 70;//config.green_dot_speed;
+          this.config.heading.changeType = config.compass;
+          this.config.heading.speed = config.green_dot_speed;
           this.config.soundQuestion.isActive = config.listening_task !== 'disabled';
           this.config.soundQuestion.speed = config.listening_task !== 'disabled' ? config.listening_task : null;
           this.config.altimeter.changeType = config.altimeter;

@@ -159,8 +159,8 @@ export default {
   position: absolute;
   left: 250px;
   top: 235px;
-  width: 33px;
-  height: 113px;
+  width: 35px;
+  height: 115px;
   border: 1px solid #9e9e9e;
 }
 

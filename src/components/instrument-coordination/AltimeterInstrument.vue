@@ -26,6 +26,7 @@ export default {
       minimumAltitude: null,
       maximumAltitude: null,
       signRandoms: ['+', '-'],
+      currenSignTarget: null,
       defaultIntervalTarget: 3000, //in ms
       minimumIntervalTarget: 3000, //in ms
       maximumIntervalTarget: 5000, //in ms
@@ -63,6 +64,7 @@ export default {
     isPause(newValue) {
       if (!newValue) {
         this.executeAltitudeMovement();
+        this.executeTargetMovement();
       }
     },
   },
@@ -82,7 +84,7 @@ export default {
     if (this.changeType !== 'inactive') {
       if (this.changeType !== 'keep_indicator') {
         this.initAltitude();
-        this.initTarget();
+        this.executeTargetMovement();
       }
       this.executeAltitudeMovement();
     }
@@ -95,11 +97,11 @@ export default {
 
       if (event.key === 'ArrowUp' && this.altitude <= this.maximumAltitude) {
         this.isPressed = true;
-        this.altitude += 1;
+        this.altitude += 3;
         this.checkDurationTarget();
       } else if (event.key === 'ArrowDown' && this.altitude >= this.minimumAltitude) {
         this.isPressed = true;
-        this.altitude -= 1;
+        this.altitude -= 3;
         this.checkDurationTarget();
       }
     },
@@ -120,10 +122,21 @@ export default {
       if (this.isPause || this.isTimesUp || this.isPressed) {
         return;
       }
-      if (this.altitude < this.maximumAltitude) {
-        this.altitude += 1;
+
+      if (this.changeType === 'adjust_for_consistent_updates') {
+        if (this.altitude < this.maximumAltitude) {
+          this.altitude += 1;
+        }
+        await this.delay(this.intervalMovement);
+      } else if (this.changeType === 'adjust_for_irregular_updates') {
+        const randomAddedAltitude = Math.floor(Math.random() * 3) + 1;
+        for (let i = 0;i < randomAddedAltitude;i++) {
+          if (this.altitude < this.maximumAltitude) {
+            this.altitude += 1;
+          }
+          await this.delay(this.intervalMovement/randomAddedAltitude);
+        }
       }
-      await this.delay(this.intervalMovement);
       this.checkDurationTarget();
       return this.executeAltitudeMovement();
     },
@@ -148,9 +161,33 @@ export default {
       this.maximumAltitude = this.minimumAltitude + 1000;
       this.altitude = this.generateRandomNumber(this.minimumAltitude, this.maximumAltitude);
     },
-    initTarget() {
-      this.target = this.generateRandomNumber(this.minimumAltitude+200, this.maximumAltitude-200);
+    async executeTargetMovement() {
+      if (this.isPause || this.isTimesUp) {
+        return;
+      }
+
+      if (!this.currenSignTarget) {
+        this.currenSignTarget = this.getRandomOperator();
+      }
+      if (this.target) {
+        if (this.currenSignTarget === '+') {
+          this.target++;
+          if (this.target >= this.maximumAltitude) {
+            this.currenSignTarget = '-';
+          }
+        } else {
+          this.target--;
+          if (this.target <= this.minimumAltitude) {
+            this.currenSignTarget = '+';
+          }
+        }
+      } else {
+        this.target = this.generateRandomNumber(this.minimumAltitude+200, this.maximumAltitude-200);
+      }
       this.animate();
+      await this.delay(this.intervalMovement/2);
+
+      return this.executeTargetMovement();
     },
     drawTarget() {
       const canvas = this.$refs.targetCanvas;
