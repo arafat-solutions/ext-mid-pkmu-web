@@ -75,6 +75,7 @@ export default {
         })
         const STROKE_WIDTH = 2;
         const ANGLES = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
+        const refreshCount = ref(0)
 
         const shapeGenerators = [
             generateOctagon,
@@ -643,7 +644,8 @@ export default {
                     testSessionId: config.value.sessionId,
                     userId: config.value.userId,
                     batteryTestConfigId: config.value.testId,
-                    result: quizMetrics.value
+                    result: quizMetrics.value,
+                    refreshCount: refreshCount.value
                 }
                 const response = await fetch(`${API_URL}api/submission`, {
                     method: 'POST',
@@ -657,6 +659,7 @@ export default {
                     throw new Error(`Error: ${response.statusText}`);
                 }
                 removeTestByNameAndUpdateLocalStorage('Shape Recognition')
+                localStorage.removeItem('refreshCountShapeRecognition')
                 router.push('/module');
             } catch (error) {
                 console.log("error submit shape recognition:", error)
@@ -697,7 +700,21 @@ export default {
             }, 1000);
         }
 
+        function handleBeforeUnload() {
+            // Save the current refresh count to localStorage before the page unloads
+            localStorage.setItem('refreshCountShapeRecognition', refreshCount.value.toString());
+        }
+
         onMounted(() => {
+            // Load the refresh count from localStorage
+            refreshCount.value = parseInt(localStorage.getItem('refreshCountShapeRecognition') || '0');
+            // Increment the refresh count
+            refreshCount.value++;
+            // Save the updated count to localStorage
+            localStorage.setItem('refreshCountShapeRecognition', refreshCount.value.toString());
+            // Add event listener for beforeunload
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
             nextTick(() => {
                 initConfig()
                 countDownTestTime()
@@ -708,6 +725,8 @@ export default {
         onUnmounted(() => {
             clearInterval(questionCountDownInterval.value);
             clearInterval(tesInterval.value)
+            // Remove the beforeunload event listener
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         })
 
         watch(buttonCanvases, () => {

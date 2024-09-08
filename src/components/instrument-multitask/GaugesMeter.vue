@@ -40,30 +40,12 @@ export default {
     return {
       lastPress: null,
       speedometers: [
-        {
-          label: 'W',
-          value: 0
-        },
-        {
-          label: 'V',
-          value: 0
-        },
-        {
-          label: 'X',
-          value: 0
-        },
-        {
-          label: 'Y',
-          value: 0
-        },
-        {
-          label: 'Z',
-          value: 0
-        },
-        {
-          label: 'A',
-          value: 0
-        },
+        { label: 'W', value: 0, displayValue: 0, speed: 0.5 },
+        { label: 'V', value: 0, displayValue: 0, speed: 0.7 },
+        { label: 'X', value: 0, displayValue: 0, speed: 0.3 },
+        { label: 'Y', value: 0, displayValue: 0, speed: 0.6 },
+        { label: 'Z', value: 0, displayValue: 0, speed: 0.4 },
+        { label: 'A', value: 0, displayValue: 0, speed: 0.8 },
       ],
       startColor: '#33CC33',
       endColor: '#FF471A',
@@ -152,11 +134,13 @@ export default {
     this.modifySVG();
     if (this.isActive) {
       this.startUpdating();
+      this.startContinuousMovement();
     }
     window.addEventListener('keydown', this.handleKeyPress);
   },
   beforeUnmount() {
     clearInterval(this.intervalId);
+    clearInterval(this.continuousMovementInterval);
     window.removeEventListener('keydown', this.handleKeyPress);
   },
   computed: {
@@ -206,6 +190,17 @@ export default {
     }
   },
   methods: {
+    startContinuousMovement() {
+      this.continuousMovementInterval = setInterval(() => {
+        this.speedometers.forEach(speedometer => {
+          if (speedometer.displayValue < speedometer.value) {
+            speedometer.displayValue = Math.min(speedometer.displayValue + speedometer.speed, speedometer.value);
+          } else if (speedometer.displayValue > speedometer.value) {
+            speedometer.displayValue = Math.max(speedometer.displayValue - speedometer.speed, speedometer.value);
+          }
+        });
+      }, 50);
+    },
     // For change position label W,V,X,Y,Z,A
     modifySVG() {
       // Find the target 'g' element and modify it
@@ -319,16 +314,20 @@ export default {
   },
 };
 </script>
+<style scoped>
+.speedometer-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px;
+}
 
-<style>
 .speedometer-container {
-  display: inline-block;
-  margin-right: 30px;
-  margin-bottom: 20px;
+  margin: 5px;
 }
 
 .speedometer {
-  border: 2px solid black;
+  border: 1px solid black;
   border-radius: 50%;
   box-sizing: border-box;
 }

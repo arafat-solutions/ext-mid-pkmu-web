@@ -107,6 +107,7 @@ export default {
             avgStepResponse: 0,
         })
         const arrayMetrics = ref([])
+        const refreshCount = ref(0)
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 15;
@@ -748,7 +749,8 @@ export default {
                     testSessionId: config.value.sessionId,
                     userId: config.value.userId,
                     batteryTestConfigId: config.value.testId,
-                    result: arrayMetrics.value
+                    result: arrayMetrics.value,
+                    refreshCount: refreshCount.value
                 }
 
                 const response = await fetch(`${API_URL}api/submission`, {
@@ -764,6 +766,7 @@ export default {
                 }
                 removeTestByNameAndUpdateLocalStorage('Rotating Maze')
                 localStorage.removeItem('arrayMetrics')
+                localStorage.removeItem('refreshCountRotatingMaze')
                 router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")
@@ -787,6 +790,11 @@ export default {
             }, 1000)
         }
 
+        const handleBeforeUnload = () => {
+            // Save the current refresh count to localStorage before the page unloads
+            localStorage.setItem('refreshCountRotatingMaze', refreshCount.value.toString());
+        }
+
         onMounted(() => {
             loadingGenerating.value = true
             initConfig()
@@ -794,10 +802,20 @@ export default {
             mazeGenerator();
 
             window.addEventListener('keydown', handleKeyPress);
+
+            // Load the refresh count from localStorage
+            refreshCount.value = parseInt(localStorage.getItem('refreshCountRotatingMaze') || '0');
+            // Increment the refresh count
+            refreshCount.value++;
+            // Save the updated count to localStorage
+            localStorage.setItem('refreshCountRotatingMaze', refreshCount.value.toString());
+            // Add event listener for beforeunload
+            window.addEventListener('beforeunload', handleBeforeUnload);
         });
 
         onUnmounted(() => {
             window.removeEventListener('keydown', handleKeyPress)
+            window.removeEventListener('beforeunload', handleBeforeUnload);
             clearInterval(tesInterval.value);
         })
 

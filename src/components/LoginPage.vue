@@ -35,14 +35,17 @@
     </div>
     <AdminLoginModal ref="adminLoginModal" />
   </div>
+  <FooterComponent />
 </template>
 
 <script>
 import AdminLoginModal from '@/components/login/AdminModal.vue';
+import FooterComponent from './FooterComponent.vue';
 
 export default {
   components: {
-    AdminLoginModal
+    AdminLoginModal,
+    FooterComponent
   },
   data() {
     return {

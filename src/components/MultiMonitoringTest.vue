@@ -37,8 +37,8 @@ import ModalConfirmSound from './common/ModalConfirmSound.vue'
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 const loading = ref(false)
-const canvasWidth = ref(700)  
-const canvasHeight= ref(500)
+const canvasWidth = ref(700)
+const canvasHeight = ref(500)
 const router = useRouter()
 const isModalVisible = ref(true)
 const canvas = ref(null);
@@ -53,6 +53,7 @@ const gameObjects = ref({
     aim: { x: 0, y: 0, size: 20 },
     rectangles: []
 });
+const refreshCount = ref(0)
 
 const config = ref({
     speed: "normal",
@@ -212,7 +213,7 @@ function formatTime(seconds) {
 function generateRectangles() {
     return Array.from({ length: 2 }, () => ({
         x: Math.random() * (canvasWidth.value - 30),
-        y: Math.random() * (canvasHeight.value  - 30)
+        y: Math.random() * (canvasHeight.value - 30)
     }));
 }
 
@@ -268,13 +269,14 @@ async function submitResult() {
             ...metrics.value,
             tracking_task: {
                 correctTime: Number(metrics.value.tracking_task.correctTime.toFixed(2))
-            },
+            }
         }
         const payload = {
             testSessionId: config.value.sessionId,
             userId: config.value.userId,
             batteryTestConfigId: config.value.testId,
-            result
+            result,
+            refreshCount: refreshCount.value
         }
 
         const response = await fetch(`${API_URL}api/submission`, {
@@ -288,7 +290,8 @@ async function submitResult() {
         if (!response.ok) {
             throw new Error(`Error: ${response.statusText}`);
         }
-        removeTestByNameAndUpdateLocalStorage('Rotating Maze')
+        removeTestByNameAndUpdateLocalStorage('Multi Monitoring Test')
+        localStorage.removeItem('refreshCountMultiMonitoring')
         router.push('/module');
     } catch (error) {
         console.log(error, "<< error")
@@ -493,6 +496,11 @@ function handleGamepadInput(gamepad) {
     gameObjects.value.aim.y = Math.max(0, Math.min(gameObjects.value.aim.y, canvasHeight));
 }
 
+function handleBeforeUnload() {
+    // Save the current refresh count to localStorage before the page unloads
+    localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
+}
+
 onMounted(() => {
     if (canvas.value) {
         ctx.value = canvas.value.getContext('2d');
@@ -513,6 +521,15 @@ onMounted(() => {
         window.addEventListener('gamepadconnected', onGamepadConnected);
         window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
         checkGamepad();
+
+        // Load the refresh count from localStorage
+        refreshCount.value = parseInt(localStorage.getItem('refreshCountMultiMonitoring') || '0');
+        // Increment the refresh count
+        refreshCount.value++;
+        // Save the updated count to localStorage
+        localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
+        // Add event listener for beforeunload
+        window.addEventListener('beforeunload', handleBeforeUnload);
     }
 });
 
@@ -525,6 +542,7 @@ onUnmounted(() => {
 
         window.removeEventListener('gamepadconnected', onGamepadConnected);
         window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
     }
     if (testInterval.value) {
         clearInterval(testInterval.value);
