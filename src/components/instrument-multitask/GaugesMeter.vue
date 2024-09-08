@@ -1,19 +1,29 @@
 <template>
   <div class="speedometer-content">
-    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers"
-      class="speedometer-container" :key="index">
-      <vue-speedometer :segmentColors="segmentColors" :segments="customSegmentLabels.length"
-        :value="speedometer.displayValue" :minValue="0" :maxValue="customSegmentLabels.length"
-        :customSegmentLabels="customSegmentLabels" :width="150" :height="150" :ringWidth="20" :paddingHorizontal="-10"
-        :paddingVertical="-10" :needleHeightRatio="0.7" :needleTransitionDuration="1500" needleTransition="easeElastic"
-        :labelFontSize="14" :valueTextFontSize="0" />
-      <div class="gauge-label">{{ speedometer.label }}</div>
+    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers" class="speedometer-container" :key="index">
+      <vue-speedometer
+        :segmentColors="segmentColors"
+        :segments="customSegmentLabels.length"
+        :value="speedometer.value"
+        :minValue="0"
+        :maxValue="customSegmentLabels.length"
+        :customSegmentLabels="customSegmentLabels"
+        :currentValueText="speedometer.label + '&nbsp;&nbsp;&nbsp;&nbsp;'"
+        :width="200"
+        :height="200"
+        :ringWidth="30"
+        :paddingHorizontal="-20"
+        :paddingVertical="-20"
+        :needleHeightRatio="0.75"
+        :needleTransitionDuration="1500"
+        needleTransition="easeCubicInOut"
+      />
     </div>
   </div>
 </template>
 
 <script>
-import VueSpeedometer from "vue-speedometer"
+import VueSpeedometer from "vue-speedometer";
 
 export default {
   name: 'GaugesMeter',
@@ -28,6 +38,7 @@ export default {
   },
   data() {
     return {
+      lastPress: null,
       speedometers: [
         { label: 'W', value: 0, displayValue: 0, speed: 0.5 },
         { label: 'V', value: 0, displayValue: 0, speed: 0.7 },
@@ -106,8 +117,8 @@ export default {
         },
       ],
       frequencyLevels: {
-        low: 0.2, // 20% chance of changing
-        normal: 0.5, // 50% chance of changing
+        low: 0.5, // 20% chance of changing
+        normal: 0.7, // 50% chance of changing
         high: 0.9 // 90% chance of changing
       },
       intervalId: null,
@@ -207,12 +218,6 @@ export default {
         }
       });
     },
-    getRandomValue() {
-      return Math.random() * 2;
-    },
-    getRandomSign() {
-      return Math.random() < 0.5 ? '+' : '-';
-    },
     updateSpeedometers() {
       const frequencyConfig = this.frequencyLevels[this.frequency] || this.frequencyLevels.normal;
 
@@ -225,14 +230,24 @@ export default {
           };
         }
 
-        if (speedometer.value >= 7) {
-          // Ensure that the value can only increase when it is 7
-          newValue = speedometer.value + (Math.random() * (9 - speedometer.value));
+        if (this.lastPress === speedometer.label) {
+          this.lastPress = null;
 
+          return {
+            ...speedometer,
+            value: newValue
+          };
+        }
+
+        if (speedometer.value >= 7) {
           // Record time need action
           this.recordNeedPressTimes(speedometer.label)
-        } else {
-          newValue = this.getRandomValueWhenNotRed(newValue);
+        }
+
+        newValue = speedometer.value + Math.random();
+        // Ensure newValue doesn't exceed 9
+        if (newValue > 9) {
+          newValue = 9;
         }
 
         return {
@@ -258,18 +273,6 @@ export default {
         'label': label,
         'time': Date.now(),
       });
-    },
-    getRandomValueWhenNotRed(newValue) {
-      const randomValue = this.getRandomValue();
-      const randomSign = this.getRandomSign();
-      const checkNegativeValue = newValue - randomValue;
-      if (newValue <= 0 || checkNegativeValue <= 0 || randomSign === '+') {
-        newValue += randomValue;
-      } else {
-        newValue -= randomValue;
-      }
-
-      return newValue;
     },
     handleKeyPress(event) {
       if (event.key !== 'w' && event.key !== 'v' && event.key !== 'x' && event.key !== 'y' && event.key !== 'z' && event.key !== 'a') {
@@ -302,6 +305,7 @@ export default {
         return;
       }
       this.speedometers[indexSpeedometer].value = 0;
+      this.lastPress = keyPress;
     },
     getTimeDifferenceInSeconds(dateTime1, dateTime2) {
       let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
@@ -329,7 +333,14 @@ export default {
 }
 
 .current-value {
-  margin-top: 1rem;
-  font-size: 14px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10px; /* Adjust the value to move the text closer or further from the bottom */
+  text-align: center;
+}
+
+.speedometer-content {
+  padding-left: 75px;
 }
 </style>

@@ -109,6 +109,13 @@ export default {
     },
   },
   mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountAccousticMemory') || '0');
+    reloadCount++;
+    localStorage.setItem('reloadCountAccousticMemory', reloadCount.toString());
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountAccousticMemory', reloadCount.toString());
+    });
+
     this.loadConfig();
   },
   methods: {
@@ -377,6 +384,7 @@ export default {
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
         'batteryTestConfigId': test.config.id,
+        'refreshCount': parseInt(localStorage.getItem('reloadCountAccousticMemory')),
         'result': {
           'total_question': this.numberOfTask,
           'correct_answer': this.result.correct,
@@ -411,7 +419,8 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage(this.testName)
+        removeTestByNameAndUpdateLocalStorage(this.testName);
+        localStorage.removeItem('reloadCountAccousticMemory');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
     }

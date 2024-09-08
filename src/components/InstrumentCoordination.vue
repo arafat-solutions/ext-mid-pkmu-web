@@ -127,6 +127,13 @@ export default {
     },
   },
   mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountInstrumentCoordination') || '0');
+    reloadCount++;
+    localStorage.setItem('reloadCountInstrumentCoordination', reloadCount.toString());
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountInstrumentCoordination', reloadCount.toString());
+    });
+
     this.loadConfig();
   },
   methods: {
@@ -197,6 +204,7 @@ export default {
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
         'batteryTestConfigId': test.config.id,
+        'refreshCount': parseInt(localStorage.getItem('reloadCountInstrumentCoordination')),
         'result': this.result
       }
 
@@ -228,7 +236,8 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage(this.testName)
+        removeTestByNameAndUpdateLocalStorage(this.testName);
+        localStorage.removeItem('reloadCountInstrumentCoordination');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
     },

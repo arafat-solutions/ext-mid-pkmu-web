@@ -33,7 +33,12 @@ export default {
     window.addEventListener('keyup', this.handleKeyPress);
   },
   beforeUnmount() {
+    window.speechSynthesis.cancel();
     window.removeEventListener('keyup', this.handleKeyPress);
+  },
+  beforeRouteLeave(to, from, next) {
+    window.speechSynthesis.cancel();
+    next();
   },
   watch: {
     isPause(newValue) {

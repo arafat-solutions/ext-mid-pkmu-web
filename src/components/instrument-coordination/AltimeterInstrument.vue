@@ -22,9 +22,11 @@ export default {
   data() {
     return {
       altitude: null,
-      minimumAltitude: 10000,
-      maximumAltitude: 20000,
+      altitudeVariants: [9000, 10000, 11000],
+      minimumAltitude: null,
+      maximumAltitude: null,
       signRandoms: ['+', '-'],
+      currenSignTarget: null,
       defaultIntervalTarget: 3000, //in ms
       minimumIntervalTarget: 3000, //in ms
       maximumIntervalTarget: 5000, //in ms
@@ -62,25 +64,27 @@ export default {
     isPause(newValue) {
       if (!newValue) {
         this.executeAltitudeMovement();
+        this.executeTargetMovement();
       }
     },
   },
   computed: {
-    changeValue() {
-      // Map speed (0-100) to (10-50)
-      let value = (this.speed / 100) * 40 + 10;
+    intervalMovement() {
+      const minInput = 1;
+      const maxInput = 100;
+      const minOutput = 1;
+      const maxOutput = 100;
 
-      // Ensure the value is a multiple of 10
-      value = Math.round(value / 10) * 10;
-
-      return value;
+      // Apply the conversion formula
+      const output = maxOutput - ((this.speed - minInput) / (maxInput - minInput)) * (maxOutput - minOutput);
+      return output;
     },
   },
   mounted: function () {
     if (this.changeType !== 'inactive') {
       if (this.changeType !== 'keep_indicator') {
         this.initAltitude();
-        this.initTarget();
+        this.executeTargetMovement();
       }
       this.executeAltitudeMovement();
     }
@@ -93,11 +97,11 @@ export default {
 
       if (event.key === 'ArrowUp' && this.altitude <= this.maximumAltitude) {
         this.isPressed = true;
-        this.altitude += 10;
+        this.altitude += 3;
         this.checkDurationTarget();
       } else if (event.key === 'ArrowDown' && this.altitude >= this.minimumAltitude) {
         this.isPressed = true;
-        this.altitude -= 10;
+        this.altitude -= 3;
         this.checkDurationTarget();
       }
     },
@@ -119,18 +123,19 @@ export default {
         return;
       }
 
-      let intervalTarget = this.defaultIntervalTarget; //in ms
-      if (this.changeType === 'adjust_for_irregular_updates') {
-        intervalTarget = this.getRandomInterval(this.minimumIntervalTarget, this.maximumIntervalTarget);
-      }
-      const sign = this.getRandomOperator();
-      for(let i=0;i<=this.changeValue;i+=10) {
-        if (sign === '+' || ((this.altitude-10) < this.minimumAltitude)) {
-          this.altitude += 10;
-        } else {
-          this.altitude -= 10;
+      if (this.changeType === 'adjust_for_consistent_updates') {
+        if (this.altitude < this.maximumAltitude) {
+          this.altitude += 1;
         }
-        await this.delay(intervalTarget/this.changeValue);
+        await this.delay(this.intervalMovement);
+      } else if (this.changeType === 'adjust_for_irregular_updates') {
+        const randomAddedAltitude = Math.floor(Math.random() * 3) + 1;
+        for (let i = 0;i < randomAddedAltitude;i++) {
+          if (this.altitude < this.maximumAltitude) {
+            this.altitude += 1;
+          }
+          await this.delay(this.intervalMovement/randomAddedAltitude);
+        }
       }
       this.checkDurationTarget();
       return this.executeAltitudeMovement();
@@ -152,11 +157,37 @@ export default {
       return this.signRandoms[randomIndex];
     },
     initAltitude() {
+      this.minimumAltitude = this.altitudeVariants[Math.floor(Math.random() * this.altitudeVariants.length)];
+      this.maximumAltitude = this.minimumAltitude + 1000;
       this.altitude = this.generateRandomNumber(this.minimumAltitude, this.maximumAltitude);
     },
-    initTarget() {
-      this.target = this.generateRandomNumber(this.altitude-1000, this.altitude+1000);
+    async executeTargetMovement() {
+      if (this.isPause || this.isTimesUp) {
+        return;
+      }
+
+      if (!this.currenSignTarget) {
+        this.currenSignTarget = this.getRandomOperator();
+      }
+      if (this.target) {
+        if (this.currenSignTarget === '+') {
+          this.target++;
+          if (this.target >= this.maximumAltitude) {
+            this.currenSignTarget = '-';
+          }
+        } else {
+          this.target--;
+          if (this.target <= this.minimumAltitude) {
+            this.currenSignTarget = '+';
+          }
+        }
+      } else {
+        this.target = this.generateRandomNumber(this.minimumAltitude+200, this.maximumAltitude-200);
+      }
       this.animate();
+      await this.delay(this.intervalMovement/2);
+
+      return this.executeTargetMovement();
     },
     drawTarget() {
       const canvas = this.$refs.targetCanvas;
@@ -169,19 +200,19 @@ export default {
       const centerX = this.width / 2;
       const centerY = this.height / 2;
 
-      // Adjust the target angle to make 0 degrees point upwards
-      const adjustedTarget = (((this.target - this.minimumAltitude) / 9999) * 360) - 90;
+      // Calculate the target angle
+      const adjustedTarget = ((this.target - this.minimumAltitude) / (this.maximumAltitude - this.minimumAltitude)) * 360 - 90;
 
       // Convert adjustedTarget from degrees to radians
       const targetRadians = adjustedTarget * (Math.PI / 180);
 
-      // Koordinat objek kuning
+      // Coordinates for the yellow object
       const yellowX = centerX + this.radius * Math.cos(targetRadians);
       const yellowY = centerY + this.radius * Math.sin(targetRadians);
 
-      // Hitung titik-titik segitiga
-      const triangleSize = 12; // Ukuran segitiga
-      const angleOffset = Math.PI / 6; // Offset sudut untuk segitiga
+      // Calculate the points of the triangle
+      const triangleSize = 12; // Size of the triangle
+      const angleOffset = Math.PI / 6; // Angle offset for the triangle
 
       const point1X = yellowX;
       const point1Y = yellowY;
@@ -192,12 +223,12 @@ export default {
       const point3X = yellowX + triangleSize * Math.cos(targetRadians - angleOffset);
       const point3Y = yellowY + triangleSize * Math.sin(targetRadians - angleOffset);
 
-      // Gambar segitiga
+      // Draw the triangle
       ctx.beginPath();
-      ctx.moveTo(point1X, point1Y); // Titik puncak segitiga
-      ctx.lineTo(point2X, point2Y); // Titik kiri bawah segitiga
-      ctx.lineTo(point3X, point3Y); // Titik kanan bawah segitiga
-      ctx.closePath(); // Menghubungkan titik terakhir dengan titik pertama
+      ctx.moveTo(point1X, point1Y); // Top point of the triangle
+      ctx.lineTo(point2X, point2Y); // Bottom left point of the triangle
+      ctx.lineTo(point3X, point3Y); // Bottom right point of the triangle
+      ctx.closePath(); // Close the path to form the triangle
 
       ctx.fillStyle = 'rgb(72, 200, 68)';
       ctx.fill();
@@ -264,7 +295,8 @@ canvas {
   font-size: 13px;
   min-width: 50.7px;
 }
-
+</style>
+<style>
 .needleSmall {
   display: none;
 }

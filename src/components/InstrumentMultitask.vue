@@ -38,35 +38,50 @@
 </template>
 
 <script>
-import ArithmeticTask from './instrument-multitask/ArithmeticTask';
-import AlertLights from './instrument-multitask/AlertLights';
-import GaugesMeter from './instrument-multitask/GaugesMeter';
-import HorizonTest from './instrument-multitask/HorizonTest';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+  import ArithmeticTask from './instrument-multitask/ArithmeticTask';
+  import AlertLights from './instrument-multitask/AlertLights';
+  import GaugesMeter from './instrument-multitask/GaugesMeter';
+  import HorizonTest from './instrument-multitask/HorizonTest';
+  import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
 
-export default {
-  components: {
-    ArithmeticTask,
-    AlertLights,
-    GaugesMeter,
-    HorizonTest,
-  },
-  data() {
-    return {
-      testName: 'Multitasking With Instrument',
-      isLoading: false,
-      minuteTime: null,
-      timeLeft: null, // Countdown time in seconds
-      interval: null,
-      isPause: false,
-      isConfigLoaded: false,
-      isTrial: this.$route.query.isTrial ?? false,
-      allowSound: false,
-      config: {
-        alertLight: {
-          speed: null, //very_slow,slow,medium,fast,very_fast
-          frequency: null, //very_rarely,rarely,medium,often,very_often
-          isActive: null, //true,false
+  export default {
+    components: {
+      ArithmeticTask,
+      AlertLights,
+      GaugesMeter,
+      HorizonTest,
+    },
+    data() {
+      return {
+        testName: 'Multitasking With Instrument',
+        isLoading: false,
+        minuteTime: null,
+        timeLeft: null, // Countdown time in seconds
+        interval: null,
+        isPause: false,
+        isConfigLoaded: false,
+        isTrial: this.$route.query.isTrial ?? false,
+        allowSound: false,
+        config: {
+          alertLight: {
+            speed: null, //very_slow,slow,medium,fast,very_fast
+            frequency: null, //very_rarely,rarely,medium,often,very_often
+            isActive: null, //true,false
+          },
+          arithmetic: {
+            useSound: null, //true,false
+            difficulty: null, //easy,medium,difficult
+            isActive: null, //true,false
+            canPressAnswer: true, //true,false
+          },
+          gaugesMeter: {
+            frequency: null, //low,medium,high
+            isActive: null, //true,false
+          },
+          horizon: {
+            speed: null, //very_slow,slow,medium,fast,very_fast
+            isActive: null, //true,false
+          },
         },
         arithmetic: {
           useSound: null, //true,false
@@ -159,71 +174,73 @@ export default {
         return;
       }
 
-      this.interval = setInterval(() => {
-        if (this.timeLeft > 0) {
-          this.timeLeft -= 1;
-        } else {
-          this.submitResult();
-          clearInterval(this.interval);
-        }
-      }, 1000);
-    },
-    arithmeticResult(result) {
-      this.result.arithmetic = result;
-    },
-    alertLightResult(result) {
-      this.result.alertLight = result;
-    },
-    gaugesMeterResult(result) {
-      this.result.gaugesMeter = result;
-    },
-    horizonResult(result) {
-      this.result.horizon = result;
-    },
-    pause() {
-      clearInterval(this.interval);
-      this.isPause = true;
-    },
-    startAgain() {
-      this.isPause = false;
-      this.startCountdown();
-    },
-    exit() {
-      this.$router.push('module');
-    },
-    playSound() {
-      this.allowSound = true;
-      document.getElementById('fullPageModal').style.display = 'none';
-      this.$refs.arithmeticTaskRef.generateProblem();
-      this.startAgain();
-    },
-    generatePayloadForSubmit() {
-      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === this.testName);
-      const payload = {
-        'testSessionId': scheduleData.sessionId,
-        'userId': scheduleData.userId,
-        'moduleId': scheduleData.moduleId,
-        'batteryTestConfigId': test.config.id,
-        'result': {
-          'arithmetics': {
-            'total_questions': this.result.arithmetic.totalQuestion,
-            'correct_answer': this.result.arithmetic.correctAnswer,
-          },
-          'horizon': {
-            'correct_time': this.result.horizon.correctTime, // in seconds
-          },
-          'alert_lights': {
-            'wrong_response': this.result.alertLight.wrong,
-            'correct_response': this.result.alertLight.correct,
-            'total_alert_count': this.result.alertLight.alertCount,
-            'total_warning_count': this.result.alertLight.warningCount,
-            'avg_response_time': this.result.alertLight.responseTime
-          },
-          'instrument': {
-            'correct_response': this.result.gaugesMeter.correct,
-            'total_occurence': this.result.gaugesMeter.occurance,
-            'response_time': this.result.gaugesMeter.responseTime // in seconds
+        this.interval = setInterval(() => {
+          if (this.timeLeft > 0) {
+            this.timeLeft -= 1;
+          } else {
+            this.submitResult();
+            clearInterval(this.interval);
+          }
+        }, 1000);
+      },
+      arithmeticResult(result) {
+        this.result.arithmetic = result;
+      },
+      alertLightResult(result) {
+        this.result.alertLight = result;
+      },
+      gaugesMeterResult(result) {
+        this.result.gaugesMeter = result;
+      },
+      horizonResult(result) {
+        this.result.horizon = result;
+      },
+      pause() {
+        clearInterval(this.interval);
+        this.isPause = true;
+      },
+      startAgain() {
+        this.isPause = false;
+        this.startCountdown();
+      },
+      exit() {
+        this.$router.push('module');
+      },
+      playSound() {
+        this.allowSound = true;
+        document.getElementById('fullPageModal').style.display = 'none';
+        this.$refs.arithmeticTaskRef.generateProblem();
+        this.startAgain();
+      },
+      generatePayloadForSubmit() {
+        const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+        const test = scheduleData.tests.find((t) => t.name === this.testName);
+        const payload = {
+          'testSessionId': scheduleData.sessionId,
+          'userId': scheduleData.userId,
+          'moduleId': scheduleData.moduleId,
+          'batteryTestConfigId': test.config.id,
+          'refreshCount': parseInt(localStorage.getItem('reloadCountInstrumentMultitask')),
+          'result': {
+            'arithmetics': {
+              'total_questions': this.result.arithmetic.totalQuestion,
+              'correct_answer': this.result.arithmetic.correctAnswer,
+            },
+            'horizon': {
+              'correct_time': this.result.horizon.correctTime, // in seconds
+            },
+            'alert_lights': {
+              'wrong_response': this.result.alertLight.wrong,
+              'correct_response' : this.result.alertLight.correct,
+              'total_alert_count': this.result.alertLight.alertCount,
+              'total_warning_count': this.result.alertLight.warningCount,
+              'avg_response_time': this.result.alertLight.responseTime
+            },
+            'instrument': {
+              'correct_response': this.result.gaugesMeter.correct,
+              'total_occurence': this.result.gaugesMeter.occurance,
+              'response_time': this.result.gaugesMeter.responseTime // in seconds
+            }
           }
         }
       }
@@ -247,9 +264,9 @@ export default {
           },
           body: JSON.stringify(payload),
         });
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
+          removeTestByNameAndUpdateLocalStorage(this.testName);
+          localStorage.removeItem('reloadCountInstrumentMultitask');
+          this.$router.push('/module');
         }
       } catch (error) {
         console.error(error);
@@ -259,6 +276,19 @@ export default {
         removeTestByNameAndUpdateLocalStorage(this.testName)
         this.$router.push('/module');
       }
+    },
+    mounted() {
+      let reloadCount = parseInt(localStorage.getItem('reloadCountInstrumentMultitask') || '0')
+      reloadCount++
+      localStorage.setItem('reloadCountInstrumentMultitask', reloadCount.toString())
+      window.addEventListener('beforeunload', () => {
+        localStorage.setItem('reloadCountInstrumentMultitask', reloadCount.toString())
+      })
+
+      this.loadConfig();
+    },
+    beforeUnmount() {
+      clearInterval(this.interval);
     }
   },
   mounted() {

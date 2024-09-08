@@ -46,14 +46,15 @@ export default {
     },
   },
   computed: {
-    changeValue() {
-      // Map speed (0-100) to (1-30)
-      let value = (this.speed / 100) * 29 + 1;
+    intervalMovement() {
+      const minInput = 1;
+      const maxInput = 100;
+      const minOutput = 1;
+      const maxOutput = 100;
 
-      // Ensure the value is a whole number (optional)
-      value = Math.round(value);
-
-      return value;
+      // Apply the conversion formula
+      const output = maxOutput - ((this.speed - minInput) / (maxInput - minInput)) * (maxOutput - minOutput);
+      return output;
     },
     indicatorStyle() {
       const percentage = this.airspeed > 0 ? Math.round(this.airspeed / 160 * 100) : 0;
@@ -65,8 +66,6 @@ export default {
   data: function () {
     return {
       airspeed: 0,
-      intervalMovement: 5000,
-      signRandoms: ['+', '-'],
       redStartTime: null,
       redDuration: 0,
       limitRedAirSpeed: 140,
@@ -79,19 +78,19 @@ export default {
       }
 
       if ((event.key.toLowerCase() === 'q' || event.key === 'Shift') && this.airspeed <= 160) {
-        this.airspeed++;
+        this.airspeed += 5;
         this.checkRedDuration();
       } else if ((event.key.toLowerCase() === 'a' || event.key === 'Ctrl') && this.airspeed >= 1) {
-        this.airspeed--;
+        this.airspeed -= 5;
         this.checkRedDuration();
       }
     },
     btnPlus() {
-      this.airspeed++;
+      this.airspeed += 5;
       this.checkRedDuration();
     },
     btnMinus() {
-      this.airspeed--;
+      this.airspeed -= 5;
       this.checkRedDuration();
     },
     async executeAirspeedMovement() {
@@ -99,26 +98,13 @@ export default {
         return;
       }
 
-      const sign = this.getRandomOperator();
-      for(let i=1;i<=this.changeValue;i++) {
-        if (sign === '+' && this.airspeed <= 160) {
-          this.airspeed++;
-        } else if (sign === '-' && this.airspeed >= 1) {
-          this.airspeed--;
-        }
-        this.checkRedDuration();
-        await this.delay(this.intervalMovement/this.changeValue);
+      if (this.airspeed < 160) {
+        this.airspeed += Math.random();
       }
+      this.checkRedDuration();
+      await this.delay(this.intervalMovement);
 
       return this.executeAirspeedMovement();
-    },
-    getRandomOperator() {
-      const weights = [0.8, 0.2];
-      const cumulativeWeights = weights.map((sum => value => sum += value)(0));
-      const random = Math.random();
-      const randomIndex = cumulativeWeights.findIndex(cumulativeWeight => random < cumulativeWeight);
-
-      return this.signRandoms[randomIndex];
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -173,8 +159,8 @@ export default {
   position: absolute;
   left: 250px;
   top: 235px;
-  width: 33px;
-  height: 113px;
+  width: 35px;
+  height: 115px;
   border: 1px solid #9e9e9e;
 }
 
