@@ -247,6 +247,9 @@ export default {
           },
           body: JSON.stringify(payload),
         });
+        if (!response.ok) {
+          throw new Error('Failed to submit result');
+        }
         removeTestByNameAndUpdateLocalStorage(this.testName);
         localStorage.removeItem('reloadCountInstrumentMultitask');
         this.$router.push('/module');
