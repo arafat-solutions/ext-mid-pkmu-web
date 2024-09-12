@@ -135,7 +135,7 @@ export default {
       const testData = localStorage.getItem('scheduleData');
       if (testData) {
         const scheduleData = JSON.parse(testData);
-        
+
         const timeSharing = scheduleData.tests.find(data => data.name === 'Time Sharing Test 2023');
         this.duration = timeSharing.config.duration * 60;
         this.remainingTime = this.duration;
@@ -195,10 +195,12 @@ export default {
       this.plane.x += (this.plane.targetX - this.plane.x) * ease;
     },
     onGamepadConnected(event) {
+      console.log('connected', event)
       this.gamepadIndex = event.gamepad.index;
       this.checkGamepad();
     },
     onGamepadDisconnected(event) {
+      console.log('disconnected', event)
       if (this.gamepadIndex === event.gamepad.index) {
         this.gamepadIndex = null;
       }

@@ -375,10 +375,12 @@ export default {
       }
     },
     onGamepadConnected(event) {
+console.log('connected', event)
       this.gamepadIndex = event.gamepad.index;
       this.checkGamepad();
     },
     onGamepadDisconnected(event) {
+console.log('disconnected', event)
       if (this.gamepadIndex === event.gamepad.index) {
         this.gamepadIndex = null;
       }

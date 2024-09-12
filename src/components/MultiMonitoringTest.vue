@@ -459,11 +459,13 @@ function handleCancel() {
 
 // for gamepad
 function onGamepadConnected(event) {
+console.log('connected', event)
     gamepadIndex.value = event.gamepad.index;
     checkGamepad();
 }
 
 function onGamepadDisconnected(event) {
+console.log('disconnected', event)
     if (gamepadIndex.value === event.gamepad.index) {
         gamepadIndex.value = null;
     }
