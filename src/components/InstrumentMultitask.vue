@@ -240,7 +240,7 @@ export default {
         this.isLoading = true;
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
-        const response = await fetch(`${API_URL}api/submission`, {
+        const response = await fetch(`${API_URL}/api/submission`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

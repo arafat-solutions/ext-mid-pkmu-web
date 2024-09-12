@@ -334,7 +334,7 @@ export default {
       //   result: result,
       // }
 
-      // const res = await fetch(`${API_URL}api/submission`,
+      // const res = await fetch(`${API_URL}/api/submission`,
       //   {
       //     method: 'POST',
       //     headers: {

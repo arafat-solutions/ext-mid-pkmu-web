@@ -833,7 +833,7 @@ export default {
                     result: this.result,
                     refreshCount: this.refreshCount
                 }
-                const response = await fetch(`${API_URL}api/submission`, {
+                const response = await fetch(`${API_URL}/api/submission`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
