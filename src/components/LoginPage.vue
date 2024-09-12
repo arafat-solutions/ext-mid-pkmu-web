@@ -61,8 +61,9 @@ export default {
     async login() {
       this.loading = true;
       const workstationId = localStorage.getItem('designatedWorkstation')
+      const API_URL = process.env.VUE_APP_API_URL;
       try {
-        const res = await fetch("https://walrus-app-bfooa.ondigitalocean.app/api/scheduling/workstation-signin", {
+        const res = await fetch(`${API_URL}/api/scheduling/workstation-signin`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

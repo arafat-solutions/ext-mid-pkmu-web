@@ -53,7 +53,8 @@ export default {
     async adminLogin() {
       this.loading = true;
       try {
-        const response = await fetch('https://walrus-app-bfooa.ondigitalocean.app/api/auth/sign-in', {
+        const API_URL = process.env.VUE_APP_API_URL;
+        const response = await fetch(`${API_URL}/api/auth/sign-in`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
