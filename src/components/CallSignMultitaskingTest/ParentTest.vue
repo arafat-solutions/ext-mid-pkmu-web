@@ -54,6 +54,9 @@
             <div class="loading-text">Your result is submitting</div>
         </div>
     </div>
+    <VirtualKeyboard :active-keys="activeKeys" @key-press="handleVirtualKeyPress"
+        @key-release="handleVirtualKeyRelease" />
+
 </template>
 
 <script>
@@ -63,6 +66,7 @@ import CircleTest from './CircleTest.vue';
 import CallSignTest from './CallSignTest.vue';
 import ModalComponent from './Modal.vue'
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import VirtualKeyboard from './VirtualKeyboard.vue';
 
 export default {
     name: 'CallSignMultitask',
@@ -71,7 +75,7 @@ export default {
             loading: false,
             startTest: false,
             testTime: 5 * 60,
-            tesInterval: null,
+            tesInterva: null,
             callSignInputFocus: false,
             configBe: {
                 alert_lights: {
@@ -125,7 +129,8 @@ export default {
             userId: '',
             seeResults: false, // untuk hide show debugging
             isModalVisible: true,
-            refreshCount: 0
+            refreshCount: 0,
+            activeKeys: []
         }
     },
     async mounted() {
@@ -139,11 +144,35 @@ export default {
         localStorage.setItem('refreshCallsignMultitaskTest', this.refreshCount.toString());
         // Add event listener for beforeunload
         window.addEventListener('beforeunload', this.handleBeforeUnload);
+        window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keyup', this.handleKeyUp);
     },
     beforeUnmount() {
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUp);
+
         clearInterval(this.tesInterval);
     },
     methods: {
+        handleVirtualKeyPress(key) {
+            if (!this.activeKeys.includes(key)) {
+                this.activeKeys.push(key);
+            }
+        },
+
+        handleVirtualKeyRelease(key) {
+            const index = this.activeKeys.indexOf(key);
+            if (index !== -1) {
+                this.activeKeys.splice(index, 1);
+            }
+        },
+        handleKeyDown(event) {
+            this.handleVirtualKeyPress(event.key.toUpperCase());
+        },
+
+        handleKeyUp(event) {
+            this.handleVirtualKeyRelease(event.key.toUpperCase());
+        },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const remainderSeconds = seconds % 60;
@@ -260,7 +289,8 @@ export default {
         HorizonTest,
         CircleTest,
         CallSignTest,
-        ModalComponent
+        ModalComponent,
+        VirtualKeyboard
     }
 };
 </script>

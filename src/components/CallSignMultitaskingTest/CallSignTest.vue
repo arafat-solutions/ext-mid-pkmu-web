@@ -105,9 +105,9 @@ export default {
         },
         initConfig() {
             const frequencyMap = {
-                'often': 60000,
-                'medium': 80000,
-                'seldom': 100000
+                'often': Math.floor(Math.random() * 11) * 1000 + 10000,
+                'medium':  Math.floor(Math.random() * 11) * 1000 + 20000,
+                'seldom': Math.floor(Math.random() * 11) * 1000 + 30000
             };
 
             const matchesMap = {

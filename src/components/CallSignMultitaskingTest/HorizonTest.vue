@@ -287,6 +287,9 @@ export default {
         },
         // for gamepad
         onGamepadConnected(event) {
+            if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+                return;
+            }
             this.gamepadIndex = event.gamepad.index;
             this.checkGamepad();
         },

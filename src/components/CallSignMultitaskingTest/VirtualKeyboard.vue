@@ -1,12 +1,20 @@
 <template>
     <div class="virtual-keyboard">
       <div class="keyboard-row">
-        <div v-for="key in ['Q', 'W', 'E', 'R']" :key="key" :class="['key', { active: activeKeys.includes(key) }]">
+        <div v-for="key in ['Q', 'W', 'E', 'R']" :key="key" 
+             :class="['key', { active: activeKeys.includes(key) }]"
+             @mousedown="emitKeyPress(key)"
+             @mouseup="emitKeyRelease(key)"
+             @mouseleave="emitKeyRelease(key)">
           {{ key }}
         </div>
       </div>
       <div class="keyboard-row">
-        <div v-for="key in ['A', 'S', 'D', 'F']" :key="key" :class="['key', { active: activeKeys.includes(key) }]">
+        <div v-for="key in ['A', 'S', 'D', 'F']" :key="key" 
+             :class="['key', { active: activeKeys.includes(key) }]"
+             @mousedown="emitKeyPress(key)"
+             @mouseup="emitKeyRelease(key)"
+             @mouseleave="emitKeyRelease(key)">
           {{ key }}
         </div>
       </div>
@@ -19,6 +27,14 @@
       activeKeys: {
         type: Array,
         default: () => []
+      }
+    },
+    methods: {
+      emitKeyPress(key) {
+        this.$emit('key-press', key);
+      },
+      emitKeyRelease(key) {
+        this.$emit('key-release', key);
       }
     }
   };
