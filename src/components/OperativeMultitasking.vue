@@ -375,12 +375,15 @@ export default {
       }
     },
     onGamepadConnected(event) {
-console.log('connected', event)
+      console.log('connected', event)
+      if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+        return;
+      }
       this.gamepadIndex = event.gamepad.index;
       this.checkGamepad();
     },
     onGamepadDisconnected(event) {
-console.log('disconnected', event)
+      console.log('disconnected', event)
       if (this.gamepadIndex === event.gamepad.index) {
         this.gamepadIndex = null;
       }
