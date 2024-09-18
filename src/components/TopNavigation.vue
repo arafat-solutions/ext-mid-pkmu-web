@@ -3,7 +3,7 @@
     <div class="user-info">
       <div class="avatar">AW</div>
       <div class="user-details">
-        <span class="user-name">Andi Wijaya</span>
+        <span class="user-name">{{ user }}</span>
         <span class="user-role">Peserta</span>
       </div>
       <div class="dropdown">
@@ -38,10 +38,19 @@
 <script>
 export default {
   name: "TopNavigation",
+  data() {
+    return {
+      user: null
+    };
+  },
   methods: {
     logout() {
       // Implement logout logic here
       console.log("Logging out...");
+    },
+    onMounted() {
+      this.user = JSON.parse(localStorage.getItem('scheduleData')).userId;
+      console.log(this.user);
     }
   }
 };

@@ -3,7 +3,7 @@
     <div class="profile-header">
       <span class="back-arrow">&#8592;</span>
       <img src="" alt="User Avatar" class="avatar" />
-      <h2>Andi Wijaya</h2>
+      <h2>{{ username }}</h2>
     </div>
     <form class="profile-form">
       <div class="form-row">
@@ -122,8 +122,10 @@
 export default {
   name: "ProfilePage",
   data() {
+    const user = JSON.parse(localStorage.getItem('scheduleData')).userId;
     return {
       profile: {
+        username: user,
         namaPeserta: '',
         email: 'andiwijaya@gmail.com',
         gender: '',

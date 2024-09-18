@@ -270,7 +270,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Multi Tasking With Color')
+        removeTestByNameAndUpdateLocalStorage('Multitasking With Color')
         localStorage.removeItem('reloadCountColorTankMultitask');
         this.$router.push('/module');
       }

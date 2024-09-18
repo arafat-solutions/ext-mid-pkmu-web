@@ -5,7 +5,7 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+    <div :class="isTrial ? 'timer-container-trial' : 'timer-container'">
       Time: {{ formattedTime }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
@@ -60,6 +60,18 @@ export default {
     };
   },
   mounted() {
+    console.log('Checking for connected gamepad');
+    window.addEventListener("gamepadconnected", (event) => {
+      console.log("A gamepad connected:");
+      console.log(event.gamepad);
+    });
+    // Add an event listener for when a gamepad is disconnected
+    window.addEventListener("gamepaddisconnected", (event) => {
+      console.log("A gamepad disconnected:", event.gamepad);
+    });
+
+    // Manually check for any connected gamepads (sometimes necessary on page load)
+    this.checkForGamepads();
     let reloadCount = parseInt(localStorage.getItem('reloadCountRadarVigilance') || '0')
     reloadCount++
     localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
@@ -68,6 +80,8 @@ export default {
     })
 
     this.initConfig();
+    // check for connected gamepad
+
   },
   created() {
     window.addEventListener('keydown', this.handleKeydown);
@@ -76,6 +90,18 @@ export default {
     window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
+    checkForGamepads() {
+      const gamepads = navigator.getGamepads();
+      if (gamepads.length > 0) {
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            console.log("Gamepad detected on load:", gamepads[i]);
+          }
+        }
+      } else {
+        console.log("No gamepads detected.");
+      }
+    },
     pause() {
       this.stopRadar();
       clearInterval(this.countdownInterval);
@@ -130,6 +156,9 @@ export default {
     },
     drawRadar() {
       const canvas = this.$refs.radarCanvas;
+      if (!canvas) {
+        return;
+      }
       const ctx = canvas.getContext("2d");
       const radius = Math.min(this.width, this.height) / 2;
 
@@ -246,7 +275,7 @@ export default {
 
       this.isCanClick = false;
     },
-    setShapeConfig(shapes){
+    setShapeConfig(shapes) {
       let result = [];
 
       if (shapes.circle) {
@@ -427,6 +456,7 @@ export default {
       });
     },
     handleKeydown(event) {
+      console.log(event.code);
       if (event.code === "Space" && this.isCanClick) {
         this.userClickCount++;
         this.responseTimes.push(Date.now());
@@ -552,92 +582,101 @@ export default {
 </script>
 
 <style scoped>
-  .main-view {
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 60px auto;
-  }
-  .timer-container-trial {
-    position: absolute;
-    right: 0;
-    top: 0;
-    background-color: #0349D0;
-    padding: 0.75rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-  }
-  .timer-container-trial button {
-    color: #000000;
-    font-weight: bold;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-radius: 5px;
-    border-color: transparent;
-    min-width: 100px;
-    cursor: pointer;
-  }
-  .timer-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0349D0;
-    padding: 1.5rem 5rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
-  .radar-container {
-    display: flex;
-    align-items: center;
-  }
-  canvas {
-    margin-top: 15px !important;
-    display: block;
-    margin: 0 auto;
-    background-color: black;
-  }
-  .loading-container {
-    /* Add your loading indicator styles here */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    /* Black background with 80% opacity */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    /* Ensure it is above other content */
-  }
-  .spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3);
-    /* Light border */
-    border-top: 8px solid #ffffff;
-    /* White border for the spinning part */
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
+.main-view {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 60px auto;
+}
 
-    100% {
-      transform: rotate(360deg);
-    }
+.timer-container-trial {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background-color: #0349D0;
+  padding: 0.75rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+}
+
+.timer-container-trial button {
+  color: #000000;
+  font-weight: bold;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 5px;
+  border-color: transparent;
+  min-width: 100px;
+  cursor: pointer;
+}
+
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0349D0;
+  padding: 1.5rem 5rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.radar-container {
+  display: flex;
+  align-items: center;
+}
+
+canvas {
+  margin-top: 15px !important;
+  display: block;
+  margin: 0 auto;
+  background-color: black;
+}
+
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  .text {
-    color: #ffffff;
-    margin-top: 20px;
-    font-size: 1.2em;
+
+  100% {
+    transform: rotate(360deg);
   }
+}
+
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
 </style>

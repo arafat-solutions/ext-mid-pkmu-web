@@ -310,7 +310,9 @@ export default {
         },
         handleGamepadInput(gamepad) {
             const [leftStickX, leftStickY] = gamepad.axes;
-
+            if (!this.$refs.horizonCanvas) {
+                return;
+            }
             const canvasWidth = this.$refs.horizonCanvas.width;
             const canvasHeight = this.$refs.horizonCanvas.height;
 
