@@ -108,7 +108,7 @@
     
     <div v-else class="grid grid-cols-4 gap-4 mt-4">
       <button 
-        v-for="n in 16" 
+        v-for="n in 30" 
         :key="n" 
         @click="selectWorkstation(String(n).padStart(2, '0'))"
         class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded flex items-center justify-center space-x-2 w-32"
