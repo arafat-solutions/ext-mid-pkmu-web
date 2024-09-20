@@ -47,7 +47,7 @@
         <Arithmetics
           ref="arithmeticsRef"
           :isTimesUp="isTimesUp"
-          :difficulty="config.arithmetics.difficulty"
+          :difficulty="null"
           :duration="config.duration"
           :isPause="isPause"
           :isActive="config.subtask.arithmetics"
