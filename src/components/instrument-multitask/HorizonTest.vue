@@ -88,6 +88,9 @@ export default {
       }
     },
     initHorizon() {
+      if (!this.$refs.horizonCanvas) {
+        return;
+      }
       const canvas = this.$refs.horizonCanvas;
       this.ctx = canvas.getContext("2d");
 
@@ -160,6 +163,9 @@ export default {
         return;
       }
 
+      if (!this.$refs.horizonCanvas) {
+        return;
+      }
       const canvas = this.$refs.horizonCanvas;
       const ctx = canvas.getContext("2d");
 
@@ -309,6 +315,10 @@ export default {
       // Update flag yellowLineMoved
       this.yellowLineMoved = true;
 
+      if (!this.$refs.horizonCanvas) {
+        return;
+      }
+
       const canvas = this.$refs.horizonCanvas;
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
@@ -324,6 +334,9 @@ export default {
         return;
       }
 
+      if (!this.$refs.horizonCanvas) {
+        return;
+      }
       const canvas = this.$refs.horizonCanvas;
       const rect = canvas.getBoundingClientRect();
 
