@@ -338,7 +338,6 @@ export default {
 
 			if (currentFill < 100) {
         for (let i = 0; i < 6; i++) {
-          // Looping dengan delay
           await new Promise(resolve => setTimeout(resolve, 800));
 
           currentFill += increment;
