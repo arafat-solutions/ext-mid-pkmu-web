@@ -22,6 +22,7 @@ import MultiMonitoringTest from '@/components/MultiMonitoringTest.vue'
 import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
 import SymbolAddition from '@/components/SymbolAddition.vue';
 import SignalProcessingTest from '@/components/SignalProcessingTest.vue';
+import PmaTest from '@/components/pma/PmaTest.vue';
 
 const routes = [
   {
@@ -133,6 +134,11 @@ const routes = [
     path: '/signal-processing-test',
     name: 'Signal Processing Test',
     component: SignalProcessingTest
+  },
+  {
+    path: '/pma-test',
+    name: 'PMA Test',
+    component: PmaTest
   },
 ];
 
