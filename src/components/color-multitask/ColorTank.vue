@@ -19,7 +19,7 @@
 				</div>
 			</div>
 		</div>
-		<VirtualKeyboard @keyPress="fillTank" @keyRelease="decreaseTankToEmpty" />
+		<!-- <VirtualKeyboard @keyPress="fillTank" @keyRelease="decreaseTankToEmpty" /> -->
 
 
 		<div class="counter">
@@ -29,12 +29,12 @@
 </template>
 
 <script>
-import VirtualKeyboard from '../VirtualKeyboard.vue';
+// import VirtualKeyboard from '../VirtualKeyboard.vue';
 
 export default {
 	name: 'ColorTankView',
 	components: {
-		VirtualKeyboard,
+		// VirtualKeyboard,
 	},
 	data() {
 		return {
@@ -65,8 +65,8 @@ export default {
 			],
 			intervalCheckFullyTank: null,
 			intervalCheckEmptyTank: null,
-			intervalId: null,
-			continueIntervalId: null,
+			intervalStartEmptyTank: null,
+			intervalContinueEmptyTank: null,
 			tankIndex: null,
 			tankItem: null,
 		}
@@ -100,9 +100,10 @@ export default {
 	},
 	watch: {
 		isTimesUp() {
-			clearInterval(this.intervalId)
-			clearInterval(this.intervalCheckEmptyTank)
-			clearInterval(this.intervalCheckFullyTank)
+			clearInterval(this.intervalStartEmptyTank);
+			clearInterval(this.intervalCheckEmptyTank);
+			clearInterval(this.intervalCheckFullyTank);
+      clearInterval(this.intervalContinueEmptyTank);
 
 			this.$emit('getResult', {
 				score: this.finalScore,
@@ -110,10 +111,10 @@ export default {
 		},
 		isPause() {
 			if (this.isPause) {
+				clearInterval(this.intervalStartEmptyTank);
 				clearInterval(this.intervalCheckEmptyTank);
 				clearInterval(this.intervalCheckFullyTank);
-				clearInterval(this.intervalId);
-				clearInterval(this.continueIntervalId);
+				clearInterval(this.intervalContinueEmptyTank);
 			} else {
 				this.runningInterval('check-empty-tank');
 				this.runningInterval('check-fully-tank');
@@ -300,7 +301,7 @@ export default {
 
 			if (parseFloat(tank['height'].replace('%', '')) <= parseFloat(tank['minimum_height'].replace('%', ''))) {
 				tank['status'] = 'stop';
-				clearInterval(this.intervalId);
+				clearInterval(this.intervalStartEmptyTank);
 				this.startEmptyTank();
 			}
 		},
@@ -321,82 +322,39 @@ export default {
 				return Math.random() * (7 - 5) + 5;
 			}
 		},
-		fillTank(tankIndex, tankItem) {
-			console.log(`Attempting to fill tank: index ${tankIndex}, item ${tankItem}`);
-
+		async fillTank(tankIndex, tankItem) {
 			if (tankIndex === undefined || tankItem === undefined) {
-				console.error('Invalid tankIndex or tankItem:', tankIndex, tankItem);
 				return;
 			}
 
-			if (!this.lowerTanks[tankIndex]) {
-				console.error('Invalid tankIndex:', tankIndex);
+			if (!this.lowerTanks[tankIndex] || !this.lowerTanks[tankIndex][tankItem]) {
 				return;
 			}
 
-			if (!this.lowerTanks[tankIndex][tankItem]) {
-				console.error('Invalid tankItem:', tankItem);
-				return;
-			}
-
-			const increment = 150;
+			const increment = 20;
 			const tank = this.lowerTanks[tankIndex][tankItem];
-
-			console.log('Tank before filling:', JSON.stringify(tank));
 
 			let currentFill = parseFloat(tank['height'].replace('%', ''));
 
-			if (tank['height'] < '100%') {
-				currentFill += increment;
-				tank['height'] = Math.min(currentFill, 100) + '%';
+			if (currentFill < 100) {
+        for (let i = 0; i < 6; i++) {
+          // Looping dengan delay
+          await new Promise(resolve => setTimeout(resolve, 800));
+
+          currentFill += increment;
+          tank['height'] = Math.min(currentFill, 100) + '%';
+
+          if (currentFill >= 100) {
+            break;
+          }
+        }
 			}
 
-			if (tank['height'] >= '100%') {
+			if (currentFill >= 100) {
 				tank['height'] = '100%';
 			}
 
 			tank['status'] = 'run';
-
-			console.log('Tank after filling:', JSON.stringify(tank));
-		},
-		checkKeyboardState() {
-			console.log('Checking keyboard state:', this.keysPressed);
-			if (this.keysPressed['Q'] && this.keysPressed['A']) {
-				this.fillTank(0, 0);
-			}
-			if (this.keysPressed['Q'] && this.keysPressed['S']) {
-				this.fillTank(1, 2);
-			}
-			if (this.keysPressed['Q'] && this.keysPressed['D']) {
-				this.fillTank(2, 0);
-			}
-			if (this.keysPressed['W'] && this.keysPressed['A']) {
-				this.fillTank(0, 4);
-			}
-			if (this.keysPressed['W'] && this.keysPressed['S']) {
-				this.fillTank(1, 0);
-			}
-			if (this.keysPressed['W'] && this.keysPressed['F']) {
-				this.fillTank(3, 2);
-			}
-			if (this.keysPressed['E'] && this.keysPressed['S']) {
-				this.fillTank(1, 4);
-			}
-			if (this.keysPressed['E'] && this.keysPressed['D']) {
-				this.fillTank(2, 4);
-			}
-			if (this.keysPressed['E'] && this.keysPressed['F']) {
-				this.fillTank(3, 4);
-			}
-			if (this.keysPressed['R'] && this.keysPressed['A']) {
-				this.fillTank(0, 2);
-			}
-			if (this.keysPressed['R'] && this.keysPressed['D']) {
-				this.fillTank(2, 2);
-			}
-			if (this.keysPressed['R'] && this.keysPressed['F']) {
-				this.fillTank(3, 0);
-			}
 		},
 		checkEmptyTank() {
 			for (let i = 0; i < this.lowerTanks.length; i++) {
@@ -483,13 +441,13 @@ export default {
 			}
 
 			if (type === 'start-empty-tank') {
-				this.intervalId = setInterval(() => {
+				this.intervalStartEmptyTank = setInterval(() => {
 					this.decreaseTankLevels(this.tankIndex, this.tankItem);
 				}, 1000);
 			}
 
 			if (type === 'continue-empty-tank') {
-				this.continueIntervalId = setInterval(() => {
+				this.intervalContinueEmptyTank = setInterval(() => {
 					this.decreaseTankToEmpty();
 				}, 1000);
 			}
@@ -508,6 +466,7 @@ export default {
 }
 
 .tank-section {
+  margin-right: 10%;
 	display: flex;
 	flex-direction: column;
 }

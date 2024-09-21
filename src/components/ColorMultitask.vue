@@ -148,10 +148,6 @@ export default {
       this.isShowModal = false;
       this.isConfigLoaded = true;
       this.startCountdown();
-
-      setTimeout(() => {
-        this.$refs.arithmeticsRef.generateAudio();
-			}, 2000)
     },
     pause() {
       clearInterval(this.countdownInterval);
