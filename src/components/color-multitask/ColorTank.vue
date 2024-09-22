@@ -1,30 +1,32 @@
 <template>
-	<div class="tank-section">
-		<div class="upper-tanks">
-			<div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }"
-				:id="`upper-tank-${index}`" class="tank"></div>
-		</div>
+	<div>
+		<div class="tank-section">
+			<div class="upper-tanks">
+				<div v-for="(color, index) in colors" :key="index" :style="{ backgroundColor: color }"
+					:id="`upper-tank-${index}`" class="tank"></div>
+			</div>
 
-		<div class="line">
-			<canvas ref="lineTankCanvas" :width="lineTankCanvasWidth" :height="lineTankCanvasHeight"
-				style="border: 0px;"></canvas>
-		</div>
+			<div class="line">
+				<canvas ref="lineTankCanvas" :width="lineTankCanvasWidth" :height="lineTankCanvasHeight"
+					style="border: 0px;"></canvas>
+			</div>
 
-		<div class="lower-tanks">
-			<div v-for="(lowerTank, index) in lowerTanks" :key="index" class="tank" :id="`lower-tank-${index}`">
-				<div class="horizontal-line"> </div>
-				<div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor"
-					:style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '5%' : '100%' }"
-					class="tank-fill fill-animation">
+			<div class="lower-tanks">
+				<div v-for="(lowerTank, index) in lowerTanks" :key="index" class="tank" :id="`lower-tank-${index}`">
+					<div class="horizontal-line"></div>
+					<div v-for="(tankItem, IdxColor) in lowerTank" :key="IdxColor"
+						:style="{ backgroundColor: tankItem.color, height: tankItem.height, width: tankItem.color === 'black' ? '5%' : '100%' }"
+						class="tank-fill fill-animation">
+					</div>
 				</div>
 			</div>
-		</div>
-		<VirtualKeyboard @keyPress="fillTank" @keyRelease="decreaseTankToEmpty" />
 
-
-		<div class="counter">
-			<input type="text" v-model="finalScore" readonly style="text-align: center; width: 15%;">
+			<div class="counter">
+				<input type="text" v-model="finalScore" readonly style="text-align: center; width: 15%;">
+			</div>
 		</div>
+
+		<VirtualKeyboard @keyPress="handleVirtualKeyDown" @keyRelease="handleVirtualKeyUp" />
 	</div>
 </template>
 
@@ -123,6 +125,13 @@ export default {
 		},
 	},
 	methods: {
+		handleVirtualKeyDown(event) {
+			this.handleKeyDown({ key: event.key });
+		},
+
+		handleVirtualKeyUp(event) {
+			this.handleKeyUp({ key: event.key });
+		},
 		checkStopStatus() {
 			setTimeout(() => {
 				this.runningInterval('continue-empty-tank');
@@ -359,6 +368,43 @@ export default {
 
 			console.log('Tank after filling:', JSON.stringify(tank));
 		},
+		checkEmptyTank() {
+			for (let i = 0; i < this.lowerTanks.length; i++) {
+				for (let j = 0; j < this.lowerTanks[i].length - 1; j++) {
+
+					if (this.lowerTanks[i][j]['color'] === 'black') {
+						continue;
+					}
+
+					if (this.lowerTanks[i][j]['height'] === '5%') {
+						this.finalScore--
+					}
+				}
+			}
+
+			if (this.isNegativeScore && this.finalScore <= 0) {
+				this.finalScore = 0;
+				clearInterval(this.intervalCheckEmptyTank);
+			}
+		},
+		handleKeyDown(event) {
+			if (this.isPause || this.isTimesUp || !this.isActive) {
+				return;
+			}
+
+			const key = event.key.toUpperCase();
+			console.log('Key pressed:', key);
+			this.keysPressed[key] = true;
+
+			this.checkKeyboardState();
+		},
+
+		handleKeyUp(event) {
+			const key = event.key.toUpperCase();
+			console.log('Key released:', key);
+			delete this.keysPressed[key];
+		},
+
 		checkKeyboardState() {
 			console.log('Checking keyboard state:', this.keysPressed);
 			if (this.keysPressed['Q'] && this.keysPressed['A']) {
@@ -397,75 +443,6 @@ export default {
 			if (this.keysPressed['R'] && this.keysPressed['F']) {
 				this.fillTank(3, 0);
 			}
-		},
-		checkEmptyTank() {
-			for (let i = 0; i < this.lowerTanks.length; i++) {
-				for (let j = 0; j < this.lowerTanks[i].length - 1; j++) {
-
-					if (this.lowerTanks[i][j]['color'] === 'black') {
-						continue;
-					}
-
-					if (this.lowerTanks[i][j]['height'] === '5%') {
-						this.finalScore--
-					}
-				}
-			}
-
-			if (this.isNegativeScore && this.finalScore <= 0) {
-				this.finalScore = 0;
-				clearInterval(this.intervalCheckEmptyTank);
-			}
-		},
-		handleKeyDown(event) {
-			if (this.isPause || this.isTimesUp || !this.isActive) {
-				return;
-			}
-
-			this.keysPressed[event.key.toUpperCase()] = true;
-
-			if (this.keysPressed['Q'] && this.keysPressed['A']) {
-				this.fillTank(0, 0);
-			}
-			if (this.keysPressed['Q'] && this.keysPressed['S']) {
-				this.fillTank(1, 2);
-			}
-			if (this.keysPressed['Q'] && this.keysPressed['D']) {
-				this.fillTank(2, 0);
-			}
-
-			if (this.keysPressed['W'] && this.keysPressed['A']) {
-				this.fillTank(0, 4);
-			}
-			if (this.keysPressed['W'] && this.keysPressed['S']) {
-				this.fillTank(1, 0);
-			}
-			if (this.keysPressed['W'] && this.keysPressed['F']) {
-				this.fillTank(3, 2);
-			}
-
-			if (this.keysPressed['E'] && this.keysPressed['S']) {
-				this.fillTank(1, 4);
-			}
-			if (this.keysPressed['E'] && this.keysPressed['D']) {
-				this.fillTank(2, 4);
-			}
-			if (this.keysPressed['E'] && this.keysPressed['F']) {
-				this.fillTank(3, 4);
-			}
-
-			if (this.keysPressed['R'] && this.keysPressed['A']) {
-				this.fillTank(0, 2);
-			}
-			if (this.keysPressed['R'] && this.keysPressed['D']) {
-				this.fillTank(2, 2);
-			}
-			if (this.keysPressed['R'] && this.keysPressed['F']) {
-				this.fillTank(3, 0);
-			}
-		},
-		handleKeyUp(event) {
-			delete this.keysPressed[event.key.toUpperCase()];
 		},
 		runningInterval(type = null) {
 			if (type === 'check-fully-tank') {
