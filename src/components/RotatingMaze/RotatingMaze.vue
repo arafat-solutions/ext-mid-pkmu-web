@@ -1,8 +1,4 @@
 <template>
-    <div v-if="loadingGenerating" class="loadingFirstMaze">
-        <div class="spinnerMaze"></div>
-        <p>Preparing the maze...</p>
-    </div>
     <div v-if="loadingSubmit" class="loadingContainerMaze">
         <div class="spinnerMaze"></div>
         <p class="loadingText">Your result is submitting...</p>
@@ -709,7 +705,7 @@ export default {
                 duration: duration * 60,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency],
                 size,
-                difficulty: configRotatingMaze.difficulty, // difficulty masih hardcode
+                difficulty: configRotatingMaze.difficulty,
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
                 testId: id
