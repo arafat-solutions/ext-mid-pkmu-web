@@ -166,29 +166,26 @@ export default {
         }
 
         const getInitialStartPos = () => {
-            switch (config.value.difficulty) {
-                case 'Mudah':
-                    return [1, 1];
-                case 'Sedang':
-                    return [1, 1];
-                case 'Sulit':
-                    return [1, 1];
-                default:
-                    return [1, 1];
-            }
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * (gridSizeX.value - 2)) + 1;
+                y = Math.floor(Math.random() * (gridSizeY.value - 2)) + 1;
+            } while (x % 2 === 0 || y % 2 === 0);
+            return [x, y];
         }
 
         const getInitialTargetPos = () => {
-            switch (config.value.difficulty) {
-                case 'Mudah':
-                    return [Math.floor(gridSizeX.value * 0.75), Math.floor(gridSizeY.value * 0.75)];
-                case 'Sedang':
-                    return [gridSizeX.value - 2, gridSizeY.value - 2];
-                case 'Sulit':
-                    return [gridSizeX.value - 2, gridSizeY.value - 2];
-                default:
-                    return [gridSizeX.value - 2, gridSizeY.value - 2];
-            }
+            let x, y;
+            const minDistance = Math.floor(Math.max(gridSizeX.value, gridSizeY.value) * 0.6); // 60% of the larger grid dimension
+            do {
+                x = Math.floor(Math.random() * (gridSizeX.value - 2)) + 1;
+                y = Math.floor(Math.random() * (gridSizeY.value - 2)) + 1;
+            } while (
+                x % 2 === 0 || y % 2 === 0 ||
+                (x === startPos.value[0] && y === startPos.value[1]) ||
+                Math.abs(x - startPos.value[0]) + Math.abs(y - startPos.value[1]) < minDistance
+            );
+            return [x, y];
         }
 
         const generateGrid = async () => {
@@ -224,22 +221,6 @@ export default {
 
             startPos.value = getInitialStartPos()
             targetPos.value = getInitialTargetPos()
-
-            if (startPos.value[0] % 2 == 0) {
-                startPos.value[0] += 1;
-            }
-
-            if (startPos.value[1] % 2 == 0) {
-                startPos.value[1] -= 1;
-            }
-
-            if (targetPos.value[0] % 2 == 0) {
-                targetPos.value[0] += 1;
-            }
-
-            if (targetPos.value[1] % 2 == 0) {
-                targetPos.value[1] -= 1;
-            }
 
             placeToCell(startPos.value[0], startPos.value[1]).classList.add("start");
             placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("target");
