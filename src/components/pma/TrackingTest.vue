@@ -7,6 +7,8 @@
         <div class="score-display">
             <div>Circle Time - Blue: {{ blueTime.toFixed(1) }}s, Red: {{ redTime.toFixed(1) }}s</div>
             <div>Dot Time - Green: {{ greenTime.toFixed(1) }}s, Red: {{ dotRedTime.toFixed(1) }}s</div>
+            <div>Pill Time - Green: {{ greenPillTime.toFixed(1) }}s, Yellow: {{ yellowPillTime.toFixed(1) }}s, Red: {{
+                redPillTime.toFixed(1) }}s</div>
         </div>
     </div>
 </template>
@@ -35,16 +37,17 @@ export default {
         let dotX = centerX;
         let dotY = centerY;
         let pillAngle = 0;
-        let pillSpeed = 0.02;
-        let pillDirection = 1;
-        let pillMoveTimer = 0;
-        let pillPauseDuration = 0;
+        let lastPillMoveTime = 0;
+        const pillMoveInterval = 2000; // 2 seconds
 
         // Scoring variables
         const blueTime = ref(0);
         const redTime = ref(0);
         const greenTime = ref(0);
         const dotRedTime = ref(0);
+        const greenPillTime = ref(0);
+        const yellowPillTime = ref(0);
+        const redPillTime = ref(0);
 
         const drawTrackingTest = () => {
             ctx.clearRect(0, 0, 500, 500);
@@ -77,13 +80,26 @@ export default {
 
             // Draw pill
             ctx.beginPath();
-            ctx.fillStyle = 'orange';
+            ctx.fillStyle = getPillColor();
             const pillX = centerX + Math.cos(pillAngle) * solidCircleRadius;
             const pillY = centerY + Math.sin(pillAngle) * solidCircleRadius;
+            const pillWidth = 20;
+            const pillHeight = 10;
+            const radius = pillHeight / 2;
+
             ctx.save();
             ctx.translate(pillX, pillY);
             ctx.rotate(pillAngle);
-            ctx.fillRect(-5, -10, 30, 10);  // Longer pill
+
+            // Draw the rounded rectangle
+            ctx.moveTo(-pillWidth / 2 + radius, -pillHeight / 2);
+            ctx.lineTo(pillWidth / 2 - radius, -pillHeight / 2);
+            ctx.arc(pillWidth / 2 - radius, 0, radius, -Math.PI / 2, Math.PI / 2);
+            ctx.lineTo(-pillWidth / 2 + radius, pillHeight / 2);
+            ctx.arc(-pillWidth / 2 + radius, 0, radius, Math.PI / 2, -Math.PI / 2);
+            ctx.closePath();
+
+            ctx.fill();
             ctx.restore();
 
             // Draw dot (changes color based on position)
@@ -92,6 +108,24 @@ export default {
             ctx.fillStyle = distanceFromCenter <= solidCircleRadius ? 'green' : 'red';
             ctx.arc(dotX, dotY, 10, 0, Math.PI * 2);
             ctx.fill();
+        };
+
+        const getPillColor = () => {
+            const absAngle = Math.abs(pillAngle % (Math.PI * 2));
+            if (absAngle <= Math.PI / 4 || absAngle >= Math.PI * 7 / 4) {
+                return 'red';
+            } else if (absAngle > Math.PI / 4 && absAngle < Math.PI * 3 / 4) {
+                return 'red';
+            } else {
+                return 'yellow';
+            }
+        };
+
+        const updatePillTime = (deltaTime) => {
+            const color = getPillColor();
+            if (color === 'green') greenPillTime.value += deltaTime;
+            else if (color === 'yellow') yellowPillTime.value += deltaTime;
+            else redPillTime.value += deltaTime;
         };
 
         const updateGameState = (timestamp, deltaTime) => {
@@ -108,31 +142,32 @@ export default {
                 referenceCircleRadius = Math.max(referenceCircleRadius - 0.35, 100);
             }
 
-            // Update pill position with random pauses
-            if (pillMoveTimer <= 0) {
-                if (pillPauseDuration > 0) {
-                    pillPauseDuration--;
-                } else {
-                    pillAngle += pillSpeed * pillDirection;
-                    if (pillAngle > Math.PI * 2) pillAngle -= Math.PI * 2;
-                    if (pillAngle < 0) pillAngle += Math.PI * 2;
-
-                    // Randomly change pill direction and set new pause
-                    if (Math.random() < 0.02) {
-                        pillDirection = Math.random() < 0.5 ? 1 : -1;
-                        pillPauseDuration = Math.floor(Math.random() * 120) + 60;
-                        pillMoveTimer = Math.floor(Math.random() * 300) + 300;
-                    }
-                }
-            } else {
-                pillMoveTimer--;
+            // Update pill position at intervals
+            if (timestamp - lastPillMoveTime > pillMoveInterval) {
+                pillAngle += (Math.random() < 0.5 ? 1 : -1) * Math.PI / 36; // 5 degree movement
+                lastPillMoveTime = timestamp;
             }
+
+            // Update pill position based on thruster pedals
+            if (thruster) {
+                const thrusterState = navigator.getGamepads()[thruster.index];
+                if (thrusterState) {
+                    const pedalValue = thrusterState.axes[5];
+                    console.log("Pedal value:", pedalValue);
+                    pillAngle += pedalValue * 0.05; // Adjust sensitivity as needed
+
+                    // Keep pillAngle within -PI to PI
+                    pillAngle = Math.atan2(Math.sin(pillAngle), Math.cos(pillAngle));
+                }
+            }
+
+            // Keep pillAngle within 0 to 2PI
+            pillAngle = (pillAngle + Math.PI * 2) % (Math.PI * 2);
 
             // Update solid circle radius based on thruster input
             if (thruster) {
                 const thrusterState = navigator.getGamepads()[thruster.index];
                 if (thrusterState) {
-                    // Assuming the thruster uses axis[2] for control, adjust if needed
                     solidCircleRadius += thrusterState.axes[2] * 2;
                     solidCircleRadius = Math.max(50, Math.min(250, solidCircleRadius)); // Keep radius within bounds
                 }
@@ -171,6 +206,8 @@ export default {
             } else {
                 dotRedTime.value += deltaTime;
             }
+
+            updatePillTime(deltaTime);
         };
 
         let lastTimestamp = 0;
@@ -201,6 +238,9 @@ export default {
             if (joystick && joystick.index === e.gamepad.index) {
                 joystick = null;
                 joystickConnected.value = false;
+            } else if (thruster && thruster.index === e.gamepad.index) {
+                thruster = null;
+                thrusterConnected.value = false;
             }
         };
 
@@ -218,7 +258,7 @@ export default {
             window.removeEventListener("gamepaddisconnected", handleGamepadDisconnected);
         });
 
-        return { canvas, joystickConnected, thrusterConnected, blueTime, redTime, greenTime, dotRedTime };
+        return { canvas, joystickConnected, thrusterConnected, blueTime, redTime, greenTime, dotRedTime, greenPillTime, yellowPillTime, redPillTime };
     }
 };
 </script>
