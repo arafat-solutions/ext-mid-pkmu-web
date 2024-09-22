@@ -2,10 +2,11 @@
     <div class="color-test">
         <canvas ref="colorCanvas" :width="500" :height="600"></canvas>
     </div>
+    <VirtualKeyboard :active-keys="activeKeys" @key-press="handleKeyPress" @key-release="handleKeyRelease" />
 </template>
 
 <script>
-
+import VirtualKeyboard from './VirtualKeyboard.vue';
 
 export default {
     name: 'ColorTest',
@@ -51,15 +52,17 @@ export default {
                 fast: [6000, 5500, 5000]
             },
             currentDescendSpeed: 'medium',
-
+            activeKeys: []
         };
     },
     mounted() {
         this.initializeTest()
-        window.addEventListener('keydown', this.handleKeyPress);
+        window.addEventListener('keydown', this.handlePhysicalKeyPress);
+        window.addEventListener('keyup', this.handlePhysicalKeyRelease);
     },
     beforeUnmount() {
-        window.removeEventListener('keydown', this.handleKeyPress);
+        window.removeEventListener('keydown', this.handlePhysicalKeyPress);
+        window.removeEventListener('keyup', this.handlePhysicalKeyRelease);
         clearInterval(this.animationInterval)
     },
     methods: {
@@ -277,34 +280,48 @@ export default {
         getRandomNumber(max) {
             return Math.floor(Math.random() * max);
         },
+        handlePhysicalKeyPress(event) {
+            this.handleKeyPress({ key: event.key.toUpperCase() });
+        },
+        handlePhysicalKeyRelease(event) {
+            this.handleKeyRelease({ key: event.key.toUpperCase() });
+        },
         handleKeyPress(event) {
             const key = event.key.toUpperCase();
+            if (!this.activeKeys.includes(key)) {
+                this.activeKeys.push(key);
+            }
+            this.processKeyPress(key);
+        },
+
+        handleKeyRelease(event) {
+            const key = event.key.toUpperCase();
+            const index = this.activeKeys.indexOf(key);
+            if (index > -1) {
+                this.activeKeys.splice(index, 1);
+            }
+        },
+        processKeyPress(key) {
             if ('QWER'.includes(key)) {
                 this.selectedColor = this.rectangles.find(rect => rect.letter === key).fillColor;
             } else if ('ASDF'.includes(key) && this.selectedColor) {
-
                 const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
                 const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
 
                 if (colorIndex !== -1) {
                     const currentHeight = this.currentHeights[tankIndex][colorIndex];
-                    const minRefillHeight = this.minRefillThreshold / 100 * 100; // Assuming 100 is the max height
+                    const minRefillHeight = this.minRefillThreshold / 100 * 100;
 
-                    // Check if the current height is below 100 and increase correct_button_combination
                     if (currentHeight < 100) {
-                        // this.correct_button_combination++;
                         this.updateResults('color_tank', { correct_button_combination: 1 });
                     }
 
-                    // Check if the current height is below the minimum refill line
                     if (currentHeight < minRefillHeight) {
                         this.updateResults('color_tank', { below_line_responses: 1 });
-                        // this.below_line_responses++;
                     }
 
                     this.startIncreaseColor(tankIndex, colorIndex);
                 }
-
             }
         },
         startIncreaseColor(tankIndex, colorIndex) {
@@ -421,6 +438,9 @@ export default {
 
             this.colorsInProgress[rectIndex][colorIndex] = requestAnimationFrame(animateDecrease);
         },
+    },
+    components: {
+        VirtualKeyboard
     }
 }
 </script>

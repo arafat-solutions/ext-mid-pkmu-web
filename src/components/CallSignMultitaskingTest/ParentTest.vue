@@ -54,9 +54,6 @@
             <div class="loading-text">Your result is submitting</div>
         </div>
     </div>
-    <VirtualKeyboard :active-keys="activeKeys" @key-press="handleVirtualKeyPress"
-        @key-release="handleVirtualKeyRelease" />
-
 </template>
 
 <script>
@@ -66,7 +63,6 @@ import CircleTest from './CircleTest.vue';
 import CallSignTest from './CallSignTest.vue';
 import ModalComponent from './Modal.vue'
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import VirtualKeyboard from './VirtualKeyboard.vue';
 
 export default {
     name: 'CallSignMultitask',
@@ -130,7 +126,6 @@ export default {
             seeResults: false, // untuk hide show debugging
             isModalVisible: true,
             refreshCount: 0,
-            activeKeys: []
         }
     },
     async mounted() {
@@ -154,25 +149,6 @@ export default {
         clearInterval(this.tesInterval);
     },
     methods: {
-        handleVirtualKeyPress(key) {
-            if (!this.activeKeys.includes(key)) {
-                this.activeKeys.push(key);
-            }
-        },
-
-        handleVirtualKeyRelease(key) {
-            const index = this.activeKeys.indexOf(key);
-            if (index !== -1) {
-                this.activeKeys.splice(index, 1);
-            }
-        },
-        handleKeyDown(event) {
-            this.handleVirtualKeyPress(event.key.toUpperCase());
-        },
-
-        handleKeyUp(event) {
-            this.handleVirtualKeyRelease(event.key.toUpperCase());
-        },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const remainderSeconds = seconds % 60;
@@ -191,7 +167,8 @@ export default {
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').config
-            const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
+            // const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
+            const { alert_lights, callsign, color_tank, horizon, id, subtask } = config
 
             const newConfig = {
                 alert_lights: {
@@ -218,7 +195,7 @@ export default {
                 },
             }
             this.configBe = newConfig
-            this.testTime = duration * 60
+            this.testTime = 100000 * 60
             this.testId = id
             this.moduleId = scheduleData.moduleId
             this.sessionId = scheduleData.sessionId
@@ -290,7 +267,6 @@ export default {
         CircleTest,
         CallSignTest,
         ModalComponent,
-        VirtualKeyboard
     }
 };
 </script>
