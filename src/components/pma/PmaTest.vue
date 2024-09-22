@@ -2,6 +2,7 @@
     <div class="canvas-container">
         <canvas ref="canvas" width="500" height="500"></canvas>
         <div v-if="joystickConnected" class="joystick-status connected">Joystick Connected</div>
+        <div v-if="thrusterConnected" class="joystick-status connected">Thruster Connected</div>
         <div v-else class="joystick-status disconnected">Joystick Disconnected</div>
         <div class="score-display">
             <div>Circle Time - Blue: {{ blueTime.toFixed(1) }}s, Red: {{ redTime.toFixed(1) }}s</div>
@@ -217,7 +218,7 @@ export default {
             window.removeEventListener("gamepaddisconnected", handleGamepadDisconnected);
         });
 
-        return { canvas, joystickConnected, blueTime, redTime, greenTime, dotRedTime };
+        return { canvas, joystickConnected, thrusterConnected, blueTime, redTime, greenTime, dotRedTime };
     }
 };
 </script>
