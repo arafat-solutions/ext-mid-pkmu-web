@@ -44,7 +44,7 @@ export default {
     AudioInformation
   },
   setup() {
-    const testDuration = 15 * 60; // 15 minutes in seconds
+    const testDuration = 3 * 60; // 3 minutes in seconds
     const remainingTime = ref(testDuration);
     const currentSegment = ref(1);
     const segmentDuration = testDuration / 3;

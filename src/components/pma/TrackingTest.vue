@@ -153,7 +153,6 @@ export default {
                 const thrusterState = navigator.getGamepads()[thruster.index];
                 if (thrusterState) {
                     const pedalValue = thrusterState.axes[5];
-                    console.log("Pedal value:", pedalValue);
                     pillAngle += pedalValue * 0.05; // Adjust sensitivity as needed
 
                     // Keep pillAngle within -PI to PI
@@ -176,6 +175,8 @@ export default {
             // Update dot position based on joystick input
             if (joystick) {
                 const joystickState = navigator.getGamepads()[joystick.index];
+                console.log(joystickState)
+
                 if (joystickState) {
                     const axes = joystickState.axes;
                     dotX += axes[0] * 2;

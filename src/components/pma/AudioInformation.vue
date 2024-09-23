@@ -102,7 +102,7 @@
             joystick = e.gamepad;
           }
         });
-  
+        
         const triggerCheckInterval = setInterval(checkJoystickTrigger, 50); // Check trigger every 50ms
   
         startTest();
