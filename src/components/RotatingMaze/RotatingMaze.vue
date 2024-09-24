@@ -778,7 +778,7 @@ export default {
             generateGrid();
             mazeGenerator();
 
-            window.addEventListener('keydown', handleKeyPress);
+            window.addEventListener('keyup', handleKeyPress);
 
             // Load the refresh count from localStorage
             refreshCount.value = parseInt(localStorage.getItem('refreshCountRotatingMaze') || '0');
