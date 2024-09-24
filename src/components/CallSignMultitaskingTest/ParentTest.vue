@@ -3,7 +3,8 @@
         <ModalComponent :visible="isModalVisible" title="Start Test" message="Are you sure you want to start this test?"
             @confirm="handleConfirm" @cancel="handleCancel" />
         <div class="left-side">
-            <ColorTest :color-tank-data="configBe.color_tank" :update-results="updateResults" />
+            <ColorTest :color-tank-data="configBe.color_tank" :update-results="updateResults"
+                :finalScore="results.color_tank.final_score" />
         </div>
         <div class="right-side">
             <CircleTest :alert-lights-data="configBe.alert_lights" :update-results="updateResults"
@@ -22,6 +23,7 @@
                     <p>correct: {{ results.color_tank.correct_button_combination }}</p>
                     <p>below: {{ results.color_tank.below_line_responses }}</p>
                     <p>total occurances: {{ results.color_tank.total_occurrences }}</p>
+                    <p>final score: {{ results.color_tank.final_score }}</p>
                 </div>
             </div>
             <div class="test">
@@ -90,7 +92,8 @@ export default {
                     speed: 'fast',
                     descend_speed: "fast", // slow, medium, fast
                     colored_lower_tank: true,
-                    play: true
+                    play: true,
+                    final_score: 0
                 },
                 horizon: {
                     speed: 'medium', // slow, medium, fast
@@ -116,7 +119,8 @@ export default {
                 color_tank: {
                     correct_button_combination: 0,
                     below_line_responses: 0,
-                    total_occurrences: 0
+                    total_occurrences: 0,
+                    final_score: 120 // sisa yang 120
                 }
             },
             testId: '',
@@ -187,7 +191,7 @@ export default {
                     speed: color_tank.speed,
                     descend_speed: color_tank.descend_speed,
                     colored_lower_tank: color_tank.colored_lower_tank,
-                    play: subtask.color_tank
+                    play: subtask.color_tank,
                 },
                 horizon: {
                     speed: horizon.speed,
@@ -195,11 +199,12 @@ export default {
                 },
             }
             this.configBe = newConfig
-            this.testTime = 100000 * 60
+            this.testTime = 10000000 * 60
             this.testId = id
             this.moduleId = scheduleData.moduleId
             this.sessionId = scheduleData.sessionId
             this.userId = scheduleData.userId
+            this.results.color_tank.final_score = 120 // hardcode
         },
         handleConfirm() {
             this.isModalVisible = false
@@ -276,7 +281,7 @@ export default {
     display: flex;
     height: 100vh;
     background-color: white;
-    padding: 20px;
+    padding: 10px;
     max-width: 1000px;
     min-width: 1000px;
     margin: 0 auto;
@@ -313,12 +318,15 @@ export default {
 
 .left-side {
     width: 50%;
-    margin-top: 35px;
+    /* margin-top: 25px; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .right-side {
     width: 50%;
-    margin-top: 30px
+    /* margin-top: 30px */
 }
 
 .timer {

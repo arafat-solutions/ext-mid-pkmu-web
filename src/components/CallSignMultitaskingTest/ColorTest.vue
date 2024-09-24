@@ -1,7 +1,8 @@
 <template>
     <div class="color-test">
-        <canvas ref="colorCanvas" :width="500" :height="600"></canvas>
+        <canvas ref="colorCanvas" :width="550" :height="550"></canvas>
     </div>
+    <div class="border p-2 bg-gray-200 -mt-4 w-12">{{ finalScore }}</div>
     <VirtualKeyboard :active-keys="activeKeys" @key-press="handleKeyPress" @key-release="handleKeyRelease" />
 </template>
 
@@ -15,7 +16,8 @@ export default {
             type: Object,
             required: true
         },
-        updateResults: Function
+        updateResults: Function,
+        finalScore: Number
     },
     data() {
         return {
@@ -438,6 +440,9 @@ export default {
             this.colorsInProgress[rectIndex][colorIndex] = true;
             this.finishedDecreasing[rectIndex][colorIndex] = false;
 
+            // Add a flag to track if we've decreased the score for this animation
+            let hasDecreasedScore = false;
+
             const animateDecrease = (currentTime) => {
                 if (!this.colorsInProgress[rectIndex][colorIndex]) {
                     return;
@@ -449,6 +454,13 @@ export default {
                 if (progress < 1) {
                     const currentHeight = startHeight - (progress * (startHeight - targetHeight));
                     this.currentHeights[rectIndex][colorIndex] = Math.max(this.minHeight, currentHeight);
+
+                    // Check if the height is below the threshold and we haven't decreased the score yet
+                    if (currentHeight < this.minRefillThreshold && !hasDecreasedScore) {
+                        this.updateResults('color_tank', { final_score: -1 });
+                        hasDecreasedScore = true; // Set the flag to true after decreasing the score
+                    }
+
 
                     this.drawSpecificTank(rectIndex);
 
@@ -472,6 +484,6 @@ export default {
 
 <style scoped>
 canvas {
-    border: none
+    border: none;
 }
 </style>
