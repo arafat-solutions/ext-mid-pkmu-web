@@ -54,6 +54,7 @@ export default {
                 fast: [6000, 5500, 5000]
             },
             currentDescendSpeed: 'medium',
+            currentPattern: [],
             activeKeys: [],
             colorDecreaseHistory: [],
             availableColors: ['blue', 'green', 'yellow', 'red'],
@@ -84,7 +85,7 @@ export default {
         },
         initConfig() {
             const DECREASE_INTERVAL = {
-                slow: 30000,
+                slow: 20000,
                 medium: 25000,
                 fast: 20000
             }
@@ -324,17 +325,13 @@ export default {
             return Math.floor(Math.random() * max);
         },
         handlePhysicalKeyPress(event) {
-            this.handleKeyPress({ key: event.key.toUpperCase() });
+            this.handleKeyPress(event);
         },
         handlePhysicalKeyRelease(event) {
-            this.handleKeyRelease({ key: event.key.toUpperCase() });
+            this.handleKeyRelease({ key: event.key });
         },
         handleKeyPress(event) {
-            const key = event.key.toUpperCase();
-            if (!this.activeKeys.includes(key)) {
-                this.activeKeys.push(key);
-            }
-            this.processKeyPress(key);
+            this.processKeyPress(event);
         },
 
         handleKeyRelease(event) {
@@ -344,28 +341,80 @@ export default {
                 this.activeKeys.splice(index, 1);
             }
         },
-        processKeyPress(key) {
+        processKeyPress(event) {
+            let key = event.key;
+            if (typeof key === 'string') {
+                key = key.toUpperCase();
+            } else if (typeof event === 'object' && event.key && typeof event.key === 'string') {
+                key = event.key.toUpperCase();
+            } else {
+                console.warn('Unexpected key format:', event);
+                return;  // Exit the function if we can't process the key
+            }
+
             if ('QWER'.includes(key)) {
-                this.selectedColor = this.rectangles.find(rect => rect.letter === key).fillColor;
-            } else if ('ASDF'.includes(key) && this.selectedColor) {
-                const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
-                const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
+                this.currentPattern = [key];
+            } else if ('ASDF'.includes(key) && this.currentPattern.length > 0 && this.currentPattern.length < 3) {
+                if (this.currentPattern.length === 1) {
+                    // This is the first ASDF key
+                    this.currentPattern.push(key);
+                } else if (this.currentPattern.length === 2) {
+                    // This is the second ASDF key, check if it corresponds to the same color as the first
+                    const firstTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === this.currentPattern[1]);
+                    const secondTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
 
-                if (colorIndex !== -1) {
-                    const currentHeight = this.currentHeights[tankIndex][colorIndex];
-                    const minRefillHeight = this.minRefillThreshold / 100 * 100;
+                    if (firstTankIndex !== -1 && secondTankIndex !== -1) {
+                        const selectedColor = this.rectangles.find(rect => rect.letter === this.currentPattern[0])?.fillColor;
+                        const firstColorIndex = this.rectanglesColorize[firstTankIndex].fillColor.indexOf(selectedColor);
+                        const secondColorIndex = this.rectanglesColorize[secondTankIndex].fillColor.indexOf(selectedColor);
 
-                    if (currentHeight < 100) {
-                        this.updateResults('color_tank', { correct_button_combination: 1 });
+                        if (firstColorIndex !== -1 && secondColorIndex !== -1) {
+                            this.currentPattern.push(key);
+                        } else {
+                            // Colors don't match, reset the pattern
+                            this.currentPattern = [this.currentPattern[0]];
+                        }
+                    } else {
+                        // Invalid tank keys, reset the pattern
+                        this.currentPattern = [this.currentPattern[0]];
                     }
-
-                    if (currentHeight < minRefillHeight) {
-                        this.updateResults('color_tank', { below_line_responses: 1 });
-                    }
-
-                    this.startIncreaseColor(tankIndex, colorIndex);
                 }
             }
+
+            if (!this.activeKeys.includes(key)) {
+                this.activeKeys.push(key);
+            }
+
+            if (this.currentPattern.length === 3) {
+                this.handleCompletePattern();
+            }
+        },
+
+        handleCompletePattern() {
+            const [colorKey, firstTankKey, secondTankKey] = this.currentPattern;
+            const selectedColor = this.rectangles.find(rect => rect.letter === colorKey)?.fillColor;
+
+            if (selectedColor) {
+                const firstTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === firstTankKey);
+                const secondTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === secondTankKey);
+
+                if (firstTankIndex !== -1 && secondTankIndex !== -1) {
+                    const firstColorIndex = this.rectanglesColorize[firstTankIndex].fillColor.indexOf(selectedColor);
+                    const secondColorIndex = this.rectanglesColorize[secondTankIndex].fillColor.indexOf(selectedColor);
+
+                    if (firstColorIndex !== -1 && secondColorIndex !== -1) {
+                        this.startIncreaseColor(firstTankIndex, firstColorIndex);
+                        this.startIncreaseColor(secondTankIndex, secondColorIndex);
+                    }
+                }
+            }
+
+            this.resetPatternAndKeyboard();
+        },
+
+        resetPatternAndKeyboard() {
+            this.currentPattern = [];
+            this.activeKeys = [];
         },
         startIncreaseColor(tankIndex, colorIndex) {
             const currentHeight = this.currentHeights[tankIndex][colorIndex];

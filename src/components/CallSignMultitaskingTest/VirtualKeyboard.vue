@@ -62,6 +62,7 @@ export default {
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .key:hover {
