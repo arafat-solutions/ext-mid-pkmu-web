@@ -42,7 +42,7 @@ export default {
 
 <style scoped>
 .virtual-keyboard {
-    margin-top: -35px;
+    margin-top: -65px;
     z-index: 29;
     position: relative;
 }

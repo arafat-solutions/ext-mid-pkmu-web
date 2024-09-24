@@ -40,7 +40,7 @@ export default {
 
 <style scoped>
 .virtual-keyboard {
-  margin-top: 20px;
+  margin-top: 20px
 }
 
 .keyboard-row {
