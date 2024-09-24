@@ -23,6 +23,10 @@
             <strong> {{ config.targetShape }} </strong>
             muncul di radar.
           </p>
+          <p class="m-3">
+
+            <strong> {{ this.result }}/ {{ this.falsePositives }}</strong> bentuk terdeteksi.
+          </p>
         </div>
       </div>
     </div>
@@ -45,6 +49,7 @@ export default {
       scannerAngle: 0,
       detectedObject: 0,
       userClickCount: 0,
+      userCorrectClickCount: 0,
       objects: [],
       responseTimes: [],
       suitableObjectTimes: [],
@@ -56,6 +61,7 @@ export default {
         total_object: 0,
         corrected_object: 0,
         missed_object: 0,
+        false_positives: 0,
         avg_response_time: 0,
       },
       config: {
@@ -67,22 +73,18 @@ export default {
         targetShape: null, //'circle', 'square', 'triangle'
         speed: null, // very_slow, slow, medium, fast, very_fast
         density: null //'very_easy', 'easy', 'medium', 'hard', 'very_hard'
-      }
+      },
+      gamepad: null,
+      gamepadPolling: null,
+      isTargetVisible: false,  // New property to track if target is currently visible
+      falsePositives: 0,       //
     };
   },
   mounted() {
-    console.log('Checking for connected gamepad');
-    window.addEventListener("gamepadconnected", (event) => {
-      console.log("A gamepad connected:");
-      console.log(event.gamepad);
-    });
-    // Add an event listener for when a gamepad is disconnected
-    window.addEventListener("gamepaddisconnected", (event) => {
-      console.log("A gamepad disconnected:", event.gamepad);
-    });
-
-    // Manually check for any connected gamepads (sometimes necessary on page load)
+    window.addEventListener("gamepadconnected", this.handleGamepadConnected);
+    window.addEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
     this.checkForGamepads();
+    this.startGamepadPolling();
     let reloadCount = parseInt(localStorage.getItem('reloadCountRadarVigilance') || '0')
     reloadCount++
     localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
@@ -91,26 +93,69 @@ export default {
     })
 
     this.initConfig();
-    // check for connected gamepad
 
   },
   created() {
     window.addEventListener('keydown', this.handleKeydown);
   },
   beforeUnmount() {
+    window.removeEventListener("gamepadconnected", this.handleGamepadConnected);
+    window.removeEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
+    this.stopGamepadPolling();
     window.removeEventListener("keydown", this.handleKeydown);
   },
   methods: {
+    handleGamepadConnected(event) {
+      console.log("A gamepad connected:", event.gamepad);
+      if (event.gamepad.id == 'T.16000M (Vendor: 044f Product: b10a)')
+        this.gamepad = event.gamepad;
+    },
+    handleGamepadDisconnected(event) {
+      console.log("A gamepad disconnected:", event.gamepad);
+      this.gamepad = null;
+    },
     checkForGamepads() {
       const gamepads = navigator.getGamepads();
-      if (gamepads.length > 0) {
-        for (let i = 0; i < gamepads.length; i++) {
-          if (gamepads[i]) {
-            console.log("Gamepad detected on load:", gamepads[i]);
+      for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+          console.log("Gamepad detected on load:", gamepads[i]);
+          this.gamepad = gamepads[i];
+          break;
+        }
+      }
+    },
+    startGamepadPolling() {
+      this.gamepadPolling = setInterval(this.pollGamepad, 100); // Poll every 100ms
+    },
+    stopGamepadPolling() {
+      clearInterval(this.gamepadPolling);
+    },
+    pollGamepad() {
+      if (this.gamepad) {
+        const gamepad = navigator.getGamepads()[this.gamepad.index];
+
+        if (gamepad) {
+          // Check gamepad.buttons[0] for the "Trigger" button
+
+          if (gamepad.buttons[0].pressed) {
+            console.log("Trigger button pressed on gamepad:", gamepad);
+            this.handleTriggerPress();
           }
         }
-      } else {
-        console.log("No gamepads detected.");
+      }
+    },
+    handleTriggerPress() {
+      if (this.isCanClick) {
+        if (this.isTargetVisible) {
+          // Correct trigger press
+          this.userClickCount++;
+          this.userCorrectClickCount++;
+          this.responseTimes.push(Date.now());
+          this.calculateResponseTime();
+        } else {
+          // Incorrect trigger press
+          this.falsePositives++;
+        }
       }
     },
     pause() {
@@ -409,6 +454,12 @@ export default {
       if (this.config.targetShape === type) {
         this.detectedObject++;
         this.suitableObjectTimes.push(Date.now());
+        this.isTargetVisible = true;  // Set flag when target shape appears
+
+        // Set a timeout to reset the flag after a short duration (e.g., 2 seconds)
+        setTimeout(() => {
+          this.isTargetVisible = false;
+        }, 2000);  // Adjust this value based on how long you want the shape to be considered "visible"
       }
     },
     drawTriangle(ctx, x, y, size) {
@@ -520,24 +571,17 @@ export default {
     },
     calculatedResult() {
       this.result.total_object = this.detectedObject;
+      this.result.corrected_object = this.userCorrectClickCount;
+      this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
+      this.result.false_positives = this.falsePositives;
 
-      // Handle user deliberate click
-      if (this.userClickCount > this.detectedObject) {
-        this.result.corrected_object = 0;
-        this.result.missed_object = 100;
-        this.result.avg_response_time = 0;
+      if (this.userCorrectClickCount > 0) {
+        const resultTimeResponded = this.averageResponseTime()
+        this.result.avg_response_time = resultTimeResponded.toFixed(2);
       } else {
-        this.result.corrected_object = this.userClickCount;
-        this.result.missed_object = this.detectedObject - this.userClickCount
-
-        if (this.userClickCount > 0) {
-          const resultTimeResonded = this.averageResponseTime()
-          this.result.avg_response_time = resultTimeResonded.toFixed(2);
-        } else {
-          this.result.avg_response_time = 0;
-        }
+        this.result.avg_response_time = 0;
       }
-
+      console.log(this.result, 'submit result');
       this.submitResult()
     },
     async submitResult() {
