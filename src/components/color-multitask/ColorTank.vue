@@ -24,19 +24,22 @@
 			<div class="counter">
 				<input type="text" v-model="finalScore" readonly style="text-align: center; width: 15%;">
 			</div>
+			<div class="keyboard">
+				<VirtualKeyboard @keyPress="handleVirtualKeyDown" :activeKeys="keySequence" />
+			</div>
+
 		</div>
 
-		<VirtualKeyboard @keyPress="handleVirtualKeyDown" @activeKey="keySequence"/>
 	</div>
 </template>
 
 <script>
-// import VirtualKeyboard from '../VirtualKeyboard.vue';
+import VirtualKeyboard from '../VirtualKeyboard.vue';
 
 export default {
 	name: 'ColorTankView',
 	components: {
-		// VirtualKeyboard,
+		VirtualKeyboard,
 	},
 	data() {
 		return {
@@ -45,7 +48,7 @@ export default {
 			keysPressed: {},
 			colors: ['yellow', 'blue', 'red', 'green'],
 			lowerTanks: [],
-			lineTankCanvasWidth: 320,
+			lineTankCanvasWidth: 500,
 			lineTankCanvasHeight: 250,
 			lines: [
 				// Q
@@ -81,7 +84,7 @@ export default {
 		isPause: Boolean,
 		isActive: Boolean,
 		isNegativeScore: Boolean,
-		coloredLowerTank: Boolean, 
+		coloredLowerTank: Boolean,
 	},
 	async mounted() {
 		this.initLineTank();
@@ -105,7 +108,7 @@ export default {
 			clearInterval(this.intervalStartEmptyTank);
 			clearInterval(this.intervalCheckEmptyTank);
 			clearInterval(this.intervalCheckFullyTank);
-      clearInterval(this.intervalContinueEmptyTank);
+			clearInterval(this.intervalContinueEmptyTank);
 
 			this.$emit('getResult', {
 				score: this.finalScore,
@@ -342,16 +345,16 @@ export default {
 			let currentFill = parseFloat(tank['height'].replace('%', ''));
 
 			if (currentFill < 100) {
-        for (let i = 0; i < 6; i++) {
-          await new Promise(resolve => setTimeout(resolve, 800));
+				for (let i = 0; i < 6; i++) {
+					await new Promise(resolve => setTimeout(resolve, 800));
 
-          currentFill += increment;
-          tank['height'] = Math.min(currentFill, 100) + '%';
+					currentFill += increment;
+					tank['height'] = Math.min(currentFill, 100) + '%';
 
-          if (currentFill >= 100) {
-            break;
-          }
-        }
+					if (currentFill >= 100) {
+						break;
+					}
+				}
 			}
 
 			if (currentFill >= 100) {
@@ -468,7 +471,7 @@ export default {
 					console.log('Filling tank hijau D F');
 					this.fillTank(2, 2);
 					this.fillTank(3, 0);
-				} else if ((lower1 == 'A' && lower2 == 'F')|| (lower1 == 'F' && lower2 == 'A')) {
+				} else if ((lower1 == 'A' && lower2 == 'F') || (lower1 == 'F' && lower2 == 'A')) {
 					console.log('Filling tank hijau A F');
 					this.fillTank(0, 2);
 					this.fillTank(3, 0);
@@ -516,7 +519,7 @@ export default {
 }
 
 .tank-section {
-  margin-right: 10%;
+	margin-right: 10%;
 	display: flex;
 	flex-direction: column;
 }
@@ -562,5 +565,9 @@ export default {
 .fill-animation {
 	transition: height 1s ease;
 	/* Animation for height change */
+}
+
+.keyboard {
+	margin-left: 0px;
 }
 </style>

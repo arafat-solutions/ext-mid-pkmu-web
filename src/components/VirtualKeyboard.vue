@@ -4,8 +4,7 @@
       <button 
         v-for="key in row" 
         :key="key" 
-        class="keyboard-key" 
-        :class="{ pressed: pressedKeys[key] }"
+        :class="['keyboard-key', { 'active': isKeyActive(key) }]"
         @mousedown="handleMouseDown(key)"
       >
         {{ key }}
@@ -13,7 +12,6 @@
     </div>
   </div>
 </template>
-
 
 <script>
 export default {
@@ -27,17 +25,26 @@ export default {
       pressedKeys: []
     }
   },
+  props: {
+    activeKeys: {
+      type: Array,
+      default: () => []
+    }
+  },
   methods: {
     handleMouseDown(key) {
-      console.log(key, 'pressed');
       this.pressedKeys.push(key);
       this.$emit('keyPress', { key });
     },
+    isKeyActive(key) {
+      return this.activeKeys.includes(key);
+    }
   },
   mounted() {
     window.addEventListener('keydown', this.handleKeyDown);
+    console.log('mounted', this.keys);
   },
-  beforeUnmountf() {
+  beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeyDown);
   }
 }
@@ -64,13 +71,15 @@ export default {
   border-radius: 5px;
   background-color: #f0f0f0;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .keyboard-key.pressed {
-  background-color: #ccc;
+  background-color: #d0d0d0;
 }
 
 .keyboard-key.active {
   background-color: green;
+  color: white;
 }
 </style>

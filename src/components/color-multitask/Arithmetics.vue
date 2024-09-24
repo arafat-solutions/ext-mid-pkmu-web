@@ -108,7 +108,7 @@ export default {
 					if (this.difficulty === 'hard') {
 						this.optionAnswerAudios[i].value = Math.floor(Math.random() * 900) + 100;
 					}
-					if (this.difficulty === 'normal') {
+					if (this.difficulty === 'medium') {
 						this.optionAnswerAudios[i].value = Math.floor(Math.random() * 90) + 10;
 					}
 					if (this.difficulty === 'easy') {
