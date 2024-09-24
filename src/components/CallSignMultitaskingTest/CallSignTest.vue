@@ -137,7 +137,9 @@ export default {
                 Array(3).fill().map(() => getRandomChar(numbers)).join('');
         },
         generateAngle() {
-            this.angle = Math.floor(Math.random() * 721) - 360;
+            let angle = Math.floor(Math.random() * 359) + 1;
+            let formattedAngle = angle.toString().padStart(3, '0');
+            this.angle = formattedAngle;
         },
         speak(callsign) {
             if (!window.speechSynthesis) {

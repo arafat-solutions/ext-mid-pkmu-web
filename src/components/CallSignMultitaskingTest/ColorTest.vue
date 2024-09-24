@@ -1,7 +1,8 @@
 <template>
     <div class="color-test">
-        <canvas ref="colorCanvas" :width="500" :height="600"></canvas>
+        <canvas ref="colorCanvas" :width="550" :height="550"></canvas>
     </div>
+    <div class="border p-2 bg-gray-200 -mt-4 w-12">{{ finalScore }}</div>
     <VirtualKeyboard :active-keys="activeKeys" @key-press="handleKeyPress" @key-release="handleKeyRelease" />
 </template>
 
@@ -15,7 +16,8 @@ export default {
             type: Object,
             required: true
         },
-        updateResults: Function
+        updateResults: Function,
+        finalScore: Number
     },
     data() {
         return {
@@ -37,9 +39,9 @@ export default {
                 [100, 100, 100],
                 [100, 100, 100]
             ],
-            decreaseInterval: 1000, // Time in ms between each decrease animation
-            decreaseDuration: 1000, // Duration of each decrease animation
-            increaseDuration: 2000, // New property for controlling increase speed
+            decreaseInterval: 30000, // Time in ms between each decrease animation
+            decreaseDuration: 35000, // Duration of each decrease animation
+            increaseDuration: 10000, // New property for controlling increase speed
             minHeight: 4, // Minimum height before stopping the animation
             finishedDecreasing: [],
             colorsInProgress: [],
@@ -52,7 +54,10 @@ export default {
                 fast: [6000, 5500, 5000]
             },
             currentDescendSpeed: 'medium',
-            activeKeys: []
+            currentPattern: [],
+            activeKeys: [],
+            colorDecreaseHistory: [],
+            availableColors: ['blue', 'green', 'yellow', 'red'],
         };
     },
     mounted() {
@@ -80,13 +85,13 @@ export default {
         },
         initConfig() {
             const DECREASE_INTERVAL = {
-                slow: 2000,
-                medium: 2000,
-                fast: 2000
+                slow: 20000,
+                medium: 25000,
+                fast: 20000
             }
             const { descend_speed, speed } = this.colorTankData;
             this.currentDescendSpeed = descend_speed || 'medium'; // Set default if undefined
-            this.decreaseInterval = DECREASE_INTERVAL[speed] || 2000; // Set default if undefined
+            this.decreaseInterval = DECREASE_INTERVAL[speed] || 20000; // Set default if undefined
         },
 
         drawVisual() {
@@ -241,39 +246,78 @@ export default {
         startDecreaseAnimation() {
             this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
             this.colorsInProgress = Array.from({ length: 4 }, () => Array(3).fill(false));
+            this.colorDecreaseHistory = []; // Initialize color history
             this.startAnimationInterval();
         },
+        chooseColorToDecrease() {
+            if (this.colorDecreaseHistory.length < 2) {
+                // First two selections are random
+                const color = this.getRandomColor();
+                this.colorDecreaseHistory.push(color);
+                return color;
+            } else {
+                // Third selection must be the same as two steps ago
+                const color = this.colorDecreaseHistory[0];
+                this.colorDecreaseHistory.push(color);
+                this.colorDecreaseHistory.shift(); // Remove the oldest color
+                return color;
+            }
+        },
+        getRandomColor() {
+            const unusedColors = this.availableColors.filter(color =>
+                !this.colorDecreaseHistory.includes(color)
+            );
+            return unusedColors.length > 0
+                ? unusedColors[Math.floor(Math.random() * unusedColors.length)]
+                : this.availableColors[Math.floor(Math.random() * this.availableColors.length)];
+        },
         startAnimationInterval() {
-            this.animationInterval = setInterval(() => {
+            const tryDecreaseColor = () => {
                 if (this.finishedDecreasing.flat().every(Boolean)) {
                     clearInterval(this.animationInterval);
                     return;
                 }
 
-                let rectIndex;
-                let colorIndex;
+                const colorToDecrease = this.chooseColorToDecrease();
+                let availableTanks = this.rectanglesColorize.map((_, index) => index);
+                this.shuffleArray(availableTanks);
+
                 let found = false;
+                for (const tankIndex of availableTanks) {
+                    const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(colorToDecrease);
+                    if (colorIndex !== -1 &&
+                        !this.colorsInProgress[tankIndex][colorIndex] &&
+                        !this.finishedDecreasing[tankIndex][colorIndex] &&
+                        this.currentHeights[tankIndex][colorIndex] > this.minHeight) {
 
-                for (let attempts = 0; attempts < 100 && !found; attempts++) {
-                    rectIndex = this.getRandomNumber(4);
-                    colorIndex = this.getRandomNumber(3);
-
-                    if (!this.colorsInProgress[rectIndex][colorIndex] &&
-                        !this.finishedDecreasing[rectIndex][colorIndex] &&
-                        this.currentHeights[rectIndex][colorIndex] === 100) {
                         found = true;
+                        this.updateResults('color_tank', { total_occurrences: 1 });
+                        this.startDecreaseAnimationForColor(tankIndex, colorIndex);
+                        break;
                     }
                 }
 
-                if (found) {
-                    this.updateResults('color_tank', { total_occurrences: 1 });
-                    this.startDecreaseAnimationForColor(rectIndex, colorIndex);
+                if (!found) {
+                    this.colorDecreaseHistory.pop();
+                    // Immediately try again if no suitable color/tank was found
+                    setTimeout(tryDecreaseColor, 0);
                 }
-            }, this.decreaseInterval);
+            };
+
+            this.animationInterval = setInterval(tryDecreaseColor, this.decreaseInterval);
+            // Start the first decrease immediately
+            tryDecreaseColor();
+        },
+        shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
         },
         restartDecreaseAnimation() {
             if (!this.finishedDecreasing.flat().every(Boolean)) {
                 this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
+                this.colorDecreaseHistory = []; // Reset color history
                 this.startAnimationInterval();
             }
         },
@@ -281,17 +325,13 @@ export default {
             return Math.floor(Math.random() * max);
         },
         handlePhysicalKeyPress(event) {
-            this.handleKeyPress({ key: event.key.toUpperCase() });
+            this.handleKeyPress(event);
         },
         handlePhysicalKeyRelease(event) {
-            this.handleKeyRelease({ key: event.key.toUpperCase() });
+            this.handleKeyRelease({ key: event.key });
         },
         handleKeyPress(event) {
-            const key = event.key.toUpperCase();
-            if (!this.activeKeys.includes(key)) {
-                this.activeKeys.push(key);
-            }
-            this.processKeyPress(key);
+            this.processKeyPress(event);
         },
 
         handleKeyRelease(event) {
@@ -301,28 +341,80 @@ export default {
                 this.activeKeys.splice(index, 1);
             }
         },
-        processKeyPress(key) {
+        processKeyPress(event) {
+            let key = event.key;
+            if (typeof key === 'string') {
+                key = key.toUpperCase();
+            } else if (typeof event === 'object' && event.key && typeof event.key === 'string') {
+                key = event.key.toUpperCase();
+            } else {
+                console.warn('Unexpected key format:', event);
+                return;  // Exit the function if we can't process the key
+            }
+
             if ('QWER'.includes(key)) {
-                this.selectedColor = this.rectangles.find(rect => rect.letter === key).fillColor;
-            } else if ('ASDF'.includes(key) && this.selectedColor) {
-                const tankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
-                const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(this.selectedColor);
+                this.currentPattern = [key];
+            } else if ('ASDF'.includes(key) && this.currentPattern.length > 0 && this.currentPattern.length < 3) {
+                if (this.currentPattern.length === 1) {
+                    // This is the first ASDF key
+                    this.currentPattern.push(key);
+                } else if (this.currentPattern.length === 2) {
+                    // This is the second ASDF key, check if it corresponds to the same color as the first
+                    const firstTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === this.currentPattern[1]);
+                    const secondTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
 
-                if (colorIndex !== -1) {
-                    const currentHeight = this.currentHeights[tankIndex][colorIndex];
-                    const minRefillHeight = this.minRefillThreshold / 100 * 100;
+                    if (firstTankIndex !== -1 && secondTankIndex !== -1) {
+                        const selectedColor = this.rectangles.find(rect => rect.letter === this.currentPattern[0])?.fillColor;
+                        const firstColorIndex = this.rectanglesColorize[firstTankIndex].fillColor.indexOf(selectedColor);
+                        const secondColorIndex = this.rectanglesColorize[secondTankIndex].fillColor.indexOf(selectedColor);
 
-                    if (currentHeight < 100) {
-                        this.updateResults('color_tank', { correct_button_combination: 1 });
+                        if (firstColorIndex !== -1 && secondColorIndex !== -1) {
+                            this.currentPattern.push(key);
+                        } else {
+                            // Colors don't match, reset the pattern
+                            this.currentPattern = [this.currentPattern[0]];
+                        }
+                    } else {
+                        // Invalid tank keys, reset the pattern
+                        this.currentPattern = [this.currentPattern[0]];
                     }
-
-                    if (currentHeight < minRefillHeight) {
-                        this.updateResults('color_tank', { below_line_responses: 1 });
-                    }
-
-                    this.startIncreaseColor(tankIndex, colorIndex);
                 }
             }
+
+            if (!this.activeKeys.includes(key)) {
+                this.activeKeys.push(key);
+            }
+
+            if (this.currentPattern.length === 3) {
+                this.handleCompletePattern();
+            }
+        },
+
+        handleCompletePattern() {
+            const [colorKey, firstTankKey, secondTankKey] = this.currentPattern;
+            const selectedColor = this.rectangles.find(rect => rect.letter === colorKey)?.fillColor;
+
+            if (selectedColor) {
+                const firstTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === firstTankKey);
+                const secondTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === secondTankKey);
+
+                if (firstTankIndex !== -1 && secondTankIndex !== -1) {
+                    const firstColorIndex = this.rectanglesColorize[firstTankIndex].fillColor.indexOf(selectedColor);
+                    const secondColorIndex = this.rectanglesColorize[secondTankIndex].fillColor.indexOf(selectedColor);
+
+                    if (firstColorIndex !== -1 && secondColorIndex !== -1) {
+                        this.startIncreaseColor(firstTankIndex, firstColorIndex);
+                        this.startIncreaseColor(secondTankIndex, secondColorIndex);
+                    }
+                }
+            }
+
+            this.resetPatternAndKeyboard();
+        },
+
+        resetPatternAndKeyboard() {
+            this.currentPattern = [];
+            this.activeKeys = [];
         },
         startIncreaseColor(tankIndex, colorIndex) {
             const currentHeight = this.currentHeights[tankIndex][colorIndex];
@@ -404,14 +496,14 @@ export default {
             const targetHeight = this.minHeight;
             const startTime = performance.now();
 
-            // Use the currentDescendSpeed instead of accessing colorTankData directly
-            const speedRange = this.decreaseSpeedRanges[this.currentDescendSpeed] || this.decreaseSpeedRanges.medium;
-
-            // Randomly select a duration from the speed range
-            const decreaseDuration = speedRange[Math.floor(Math.random() * speedRange.length)];
+            // Use this.decreaseDuration instead of a fixed value or range
+            const decreaseDuration = this.decreaseDuration;
 
             this.colorsInProgress[rectIndex][colorIndex] = true;
             this.finishedDecreasing[rectIndex][colorIndex] = false;
+
+            // Add a flag to track if we've decreased the score for this animation
+            let hasDecreasedScore = false;
 
             const animateDecrease = (currentTime) => {
                 if (!this.colorsInProgress[rectIndex][colorIndex]) {
@@ -424,6 +516,13 @@ export default {
                 if (progress < 1) {
                     const currentHeight = startHeight - (progress * (startHeight - targetHeight));
                     this.currentHeights[rectIndex][colorIndex] = Math.max(this.minHeight, currentHeight);
+
+                    // Check if the height is below the threshold and we haven't decreased the score yet
+                    if (currentHeight < this.minRefillThreshold && !hasDecreasedScore) {
+                        this.updateResults('color_tank', { final_score: -1 });
+                        hasDecreasedScore = true; // Set the flag to true after decreasing the score
+                    }
+
 
                     this.drawSpecificTank(rectIndex);
 
@@ -447,6 +546,6 @@ export default {
 
 <style scoped>
 canvas {
-    border: none
+    border: none;
 }
 </style>
