@@ -1,50 +1,58 @@
 <template>
-	<canvas ref="horizonCanvas" @mousemove="moveYellowLine" :width="horizonWidth" :height="horizonHeight"
-		style="margin-bottom: 20px; margin-top: -20px"></canvas>
+  <canvas ref="horizonCanvas"
+    @mousemove="handleMouseMove"
+    :width="horizonWidth"
+    :height="horizonHeight"
+  >
+  </canvas>
 </template>
 
 <script>
 export default {
-	name: 'HorizonView',
-	data() {
-		return {
-			isMouseInsideCircle: false,
-			isYellowLineMoved: false,
-			horizonWidth: 400,
-			horizonHeight: 300,
-			tiltAngle: 0,
-			yellowLinePositionY: 0,
-			yellowLinePositionX: 0,
-			circleShiftX: 0,
-			greenLineStartTime: null,
-			greenLineDuration: 0,
-			targetTiltAngle: 0,
-			targetCircleShiftX: 0,
-			currentTilt: 0,
-			currentShiftX: 0,
-			gamepadIndex: null,
-			gamepadSensitivity: 10,
-		}
-	},
-	props: {
+  name: 'HorizonTest',
+  props: {
 		isTimesUp: Boolean,
 		speed: String,
 		isPause: Boolean,
 		isActive: Boolean
 	},
-	async mounted() {
-		this.initHorizon();
-	},
-	watch: {
+  data() {
+    return {
+      horizonWidth: 450,
+      horizonHeight: 350,
+      greenLineStartTime: null,
+			greenLineDuration: 0,
+      config: {
+          x: 10,
+          y: 5,
+          skyColor: '#87CEEB',
+          landColor: '#8B4513',
+          whiteBorderHeight: 5,
+          focusY: 300,
+          focusX: 100,
+          angle: 0,
+          horizonOffsetY: 0,
+          horizonOffsetX: 0
+      },
+      currentTilt: 0,
+      currentShiftX: 0,
+      currentShiftY: 0,
+      intervalRandomTilt: null,
+      intervalRandomShift: null,
+      gamepadIndex: null,
+    };
+  },
+  mounted() {
+    this.initHorizon();
+  },
+  unmounted() {
+    this.stopAnimation();
+    window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+    window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+  },
+  watch: {
 		isTimesUp() {
-			clearInterval(this.intervalRandomTilt);
-			clearInterval(this.intervalRandomCircleShift);
-
-			if (this.greenLineStartTime) {
-				const currentTime = Date.now();
-				this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
-				this.greenLineStartTime = null; // Reset start time when exiting circle
-			}
+      this.stopAnimation();
 
 			this.$emit('getResult', {
 				correctTime: this.greenLineDuration,
@@ -52,346 +60,301 @@ export default {
 		},
 		isPause() {
 			if (this.isPause) {
-				clearInterval(this.intervalRandomTilt);
-				clearInterval(this.intervalRandomCircleShift);
+        this.stopAnimation();
 			} else {
-				this.runningInterval('random-tilt');
-				this.runningInterval('circle-shift');
+				this.startAnimation();
 			}
 		},
 	},
-	methods: {
-		runningInterval(type = null) {
-			if (type === 'random-tilt') {
-				this.intervalRandomTilt = setInterval(() => {
-					this.randomTilt();
-				}, this.setSpeed());
-			}
+  methods: {
+    initHorizon() {
+      this.initVisual();
+      this.drawVisual();
+      if (this.isActive) {
+        this.startAnimation();
+      }
 
-			if (type === 'circle-shift') {
-				this.intervalRandomCircleShift = setInterval(() => {
-					this.randomCircleShift();
-				}, this.setSpeed());
-			}
-		},
-		initHorizon() {
-			const canvas = this.$refs.horizonCanvas;
-			this.ctx = canvas.getContext("2d");
+      window.addEventListener('gamepadconnected', this.onGamepadConnected);
+      window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      this.checkGamepad();
+    },
+    initVisual() {
+      const canvas = this.$refs.horizonCanvas;
+      canvas.width = this.horizonWidth;
+      canvas.height = this.horizonHeight;
+      this.ctx = canvas.getContext('2d');
+    },
+    drawVisual() {
+      this.clearCanvas();
+      this.drawHorizon();
+    },
+    clearCanvas() {
+      this.ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
+    },
+    drawHorizon() {
+      const { ctx, config } = this;
 
-			this.yellowLinePositionX = this.horizonWidth / 2;
-			this.yellowLinePositionY = this.horizonHeight / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(config.x, config.y, this.horizonWidth, this.horizonHeight);
+      ctx.stroke();
+      ctx.clip();
 
-			this.circleShiftX = 0;
-			this.circleRadius = Math.min(this.horizonWidth, this.horizonHeight) / 20; // Set Circle Radius
+      const angleInRadians = this.currentTilt * Math.PI / 180;
 
-			if (!this.isActive) {
-				this.tiltAngle = 0;
-			} else {
-				this.runningInterval('random-tilt');
-				this.runningInterval('circle-shift');
-			}
+      ctx.translate(config.x + this.horizonWidth / 2, config.y + this.horizonHeight / 2);
+      ctx.translate(this.currentShiftX, this.currentShiftY);
+      ctx.rotate(angleInRadians);
+      ctx.translate(-config.x - this.horizonWidth / 2, -config.y - this.horizonHeight / 2);
 
-			this.updateHorizon();
-			canvas.addEventListener('mousemove', this.checkPosition);
-			this.checkPosition();
+      ctx.fillStyle = config.skyColor;
+      ctx.fillRect(config.x - this.horizonWidth / 2, config.y - this.horizonHeight, this.horizonWidth * 2, this.horizonHeight * 4);
 
-			window.addEventListener('gamepadconnected', this.onGamepadConnected);
-			window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-			this.checkGamepad();
-		},
-		// for gamepad
-		onGamepadConnected(event) {
-			console.log('connected', event)
-			// look for gamepad id = 'T.16000M (Vendor: 044f Product: b10a)'
-			if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
-				return;
-			}
-			this.gamepadIndex = event.gamepad.index;
-			this.checkGamepad();
-		},
-		onGamepadDisconnected(event) {
-			console.log('disconnected', event)
-			if (this.gamepadIndex === event.gamepad.index) {
-				this.gamepadIndex = null;
-			}
-		},
-		updateHorizon() {
-			const canvas = this.$refs.horizonCanvas;
-			const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(config.x - this.horizonWidth / 2, config.y + this.horizonHeight / 2 - config.whiteBorderHeight, this.horizonWidth * 2, config.whiteBorderHeight + this.horizonHeight / 4);
 
-			ctx.clearRect(0, 0, this.horizonWidth, this.horizonHeight);
-			ctx.save();
+      ctx.fillStyle = config.landColor;
+      ctx.fillRect(config.x - this.horizonWidth / 2, config.y + this.horizonHeight / 2, this.horizonWidth * 2, this.horizonHeight * 4);
 
-			ctx.translate(this.horizonWidth / 2, this.horizonHeight / 2);
-			ctx.rotate((this.tiltAngle * Math.PI) / 180);
+      this.drawIndicator();
+      ctx.restore();
 
-			ctx.fillStyle = '#87CEEB';
-			ctx.fillRect(-this.horizonWidth, -this.horizonHeight, this.horizonWidth * 2, this.horizonHeight);
+      this.drawFocusLine();
+    },
+    drawIndicator() {
+      const { ctx, config } = this;
+      const centerX = config.x + this.horizonWidth / 2;
+      const centerY = config.y + this.horizonHeight / 2;
+      const radius = 60;
 
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 6;
-			ctx.beginPath();
-			ctx.moveTo(-this.horizonWidth, 0);
-			ctx.lineTo(this.horizonWidth, 0);
-			ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY - 10, radius, 0, Math.PI, true);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 10;
+      ctx.setLineDash([2, 24]);
+      ctx.stroke();
 
-			ctx.fillStyle = '#8B4513';
-			ctx.fillRect(-this.horizonWidth, 0, this.horizonWidth * 2, this.horizonHeight);
+      this.drawTriangle({ x: centerX, y: centerY - 30, width: 20, height: 15 });
+      this.drawSkew(centerX, centerY);
+    },
+    drawSkew(centerX, centerY) {
+      const { ctx, config } = this;
 
-			// Start Lines Front
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX + 65, -this.circleRadius * 1.5 + 15);
-			ctx.lineTo(this.circleShiftX + 50, -this.circleRadius * 1.5 + 15);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
+      const drawSkewShape = () => {
+        ctx.beginPath();
+        ctx.moveTo(centerX - 15, centerY + 20);
+        ctx.lineTo(config.x + 120, centerY + 40);
+        ctx.lineTo(config.x + 130, centerY + 40);
+        ctx.lineTo(centerX - 10, centerY + 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.setLineDash([0, 0]);
+      };
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX + 55, -this.circleRadius * 1.5 - 10);
-			ctx.lineTo(this.circleShiftX + 45, -this.circleRadius * 1.5 - 4);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
+      drawSkewShape();
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX + 35, -this.circleRadius * 1.5 - 30);
-			ctx.lineTo(this.circleShiftX + 25, -this.circleRadius * 1.5 - 20);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
+      ctx.save();
+      ctx.translate(this.horizonWidth + 20, 0);
+      ctx.scale(-1, 1);
+      drawSkewShape();
+      ctx.restore();
+    },
+    drawTriangle({ x, y, width, height }) {
+      const { ctx } = this;
+      ctx.fillStyle = 'white';
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.beginPath();
+      ctx.moveTo(0, -height / 2);
+      ctx.lineTo(-width / 2, height / 2);
+      ctx.lineTo(width / 2, height / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    },
+    drawFocusLine() {
+      const { ctx, config } = this;
+      const { x, y, focusX, focusY } = config;
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX, -this.circleRadius * 1.5 - 40);
-			ctx.lineTo(this.circleShiftX, -this.circleRadius * 1.5 - 25);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, this.horizonWidth, this.horizonHeight);
+      ctx.clip();
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX - 35, -this.circleRadius * 1.5 - 30);
-			ctx.lineTo(this.circleShiftX - 25, -this.circleRadius * 1.5 - 20);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
+      const centerX = x + this.horizonWidth / 2;
+      const centerY = y + this.horizonHeight / 2;
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX - 55, -this.circleRadius * 1.5 - 10);
-			ctx.lineTo(this.circleShiftX - 45, -this.circleRadius * 1.5 - 4);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
+      const circleX = centerX + this.currentShiftX;
+      const circleY = centerY + this.currentShiftY;
+      const radius = 15;
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX - 65, -this.circleRadius * 1.5 + 15);
-			ctx.lineTo(this.circleShiftX - 50, -this.circleRadius * 1.5 + 15);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 3;
-			ctx.stroke();
-			// End Lines Front
+      const distanceToCircle = Math.sqrt((focusX - circleX) ** 2 + (focusY - circleY) ** 2);
+      const isInRadius = distanceToCircle <= radius;
 
-			// Draw Circle in the Middle
-			ctx.beginPath();
-			ctx.arc(this.circleShiftX, 0, this.circleRadius + 5, 0, Math.PI * 2);
-			ctx.closePath();
-			ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-			ctx.fill();
+      this.updateGreenTime(isInRadius);
 
-			// Draw Triangle
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX, -this.circleRadius - this.circleRadius * 0.8);
-			ctx.lineTo(this.circleShiftX - this.circleRadius * 0.8, -this.circleRadius);
-			ctx.lineTo(this.circleShiftX + this.circleRadius * 0.8, -this.circleRadius);
-			ctx.closePath();
-			ctx.fillStyle = '#FFFFFF';
-			ctx.fill();
+      const lineColor = isInRadius ? 'green' : 'yellow';
 
-			// Start Bottom Line
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX - 20, this.circleRadius - 250 * 0.2 + 50);
-			ctx.lineTo(this.circleShiftX - 50, this.circleRadius + 20);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 5;
-			ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(circleX, circleY, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'transparent';
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-			ctx.beginPath();
-			ctx.moveTo(this.circleShiftX + 20, this.circleRadius - 250 * 0.2 + 50);
-			ctx.lineTo(this.circleShiftX + 50, this.circleRadius + 20);
-			ctx.strokeStyle = '#FFFFFF';
-			ctx.lineWidth = 5;
-			ctx.stroke();
-			// End Bottom Line
+      ctx.beginPath();
+      ctx.moveTo(x, focusY);
+      ctx.lineTo(x + this.horizonWidth, focusY);
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-			ctx.restore();
+      ctx.beginPath();
+      ctx.moveTo(focusX, y);
+      ctx.lineTo(focusX, y + this.horizonHeight);
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-			// Draw horizontal yellow/green line
-			const lineColor = this.isMouseInsideCircle ? 'green' : 'yellow';
-			ctx.strokeStyle = lineColor;
+      ctx.restore();
+    },
+    startAnimation() {
+      this.intervalRandomTilt = setInterval(() => {
+        this.randomTilt();
+      }, this.setSpeed());
 
-			ctx.lineWidth = 3;
-			ctx.beginPath();
-			ctx.moveTo(0, this.yellowLinePositionY);
-			ctx.lineTo(this.horizonWidth, this.yellowLinePositionY);
-			ctx.stroke();
+      this.intervalRandomShift = setInterval(() => {
+        this.randomShift();
+      }, this.setSpeed());
+    },
+    stopAnimation() {
+      clearInterval(this.intervalRandomTilt);
+      clearInterval(this.intervalRandomShift);
+    },
+    randomTilt() {
+      const targetTilt = this.getRandom(-70, 70);
+      this.animateValue(this.currentTilt, targetTilt, this.setSpeed(), (value) => {
+        this.currentTilt = value;
+        this.drawVisual();
+      });
+    },
+    randomShift() {
+      const targetShiftX = this.getRandom(-70, 70);
+      const targetShiftY = this.getRandom(-70, 70);
+      this.animateValue(this.currentShiftX, targetShiftX, this.setSpeed(), (value) => {
+        this.currentShiftX = value;
+        this.drawVisual();
+      });
 
-			// Draw vertical yellow/green line
-			ctx.beginPath();
-			ctx.moveTo(this.yellowLinePositionX, 0);
-			ctx.lineTo(this.yellowLinePositionX, this.horizonHeight);
-			ctx.stroke();
-		},
-		randomTilt() {
-			const targetTilt = this.isActive ? this.getRandom(-80, 80) : 0;
-			this.animateValue(this.currentTilt, targetTilt, this.setSpeed(), (value) => {
-				this.currentTilt = value;
-				this.tiltAngle = value;
-				this.updateHorizon();
-			});
-		},
-		randomCircleShift() {
-			const targetShift = this.isActive ? this.getRandom(-125, 125) : 0;
-			this.animateValue(this.currentShiftX, targetShift, this.setSpeed(), (value) => {
-				this.currentShiftX = value;
-				this.circleShiftX = value;
-				this.updateHorizon();
-			});
+      this.animateValue(this.currentShiftY, targetShiftY, this.setSpeed(), (value) => {
+        this.currentShiftY = value;
+        this.drawVisual();
+      });
+    },
+    getRandom(min, max) {
+      return Math.random() * (max - min) + min;
+    },
+    animateValue(start, end, duration, callback) {
+      const startTime = performance.now();
+      const step = (currentTime) => {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        const easedProgress = this.easeInOutCubic(progress);
 
-			this.checkPosition();
-		},
-		setSpeed() {
-			if (this.speed === 'very_slow') {
-				return 6000;
-			}
-			if (this.speed === 'slow') {
-				return 5000;
-			}
-			if (this.speed === 'medium') {
-				return 4000;
-			}
-			if (this.speed === 'fast') {
-				return 3000;
-			}
-			if (this.speed === 'very_fast') {
-				return 2000;
-			}
-		}, checkGamepad() {
-			if (this.gamepadIndex !== null) {
-				const gamepad = navigator.getGamepads()[this.gamepadIndex];
-				if (gamepad) {
-					this.handleGamepadInput(gamepad);
-				}
-			}
-			requestAnimationFrame(this.checkGamepad);
-		},
+        const value = start + (end - start) * easedProgress;
+        callback(value);
 
-		handleGamepadInput(gamepad) {
-			if (this.isPause || this.isTimesUp || !this.isActive) {
-				return;
-			}
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      };
 
-			const [leftStickX, leftStickY] = gamepad.axes;
+      requestAnimationFrame(step);
+    },
+    easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    },
+    setSpeed() {
+      if (this.speed === 'very_slow') {
+        return 6000;
+      }
+      if (this.speed === 'slow') {
+        return 5000;
+      }
+      if (this.speed === 'medium') {
+        return 4000;
+      }
+      if (this.speed === 'fast') {
+        return 3000;
+      }
+      if (this.speed === 'very_fast') {
+        return 2000;
+      }
+    },
+    handleMouseMove(event) {
+      const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
+      this.config.focusX = Math.max(0, Math.min(event.clientX - canvasRect.left, this.$refs.horizonCanvas.width));
+      this.config.focusY = Math.max(0, Math.min(event.clientY - canvasRect.top, this.$refs.horizonCanvas.height));
+      this.drawVisual();
+    },
+    updateGreenTime(isGreen) {
+      if (isGreen && !this.greenLineStartTime) {
+        this.greenLineStartTime = Date.now();
+      } else {
+        if (isGreen && this.greenLineStartTime) {
+          const currentTime = Date.now();
+          this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000;
+          this.greenLineStartTime = null;
+        }
+      }
+    },
+    onGamepadConnected(event) {
+      if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+        return;
+      }
+      this.gamepadIndex = event.gamepad.index;
+      this.checkGamepad();
+    },
+    onGamepadDisconnected(event) {
+      if (this.gamepadIndex === event.gamepad.index) {
+        this.gamepadIndex = null;
+      }
+    },
+    checkGamepad() {
+      if (this.gamepadIndex !== null) {
+        const gamepad = navigator.getGamepads()[this.gamepadIndex];
+        if (gamepad) {
+          this.handleGamepadInput(gamepad);
+        }
+      }
+      requestAnimationFrame(this.checkGamepad);
+    },
+    handleGamepadInput(gamepad) {
+      const [leftStickX, leftStickY] = gamepad.axes;
+      if (!this.$refs.horizonCanvas) {
+        return;
+      }
+      const canvasWidth = this.$refs.horizonCanvas.width;
+      const canvasHeight = this.$refs.horizonCanvas.height;
 
-			// Update yellow line position based on flightstick input
-			this.yellowLinePositionX += leftStickX * this.gamepadSensitivity;
-			this.yellowLinePositionY += leftStickY * this.gamepadSensitivity;
+      const sensitivity = 5;  // You can adjust this value to control how fast the focus line moves
 
-			// Ensure the yellow line stays within the canvas boundaries
-			this.yellowLinePositionX = Math.max(0, Math.min(this.horizonWidth, this.yellowLinePositionX));
-			this.yellowLinePositionY = Math.max(0, Math.min(this.horizonHeight, this.yellowLinePositionY));
+      this.config.focusX += leftStickX * sensitivity;
+      this.config.focusY += leftStickY * sensitivity;
 
-			this.isYellowLineMoved = true;
-			this.updateHorizon();
-			this.checkPosition();
-		},
+      // Clamp the focusX and focusY to stay within the canvas bounds
+      this.config.focusX = Math.max(0, Math.min(this.config.focusX, canvasWidth));
+      this.config.focusY = Math.max(0, Math.min(this.config.focusY, canvasHeight));
 
-		moveYellowLine(event) {
-			// Keep the existing mouse control
-			if (this.isPause || this.isTimesUp || !this.isActive) {
-				return;
-			}
-
-			this.isYellowLineMoved = true;
-
-			const canvas = this.$refs.horizonCanvas;
-			const rect = canvas.getBoundingClientRect();
-			const x = event.clientX - rect.left;
-			const y = event.clientY - rect.top;
-
-			this.yellowLinePositionX = x;
-			this.yellowLinePositionY = y;
-
-			this.updateHorizon();
-		},
-		checkPosition(event = null) {
-			if (!this.isYellowLineMoved) {
-				return;
-			}
-
-			const canvas = this.$refs.horizonCanvas;
-			const rect = canvas.getBoundingClientRect();
-
-			let mouseX = this.yellowLinePositionX - this.horizonWidth / 2;
-			let mouseY = this.yellowLinePositionY - this.horizonHeight / 2;
-
-			if (event) {
-				mouseX = event.clientX - rect.left - this.horizonWidth / 2;
-				mouseY = event.clientY - rect.top - this.horizonHeight / 2;
-			}
-
-			// Apply inverse rotation to mouse coordinates to account for canvas rotation
-			const angle = (-this.tiltAngle * Math.PI) / 180;
-			const rotatedX = mouseX * Math.cos(angle) - mouseY * Math.sin(angle);
-			const rotatedY = mouseX * Math.sin(angle) + mouseY * Math.cos(angle);
-
-			const distance = Math.sqrt(
-				Math.pow(rotatedX - this.circleShiftX, 2) + Math.pow(rotatedY, 2)
-			);
-
-			if (distance <= this.circleRadius + 5) {
-				if (!this.greenLineStartTime) {
-					this.greenLineStartTime = Date.now();
-				}
-				this.isMouseInsideCircle = true;
-			} else {
-				if (this.greenLineStartTime) {
-					const currentTime = Date.now();
-					this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000;
-					this.greenLineStartTime = null;
-				}
-				this.isMouseInsideCircle = false;
-			}
-
-			this.updateHorizon();
-		},
-		getRandom(min, max) {
-			return Math.random() * (max - min) + min;
-		},
-		animateValue(start, end, duration, callback) {
-			const startTime = performance.now();
-
-			const step = (currentTime) => {
-				const elapsedTime = currentTime - startTime;
-				const progress = Math.min(elapsedTime / duration, 1);
-				const easedProgress = this.easeInOutCubic(progress);
-
-				const value = start + (end - start) * easedProgress;
-				callback(value);
-
-				if (progress < 1) {
-					requestAnimationFrame(step);
-				}
-			};
-
-			requestAnimationFrame(step);
-		},
-		easeInOutCubic(t) {
-			return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-		},
-	},
+      this.drawVisual();
+    },
+  },
 };
 </script>
 
 <style scoped>
 canvas {
-	border: 2px solid black;
+  margin-bottom: 20px;
+  margin-top: -20px;
+  margin-right: 10px;
 }
 </style>

@@ -13,7 +13,18 @@
     </div>
 
     <div class="radar-container">
-      <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
+      <div class="row">
+        <div class="col-12">
+          <canvas ref="radarCanvas" :width="width" :height="height"></canvas>
+        </div>
+        <div class="col-12">
+          <p class="m-3">
+            Tekan "Trigger Pada Joystick" jika bentuk
+            <strong> {{ config.targetShape }} </strong>
+            muncul di radar.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>

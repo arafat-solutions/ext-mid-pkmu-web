@@ -24,6 +24,7 @@ export default {
 	name: 'ArithmeticsView',
 	data() {
 		return {
+      isCanChooseAudio: false,
 			audio: null,
 			correctAnswer: 0,
 			totalQuestion: 0,
@@ -47,7 +48,7 @@ export default {
 		useSound: Boolean,
 	},
 	async mounted() {
-		if (!this.useSound) {
+		if (this.useSound && this.isActive) {
 			this.generateAudio();
 		}
 	},
@@ -85,7 +86,6 @@ export default {
 		},
 		generateAudio() {
 			this.audio = null;
-			this.answerAudio = null;
 			this.responseQuestion = 0;
 			this.responseTime = 0;
 			console.log(this.difficulty, 'difficulty');
@@ -122,14 +122,10 @@ export default {
 			}, 1000)
 		},
 		handleOptionClick(key) {
-			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
-				return;
-			}
 			this.pressAnswerAudio(key);
 		},
-
 		pressAnswerAudio(key) {
-			if (this.isPause || this.isTimesUp || !this.isActive) {
+      if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
 				return;
 			}
 
@@ -141,7 +137,7 @@ export default {
 				}
 			}
 
-			if (value === this.audio) {
+			if (this.audio === value) {
 				this.responseTime = Date.now();
 				this.calculateResponseTime();
 				this.correctAnswer++;
@@ -182,27 +178,25 @@ export default {
 			}, 500);
 		},
 		handleKeyPress(event) {
-			if (this.isPause || this.isTimesUp || !this.isActive) {
+			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
 				return;
 			}
 
-			if (this.isCanChooseAudio) {
-				if (event.key.toUpperCase() == 1) {
-					this.pressAnswerAudio(1);
-				}
+      if (event.key.toUpperCase() == 1) {
+        this.pressAnswerAudio(1);
+      }
 
-				if (event.key.toUpperCase() == 2) {
-					this.pressAnswerAudio(2);
-				}
+      if (event.key.toUpperCase() == 2) {
+        this.pressAnswerAudio(2);
+      }
 
-				if (event.key.toUpperCase() == 3) {
-					this.pressAnswerAudio(3);
-				}
+      if (event.key.toUpperCase() == 3) {
+        this.pressAnswerAudio(3);
+      }
 
-				if (event.key.toUpperCase() == 4) {
-					this.pressAnswerAudio(4);
-				}
-			}
+      if (event.key.toUpperCase() == 4) {
+        this.pressAnswerAudio(4);
+      }
 		},
 	},
 };
