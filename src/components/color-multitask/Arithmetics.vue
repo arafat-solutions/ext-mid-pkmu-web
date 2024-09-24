@@ -88,7 +88,7 @@ export default {
 			this.audio = null;
 			this.responseQuestion = 0;
 			this.responseTime = 0;
-			console.log(this.difficulty, 'difficulty');
+
 			if (this.difficulty === 'hard') {
 				this.audio = Math.floor(Math.random() * 900) + 100;
 			}
