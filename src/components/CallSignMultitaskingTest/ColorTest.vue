@@ -37,9 +37,9 @@ export default {
                 [100, 100, 100],
                 [100, 100, 100]
             ],
-            decreaseInterval: 1000, // Time in ms between each decrease animation
-            decreaseDuration: 1000, // Duration of each decrease animation
-            increaseDuration: 2000, // New property for controlling increase speed
+            decreaseInterval: 30000, // Time in ms between each decrease animation
+            decreaseDuration: 35000, // Duration of each decrease animation
+            increaseDuration: 10000, // New property for controlling increase speed
             minHeight: 4, // Minimum height before stopping the animation
             finishedDecreasing: [],
             colorsInProgress: [],
@@ -80,13 +80,13 @@ export default {
         },
         initConfig() {
             const DECREASE_INTERVAL = {
-                slow: 2000,
-                medium: 2000,
-                fast: 2000
+                slow: 8000,
+                medium: 8000,
+                fast: 8000
             }
             const { descend_speed, speed } = this.colorTankData;
             this.currentDescendSpeed = descend_speed || 'medium'; // Set default if undefined
-            this.decreaseInterval = DECREASE_INTERVAL[speed] || 2000; // Set default if undefined
+            this.decreaseInterval = DECREASE_INTERVAL[speed] || 20000; // Set default if undefined
         },
 
         drawVisual() {
@@ -404,11 +404,8 @@ export default {
             const targetHeight = this.minHeight;
             const startTime = performance.now();
 
-            // Use the currentDescendSpeed instead of accessing colorTankData directly
-            const speedRange = this.decreaseSpeedRanges[this.currentDescendSpeed] || this.decreaseSpeedRanges.medium;
-
-            // Randomly select a duration from the speed range
-            const decreaseDuration = speedRange[Math.floor(Math.random() * speedRange.length)];
+            // Use this.decreaseDuration instead of a fixed value or range
+            const decreaseDuration = this.decreaseDuration;
 
             this.colorsInProgress[rectIndex][colorIndex] = true;
             this.finishedDecreasing[rectIndex][colorIndex] = false;
