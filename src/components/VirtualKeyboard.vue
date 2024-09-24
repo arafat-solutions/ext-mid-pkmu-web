@@ -31,9 +31,6 @@ export default {
     handleMouseDown(key) {
       console.log(key, 'pressed');
       this.pressedKeys.push(key);
-      if (this.pressedKeys.length === 3) {
-        this.pressedKeys = [];
-      }
       this.$emit('keyPress', { key });
     },
   },
