@@ -52,7 +52,9 @@ export default {
                 fast: [6000, 5500, 5000]
             },
             currentDescendSpeed: 'medium',
-            activeKeys: []
+            activeKeys: [],
+            colorDecreaseHistory: [],
+            availableColors: ['blue', 'green', 'yellow', 'red'],
         };
     },
     mounted() {
@@ -241,39 +243,65 @@ export default {
         startDecreaseAnimation() {
             this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
             this.colorsInProgress = Array.from({ length: 4 }, () => Array(3).fill(false));
+            this.colorDecreaseHistory = []; // Initialize color history
             this.startAnimationInterval();
         },
+        chooseColorToDecrease() {
+            if (this.colorDecreaseHistory.length < 2) {
+                // First two selections are random
+                const color = this.getRandomColor();
+                this.colorDecreaseHistory.push(color);
+                return color;
+            } else {
+                // Third selection must be the same as the first
+                const color = this.colorDecreaseHistory[0];
+                this.colorDecreaseHistory.push(color);
+                this.colorDecreaseHistory.shift(); // Remove the oldest color
+                return color;
+            }
+        },
+
+        getRandomColor() {
+            const availableColors = this.availableColors.filter(color =>
+                !this.colorDecreaseHistory.includes(color) ||
+                this.colorDecreaseHistory.length === 0
+            );
+            return availableColors[Math.floor(Math.random() * availableColors.length)];
+        },
         startAnimationInterval() {
+            let colorIndex = 0;
+            let tankIndex = 0;
+
             this.animationInterval = setInterval(() => {
                 if (this.finishedDecreasing.flat().every(Boolean)) {
                     clearInterval(this.animationInterval);
                     return;
                 }
 
-                let rectIndex;
-                let colorIndex;
-                let found = false;
+                const color = this.availableColors[colorIndex];
+                const tank = this.rectanglesColorize[tankIndex];
+                const colorIndexInTank = tank.fillColor.indexOf(color);
 
-                for (let attempts = 0; attempts < 100 && !found; attempts++) {
-                    rectIndex = this.getRandomNumber(4);
-                    colorIndex = this.getRandomNumber(3);
+                if (colorIndexInTank !== -1 &&
+                    !this.colorsInProgress[tankIndex][colorIndexInTank] &&
+                    !this.finishedDecreasing[tankIndex][colorIndexInTank] &&
+                    this.currentHeights[tankIndex][colorIndexInTank] > this.minHeight) {
 
-                    if (!this.colorsInProgress[rectIndex][colorIndex] &&
-                        !this.finishedDecreasing[rectIndex][colorIndex] &&
-                        this.currentHeights[rectIndex][colorIndex] === 100) {
-                        found = true;
-                    }
+                    this.updateResults('color_tank', { total_occurrences: 1 });
+                    this.startDecreaseAnimationForColor(tankIndex, colorIndexInTank);
                 }
 
-                if (found) {
-                    this.updateResults('color_tank', { total_occurrences: 1 });
-                    this.startDecreaseAnimationForColor(rectIndex, colorIndex);
+                // Move to next color and tank
+                colorIndex = (colorIndex + 1) % this.availableColors.length;
+                if (colorIndex === 0) {
+                    tankIndex = (tankIndex + 1) % this.rectanglesColorize.length;
                 }
             }, this.decreaseInterval);
         },
         restartDecreaseAnimation() {
             if (!this.finishedDecreasing.flat().every(Boolean)) {
                 this.finishedDecreasing = Array.from({ length: 4 }, () => Array(3).fill(false));
+                this.colorDecreaseHistory = []; // Reset color history
                 this.startAnimationInterval();
             }
         },
