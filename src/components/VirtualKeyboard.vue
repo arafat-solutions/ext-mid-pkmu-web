@@ -1,13 +1,19 @@
 <template>
   <div class="virtual-keyboard">
     <div v-for="(row, rowIndex) in keys" :key="rowIndex" class="keyboard-row">
-      <button v-for="key in row" :key="key" class="keyboard-key" :class="{ pressed: pressedKeys[key] }"
-        @mousedown="handleMouseDown(key)" @mouseup="handleMouseUp(key)" @mouseleave="handleMouseUp(key)">
+      <button 
+        v-for="key in row" 
+        :key="key" 
+        class="keyboard-key" 
+        :class="{ pressed: pressedKeys[key] }"
+        @mousedown="handleMouseDown(key)"
+      >
         {{ key }}
       </button>
     </div>
   </div>
 </template>
+
 
 <script>
 export default {
@@ -18,42 +24,24 @@ export default {
         ['Q', 'W', 'E', 'R'],
         ['A', 'S', 'D', 'F']
       ],
-      pressedKeys: {}
+      pressedKeys: []
     }
   },
   methods: {
     handleMouseDown(key) {
       console.log(key, 'pressed');
-      this.pressedKeys[key] = true;
+      this.pressedKeys.push(key);
+      if (this.pressedKeys.length === 3) {
+        this.pressedKeys = [];
+      }
       this.$emit('keyPress', { key });
     },
-    handleMouseUp(key) {
-      console.log(key, 'pressed');
-      this.pressedKeys[key] = false;
-      this.$emit('keyRelease', { key });
-    },
-    handleKeyDown(e) {
-      const key = e.key.toUpperCase();
-      if (this.keys.flat().includes(key)) {
-        this.pressedKeys[key] = true;
-        this.$emit('keyPress', { key });
-      }
-    },
-    handleKeyUp(e) {
-      const key = e.key.toUpperCase();
-      if (this.keys.flat().includes(key)) {
-        this.pressedKeys[key] = false;
-        this.$emit('keyRelease', { key });
-      }
-    }
   },
   mounted() {
     window.addEventListener('keydown', this.handleKeyDown);
-    window.addEventListener('keyup', this.handleKeyUp);
   },
   beforeUnmountf() {
     window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
   }
 }
 </script>
@@ -83,5 +71,9 @@ export default {
 
 .keyboard-key.pressed {
   background-color: #ccc;
+}
+
+.keyboard-key.active {
+  background-color: green;
 }
 </style>
