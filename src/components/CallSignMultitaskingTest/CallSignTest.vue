@@ -1,14 +1,18 @@
 <template>
     <div class="callsign-test">
         <div class="input-group">
-            <input type="number" v-model="userInput" ref="callsignInput" />
+            <input type="number" v-model="userInput" ref="callsignInput" @focus="focus = true" @blur="focus = false" />
             <p>↵</p>
         </div>
         <canvas ref="callsignCanvas"></canvas>
     </div>
+    <NumberVirtualKeyboard :active-keys="activeKeys" @key-press="handleVirtualKeyPress"
+        @key-release="handleVirtualKeyRelease" />
 </template>
 
 <script>
+import NumberVirtualKeyboard from './NumberVirtualKeyboard.vue';
+
 export default {
     name: 'CallSignTest',
     props: {
@@ -17,6 +21,9 @@ export default {
             required: true
         },
         updateResults: Function,
+    },
+    components: {
+        NumberVirtualKeyboard
     },
     data() {
         return {
@@ -33,16 +40,19 @@ export default {
                 right: 0,
                 wrong: 0
             },
-            focus: false
+            focus: false,
+            activeKeys: [],
         };
     },
     mounted() {
-        this.initializeTest()
-        window.addEventListener('keydown', this.checkAnswer);
+        this.initializeTest();
+        window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keyup', this.handleKeyUp);
     },
     beforeUnmount() {
         this.cleanup();
-        window.removeEventListener('keydown', this.checkAnswer);
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUp);
     },
     methods: {
         initializeTest() {
@@ -106,7 +116,7 @@ export default {
         initConfig() {
             const frequencyMap = {
                 'often': Math.floor(Math.random() * 11) * 1000 + 10000,
-                'medium':  Math.floor(Math.random() * 11) * 1000 + 20000,
+                'medium': Math.floor(Math.random() * 11) * 1000 + 20000,
                 'seldom': Math.floor(Math.random() * 11) * 1000 + 30000
             };
 
@@ -209,28 +219,89 @@ export default {
                 this.initSpeech()
             }
         },
-        checkAnswer(event) {
-            if (event.key === 'Enter') {
-                if (!this.focus) {
-                    this.focus = true
-                    this.$refs.callsignInput.focus()
-                } else {
-                    const isAngleCorrect = this.userInput === this.angle;
-                    const isCallsignCorrect = this.callsign === this.lastSpokenCallsign;
-
-                    if (isAngleCorrect && isCallsignCorrect) {
-                        this.updateResults('call_sign', { correct_response: 1 });
-                    } else {
-                        this.updateResults('call_sign', { wrong_response: 1 });
-                    }
-
-                    this.userInput = '';
-                    this.$refs.callsignInput.blur()
-                    this.focus = false
+        handleKeyDown(event) {
+            if (!this.focus) {
+                if (event.key === 'Enter') {
+                    this.focus = true;
+                    this.$refs.callsignInput.focus();
                 }
+                return;
+            }
+
+            if (event.key >= '0' && event.key <= '9') {
+                if (this.focus) {
+                    // Prevent default to stop the browser from inserting the character
+                    event.preventDefault();
+                    // Manually update the input value
+                    this.userInput += event.key;
+                } else {
+                    // If not focused, update as before
+                    this.userInput += event.key;
+                }
+                this.activeKeys.push(event.key);
+            } else if (event.key === 'Enter') {
+                this.handleEnterKey();
+                this.activeKeys.push('↵');
+            } else if (event.key === 'Backspace') {
+                this.handleBackspace();
+                this.activeKeys.push('⌫');
             }
         },
+        handleKeyUp(event) {
+            if (event.key >= '0' && event.key <= '9' || event.key === 'Enter' || event.key === 'Backspace') {
+                this.activeKeys = this.activeKeys.filter(key => key !== event.key && key !== '↵' && key !== '⌫');
+            }
+        },
+        handleVirtualKeyPress({ key }) {
+            if (!this.focus) {
+                if (key === '↵') {
+                    this.focus = true;
+                    this.$refs.callsignInput.focus();
+                }
+                return;
+            }
 
+
+            if (key >= '0' && key <= '9') {
+                this.userInput += key;
+                this.activeKeys.push(key);
+            } else if (key === '↵') {
+                this.handleEnterKey();
+                this.activeKeys.push(key);
+            } else if (key === '⌫') {
+                this.handleBackspace();
+                this.activeKeys.push(key);
+            }
+        },
+        handleVirtualKeyRelease({ key }) {
+            this.activeKeys = this.activeKeys.filter(k => k !== key);
+        },
+        handleEnterKey() {
+            if (!this.focus) {
+                this.focus = true;
+                this.$refs.callsignInput.focus();
+            } else {
+                this.checkAnswer();
+            }
+        },
+        handleBackspace() {
+            this.userInput = this.userInput.slice(0, -1);
+        },
+        checkAnswer() {
+            const isAngleCorrect = parseInt(this.userInput) === this.angle;
+            const isCallsignCorrect = this.callsign === this.lastSpokenCallsign;
+
+            if (isAngleCorrect && isCallsignCorrect) {
+                this.updateResults('call_sign', { correct_response: 1 });
+            } else {
+                this.updateResults('call_sign', { wrong_response: 1 });
+            }
+
+            this.userInput = '';
+            this.activeKeys = [];
+            this.$refs.callsignInput.blur();
+            this.focus = false;
+        },
     }
 };
 </script>

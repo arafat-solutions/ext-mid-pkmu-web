@@ -188,7 +188,7 @@ export default {
           this.config.userId = config.userId;
 
           // Color Tank
-          this.config.subtask.color_tank = colorMultitask.subtask.color_tank
+          this.config.subtask.color_tank = colorMultitask.color_tank
           if (this.config.subtask.color_tank) {
             this.config.color_tank.negative_score = colorMultitask.color_tank.negative_score
             this.config.color_tank.speed = colorMultitask.color_tank.speed
@@ -196,14 +196,14 @@ export default {
           }
 
           // Arithmetic
-          this.config.subtask.arithmetics = colorMultitask.subtask.arithmetics
+          this.config.subtask.arithmetics = colorMultitask.arithmetics
           if (this.config.subtask.arithmetics) {
             this.config.arithmetics.sound = colorMultitask.arithmetics.sound
             this.config.arithmetics.difficulty = colorMultitask.arithmetics.difficulty
           }
 
           // Horizon
-          this.config.subtask.horizon = colorMultitask.subtask.horizon
+          this.config.subtask.horizon = colorMultitask.horizon
           if (this.config.subtask.horizon) {
             this.config.horizon.speed = colorMultitask.horizon.speed
           }

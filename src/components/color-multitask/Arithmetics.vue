@@ -88,11 +88,11 @@ export default {
 			this.audio = null;
 			this.responseQuestion = 0;
 			this.responseTime = 0;
-
+			console.log(this.difficulty, 'difficulty');
 			if (this.difficulty === 'hard') {
 				this.audio = Math.floor(Math.random() * 900) + 100;
 			}
-			if (this.difficulty === 'normal') {
+			if (this.difficulty === 'medium') {
 				this.audio = Math.floor(Math.random() * 90) + 10;
 			}
 			if (this.difficulty === 'easy') {
@@ -204,64 +204,73 @@ export default {
 
 <style scoped>
 .arithmetic {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  margin-top: 10px;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	margin-top: 10px;
 }
+
 .question-container {
-  border: 2px solid black;
-  padding: 20px;
-  margin-bottom: 20px;
-  width: 100%;
-  max-width: 600px;
+	border: 2px solid black;
+	padding: 20px;
+	margin-bottom: 20px;
+	width: 100%;
+	max-width: 600px;
 }
+
 .question {
-  font-size: 20px;
-  margin-bottom: 20px;
-  text-align: center;
+	font-size: 20px;
+	margin-bottom: 20px;
+	text-align: center;
 }
+
 .options {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  list-style: none;
-  padding: 0;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20px;
+	list-style: none;
+	padding: 0;
 }
+
 .option-item {
-  display: flex;
-  justify-content: center;
+	display: flex;
+	justify-content: center;
 }
+
 .option-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 120px;
-  background-color: #f0f0f0;
-  border: 2px solid #333;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-  cursor: default;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 120px;
+	background-color: #f0f0f0;
+	border: 2px solid #333;
+	border-radius: 10px;
+	transition: all 0.3s ease;
+	cursor: default;
 }
+
 .option-answer {
-  background-color: #333;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 18px;
-  margin-bottom: 10px;
+	background-color: #333;
+	color: white;
+	padding: 5px 10px;
+	border-radius: 5px;
+	font-size: 18px;
+	margin-bottom: 10px;
 }
+
 .option-value {
-  font-size: 24px;
-  font-weight: bold;
+	font-size: 24px;
+	font-weight: bold;
 }
+
 .clickable {
-  cursor: pointer;
+	cursor: pointer;
 }
+
 .clickable:hover {
-  background-color: #e0e0e0;
-  transform: scale(1.05);
+	background-color: #e0e0e0;
+	transform: scale(1.05);
 }
 </style>

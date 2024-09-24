@@ -20,7 +20,7 @@
             </svg>
             Profil Saya
           </a>
-          <a href="#" @click.prevent="logout">
+          <a @click="logout">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
@@ -45,8 +45,10 @@ export default {
   },
   methods: {
     logout() {
-      // Implement logout logic here
-      console.log("Logging out...");
+      console.log('logout');
+      localStorage.removeItem('scheduleData');
+      console.log(localStorage.getItem('scheduleData'));
+      this.$router.push('');
     },
     onMounted() {
       this.user = JSON.parse(localStorage.getItem('scheduleData')).userId;

@@ -1,7 +1,11 @@
 <template>
   <div>
     <keep-alive>
-      <component :is="currentComponent" @switch-task="switchTask" />
+      <component 
+        :is="currentComponent" 
+        @switch-task="switchTask"
+        @question-result="handleQuestionResult"
+      />
     </keep-alive>
   </div>
 </template>
@@ -14,12 +18,18 @@ export default {
   name: 'SimulatorParent',
   data() {
     return {
-      currentComponent: 'PlaneSimulator'
+      currentComponent: 'PlaneSimulator',
+      mathTestResults: []
     };
   },
   methods: {
     switchTask() {
       this.currentComponent = this.currentComponent === 'PlaneSimulator' ? 'MathTest' : 'PlaneSimulator';
+    },
+    handleQuestionResult(result) {
+      this.mathTestResults.push(result);
+      console.log('Question result:', result);
+      // You can process or store the results as needed
     }
   },
   components: {
