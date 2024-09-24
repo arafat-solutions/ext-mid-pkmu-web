@@ -1,11 +1,12 @@
 <template>
   <div class="plane-simulation-wrapper">
     <div class="plane-simulation-container">
-      <div class="timer" :style="{ width: '20%' }">{{ formatTime(remainingTime) }}</div>
+      <div class="timer">{{ formatTime(remainingTime) }}</div>
       <div class="instructions">Press 'Space bar' to switch tasks</div>
       <div class="game-content">
         <div class="instruments-left">
-          <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index">
+          <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index"
+            @click="handleInstrumentClick(instrument.key)">
             <svg :ref="'gauge' + index" width="120" height="120" viewBox="0 0 120 120"></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
           </div>
@@ -14,7 +15,8 @@
           <canvas ref="simulationCanvas" width="800" height="500"></canvas>
         </div>
         <div class="instruments-right">
-          <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index">
+          <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index"
+            @click="handleInstrumentClick(instrument.key)">
             <svg :ref="'gauge' + (index + 2)" width="120" height="120" viewBox="0 0 120 120"></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
           </div>
@@ -40,12 +42,12 @@ export default {
       },
       obstacles: [],
       instrumentsLeft: [
-        { key: 'C', value: 0, targetValue: 0 },
-        { key: 'V', value: 0, targetValue: 0 },
+        { key: 'C', value: 0, targetValue: 0, speed: 1 },
+        { key: 'V', value: 0, targetValue: 0, speed: 1 },
       ],
       instrumentsRight: [
-        { key: 'N', value: 0, targetValue: 0 },
-        { key: 'B', value: 0, targetValue: 0 },
+        { key: 'N', value: 0, targetValue: 0, speed: 1 },
+        { key: 'B', value: 0, targetValue: 0, speed: 1 },
       ],
       gaugeUpdateFunctions: [],
       gaugeSpeed: '',
@@ -54,7 +56,7 @@ export default {
       lastCollisionTime: 0,
       gamepadIndex: null,
       duration: 600, // in seconds
-      remainingTime: 10,
+      remainingTime: 600,
       joystickState: {
         x: 0,
         y: 0
@@ -167,35 +169,23 @@ export default {
       }
     },
     handleGamepadInput(gamepad) {
-      const [leftStickX, leftStickY] = gamepad.axes;
-      if (this.controlPerspective === 'observer') {
-        this.joystickState.x = -leftStickX;
-        this.joystickState.y = -leftStickY;
-      } else {
-        this.joystickState.x = leftStickX;
-        this.joystickState.y = leftStickY;
-      }
+      const [leftStickX] = gamepad.axes;
+      this.joystickState.x = this.controlPerspective === 'observer' ? -leftStickX : leftStickX;
     },
     updatePlanePosition() {
       if (this.isPaused) return;
 
-      const ease = 0.1;
-      const movement = 2;
+      const ease = 0.05;
+      const movement = 1.5;
 
       if (Math.abs(this.joystickState.x) > 0.1) {
         this.plane.targetX += this.joystickState.x * movement;
         this.plane.targetX = Math.max(0, Math.min(this.plane.targetX, 740));
       }
 
-      if (Math.abs(this.joystickState.y) > 0.1) {
-        this.plane.y += this.joystickState.y * movement;
-        this.plane.y = Math.max(30, Math.min(this.plane.y, 370));
-      }
-
       this.plane.x += (this.plane.targetX - this.plane.x) * ease;
     },
     onGamepadConnected(event) {
-      console.log('connected', event)
       if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
         return;
       }
@@ -203,7 +193,6 @@ export default {
       this.checkGamepad();
     },
     onGamepadDisconnected(event) {
-      console.log('disconnected', event)
       if (this.gamepadIndex === event.gamepad.index) {
         this.gamepadIndex = null;
       }
@@ -324,7 +313,7 @@ export default {
     updateGauges() {
       [...this.instrumentsLeft, ...this.instrumentsRight].forEach((instrument, index) => {
         if (Math.abs(instrument.value - instrument.targetValue) > 0.1) {
-          instrument.value += (instrument.targetValue - instrument.value) * 0.1;
+          instrument.value += (instrument.targetValue - instrument.value) * 0.1 * instrument.speed;
         } else {
           instrument.value = instrument.targetValue;
         }
@@ -363,10 +352,13 @@ export default {
           break;
       }
     },
+    handleInstrumentClick(key) {
+      this.handleInstrumentKey(key);
+    },
     handleInstrumentKey(key) {
       const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
       if (instrument) {
-        instrument.targetValue = Math.max(instrument.targetValue - 10, 0);
+        instrument.targetValue = 0;
         this.updateGauges();
 
         if (this.gaugeTimers[key]) {
@@ -415,33 +407,72 @@ export default {
           this.obstacles.splice(index, 1);
         }
       }
-    }, generateObstacles() {
+    },
+    generateObstacles() {
       if (this.isPaused) return;
-      const numberOfObstacles = Math.floor(Math.random() * 3) + 1;
-      const minGap = 100;
-      const maxWidth = 150;
-      const availableWidth = 800 - (numberOfObstacles * minGap);
 
-      let obstacleWidths = [];
+      // Check if there's enough vertical space for new obstacles
+      const lastObstacleY = Math.max(...this.obstacles.map(o => o.y), 0);
+      if (500 - lastObstacleY < 100) return; // Ensure at least 100px vertical gap
+
+      const numberOfObstacles = Math.floor(Math.random() * 2) + 3; // 3 to 4 obstacles
+      const minWidth = 40;
+      const maxWidth = 120;
+      const minGap = 60;
+      const canvasWidth = 800;
+
+      let obstacleData = [];
+      let totalWidth = 0;
+
+      // Generate initial set of obstacles
       for (let i = 0; i < numberOfObstacles; i++) {
-        const maxPossibleWidth = Math.min(maxWidth, availableWidth / numberOfObstacles);
-        obstacleWidths.push(Math.floor(Math.random() * (maxPossibleWidth - 20)) + 20);
+        const width = Math.floor(Math.random() * (maxWidth - minWidth)) + minWidth;
+        obstacleData.push({ width, x: 0 });
+        totalWidth += width;
       }
 
-      let currentX = 0;
-      for (let i = 0; i < numberOfObstacles; i++) {
-        const width = obstacleWidths[i];
-        const gap = (800 - obstacleWidths.reduce((a, b) => a + b, 0)) / (numberOfObstacles + 1);
-        currentX += gap;
-        this.obstacles.push({
-          id: Date.now() + i,
-          y: 500,
-          x: currentX,
-          width: width,
-          height: 10,
-        });
-        currentX += width;
+      // Adjust widths if total exceeds canvas width
+      if (totalWidth > canvasWidth - (numberOfObstacles - 1) * minGap) {
+        const scale = (canvasWidth - (numberOfObstacles - 1) * minGap) / totalWidth;
+        obstacleData = obstacleData.map(o => ({ ...o, width: Math.floor(o.width * scale) }));
+        totalWidth = obstacleData.reduce((sum, o) => sum + o.width, 0);
       }
+
+      // Distribute obstacles across canvas width
+      let availableSpace = canvasWidth - totalWidth;
+
+      // Randomly decide if we want an obstacle at the leftmost edge
+      const startAtZero = Math.random() < 0.3; // 30% chance to start at zero
+
+      for (let i = 0; i < numberOfObstacles; i++) {
+        if (i === 0 && startAtZero) {
+          obstacleData[i].x = 0;
+        } else if (i === 0) {
+          // For the first obstacle, if not starting at zero, position it randomly
+          obstacleData[i].x = Math.floor(Math.random() * (availableSpace / 2));
+        } else {
+          // For subsequent obstacles, ensure there's at least minGap space from the previous obstacle
+          const minX = obstacleData[i - 1].x + obstacleData[i - 1].width + minGap;
+          const maxX = canvasWidth - obstacleData[i].width;
+          if (minX < maxX) {
+            obstacleData[i].x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+          } else {
+            // If we can't fit this obstacle, adjust its width
+            obstacleData[i].width = canvasWidth - minX;
+            obstacleData[i].x = minX;
+          }
+        }
+        availableSpace -= obstacleData[i].x - (i > 0 ? obstacleData[i - 1].x + obstacleData[i - 1].width : 0);
+      }
+
+      // Create obstacle objects
+      this.obstacles.push(...obstacleData.map((o, index) => ({
+        id: Date.now() + index,
+        y: 500,
+        x: o.x,
+        width: o.width,
+        height: 10,
+      })));
     },
     // Updated randomGaugeIncrease function
     randomGaugeIncrease() {

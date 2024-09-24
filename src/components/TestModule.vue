@@ -14,29 +14,34 @@
       </div>
 
       <div class="w-1/3 bg-white p-6 h-fit shadow-lg rounded-xl">
-        <div class=" bg-[#E2DBFA] px-4 py-4 rounded-xl border-2 border-[#6E4AE4]">
-          <div class="flex items-center mb-4">
-            <span class="text-[#6E4AE4] mr-2 text-2xl">🔆</span>
-            <h2 class="text-lg font-bold">Latihan Test</h2>
+        <router-link class="block" aria-disabled="true">
+          <div class="bg-[#E2DBFA] px-4 py-4 rounded-xl border-2 border-[#6E4AE4]">
+            <div class="flex items-center mb-4">
+              <span class="text-[#6E4AE4] mr-2 text-2xl">🔆</span>
+              <h2 class="text-lg font-bold">Latihan Test</h2>
+            </div>
+            <p class="mb-4 text-[#6E4AE4] font-extralight">Kamu bisa mencoba test terlebih dahulu untuk latihan.</p>
+            <div class="bg-[#E2DBFA] border-2 border-[#6E4AE4] text-[#6E4AE4] px-4 py-2 rounded-full w-64">
+              Start Test
+            </div>
           </div>
-          <p class="mb-4 text-[#6E4AE4] font-extralight">Kamu bisa mencoba test terlebih dahulu untuk latihan.</p>
-          <div class="bg-[#E2DBFA] border-2 border-[#6E4AE4] text-[#6E4AE4] px-4 py-2 rounded-full w-64">
-            <router-link class="test-button" aria-disabled="true">Start Test</router-link>
-          </div>
-        </div>
+        </router-link>
+
 
         <!--  -->
 
-        <div class=" bg-[#ade5bd] px-4 py-4 rounded-xl border-2 border-[#4ae46e] mt-10">
-          <div class="flex items-center mb-4">
-            <span class="text-[#4ae46e] mr-2 text-2xl">🔆</span>
-            <h2 class="text-lg font-bold">Mulai Test</h2>
+        <router-link :to="this.url" class="block">
+          <div class="bg-[#ade5bd] px-4 py-4 rounded-xl border-2 border-[#4ae46e] mt-10">
+            <div class="flex items-center mb-4">
+              <span class="text-[#4ae46e] mr-2 text-2xl">🔆</span>
+              <h2 class="text-lg font-bold">Mulai Test</h2>
+            </div>
+            <p class="mb-4 text-[#207c43] font-extralight">Mulai Test Jika sudah siap.</p>
+            <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full w-64">
+              Start Test
+            </div>
           </div>
-          <p class="mb-4 text-[#207c43] font-extralight">Mulai Test Jika sudah siap.</p>
-          <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full w-64">
-            <router-link :to="this.url" class="test-button">Start Test</router-link>
-          </div>
-        </div>
+        </router-link>
       </div>
     </div>
   </div>
