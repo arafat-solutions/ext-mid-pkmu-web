@@ -171,8 +171,8 @@ export default {
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').config
-            // const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
-            const { alert_lights, callsign, color_tank, horizon, id, subtask } = config
+            const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
+            // const { alert_lights, callsign, color_tank, horizon, id, subtask } = config
 
             const newConfig = {
                 alert_lights: {
@@ -199,7 +199,7 @@ export default {
                 },
             }
             this.configBe = newConfig
-            this.testTime = 10000000 * 60
+            this.testTime = duration * 60
             this.testId = id
             this.moduleId = scheduleData.moduleId
             this.sessionId = scheduleData.sessionId

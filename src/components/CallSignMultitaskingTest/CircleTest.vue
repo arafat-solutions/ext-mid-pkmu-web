@@ -13,15 +13,15 @@ const COLORS = {
 };
 
 const SPEED_INTERVALS = {
-    slow: 500,
-    medium: 400,
-    fast: 300
+    slow: 5000,
+    medium: 4000,
+    fast: 3000
 };
 
 const FREQUENCY_INTERVALS = {
-    seldom: 500,
-    medium: 400,
-    often: 300
+    seldom: 5000,
+    medium: 4000,
+    often: 3000
 };
 
 export default {
@@ -48,10 +48,12 @@ export default {
     mounted() {
         this.initializeTest();
         window.addEventListener('keydown', this.handleKeyPress);
+        this.$refs.circleCanvas.addEventListener('click', this.handleClick);
     },
     beforeUnmount() {
         this.stopChangingLight();
         window.removeEventListener('keydown', this.handleKeyPress);
+        this.$refs.circleCanvas.removeEventListener('click', this.handleClick);
     },
     methods: {
         initializeTest() {
@@ -62,6 +64,10 @@ export default {
             if (this.alertLightsData.play) {
                 this.startChangingLight();
             }
+        },
+        restartChangingLight() {
+            clearInterval(this.timerInterval);
+            this.startChangingLight();
         },
         calculateInterval() {
             const { speed, frequency } = this.alertLightsData;
@@ -152,29 +158,56 @@ export default {
             clearInterval(this.timerInterval);
         },
         handleKeyPress(event) {
+            console.log(event)
             const key = event.key.toLowerCase();
-            const letters = ['t', 'y', 'u', 'i']
+            const letters = ['t', 'y', 'u', 'i'];
 
             if (letters.includes(key)) {
-                const index = letters.indexOf(event.key.toLowerCase());
-                const fillColor = this.circleConfig[index].fillColor;
+                const index = letters.indexOf(key);
+                this.handleResponse(index);
+            }
+        },
+        handleClick(event) {
+            console.log(event)
+            const rect = this.$refs.circleCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
 
-                if (index !== -1 && index === this.activeIndex) {
-                    if (fillColor === COLORS.RED) {
-                        this.updateResults('alert_lights', { correct_response: 1 });
-                        // tracking the time just when user is right
-                        if (this.redStartTime !== null) {
-                            const responseTime = performance.now() - this.redStartTime
-                            this.correctResponseTimes.push(responseTime)
-                            this.updateAverageResponseTime();
-                        }
-                    } else if (fillColor === COLORS.YELLOW) {
-                        this.updateResults('alert_lights', { wrong_response: 1 });
+            for (let i = 0; i < this.circleConfig.length; i++) {
+                const circle = this.circleConfig[i];
+                const distance = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
+                if (distance <= circle.radius) {
+                    this.handleResponse(i);
+                    break;
+                }
+            }
+        },
+        handleResponse(index) {
+            const fillColor = this.circleConfig[index].fillColor;
+
+            if (index === this.activeIndex) {
+                if (fillColor === COLORS.RED) {
+                    this.updateResults('alert_lights', { correct_response: 1 });
+                    if (this.redStartTime !== null) {
+                        const responseTime = performance.now() - this.redStartTime;
+                        this.correctResponseTimes.push(responseTime);
+                        this.updateAverageResponseTime();
                     }
-                } else {
-                    if (this.activeIndex !== -1) {
-                        this.updateResults('alert_lights', { wrong_response: 1 });
-                    }
+                } else if (fillColor === COLORS.YELLOW) {
+                    this.updateResults('alert_lights', { wrong_response: 1 });
+                }
+
+                // Turn off the light immediately
+                this.circleConfig[index].fillColor = COLORS.DEFAULT;
+                this.activeIndex = -1;
+                this.drawVisual();
+
+                // Reset the alternation and restart the timer
+                this.alternateChange = false;
+                this.restartChangingLight();
+            } else {
+                if (this.activeIndex !== -1) {
+                    this.updateResults('alert_lights', { wrong_response: 1 });
                 }
             }
         },
