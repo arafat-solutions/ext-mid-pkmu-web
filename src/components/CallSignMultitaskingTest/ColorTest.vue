@@ -84,9 +84,9 @@ export default {
         },
         initConfig() {
             const DECREASE_INTERVAL = {
-                slow: 8000,
-                medium: 8000,
-                fast: 8000
+                slow: 30000,
+                medium: 25000,
+                fast: 20000
             }
             const { descend_speed, speed } = this.colorTankData;
             this.currentDescendSpeed = descend_speed || 'medium'; // Set default if undefined
@@ -255,50 +255,63 @@ export default {
                 this.colorDecreaseHistory.push(color);
                 return color;
             } else {
-                // Third selection must be the same as the first
+                // Third selection must be the same as two steps ago
                 const color = this.colorDecreaseHistory[0];
                 this.colorDecreaseHistory.push(color);
                 this.colorDecreaseHistory.shift(); // Remove the oldest color
                 return color;
             }
         },
-
         getRandomColor() {
-            const availableColors = this.availableColors.filter(color =>
-                !this.colorDecreaseHistory.includes(color) ||
-                this.colorDecreaseHistory.length === 0
+            const unusedColors = this.availableColors.filter(color =>
+                !this.colorDecreaseHistory.includes(color)
             );
-            return availableColors[Math.floor(Math.random() * availableColors.length)];
+            return unusedColors.length > 0
+                ? unusedColors[Math.floor(Math.random() * unusedColors.length)]
+                : this.availableColors[Math.floor(Math.random() * this.availableColors.length)];
         },
         startAnimationInterval() {
-            let colorIndex = 0;
-            let tankIndex = 0;
-
-            this.animationInterval = setInterval(() => {
+            const tryDecreaseColor = () => {
                 if (this.finishedDecreasing.flat().every(Boolean)) {
                     clearInterval(this.animationInterval);
                     return;
                 }
 
-                const color = this.availableColors[colorIndex];
-                const tank = this.rectanglesColorize[tankIndex];
-                const colorIndexInTank = tank.fillColor.indexOf(color);
+                const colorToDecrease = this.chooseColorToDecrease();
+                let availableTanks = this.rectanglesColorize.map((_, index) => index);
+                this.shuffleArray(availableTanks);
 
-                if (colorIndexInTank !== -1 &&
-                    !this.colorsInProgress[tankIndex][colorIndexInTank] &&
-                    !this.finishedDecreasing[tankIndex][colorIndexInTank] &&
-                    this.currentHeights[tankIndex][colorIndexInTank] > this.minHeight) {
+                let found = false;
+                for (const tankIndex of availableTanks) {
+                    const colorIndex = this.rectanglesColorize[tankIndex].fillColor.indexOf(colorToDecrease);
+                    if (colorIndex !== -1 &&
+                        !this.colorsInProgress[tankIndex][colorIndex] &&
+                        !this.finishedDecreasing[tankIndex][colorIndex] &&
+                        this.currentHeights[tankIndex][colorIndex] > this.minHeight) {
 
-                    this.updateResults('color_tank', { total_occurrences: 1 });
-                    this.startDecreaseAnimationForColor(tankIndex, colorIndexInTank);
+                        found = true;
+                        this.updateResults('color_tank', { total_occurrences: 1 });
+                        this.startDecreaseAnimationForColor(tankIndex, colorIndex);
+                        break;
+                    }
                 }
 
-                // Move to next color and tank
-                colorIndex = (colorIndex + 1) % this.availableColors.length;
-                if (colorIndex === 0) {
-                    tankIndex = (tankIndex + 1) % this.rectanglesColorize.length;
+                if (!found) {
+                    this.colorDecreaseHistory.pop();
+                    // Immediately try again if no suitable color/tank was found
+                    setTimeout(tryDecreaseColor, 0);
                 }
-            }, this.decreaseInterval);
+            };
+
+            this.animationInterval = setInterval(tryDecreaseColor, this.decreaseInterval);
+            // Start the first decrease immediately
+            tryDecreaseColor();
+        },
+        shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
         },
         restartDecreaseAnimation() {
             if (!this.finishedDecreasing.flat().every(Boolean)) {
