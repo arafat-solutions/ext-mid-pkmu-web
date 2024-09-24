@@ -43,6 +43,7 @@ export default {
 			keysPressed: {},
 			colors: ['yellow', 'blue', 'red', 'green'],
 			lowerTanks: [],
+      tankEmpty:{},
 			lineTankCanvasWidth: 320,
 			lineTankCanvasHeight: 250,
 			lines: [
@@ -299,6 +300,11 @@ export default {
 				tank['height'] = this.decreaseHeight(tank['height']);
 			}
 
+      this.tankEmpty = {
+        'index' : tankIndex,
+        'item' : tankItem
+      }
+
 			if (parseFloat(tank['height'].replace('%', '')) <= parseFloat(tank['minimum_height'].replace('%', ''))) {
 				tank['status'] = 'stop';
 				clearInterval(this.intervalStartEmptyTank);
@@ -354,6 +360,11 @@ export default {
 			}
 
 			tank['status'] = 'run';
+
+      if (this.tankEmpty.index === tankIndex && this.tankEmpty.item === tankItem){
+        clearInterval(this.intervalStartEmptyTank);
+				this.startEmptyTank();
+      }
 		},
 		checkEmptyTank() {
 			for (let i = 0; i < this.lowerTanks.length; i++) {
