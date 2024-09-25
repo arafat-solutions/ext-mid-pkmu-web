@@ -459,13 +459,19 @@ function handleCancel() {
 
 // for gamepad
 function onGamepadConnected(event) {
-console.log('connected', event)
+    console.log('connected', event)
+    if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+        return;
+    }
     gamepadIndex.value = event.gamepad.index;
     checkGamepad();
 }
 
 function onGamepadDisconnected(event) {
-console.log('disconnected', event)
+    console.log('disconnected', event)
+    if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+        return;
+      }
     if (gamepadIndex.value === event.gamepad.index) {
         gamepadIndex.value = null;
     }
