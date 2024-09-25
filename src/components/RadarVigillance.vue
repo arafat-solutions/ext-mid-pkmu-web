@@ -23,10 +23,6 @@
             <strong> {{ config.targetShape }} </strong>
             muncul di radar.
           </p>
-          <p class="m-3">
-
-            <strong> {{ this.result }}/ {{ this.falsePositives }}</strong> bentuk terdeteksi.
-          </p>
         </div>
       </div>
     </div>
