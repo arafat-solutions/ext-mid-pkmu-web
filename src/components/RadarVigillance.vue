@@ -23,6 +23,13 @@
             <strong> {{ config.targetShape }} </strong>
             muncul di radar.
           </p>
+          <p class="m-3">
+           
+            <strong> {{ `Object Target Muncul: ${detectedObject}` }} </strong>
+            <strong> {{ `User Pressed Ok: ${userCorrectClickCount}` }} </strong>
+            <strong> {{ `User Pressed Not Ok: ${userClickCount}` }} </strong>
+            <strong> {{ `User Pressed Spam: ${falsePositives}` }} </strong>
+          </p>
         </div>
       </div>
     </div>
