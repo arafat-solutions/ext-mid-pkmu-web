@@ -199,7 +199,7 @@ function draw() {
 }
 
 function handleMouseMove(event) {
-    const rect = canvas.value.getBoundingClientRect();
+    const rect = canvas.value?.getBoundingClientRect();
     gameObjects.value.aim.x = event.clientX - rect.left;
     gameObjects.value.aim.y = event.clientY - rect.top;
 }
@@ -489,8 +489,7 @@ function checkGamepad() {
 
 function handleGamepadInput(gamepad) {
     const [leftStickX, leftStickY] = gamepad.axes;
-
-    const canvasRect = canvas.value.getBoundingClientRect();
+    const canvasRect = canvas.value?.getBoundingClientRect();
     const canvasWidth = canvasRect.width;
     const canvasHeight = canvasRect.height;
 
