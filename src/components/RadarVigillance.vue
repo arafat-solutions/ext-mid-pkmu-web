@@ -23,13 +23,7 @@
             <strong> {{ config.targetShape }} </strong>
             muncul di radar.
           </p>
-          <p class="m-3">
-           
-            <strong> {{ `Object Target Muncul: ${detectedObject}` }} </strong>
-            <strong> {{ `User Pressed Ok: ${userCorrectClickCount}` }} </strong>
-            <strong> {{ `User Pressed Not Ok: ${userClickCount}` }} </strong>
-            <strong> {{ `User Pressed Spam: ${falsePositives}` }} </strong>
-          </p>
+          <p class="feedback-text" :style="{ color: feedbackColor }">{{ feedbackText }}</p>
         </div>
       </div>
     </div>
@@ -80,7 +74,16 @@ export default {
       gamepad: null,
       gamepadPolling: null,
       isTargetVisible: false,  // New property to track if target is currently visible
-      falsePositives: 0,       //
+      falsePositives: 0,
+      triggerState: false,
+      lastTriggerReleaseTime: 0,
+      minTimeBetweenPresses: 100, // milliseconds
+      missedTargets: 0,
+      feedbackText: "",
+      feedbackColor: "",
+      userInputs: [],
+      currentTargetAppearanceTime: null,
+      isTargetCurrentlyVisible: false,
     };
   },
   mounted() {
@@ -138,28 +141,84 @@ export default {
         const gamepad = navigator.getGamepads()[this.gamepad.index];
 
         if (gamepad) {
-          // Check gamepad.buttons[0] for the "Trigger" button
+          const triggerPressed = gamepad.buttons[0].pressed;
+          const currentTime = Date.now();
 
-          if (gamepad.buttons[0].pressed) {
-            console.log("Trigger button pressed on gamepad:", gamepad);
-            this.handleTriggerPress();
+          // Detect button press
+          if (triggerPressed && !this.triggerState) {
+            if (currentTime - this.lastTriggerReleaseTime > this.minTimeBetweenPresses) {
+              console.log("Trigger button pressed on gamepad:", gamepad);
+              this.handleTriggerPress();
+            }
+            this.triggerState = true;
+          }
+          // Detect button release
+          else if (!triggerPressed && this.triggerState) {
+            this.triggerState = false;
+            this.lastTriggerReleaseTime = currentTime;
           }
         }
       }
     },
+    detectTargetShape(type) {
+      if (this.config.targetShape === type && !this.isTargetCurrentlyVisible) {
+        this.detectedObject++;
+        this.currentTargetAppearanceTime = Date.now();
+        this.isTargetCurrentlyVisible = true;
+        
+        // Set a timeout to check if the user missed the target
+        setTimeout(() => {
+          if (this.isTargetCurrentlyVisible) {
+            this.handleMissedTarget();
+          }
+        }, 2000);  // Adjust this value based on how long you want to give the user to respond
+      }
+    },
+
+    handleMissedTarget() {
+      if (this.isTargetCurrentlyVisible) {
+        this.isTargetCurrentlyVisible = false;
+        this.missedTargets++;
+        this.feedbackText = "Missed object";
+        this.feedbackColor = "red";
+        setTimeout(() => this.clearFeedback(), 1000);
+      }
+    },
+
     handleTriggerPress() {
       if (this.isCanClick) {
-        if (this.isTargetVisible) {
+        const currentTime = Date.now();
+        if (this.isTargetCurrentlyVisible) {
           // Correct trigger press
           this.userClickCount++;
           this.userCorrectClickCount++;
-          this.responseTimes.push(Date.now());
-          this.calculateResponseTime();
+          const responseTime = currentTime - this.currentTargetAppearanceTime;
+          this.responseTimes.push(responseTime);
+          this.feedbackText = `Correct! ${responseTime} ms`;
+          this.feedbackColor = "green";
+          this.userInputs.push({
+            type: 'correct',
+            responseTime: responseTime,
+            timestamp: currentTime
+          });
+          this.isTargetCurrentlyVisible = false;
         } else {
           // Incorrect trigger press
           this.falsePositives++;
+          this.feedbackText = "Wrong input";
+          this.feedbackColor = "red";
+          this.userInputs.push({
+            type: 'incorrect',
+            timestamp: currentTime
+          });
         }
+        setTimeout(() => this.clearFeedback(), 1000);
       }
+    },
+
+    clearFeedback() {
+      this.feedbackText = "";
+      this.feedbackColor = "";
     },
     pause() {
       this.stopRadar();
@@ -324,6 +383,21 @@ export default {
       }
 
       this.removeUndetectedObjects();
+      
+      // Check if target is no longer visible
+      if (this.isTargetCurrentlyVisible && !this.isTargetStillVisible()) {
+        this.handleMissedTarget();
+      }
+    },
+    isTargetStillVisible() {
+      return this.objects.some(obj => 
+        obj.type === this.config.targetShape && 
+        this.isInScannedArea(
+          Math.atan2(obj.y - this.height / 2, obj.x - this.width / 2),
+          Math.hypot(obj.x - this.width / 2, obj.y - this.height / 2),
+          Math.min(this.width, this.height) / 2
+        )
+      );
     },
     stopRadar() {
       clearInterval(this.radarInterval);
@@ -453,18 +527,6 @@ export default {
         return 11;
       }
     },
-    detectTargetShape(type) {
-      if (this.config.targetShape === type) {
-        this.detectedObject++;
-        this.suitableObjectTimes.push(Date.now());
-        this.isTargetVisible = true;  // Set flag when target shape appears
-
-        // Set a timeout to reset the flag after a short duration (e.g., 2 seconds)
-        setTimeout(() => {
-          this.isTargetVisible = false;
-        }, 2000);  // Adjust this value based on how long you want the shape to be considered "visible"
-      }
-    },
     drawTriangle(ctx, x, y, size) {
       ctx.beginPath();
       ctx.moveTo(x, y - size / 2);
@@ -575,7 +637,7 @@ export default {
     calculatedResult() {
       this.result.total_object = this.detectedObject;
       this.result.corrected_object = this.userCorrectClickCount;
-      this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
+      this.result.missed_object = this.missedTargets;
       this.result.false_positives = this.falsePositives;
 
       if (this.userCorrectClickCount > 0) {
@@ -585,7 +647,8 @@ export default {
         this.result.avg_response_time = 0;
       }
       console.log(this.result, 'submit result');
-      this.submitResult()
+      console.log(this.userInputs, 'user inputs for graphical report');
+      // this.submitResult()
     },
     async submitResult() {
       try {
