@@ -45,6 +45,7 @@ export default {
       height: 500,
       scannerAngle: 0,
       detectedObject: 0,
+      totalAllShapeObject: 0,
       userClickCount: 0,
       userCorrectClickCount: 0,
       objects: [],
@@ -55,6 +56,7 @@ export default {
       objectInterval: null,
       countdownInterval: null,
       result: {
+        total_all_shape_object: 0,
         total_object: 0,
         corrected_object: 0,
         missed_object: 0,
@@ -172,7 +174,7 @@ export default {
         obj.detected = true;
         obj.appearanceTime = Date.now();
         this.currentVisibleObjects.push(obj);
-
+        this.totalAllShapeObject++;
         if (obj.type === this.config.targetShape) {
           this.detectedObject++;
           // Set a timeout to check if the user missed the target
@@ -710,6 +712,7 @@ export default {
       }, 1000);
     },
     calculatedResult() {
+      this.result.total_all_shape_object = this.totalAllShapeObject;
       this.result.total_object = this.detectedObject;
       this.result.corrected_object = this.userCorrectClickCount;
       this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
