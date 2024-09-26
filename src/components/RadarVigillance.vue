@@ -82,8 +82,10 @@ export default {
       feedbackText: "",
       feedbackColor: "",
       userInputs: [],
-      currentTargetAppearanceTime: null,
-      isTargetCurrentlyVisible: false,
+      currentVisibleObjects: [], // Track all currently visible objects
+      lastShapeAppearanceTime: null,
+      objectPool: [],
+      lastUpdateTime: 0,
     };
   },
   mounted() {
@@ -109,6 +111,11 @@ export default {
     window.removeEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
     this.stopGamepadPolling();
     window.removeEventListener("keydown", this.handleKeydown);
+
+    // Existing code...
+    clearInterval(this.radarInterval);
+    clearInterval(this.objectInterval);
+    clearInterval(this.countdownInterval);
   },
   methods: {
     handleGamepadConnected(event) {
@@ -160,59 +167,100 @@ export default {
         }
       }
     },
-    detectTargetShape(type) {
-      if (this.config.targetShape === type && !this.isTargetCurrentlyVisible) {
-        this.detectedObject++;
-        this.currentTargetAppearanceTime = Date.now();
-        this.isTargetCurrentlyVisible = true;
-        
-        // Set a timeout to check if the user missed the target
-        setTimeout(() => {
-          if (this.isTargetCurrentlyVisible) {
-            this.handleMissedTarget();
-          }
-        }, 2000);  // Adjust this value based on how long you want to give the user to respond
+    detectShape(obj) {
+      if (!obj.detected) {
+        obj.detected = true;
+        obj.appearanceTime = Date.now();
+        this.currentVisibleObjects.push(obj);
+
+        if (obj.type === this.config.targetShape) {
+          this.detectedObject++;
+          // Set a timeout to check if the user missed the target
+          obj.missedTimeout = setTimeout(() => {
+            if (this.currentVisibleObjects.includes(obj)) {
+              this.handleMissedTarget(obj);
+            }
+          }, 2000);  // Adjust this value based on how long you want to give the user to respond
+        }
       }
     },
 
-    handleMissedTarget() {
-      if (this.isTargetCurrentlyVisible) {
-        this.isTargetCurrentlyVisible = false;
-        this.missedTargets++;
-        this.feedbackText = "Missed object";
-        this.feedbackColor = "red";
-        setTimeout(() => this.clearFeedback(), 1000);
+    handleMissedTarget(obj) {
+      const index = this.currentVisibleObjects.indexOf(obj);
+      if (index > -1) {
+        this.currentVisibleObjects.splice(index, 1);
+        if (obj.type === this.config.targetShape) {
+          this.missedTargets++;
+          this.feedbackText = "Missed target";
+          this.feedbackColor = "red";
+
+          // Add to userInputs for graph data
+          this.userInputs.push({
+            type: 'missed',
+            responseTime: null,
+            timestamp: Date.now(),
+            shapeType: obj.type
+          });
+
+          console.log(`Missed target. Total missed: ${this.missedTargets}`); // Debugging line
+
+          this.$nextTick(() => {
+            setTimeout(() => this.clearFeedback(), 1000);
+          });
+        }
       }
     },
 
     handleTriggerPress() {
       if (this.isCanClick) {
         const currentTime = Date.now();
-        if (this.isTargetCurrentlyVisible) {
+        const targetObject = this.currentVisibleObjects.find(obj => obj.type === this.config.targetShape);
+
+        if (targetObject) {
           // Correct trigger press
           this.userClickCount++;
           this.userCorrectClickCount++;
-          const responseTime = currentTime - this.currentTargetAppearanceTime;
+          const responseTime = currentTime - targetObject.appearanceTime;
           this.responseTimes.push(responseTime);
           this.feedbackText = `Correct! ${responseTime} ms`;
           this.feedbackColor = "green";
           this.userInputs.push({
             type: 'correct',
             responseTime: responseTime,
-            timestamp: currentTime
+            timestamp: currentTime,
+            shapeType: targetObject.type
           });
-          this.isTargetCurrentlyVisible = false;
+          const index = this.currentVisibleObjects.indexOf(targetObject);
+          if (index > -1) {
+            this.currentVisibleObjects.splice(index, 1);
+          }
+          // Clear the missed target timeout
+          if (targetObject.missedTimeout) {
+            clearTimeout(targetObject.missedTimeout);
+          }
         } else {
           // Incorrect trigger press
           this.falsePositives++;
-          this.feedbackText = "Wrong input";
+          let responseTime = null;
+          let shapeType = null;
+          if (this.currentVisibleObjects.length > 0) {
+            const lastVisibleObject = this.currentVisibleObjects[this.currentVisibleObjects.length - 1];
+            responseTime = currentTime - lastVisibleObject.appearanceTime;
+            shapeType = lastVisibleObject.type;
+          }
+          this.feedbackText = responseTime ? `Wrong input, ${responseTime} ms` : "Wrong input";
           this.feedbackColor = "red";
           this.userInputs.push({
             type: 'incorrect',
-            timestamp: currentTime
+            responseTime: responseTime,
+            timestamp: currentTime,
+            shapeType: shapeType
           });
         }
-        setTimeout(() => this.clearFeedback(), 1000);
+        // Ensure feedback is always displayed
+        this.$nextTick(() => {
+          setTimeout(() => this.clearFeedback(), 1000);
+        });
       }
     },
 
@@ -266,11 +314,42 @@ export default {
         console.warn('No schedule data found in localStorage.');
       }
     },
-    initRadar() {
-      this.radarInterval = setInterval(this.updateRadar, 100);
-      this.objectInterval = setInterval(this.addShape, this.setFrequency());
 
-      this.isCanClick = true
+    initRadar() {
+      this.isCanClick = true;
+      this.lastUpdateTime = 0;
+      this.animationFrameId = requestAnimationFrame(this.updateRadar);
+      this.objectInterval = setInterval(this.addShape, this.setFrequency());
+    },
+
+
+    updateRadar(currentTime) {
+      if (!this.lastUpdateTime) {
+        this.lastUpdateTime = currentTime;
+      }
+
+      const deltaTime = currentTime - this.lastUpdateTime;
+
+      if (deltaTime >= 16) { // Aim for 60 FPS (1000ms / 60 ≈ 16ms)
+        this.drawRadar();
+
+        const speed = this.setSpeed() * deltaTime / 16; // Adjust speed based on time passed
+        if (this.config.direction === 'clockwise') {
+          this.scannerAngle += speed;
+        } else {
+          this.scannerAngle -= speed;
+        }
+
+        // Normalize the angle
+        this.scannerAngle = (this.scannerAngle + 2 * Math.PI) % (2 * Math.PI);
+
+        this.removeUndetectedObjects();
+        this.updateVisibleObjects();
+
+        this.lastUpdateTime = currentTime;
+      }
+
+      this.animationFrameId = requestAnimationFrame(this.updateRadar);
     },
     drawRadar() {
       const canvas = this.$refs.radarCanvas;
@@ -280,12 +359,13 @@ export default {
       const ctx = canvas.getContext("2d");
       const radius = Math.min(this.width, this.height) / 2;
 
+      // Clear the canvas
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, this.width, this.height);
       ctx.strokeStyle = "green";
       ctx.lineWidth = 2;
 
-      // Draw Radar
+      // Draw Radar Circle
       ctx.beginPath();
       ctx.arc(this.width / 2, this.height / 2, radius, 0, 2 * Math.PI);
       ctx.stroke();
@@ -305,107 +385,83 @@ export default {
         ctx.stroke();
       }
 
-      // Draw Object
+      // Draw and Track Objects
       let objectsInScanner = 0;
+      this.currentVisibleObjects = []; // Reset visible objects
+
       for (let obj of this.objects) {
         const distance = Math.hypot(obj.x - this.width / 2, obj.y - this.height / 2);
         const angle = Math.atan2(obj.y - this.height / 2, obj.x - this.width / 2);
 
         // Draw objects within scanned area only
         if (this.isInScannedArea(angle, distance, radius)) {
-          if (objectsInScanner >= this.setDensity) {
+          if (objectsInScanner >= this.setDensity()) {
             break;
           }
 
           ctx.beginPath();
 
-          // Set Size Objcet
-          if (obj.type === "circle" || obj.type === "square") {
+          // Set Size Object
+          if (obj.type === "circle") {
             ctx.arc(obj.x, obj.y, this.setShapeSize(), 0, 2 * Math.PI);
-          }
-
-          if (obj.type === "triangle") {
+          } else if (obj.type === "square") {
+            const size = this.setShapeSize('square');
+            ctx.rect(obj.x - size / 2, obj.y - size / 2, size, size);
+          } else if (obj.type === "triangle") {
             this.drawTriangle(ctx, obj.x, obj.y, this.setShapeSize('triangle'));
           }
 
           //Set Opacity Object
           ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
+          ctx.fill();
 
-          if (obj.type === "circle") {
-            ctx.fill();
-
-            //Check Detected Object
-            if (!obj.detected) {
-              obj.detected = true;
-              this.detectTargetShape("circle")
+          // Detect and track object
+          if (!obj.detected) {
+            obj.detected = true;
+            obj.appearanceTime = Date.now();
+            if (obj.type === this.config.targetShape) {
+              this.detectedObject++;
+              // Set a timeout to check if the user missed the target
+              setTimeout(() => {
+                if (this.currentVisibleObjects.includes(obj)) {
+                  this.handleMissedTarget(obj);
+                }
+              }, 2000); // Adjust this value based on how long you want to give the user to respond
             }
-            obj.sweepCount = 0;
-          } else if (obj.type === "square") {
-            ctx.fillRect(obj.x - 5, obj.y - 5, this.setShapeSize('square'), this.setShapeSize('square'));
-
-            //Check Detected Object
-            if (!obj.detected) {
-              obj.detected = true;
-              this.detectTargetShape("square")
-            }
-
-            obj.sweepCount = 0;
-          } else if (obj.type === "triangle") {
-            ctx.fill();
-
-            //Check Detected Object
-            if (!obj.detected) {
-              obj.detected = true;
-              this.detectTargetShape("triangle")
-            }
-            obj.sweepCount = 0;
           }
 
+          this.currentVisibleObjects.push(obj);
           objectsInScanner++;
         } else {
           obj.sweepCount++;
         }
       }
+
+      // Update isTargetCurrentlyVisible based on currentVisibleObjects
+      this.isTargetCurrentlyVisible = this.currentVisibleObjects.some(obj => obj.type === this.config.targetShape);
+
+      // Remove objects that are no longer visible
+      this.objects = this.objects.filter(obj => {
+        if (obj.sweepCount > 5) { // Adjust this value as needed
+          return false;
+        }
+        return true;
+      });
     },
-    updateRadar() {
-      this.drawRadar();
 
-      if (this.config.direction === 'clockwise') {
-        this.scannerAngle += this.setSpeed();
-      } else {
-        this.scannerAngle -= this.setSpeed();
-      }
-
-      if (this.scannerAngle >= 2 * Math.PI) {
-        this.scannerAngle -= 2 * Math.PI;
-      } else if (this.scannerAngle < 0) {
-        this.scannerAngle += 2 * Math.PI;
-      }
-
-      this.removeUndetectedObjects();
-      
-      // Check if target is no longer visible
-      if (this.isTargetCurrentlyVisible && !this.isTargetStillVisible()) {
-        this.handleMissedTarget();
-      }
-    },
-    isTargetStillVisible() {
-      return this.objects.some(obj => 
-        obj.type === this.config.targetShape && 
+    updateVisibleObjects() {
+      const radius = Math.min(this.width, this.height) / 2;
+      this.currentVisibleObjects = this.currentVisibleObjects.filter(obj =>
         this.isInScannedArea(
           Math.atan2(obj.y - this.height / 2, obj.x - this.width / 2),
           Math.hypot(obj.x - this.width / 2, obj.y - this.height / 2),
-          Math.min(this.width, this.height) / 2
+          radius
         )
       );
     },
     stopRadar() {
-      clearInterval(this.radarInterval);
-      this.radarInterval = null;
-
+      cancelAnimationFrame(this.animationFrameId);
       clearInterval(this.objectInterval);
-      this.objectInterval = null;
-
       this.isCanClick = false;
     },
     setShapeConfig(shapes) {
@@ -424,38 +480,32 @@ export default {
       return result;
     },
     setFrequency() {
-      if (this.config.frequency === 'very_often') {
-        return 100;
-      }
-      if (this.config.frequency === 'often') {
-        return 200;
-      }
-      if (this.config.frequency === 'sometimes') {
-        return 300;
-      }
-      if (this.config.frequency === 'sheldom') {
-        return 400;
-      }
-      if (this.config.frequency === 'very_seldom') {
-        return 500;
+      switch (this.config.frequency) {
+        case 'very_often':
+          return 50;  // Every 50ms
+        case 'often':
+          return 100; // Every 100ms
+        case 'sometimes':
+          return 200; // Every 200ms
+        case 'seldom':
+          return 300; // Every 300ms
+        case 'very_seldom':
+          return 400; // Every 400ms
+        default:
+          return 200; // Default to 'sometimes'
       }
     },
     setSpeed() {
-      if (this.config.speed === 'very_slow') {
-        return 0.02;
-      }
-      if (this.config.speed === 'slow') {
-        return 0.04;
-      }
-      if (this.config.speed === 'medium') {
-        return 0.06;
-      }
-      if (this.config.speed === 'fast') {
-        return 0.08;
-      }
-      if (this.config.speed === 'very_fast') {
-        return 0.1;
-      }
+      const baseSpeed = 0.02; // This was the original 'very_slow' speed
+      const speedMultiplier = {
+        'very_slow': 0.2,
+        'slow': 0.5,
+        'medium': 0.7,
+        'fast': 0.9,
+        'very_fast': 1.2
+      };
+
+      return baseSpeed * (speedMultiplier[this.config.speed] || 1);
     },
     setDensity() {
       if (this.config.density === 'very_easy') {
@@ -547,6 +597,26 @@ export default {
 
       return withinRadius && withinAngle;
     },
+    createObject(type, x, y) {
+      if (this.objectPool.length > 0) {
+        const obj = this.objectPool.pop();
+        obj.type = type;
+        obj.x = x;
+        obj.y = y;
+        obj.detected = false;
+        obj.sweepCount = 0;
+        return obj;
+      }
+      return { type, x, y, detected: false, sweepCount: 0 };
+    },
+
+    removeObject(obj) {
+      const index = this.objects.indexOf(obj);
+      if (index > -1) {
+        this.objects.splice(index, 1);
+        this.objectPool.push(obj);
+      }
+    },
     addShape() {
       const radius = Math.min(this.width, this.height) / 2;
       const minDistance = 50;
@@ -563,20 +633,31 @@ export default {
         distance < minDistance + 20
       );
 
-      //Set Object Showed
-      const type = this.config.shapes[Math.floor(Math.random() * this.config.shapes.length)];
+      // Increase probability of target shape
+      const targetProbability = 0.7; // 60% chance of target shape
+      const randomValue = Math.random();
 
-      this.objects.push({ x, y, type, detected: false, sweepCount: 0 });
+      let type;
+      if (randomValue < targetProbability) {
+        type = this.config.targetShape;
+      } else {
+        // If not target, randomly choose from other shapes
+        const otherShapes = this.config.shapes.filter(shape => shape !== this.config.targetShape);
+        type = otherShapes[Math.floor(Math.random() * otherShapes.length)];
+      }
 
-      //Remove old objects
+      const newObj = this.createObject(type, x, y);
+      this.objects.push(newObj);
+
       if (this.objects.length > 100) {
-        this.objects.shift();
+        this.removeObject(this.objects[0]);
       }
     },
     removeUndetectedObjects() {
-      const sweepLimit = 5; // Set the sweep limit after which objects are removed
+      const sweepLimit = 5;
       this.objects = this.objects.filter(obj => {
         if (obj.sweepCount > sweepLimit) {
+          this.removeObject(obj);
           return false;
         }
         return true;
@@ -612,25 +693,19 @@ export default {
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.config.duration > 0) {
-
           //Remove Object when Duration Under 5 second
           if (this.config.duration === 5) {
             clearInterval(this.objectInterval);
             this.objectInterval = null;
-
             this.objects = []
           }
-
           this.config.duration--;
         } else {
           clearInterval(this.countdownInterval);
           this.stopRadar();
 
           // Submit Answer
-          setTimeout(() => {
-            this.calculatedResult();
-          }, 1000);
-
+          this.calculatedResult();
         }
       }, 1000);
     },
@@ -646,9 +721,12 @@ export default {
       } else {
         this.result.avg_response_time = 0;
       }
+
+      // Include graph data in the result
+      this.result.graph_data = this.userInputs;
+
       console.log(this.result, 'submit result');
-      console.log(this.userInputs, 'user inputs for graphical report');
-      // this.submitResult()
+      this.submitResult();
     },
     async submitResult() {
       try {
