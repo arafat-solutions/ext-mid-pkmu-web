@@ -712,15 +712,17 @@ export default {
     calculatedResult() {
       this.result.total_object = this.detectedObject;
       this.result.corrected_object = this.userCorrectClickCount;
-      this.result.missed_object = this.missedTargets;
+      this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
       this.result.false_positives = this.falsePositives;
 
-      if (this.userCorrectClickCount > 0) {
-        const resultTimeResponded = this.averageResponseTime()
-        this.result.avg_response_time = resultTimeResponded.toFixed(2);
-      } else {
-        this.result.avg_response_time = 0;
-      }
+      // get avg from array of userInputs[i].responseTime
+      this.result.avg_response_time = this.userInputs.reduce((acc, curr) => {
+        if (curr.responseTime) {
+          return acc + curr.responseTime;
+        }
+        return acc;
+      }, 0) / this.userInputs.length;
+
 
       // Include graph data in the result
       this.result.graph_data = this.userInputs;
