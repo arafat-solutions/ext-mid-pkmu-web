@@ -290,7 +290,8 @@ export default {
 
       if (config) {
         try {
-          const radarVigillance = config.tests.find(test => test.testUrl === 'radar-vigilance-test').config;
+          // @TODO: Config Flow
+          const radarVigillance = config.tests.find(test => test.testUrl === 'radar-vigilance-test').configs;
 
           this.config.duration = radarVigillance.duration * 60;
           this.config.batteryTestConfigId = radarVigillance.id;

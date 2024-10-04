@@ -241,7 +241,8 @@ function toggleRectangles() {
 function initConfig() {
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
     const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
-    const { duration, id, speed, speed_change, direction_change } = configMultiMonitoring.config
+    // @TODO: Config Flow
+    const { duration, id, speed, speed_change, direction_change } = configMultiMonitoring.configs[0]
 
     config.value = {
         ...config.value,
@@ -471,7 +472,7 @@ function onGamepadDisconnected(event) {
     console.log('disconnected', event)
     if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
         return;
-      }
+    }
     if (gamepadIndex.value === event.gamepad.index) {
         gamepadIndex.value = null;
     }

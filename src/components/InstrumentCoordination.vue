@@ -142,7 +142,8 @@ export default {
       if (data) {
         try {
           const scheduleData = JSON.parse(data);
-          const config = scheduleData.tests.find((t) => t.name === this.testName).config;
+          // @TODO: Config Flow
+          const config = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
           this.minuteTime = config.duration;
           this.timeLeft = this.minuteTime * 60;
           this.result.gameDuration = this.timeLeft;

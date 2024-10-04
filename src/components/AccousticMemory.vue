@@ -130,7 +130,8 @@ export default {
       if (data) {
         try {
           const scheduleData = JSON.parse(data);
-          const accousticMemoryConfig = scheduleData.tests.find((t) => t.name === this.testName).config;
+          // @TODO: Config Flow
+          const accousticMemoryConfig = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
           this.stringSize = accousticMemoryConfig.string_size;
           this.includeDigits = accousticMemoryConfig.combination.include_number;
           this.excludeVowels = !accousticMemoryConfig.combination.vocal;

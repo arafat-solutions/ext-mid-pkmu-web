@@ -615,7 +615,8 @@ export default {
         function initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
-            const { size, variation, id, duration, time_per_question } = configShapeRecognition.config
+            // @TODO: Config Flow
+            const { size, variation, id, duration, time_per_question } = configShapeRecognition.configs[0]
 
             config.value = {
                 duration: duration * 60,

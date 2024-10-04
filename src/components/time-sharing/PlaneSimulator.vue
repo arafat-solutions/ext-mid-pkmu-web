@@ -138,7 +138,9 @@ export default {
       if (testData) {
         const scheduleData = JSON.parse(testData);
 
-        const timeSharing = scheduleData.tests.find(data => data.name === 'Time Sharing Test 2023');
+        let timeSharing = scheduleData.tests.find(data => data.name === 'Time Sharing Test 2023');
+        console.log(timeSharing, 'config')
+        timeSharing.config = timeSharing.config[0]
         this.duration = timeSharing.config.duration * 60;
         this.remainingTime = this.duration;
         this.obstacleDensity = timeSharing.config.navigation.density;

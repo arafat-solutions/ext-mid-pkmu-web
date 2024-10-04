@@ -170,7 +170,8 @@ export default {
         },
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-            const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').config
+            // @TODO: Config Flow
+            const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').configs[0]
             const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
             // const { alert_lights, callsign, color_tank, horizon, id, subtask } = config
 

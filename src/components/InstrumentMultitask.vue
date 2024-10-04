@@ -127,7 +127,8 @@ export default {
       if (data) {
         try {
           const scheduleData = JSON.parse(data);
-          const instrumentMultitaskConfig = scheduleData.tests.find((t) => t.name === this.testName).config;
+          // @TODO: Config Flow
+          const instrumentMultitaskConfig = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
           this.minuteTime = instrumentMultitaskConfig.duration;
           this.timeLeft = this.minuteTime * 60;
           this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;

@@ -693,7 +693,9 @@ export default {
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-            const { duration, rotation_frequency, id, size } = configRotatingMaze.config
+            // @TODO: Config Flow
+
+            const { duration, rotation_frequency, id, size } = configRotatingMaze.configs[0]
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,

@@ -180,7 +180,8 @@ export default {
         let config = JSON.parse(localStorage.getItem('scheduleData'));
 
         if (config) {
-          const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').config;
+          // @TODO: Config Flow
+          const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').configs[0];
           this.config.duration = colorMultitask.duration * 60;
           this.config.batteryTestConfigId = colorMultitask.id;
           this.config.sessionId = config.sessionId;

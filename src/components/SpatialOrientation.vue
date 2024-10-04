@@ -98,6 +98,7 @@ export default {
         avg_response_time: 0,
       },
       selectedAnswer: null,
+      trainingMode: false
     };
   },
   async mounted() {
@@ -146,11 +147,12 @@ export default {
     },
     initConfig() {
       let config = JSON.parse(localStorage.getItem('scheduleData'));
-
+      
       if (config) {
         try {
-          const spatialOrientation = config.tests.find(test => test.testUrl === 'spatial-orientation-test').config;
-
+          // @TODO: Config Flow
+          const spatialOrientation = config.tests.find(test => test.testUrl === 'spatial-orientation-test').configs[0];
+          console.log(spatialOrientation, 'spatialOrientation');
           this.config.duration = spatialOrientation.duration * 60;
           this.config.batteryTestConfigId = spatialOrientation.id;
           this.config.sessionId = config.sessionId;
@@ -845,7 +847,8 @@ canvas {
 }
 
 .digit-number.selected {
-  background-color: #4CAF50; /* Green color for selected button */
+  background-color: #4CAF50;
+  /* Green color for selected button */
 }
 
 .digit-number.next {

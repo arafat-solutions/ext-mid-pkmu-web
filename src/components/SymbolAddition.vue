@@ -129,7 +129,8 @@ export default {
       if (data) {
         try {
           const scheduleData = JSON.parse(data);
-          const config = scheduleData.tests.find((t) => t.name === this.testName).config;
+          // @TODO: Config Flow
+          const config = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
           this.numberOfTask = config.numberOfQuestion;
           this.selectedSymbols = config.symbols;
           this.resetQueryBarPerRow = config.resetQueryBar;

@@ -125,7 +125,8 @@ export default {
         },
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-            const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').config
+            // @TODO: Config Flow
+            const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').configs[0]
             const { id, display, duration, interval } = config
 
             this.configBe = {

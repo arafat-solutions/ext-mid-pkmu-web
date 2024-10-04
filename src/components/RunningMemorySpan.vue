@@ -147,7 +147,8 @@ export default {
 
       if (config) {
         try {
-          const runningMemorySpan = config.tests.find(test => test.testUrl === 'running-memory-span-test' || test.name === 'Running Memory Span Test').config;
+          // @TODO: Config Flow
+          const runningMemorySpan = config.tests.find(test => test.testUrl === 'running-memory-span-test' || test.name === 'Running Memory Span Test').configs[0];
           this.config.duration = 1 * 60;
           this.config.batteryTestConfigId = runningMemorySpan.id;
           this.config.sessionId = config.sessionId;
