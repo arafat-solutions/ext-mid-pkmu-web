@@ -6,9 +6,8 @@
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
         <button class="btn-answer" :class="{ 'can-press': canPressAnswer }" @click="handleAnswer(index)"
           @touchstart="handleAnswer(index)">
-          {{ index + 1 }}
+          {{ isActive ? choice : '?' }}
         </button>
-        <span class="label-choice">{{ isActive ? choice : '?' }}</span>
       </div>
     </div>
   </div>

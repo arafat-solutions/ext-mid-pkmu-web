@@ -1,225 +1,252 @@
 <template>
-    <div class="lights">
-      <div v-for="(light, index) in lights" :key="index" :class="['light', light.color]" @click="turnOffLight(index)">
-        {{ light.label }}
-      </div>
+  <div class="lights">
+    <div v-for="(light, index) in lights" :key="index" :class="['light', light.color]" @click="turnOffLight(index)">
+      {{ light.label }}
     </div>
-  </template>
+  </div>
+</template>
 
-  <script>
-  export default {
-    name: 'AlertLights',
-    data() {
-      return {
-        lights: [
-          { label: 'R', color: 'off' },
-          { label: 'S', color: 'off' },
-          { label: 'T', color: 'off' },
-          { label: 'U', color: 'off' }
-        ],
-        result: {
-          correct: 0,
-          wrong: 0,
-          missed: 0,
-          colors: [],
-          answerTimes: [],
-          questionTimes: [],
-        },
-        intervalId: null,
-      };
-    },
-    computed: {
-      redLength() {
-        return this.result.colors.filter(color => color === 'red').length;
-      },
-      yellowLength() {
-        return this.result.colors.filter(color => color === 'yellow').length;
-      },
-      correctResponse() {
-        return Number((this.result.correct / this.redLength  * 100).toFixed(2));
-      },
-      responseTime() {
-        let totalResponse = 0;
-        let counter = 0;
-        for (let i = 0; i < this.result.questionTimes.length; i++) {
-          if (!this.result.answerTimes[i]) {
-            continue;
-          }
-          counter++;
-          totalResponse += this.getTimeDifferenceInSeconds(
-            this.result.questionTimes[i],
-            this.result.answerTimes[i]
-          )
-        }
 
-        return Number((totalResponse / counter).toFixed(2));
+<script>
+export default {
+  name: 'AlertLights',
+  data() {
+    return {
+      lights: [
+        { label: 'R', color: 'off', litTime: null },
+        { label: 'S', color: 'off', litTime: null },
+        { label: 'T', color: 'off', litTime: null },
+        { label: 'U', color: 'off', litTime: null }
+      ],
+      result: {
+        correct: 0,
+        wrong: 0,
+        missed: 0,
+        colors: [],
+        answerTimes: [],
+        questionTimes: [],
       },
+      intervalId: null,
+      lightTimeouts: [],
+    };
+  },
+  computed: {
+    redLength() {
+      return this.result.colors.filter(color => color === 'red').length;
     },
-    watch: {
-      isTimesUp() {
-        this.$emit('getResult', {
-          correctResponse: this.correctResponse,
-          responseTime: this.responseTime,
-          wrong: this.result.wrong,
-          correct: this.result.correct,
-          alertCount: this.redLength,
-          warningCount: this.yellowLength,
-        });
-      },
-      isPause(newValue) {
-        if (newValue) {
-          clearInterval(this.intervalId);
-        } else {
-          this.startLights();
+    yellowLength() {
+      return this.result.colors.filter(color => color === 'yellow').length;
+    },
+    correctResponse() {
+      return Number((this.result.correct / this.redLength * 100).toFixed(2));
+    },
+    responseTime() {
+      let totalResponse = 0;
+      let counter = 0;
+      for (let i = 0; i < this.result.questionTimes.length; i++) {
+        if (!this.result.answerTimes[i]) {
+          continue;
         }
+        counter++;
+        totalResponse += this.getTimeDifferenceInSeconds(
+          this.result.questionTimes[i],
+          this.result.answerTimes[i]
+        )
       }
+
+      return Number((totalResponse / counter).toFixed(2));
     },
-    props: {
-      speed: String,
-      isTimesUp: Boolean,
-      frequency: String,
-      isPause: Boolean,
-      isActive: Boolean,
+  },
+  watch: {
+    isTimesUp() {
+      this.$emit('getResult', {
+        correctResponse: this.correctResponse,
+        responseTime: this.responseTime,
+        wrong: this.result.wrong,
+        correct: this.result.correct,
+        alertCount: this.redLength,
+        warningCount: this.yellowLength,
+      });
     },
-    mounted() {
-      if (this.isActive) {
+    isPause(newValue) {
+      if (newValue) {
+        clearInterval(this.intervalId);
+      } else {
         this.startLights();
       }
-      window.addEventListener('keydown', this.handleKeyPress);
+    }
+  },
+  props: {
+    speed: String,
+    isTimesUp: Boolean,
+    frequency: String,
+    isPause: Boolean,
+    isActive: Boolean,
+  },
+  mounted() {
+    if (this.isActive) {
+      this.startLights();
+    }
+    window.addEventListener('keydown', this.handleKeyPress);
+  },
+  beforeUnmount() {
+    this.clearAllIntervals();
+    window.removeEventListener('keydown', this.handleKeyPress);
+  },
+  methods: {
+    startLights() {
+      this.intervalId = setInterval(this.randomLight, this.getInterval());
     },
-    beforeUnmount() {
+    clearAllIntervals() {
       clearInterval(this.intervalId);
-      window.removeEventListener('keydown', this.handleKeyPress);
+      this.lightTimeouts.forEach(clearTimeout);
+      this.lightTimeouts = [];
     },
-    methods: {
-      startLights() {
-        this.intervalId = setInterval(this.randomLight, this.getInterval());
-      },
-      getInterval() {
-        // Adjust ranges based on difficulty level
-        switch (this.speed) {
-          case 'very_slow':
-            return 7000;
-          case 'slow':
-            return 6000;
-          case 'medium':
-            return 5000;
-          case 'fast':
-            return 4000;
-          case 'very_fast':
-            return 3000;
-          default:
-            return 5000;
-        }
-      },
-      getFrequency() {
-        // Adjust ranges based on difficulty level
-        switch (this.frequency) {
-          case 'very_rarely':
-            return 0.9;
-          case 'rarely':
-            return 0.7;
-          case 'medium':
-            return 0.5;
-          case 'often':
-            return 0.3;
-          case 'very_often':
-            return 0.1;
-          default:
-            return 0.5;
-        }
-      },
-      randomLight() {
-        if (this.isTimesUp) {
-          this.checkMissed(true);
-          clearInterval(this.intervalId);
-          return;
+    getInterval() {
+      // Adjust ranges based on difficulty level
+      switch (this.speed) {
+        case 'very_slow':
+          return 21000;
+        case 'slow':
+          return 19000;
+        case 'medium':
+          return 15000;
+        case 'fast':
+          return 13000;
+        case 'very_fast':
+          return 10000;
+        default:
+          return 5000;
+      }
+    },
+    getFrequency() {
+      // Adjust ranges based on difficulty level
+      switch (this.frequency) {
+        case 'very_rarely':
+          return 0.9;
+        case 'rarely':
+          return 0.7;
+        case 'medium':
+          return 0.5;
+        case 'often':
+          return 0.3;
+        case 'very_often':
+          return 0.1;
+        default:
+          return 0.5;
+      }
+    },
+    checkMissed(isLast = false) {
+      let indexCheck;
+      if (isLast) {
+        indexCheck = this.result.questionTimes.length - 1;
+      } else {
+        indexCheck = this.result.questionTimes.length - 2;
+      }
+      if (
+        indexCheck >= 0 &&
+        typeof this.result.answerTimes[indexCheck] === 'undefined'
+      ) {
+        // Check if light is red and user not push R,S,T,U
+        if (this.result.colors[indexCheck] === 'red') {
+          this.result.missed++;
         }
 
-        this.lights.forEach(light => (light.color = 'off'));
-        const index = Math.floor(Math.random() * this.lights.length);
-        const frequency = this.getFrequency();
-        const color = Math.random() > frequency ? 'red' : 'yellow';
+        this.result.answerTimes.push(null);
+      }
+    },
+    randomLight() {
+      if (this.isTimesUp) {
+        this.checkMissed(true);
+        this.clearAllIntervals();
+        return;
+      }
+
+      const index = Math.floor(Math.random() * this.lights.length);
+      const frequency = this.getFrequency();
+      const color = Math.random() > frequency ? 'red' : 'yellow';
+      
+      if (this.lights[index].color === 'off') {
         this.lights[index].color = color;
-        this.result.questionTimes.push(Date.now());
+        this.lights[index].litTime = Date.now();
+        this.result.questionTimes.push(this.lights[index].litTime);
         this.result.colors.push(color);
-        this.checkMissed();
-      },
-      checkMissed(isLast = false) {
-        let indexCheck;
-        if (isLast) {
-          indexCheck = this.result.questionTimes.length - 1;
-        } else {
-          indexCheck = this.result.questionTimes.length - 2;
-        }
-        if (
-          indexCheck >= 0 &&
-          typeof this.result.answerTimes[indexCheck] === 'undefined'
-        ) {
-          // Check if light is red and user not push R,S,T,U
-          if (this.result.colors[indexCheck] === 'red') {
-            this.result.missed++;
-          }
 
-          this.result.answerTimes.push(null);
-        }
-      },
-      turnOffLight(index) {
-        this.result.answerTimes.push(Date.now());
+        const timeout = setTimeout(() => {
+          if (this.lights[index].color !== 'off') {
+            this.lights[index].color = 'off';
+            this.lights[index].litTime = null;
+            if (color === 'red') {
+              this.result.missed++;
+            }
+            this.result.answerTimes.push(null);
+          }
+        }, 10000);
+
+        this.lightTimeouts.push(timeout);
+      }
+
+      this.checkMissed();
+    },
+    turnOffLight(index) {
+      if (this.lights[index].color !== 'off') {
+        const now = Date.now();
+        this.result.answerTimes.push(now);
         if (this.lights[index].color === 'red') {
           this.result.correct++;
         } else {
           this.result.wrong++;
         }
-        this.lights.forEach(light => (light.color = 'off'));
-      },
-      handleKeyPress(event) {
-        if (event.key !== 'r' && event.key !== 's' && event.key !== 't' && event.key !== 'u') {
-          return;
-        }
-
-        if (this.lights.filter(light => light.color === 'off').length === 4) {
-          return;
-        }
-
-        if (this.isPause || !this.isActive) {
-          return;
-        }
-
-        const keyMap = { KeyR: 0, KeyS: 1, KeyT: 2, KeyU: 3 };
-        if (keyMap[event.code] !== undefined) {
-          this.turnOffLight(keyMap[event.code]);
-        }
-      },
-      getTimeDifferenceInSeconds(dateTime1, dateTime2) {
-        let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
-        return differenceInMilliseconds / 1000;
+        this.lights[index].color = 'off';
+        this.lights[index].litTime = null;
       }
-    }
-  };
-  </script>
+    },
+    handleKeyPress(event) {
+      if (event.key !== 'r' && event.key !== 's' && event.key !== 't' && event.key !== 'u') {
+        return;
+      }
 
-  <style scoped>
-  .lights {
-    display: inline-block;
-    width: 100px;
+      if (this.isPause || !this.isActive) {
+        return;
+      }
+
+      const keyMap = { r: 0, s: 1, t: 2, u: 3 };
+      if (keyMap[event.key] !== undefined) {
+        this.turnOffLight(keyMap[event.key]);
+      }
+    },
+    getTimeDifferenceInSeconds(dateTime1, dateTime2) {
+      let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
+      return differenceInMilliseconds / 1000;
+    }
   }
-  .light {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: gray;
-    color: #000000;
-    font-weight: bold;
-    margin-bottom: 25px;
-  }
-  .light.red {
-    background-color: red;
-  }
-  .light.yellow {
-    background-color: yellow;
-  }
-  </style>
+};
+</script>
+
+<style scoped>
+.lights {
+  display: inline-block;
+  width: 100px;
+}
+
+.light {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: gray;
+  color: #000000;
+  font-weight: bold;
+  margin-bottom: 25px;
+}
+
+.light.red {
+  background-color: red;
+}
+
+.light.yellow {
+  background-color: yellow;
+}
+</style>
