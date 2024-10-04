@@ -1,6 +1,12 @@
 <template>
   <div class="speedometer-content">
-    <div :ref="`speedometerContainer${index}`" v-for="(speedometer, index) in speedometers" class="speedometer-container" :key="index">
+    <div 
+      :ref="`speedometerContainer${index}`" 
+      v-for="(speedometer, index) in speedometers" 
+      class="speedometer-container" 
+      :key="index"
+      @click="handleGaugeClick(speedometer.label)"
+    >
       <vue-speedometer
         :segmentColors="segmentColors"
         :segments="customSegmentLabels.length"
@@ -274,6 +280,13 @@ export default {
         'time': Date.now(),
       });
     },
+    handleGaugeClick(label) {
+      if (this.isPause || !this.isActive) {
+        return;
+      }
+      this.handleInput(label);
+    },
+
     handleKeyPress(event) {
       if (event.key !== 'w' && event.key !== 'v' && event.key !== 'x' && event.key !== 'y' && event.key !== 'z' && event.key !== 'a') {
         return;
@@ -283,8 +296,12 @@ export default {
         return;
       }
       const keyPress = event.key.toUpperCase();
+      this.handleInput(keyPress);
+    },
+
+    handleInput(input) {
       // Find the index of the item with the given label
-      const indexNeedPress = this.result.needPressTimes.findIndex(item => item.label === keyPress);
+      const indexNeedPress = this.result.needPressTimes.findIndex(item => item.label === input);
       if (indexNeedPress === -1) {
         this.result.wrong++;
         return;
@@ -299,13 +316,13 @@ export default {
       this.result.needPressTimes.splice(indexNeedPress, 1);
 
       // Update existing speedometer
-      const indexSpeedometer = this.speedometers.findIndex(speedometer => speedometer.label === keyPress);
+      const indexSpeedometer = this.speedometers.findIndex(speedometer => speedometer.label === input);
 
       if (indexSpeedometer === -1) {
         return;
       }
       this.speedometers[indexSpeedometer].value = 0;
-      this.lastPress = keyPress;
+      this.lastPress = input;
     },
     getTimeDifferenceInSeconds(dateTime1, dateTime2) {
       let differenceInMilliseconds = Math.abs(dateTime2 - dateTime1);
@@ -324,7 +341,9 @@ export default {
 
 .speedometer-container {
   margin: 5px;
+  cursor: pointer; /* Add cursor style to indicate clickability */
 }
+
 
 .speedometer {
   border: 1px solid black;
