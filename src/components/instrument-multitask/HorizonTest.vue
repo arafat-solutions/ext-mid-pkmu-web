@@ -329,7 +329,7 @@ export default {
 
       this.updateHorizon();
     },
-    checkMousePosition(event) {
+    checkMousePosition() {
       if (!this.yellowLineMoved) {
         return;
       }
@@ -338,33 +338,56 @@ export default {
         return;
       }
       const canvas = this.$refs.horizonCanvas;
-      const rect = canvas.getBoundingClientRect();
+      const ctx = canvas.getContext("2d");
 
-      let x = this.yellowLinePositionX - this.horizonWidth / 2;
-      let y = this.yellowLinePositionY - this.horizonHeight / 2;
+      // Calculate the center of the canvas
+      const canvasCenterX = this.horizonWidth / 2;
+      const canvasCenterY = this.horizonHeight / 2;
 
-      if (event) {
-        x = event.clientX - rect.left - this.horizonWidth / 2;
-        y = event.clientY - rect.top - this.horizonHeight / 2;
-      }
+      // Get the position of the yellow crosshair
+      let crosshairX = this.yellowLinePositionX;
+      let crosshairY = this.yellowLinePositionY;
 
-      // Memeriksa apakah mouse berada dalam radius lingkaran
-      const distance = Math.sqrt(Math.pow(x - this.circleShiftX, 2) + Math.pow(y, 2));
-      if (distance <= (this.circleRadius + 5)) {
+      // Calculate the position of the target circle
+      const targetX = canvasCenterX + this.circleShiftX;
+      const targetY = canvasCenterY;
+
+      // Apply rotation to the crosshair position
+      const rotatedX = (crosshairX - canvasCenterX) * Math.cos(-this.tiltAngle * Math.PI / 180) - 
+                       (crosshairY - canvasCenterY) * Math.sin(-this.tiltAngle * Math.PI / 180) + canvasCenterX;
+      const rotatedY = (crosshairX - canvasCenterX) * Math.sin(-this.tiltAngle * Math.PI / 180) + 
+                       (crosshairY - canvasCenterY) * Math.cos(-this.tiltAngle * Math.PI / 180) + canvasCenterY;
+
+      // Calculate the distance between the rotated crosshair and the target
+      const distance = Math.sqrt(Math.pow(rotatedX - targetX, 2) + Math.pow(rotatedY - targetY, 2));
+
+      // Define an accuracy threshold (you can adjust this value)
+      const accuracyThreshold = this.circleRadius / 2;
+
+      if (distance <= accuracyThreshold) {
         if (!this.greenLineStartTime) {
           this.greenLineStartTime = Date.now();
         }
-
         this.isMouseInsideCircle = true;
       } else {
         if (this.greenLineStartTime) {
           const currentTime = Date.now();
-          this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000; // Calculate duration in seconds
-          this.greenLineStartTime = null; // Reset start time when exiting circle
+          this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000;
+          this.greenLineStartTime = null;
         }
-
         this.isMouseInsideCircle = false;
       }
+
+      // Debug drawing (uncomment for testing)
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, accuracyThreshold, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'red';
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(rotatedX, rotatedY, 3, 0, 2 * Math.PI);
+      ctx.fillStyle = 'blue';
+      ctx.fill();
 
       this.updateHorizon();
     },
