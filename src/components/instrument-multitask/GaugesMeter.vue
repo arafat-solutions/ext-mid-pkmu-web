@@ -238,7 +238,6 @@ export default {
 
         if (this.lastPress === speedometer.label) {
           this.lastPress = null;
-
           return {
             ...speedometer,
             value: newValue
@@ -250,10 +249,21 @@ export default {
           this.recordNeedPressTimes(speedometer.label)
         }
 
-        newValue = speedometer.value + Math.random();
-        // Ensure newValue doesn't exceed 9
-        if (newValue > 9) {
-          newValue = 9;
+        // Determine if the gauge should move up or down
+        const shouldMoveDown = Math.random() < 0.2; // 20% chance to move down
+
+        if (shouldMoveDown) {
+          newValue = speedometer.value - Math.random();
+          // Ensure newValue doesn't go below 0
+          if (newValue < 0) {
+            newValue = 0;
+          }
+        } else {
+          newValue = speedometer.value + Math.random();
+          // Ensure newValue doesn't exceed 9
+          if (newValue > 9) {
+            newValue = 9;
+          }
         }
 
         return {
