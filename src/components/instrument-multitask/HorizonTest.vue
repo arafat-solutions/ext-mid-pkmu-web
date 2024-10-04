@@ -31,6 +31,9 @@ export default {
       },
       gamepadIndex: null,
       gamepadSensitivity: 10,
+      totalDistance: 0,
+      distanceCount: 0,
+      averageDistance: 0,
     };
   },
   props: {
@@ -340,29 +343,31 @@ export default {
       const canvas = this.$refs.horizonCanvas;
       const ctx = canvas.getContext("2d");
 
-      // Calculate the center of the canvas
       const canvasCenterX = this.horizonWidth / 2;
       const canvasCenterY = this.horizonHeight / 2;
 
-      // Get the position of the yellow crosshair
       let crosshairX = this.yellowLinePositionX;
       let crosshairY = this.yellowLinePositionY;
 
-      // Calculate the position of the target circle
       const targetX = canvasCenterX + this.circleShiftX;
       const targetY = canvasCenterY;
 
-      // Apply rotation to the crosshair position
       const rotatedX = (crosshairX - canvasCenterX) * Math.cos(-this.tiltAngle * Math.PI / 180) - 
                        (crosshairY - canvasCenterY) * Math.sin(-this.tiltAngle * Math.PI / 180) + canvasCenterX;
       const rotatedY = (crosshairX - canvasCenterX) * Math.sin(-this.tiltAngle * Math.PI / 180) + 
                        (crosshairY - canvasCenterY) * Math.cos(-this.tiltAngle * Math.PI / 180) + canvasCenterY;
 
-      // Calculate the distance between the rotated crosshair and the target
       const distance = Math.sqrt(Math.pow(rotatedX - targetX, 2) + Math.pow(rotatedY - targetY, 2));
 
-      // Define an accuracy threshold (you can adjust this value)
-      const accuracyThreshold = this.circleRadius / 2;
+      // Increase the accuracy threshold to make it easier for users
+      const accuracyThreshold = this.circleRadius * 0.75; // Increased from 0.5 to 0.75
+
+      // Update total distance and count
+      this.totalDistance += distance;
+      this.distanceCount++;
+
+      // Calculate average distance
+      this.averageDistance = this.totalDistance / this.distanceCount;
 
       if (distance <= accuracyThreshold) {
         if (!this.greenLineStartTime) {
@@ -441,6 +446,14 @@ export default {
     },
     easeInOutCubic(t) {
       return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    },
+    // Update the getResult method to include average distance
+    getResult() {
+      return {
+        accuracy: this.accuracy,
+        correctTime: Number(this.greenLineDuration.toFixed(2)),
+        averageDistance: Number(this.averageDistance.toFixed(2)),
+      };
     },
   },
 };
