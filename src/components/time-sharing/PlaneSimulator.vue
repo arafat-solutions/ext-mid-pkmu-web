@@ -32,6 +32,13 @@ import * as d3 from 'd3';
 
 export default {
   name: 'PlaneSimulator',
+  emits: ['test-finished', 'switch-task'],
+  props: {
+    config: {
+      type: Object,
+      default: () => ({})
+    }
+  },
   data() {
     return {
       plane: {
@@ -86,6 +93,7 @@ export default {
   },
   mounted() {
     this.initializeGame();
+    console.log(this.config, 'config')
   },
   activated() {
     this.resumeGame();
@@ -134,32 +142,24 @@ export default {
       this.setupEventListeners();
     },
     setRandomObstacleConfig() {
-      const testData = localStorage.getItem('scheduleData');
-      if (testData) {
-        const scheduleData = JSON.parse(testData);
+      this.duration = this.config.duration * 60;
+      this.remainingTime = this.duration;
+      this.obstacleDensity = this.config.navigation.density;
+      this.controlPerspective = this.config.navigation.control_perspective;
+      const speed = this.config.navigation.speed;
+      this.obstacleDensity = this.config.navigation.density;
 
-        let timeSharing = scheduleData.tests.find(data => data.name === 'Time Sharing Test 2023');
-        console.log(timeSharing, 'config')
-        timeSharing.config = timeSharing.config[0]
-        this.duration = timeSharing.config.duration * 60;
-        this.remainingTime = this.duration;
-        this.obstacleDensity = timeSharing.config.navigation.density;
-        this.controlPerspective = timeSharing.config.navigation.control_perspective;
-        const speed = timeSharing.config.navigation.speed;
-        this.obstacleDensity = timeSharing.config.navigation.density;
-
-        switch (speed) {
-          case 'very_slow': this.obstacleSpeed = 1; break;
-          case 'slow': this.obstacleSpeed = 1.5; break;
-          case 'medium': this.obstacleSpeed = 2; break;
-          case 'fast': this.obstacleSpeed = 2.5; break;
-          case 'very_fast': this.obstacleSpeed = 3; break;
-        }
-
-        // gauge cluster
-        this.gaugeSpeed = timeSharing.config.observer.speed;
-        this.increaseFrequency = timeSharing.config.observer.frequency;
+      switch (speed) {
+        case 'very_slow': this.obstacleSpeed = 1; break;
+        case 'slow': this.obstacleSpeed = 1.5; break;
+        case 'medium': this.obstacleSpeed = 2; break;
+        case 'fast': this.obstacleSpeed = 2.5; break;
+        case 'very_fast': this.obstacleSpeed = 3; break;
       }
+
+      // gauge cluster
+      this.gaugeSpeed = this.config.observer.speed;
+      this.increaseFrequency = this.config.observer.frequency;
     },
     getObstacleGenerationInterval() {
       switch (this.obstacleDensity) {
@@ -533,6 +533,7 @@ export default {
     finishGame() {
       this.pauseGame();
       console.log('Game finished');
+      this.$emit('test-finished', { collisionCount: this.collisionCount, gaugeLateTime: this.gaugeLateTime });
       console.log(`Collisions: ${this.collisionCount}`);
       console.log(`Late time for C: ${this.gaugeLateTime.C}ms`);
       console.log(`Late time for V: ${this.gaugeLateTime.V}ms`);

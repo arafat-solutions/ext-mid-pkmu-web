@@ -5,7 +5,8 @@
     <div v-else class="waiting">Waiting for next question...</div>
     <input v-model="userInput" class="input-box" readonly :disabled="!showQuestion" />
     <div class="virtual-keyboard">
-      <button v-for="num in 10" :key="num" @click="appendNumber(num % 10)" :disabled="!showQuestion">{{ num % 10 }}</button>
+      <button v-for="num in 10" :key="num" @click="appendNumber(num % 10)" :disabled="!showQuestion">{{ num % 10
+        }}</button>
       <button @click="clearInput" :disabled="!showQuestion">Clear</button>
       <button @click="submitAnswer" :disabled="!showQuestion">Submit</button>
     </div>
@@ -18,21 +19,23 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 export default {
   name: 'MathTest',
   emits: ['switch-task', 'question-result'],
+  props: {
+    config: {
+      type: Object,
+      default: () => ({})
+    }
+  },
   setup(props, { emit }) {
     const userInput = ref('');
     const currentQuestion = ref('');
+    const questionTimeShown = ref(null);
     const correctAnswer = ref(null);
     const showQuestion = ref(true);
-
     const operations = ['+', '-', '*', '/'];
-    const frequencies = ['very_seldom', 'seldom', 'medium', 'often', 'very_often'];
-    const complexities = ['very_slow', 'slow', 'medium', 'high', 'very_high'];
-    const outputTypes = ['auditory', 'visual', 'auditory_and_visual'];
-
     const config = {
-      frequency: frequencies[2], // medium
-      complexity: complexities[2], // medium
-      output: outputTypes[2], // auditory_and_visual
+      frequency: props.config.arithmetics.frequency, // medium
+      complexity: props.config.arithmetics.complexity, // medium
+      output: props.config.arithmetics.output, // auditory_and_visual
     };
 
     const getIntervalTime = () => {
@@ -75,6 +78,8 @@ export default {
 
     const generateQuestion = () => {
       let operation, num1, num2;
+      let operationSpoken = ''
+
       do {
         operation = operations[Math.floor(Math.random() * operations.length)];
         [num1, num2] = generateNumbers(config.complexity);
@@ -91,30 +96,45 @@ export default {
 
         // Calculate the result
         switch (operation) {
-          case '+': correctAnswer.value = num1 + num2; break;
-          case '-': correctAnswer.value = num1 - num2; break;
-          case '*': correctAnswer.value = num1 * num2; break;
-          case '/': correctAnswer.value = num1 / num2; break;
+          case '+':
+            correctAnswer.value = num1 + num2;
+            operationSpoken = 'tambah';
+            break;
+          case '-':
+            correctAnswer.value = num1 - num2;
+            operationSpoken = 'kurang';
+            break;
+          case '*':
+            correctAnswer.value = num1 * num2;
+            operationSpoken = 'kali';
+            break;
+          case '/':
+            correctAnswer.value = num1 / num2;
+            operationSpoken = 'bagi';
+            break;
         }
       } while (correctAnswer.value < 0 || correctAnswer.value % 1 !== 0);
-
-      const question = `${num1} ${operation} ${num2}`;
+      console.log(num1, operation, num2, correctAnswer.value, operationSpoken);
+      const question = `${num1} ${operationSpoken} ${num2}`;
+      console.log('Generated question:', question);
       currentQuestion.value = question;
 
-      if (config.output === 'auditory' || config.output === 'auditory_and_visual') {
+      if (config.output === 'sound' || config.output === 'sound_and_visual') {
         speakQuestion(question);
       }
 
-      if (config.output === 'visual' || config.output === 'auditory_and_visual') {
+      if (config.output === 'visual' || config.output === 'sound_and_visual') {
         currentQuestion.value = question;
       } else {
         currentQuestion.value = 'Dengarkan pertanyaan';
       }
 
       showQuestion.value = true;
+      questionTimeShown.value = Date.now();
     };
 
     const speakQuestion = (question) => {
+      console.log('Speaking question:', question);
       const utterance = new SpeechSynthesisUtterance(question);
       utterance.lang = 'id-ID';
       speechSynthesis.speak(utterance);
@@ -130,12 +150,15 @@ export default {
 
     const submitAnswer = () => {
       const userAnswer = parseInt(userInput.value, 10);
+      const responseTime = Date.now() - questionTimeShown.value;
       const result = {
         question: currentQuestion.value,
         userAnswer,
         correctAnswer: correctAnswer.value,
-        isCorrect: userAnswer === correctAnswer.value
+        isCorrect: userAnswer === correctAnswer.value,
+        responseTime
       };
+      questionTimeShown.value = null;
       emit('question-result', result);
       userInput.value = '';
       showQuestion.value = false;
@@ -179,9 +202,13 @@ export default {
   flex-direction: column;
   align-items: center;
 }
-.instructions, .question, .waiting {
+
+.instructions,
+.question,
+.waiting {
   margin-bottom: 20px;
 }
+
 .input-box {
   font-size: 24px;
   padding: 10px;
@@ -189,11 +216,13 @@ export default {
   width: 200px;
   text-align: right;
 }
+
 .virtual-keyboard {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
+
 .virtual-keyboard button {
   font-size: 20px;
   padding: 10px;
