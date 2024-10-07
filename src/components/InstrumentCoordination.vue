@@ -6,12 +6,12 @@
           <strong>
             Apakah Anda Yakin <br>akan memulai test Instrument Coordination?
           </strong>
-          </p>
+        </p>
         <button @click="exit" style="margin-right: 20px;">Batal</button>
         <button @click="startTest">Ya</button>
       </div>
     </div>
-    <div v-if="timeLeft > 0 && isShowModal === false" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+    <div v-if="timeLeft > 0 && isShowModal === false" :class="isTrial ? 'timer-container-trial' : 'timer-container'">
       Time: {{ formattedTime }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
@@ -19,35 +19,14 @@
     </div>
     <div id="main-view" v-if="isShowModal === false" v-show="!isTimesUp">
       <div class="indicators">
-        <AirspeedInstrument
-          :isTimesUp="isTimesUp"
-          :isPause="isPause"
-          :isActive="config.airspeed.isActive"
-          :speed="config.airspeed.speed"
-          @getResult="airspeedResult"
-        />
-        <HeadingInstrument
-          :isTimesUp="isTimesUp"
-          :isPause="isPause"
-          :changeType="config.heading.changeType"
-          :speed="config.heading.speed"
-          @getResult="headingResult"
-        />
-        <SoundQuestion
-          ref="soundQuestionRef"
-          :isTimesUp="isTimesUp"
-          :speedSound="config.soundQuestion.speed"
-          :isPause="isPause"
-          :isActive="config.soundQuestion.isActive"
-          @getResult="soundResult"
-        />
-        <AltimeterInstrument
-          :isTimesUp="isTimesUp"
-          :isPause="isPause"
-          :changeType="config.altimeter.changeType"
-          :speed="config.altimeter.speed"
-          @getResult="altimeterResult"
-        />
+        <AirspeedInstrument :isTimesUp="isTimesUp" :isPause="isPause" :isActive="config.airspeed.isActive"
+          :speed="config.airspeed.speed" @getResult="airspeedResult" />
+        <HeadingInstrument :isTimesUp="isTimesUp" :isPause="isPause" :changeType="config.heading.changeType"
+          :speed="config.heading.speed" @getResult="headingResult" />
+        <SoundQuestion ref="soundQuestionRef" :isTimesUp="isTimesUp" :speedSound="config.soundQuestion.speed"
+          :isPause="isPause" :isActive="config.soundQuestion.isActive" @getResult="soundResult" />
+        <AltimeterInstrument :isTimesUp="isTimesUp" :isPause="isPause" :changeType="config.altimeter.changeType"
+          :speed="config.altimeter.speed" @getResult="altimeterResult" />
         <AnalogClock />
       </div>
     </div>
@@ -86,6 +65,10 @@ export default {
       isShowModal: null,
       canAnswerSoundQuestion: false,
       soundQuestions: [],
+      gamepad: null,
+      thruster: null,
+      gamepadConnected: false,
+      thrustConnected: false,
       config: {
         heading: {
           changeType: null, //inactive, keep_indicator, adjust_for_consistent_updates, adjust_for_irregular_updates
@@ -127,6 +110,7 @@ export default {
     },
   },
   mounted() {
+    // add
     let reloadCount = parseInt(localStorage.getItem('reloadCountInstrumentCoordination') || '0');
     reloadCount++;
     localStorage.setItem('reloadCountInstrumentCoordination', reloadCount.toString());
@@ -134,9 +118,47 @@ export default {
       localStorage.setItem('reloadCountInstrumentCoordination', reloadCount.toString());
     });
 
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
     this.loadConfig();
   },
+  beforeUnmount() {
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    this.checkGamepad();
+  },
   methods: {
+    checkGamepad() {
+      if (this.gamepadIndex !== null) {
+        const gamepad = navigator.getGamepads()[this.gamepadIndex];
+        if (gamepad) {
+          this.handleGamepadInput(gamepad);
+        }
+      }
+      requestAnimationFrame(this.checkGamepad);
+    },
+    onGamepadConnected(e) {
+      console.log('Connected:', e);
+      if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+        console.log("Correct gamepad connected:", e.gamepad);
+        this.gamepad = e.gamepad;
+        this.gamepadConnected.value = true;
+      } else if (e.gamepad.id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
+        console.log("Correct thruster connected:", e.gamepad);
+        this.thruster = e.gamepad;
+        this.thrustConnected = true;
+      }
+    },
+    onGamepadDisconnected(e) {
+      console.log("Gamepad disconnected:", e.gamepad);
+      if (this.gamepad && this.gamepad.index === e.gamepad.index) {
+        this.gamepad = null;
+        this.gamepadConnected.value = false;
+      } else if (this.thruster && this.thruster.index === e.gamepad.index) {
+        this.thruster = null;
+        this.thrustConnected.value = false;
+      }
+    },
     loadConfig() {
       const data = localStorage.getItem('scheduleData');
       if (data) {
@@ -262,13 +284,20 @@ export default {
 <style scoped>
 body {
   background-color: grey;
-  margin: 0; /* Ensure there is no margin around the body */
-  padding: 0; /* Ensure there is no padding around the body */
-  height: 100vh; /* Make the body take up the full viewport height */
-  width: 100vw; /* Make the body take up the full viewport width */
-  display: flex; /* To ensure it can contain flex children if needed */
-  justify-content: center; /* Optional: Center content horizontally */
-  align-items: center; /* Optional: Center content vertically */
+  margin: 0;
+  /* Ensure there is no margin around the body */
+  padding: 0;
+  /* Ensure there is no padding around the body */
+  height: 100vh;
+  /* Make the body take up the full viewport height */
+  width: 100vw;
+  /* Make the body take up the full viewport width */
+  display: flex;
+  /* To ensure it can contain flex children if needed */
+  justify-content: center;
+  /* Optional: Center content horizontally */
+  align-items: center;
+  /* Optional: Center content vertically */
 }
 
 #main-view {
@@ -306,7 +335,7 @@ body {
 
 .modal-content button {
   background-color: #6200ee;
-  color:white;
+  color: white;
   border-radius: 10px;
   border: none;
   padding: 10px;
