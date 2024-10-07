@@ -99,6 +99,9 @@ export default {
             ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         },
         drawRectangle({ x, y, width, height, fillColor, letter }) {
+            if (!this.colorTankData.play) {
+                fillColor = 'gray';
+            }
             const ctx = this.ctx;
             ctx.fillStyle = fillColor;
             ctx.strokeStyle = 'black';
@@ -220,6 +223,9 @@ export default {
 
             fillColor.forEach((color, colorIndex) => {
                 ctx.fillStyle = this.colorTankData?.colored_lower_tank ? color : 'gray';
+                if (!this.colorTankData.play) {
+                    ctx.fillStyle = 'gray';
+                }
                 const currentHeight = this.currentHeights[index][colorIndex];
                 ctx.fillRect(x + colorIndex * w, y + height - currentHeight, w, currentHeight);
                 ctx.strokeStyle = 'black';

@@ -9,7 +9,8 @@
 const COLORS = {
     DEFAULT: '#b75010',
     YELLOW: 'yellow',
-    RED: 'red'
+    RED: 'red',
+    DISABLED: 'gray'
 };
 
 const SPEED_INTERVALS = {
@@ -78,7 +79,7 @@ export default {
                 x: 50 + index * 90,
                 y: 100,
                 radius: 40,
-                fillColor: COLORS.DEFAULT,
+                fillColor: this.alertLightsData?.play ? COLORS.DEFAULT : COLORS.DISABLED,
                 letter
             }));
         },

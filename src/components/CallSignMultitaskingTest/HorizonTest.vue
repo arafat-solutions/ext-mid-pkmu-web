@@ -47,6 +47,7 @@ export default {
                 if (newVal && newVal.play === true) {
                     this.startAnimations();
                 } else {
+                    this.stopAnimations();
                     console.log("MASUK ELSE");
                 }
             },

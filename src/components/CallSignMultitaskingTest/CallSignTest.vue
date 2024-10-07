@@ -30,7 +30,7 @@ export default {
             callsign: "NA782",
             angle: 60,
             intervalId: null,
-            intervalTime: 0,
+            intervalTime: 1000,
             matchesCall: 0,
             speech: null,
             ctx: null,
