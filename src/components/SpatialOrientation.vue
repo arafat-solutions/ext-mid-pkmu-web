@@ -21,7 +21,7 @@
       </div>
 
       <div class="right-content" style="width: 45%;">
-        <div class="question" style="margin-right: 30%;">
+        <div class="question" style="padding-left: 30px">
           <p v-if="question === 'left'">
             How many Left Turns in the line?
           </p>
