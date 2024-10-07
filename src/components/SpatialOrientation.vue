@@ -6,7 +6,7 @@
     </div>
 
     <div :class="isTrial ? 'timer-container-trial' : 'timer-container'">
-      Time: {{ formattedTime }}
+      Question: {{ config.current_question }} / {{ config.number_of_questions }}
       <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
       <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
       <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
@@ -79,7 +79,8 @@ export default {
       countdownInterval: null,
       config: {
         crash: null,
-        duration: null,
+        number_of_questions: null,
+        current_question: 0,
         full_image: null, //true or false
         left_turn: null, //true or false
         right_turn: null, //true or false
@@ -96,7 +97,10 @@ export default {
         total_question: 0,
         correct_answer: 0,
         avg_response_time: 0,
+        graph_data: [],
       },
+      userInputs: [],
+      questionStartTime: null,
       selectedAnswer: null,
       trainingMode: false
     };
@@ -126,7 +130,6 @@ export default {
       this.isPause = true;
     },
     startAgain() {
-      this.startCountdown();
       if (!this.config.full_image) {
         this.drawLineOneByOne(this.drawIndex);
       }
@@ -147,13 +150,13 @@ export default {
     },
     initConfig() {
       let config = JSON.parse(localStorage.getItem('scheduleData'));
-      
+
       if (config) {
         try {
           // @TODO: Config Flow
           const spatialOrientation = config.tests.find(test => test.testUrl === 'spatial-orientation-test').configs[0];
           console.log(spatialOrientation, 'spatialOrientation');
-          this.config.duration = spatialOrientation.duration * 60;
+          this.config.number_of_questions = spatialOrientation.number_of_question;
           this.config.batteryTestConfigId = spatialOrientation.id;
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
@@ -173,35 +176,24 @@ export default {
           console.error('Error parsing schedule data:', e);
         } finally {
           this.generateCoordinat();
-          this.startCountdown();
         }
       } else {
         console.warn('No schedule data found in localStorage.');
       }
     },
-    startCountdown() {
-      this.countdownInterval = setInterval(() => {
-        if (this.config.duration > 0) {
-          this.config.duration--;
-        } else {
-          clearInterval(this.countdownInterval);
-          clearInterval(this.drawLineinterval);
-          clearInterval(this.tailRemoveInterval)
-
-          // Submit Answer
-          setTimeout(() => {
-            this.calculatedResult();
-          }, 1000);
-        }
-      }, 1000);
-    },
     calculatedResult() {
-      this.result.total_question = this.totalQuestion;
+      this.result.total_question = this.config.number_of_questions;
       this.result.correct_answer = this.correctAnswer;
 
-      const resultTimeResonded = this.averageResponseTime()
-      this.result.avg_response_time = resultTimeResonded.toFixed(2);
+      const resultTimeResponded = this.averageResponseTime()
+      this.result.avg_response_time = resultTimeResponded.toFixed(2);
 
+      // Add this to include the response times for each question
+      this.result.response_times = this.responseDurations.map(duration => ({
+        responseTime: duration,
+        timestamp: Date.now()
+      }));
+      this.result.graph_data = this.userInputs;
       this.submitResult()
     },
     async submitResult() {
@@ -268,6 +260,7 @@ export default {
       } else {
         await this.drawLineOneByOne();
       }
+      this.questionStartTime = Date.now();
     },
     async generateCoordinat() {
       try {
@@ -489,6 +482,7 @@ export default {
     },
     drawArrowHead(isInit = false) {
       const canvas = this.$refs.lineCanvas;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
       if (this.lines.length < 2) return;
@@ -648,12 +642,27 @@ export default {
       }
 
       this.isButtonDisabled = true;
+      const responseTime = Date.now() - this.questionStartTime;
 
       if (this.answer === this.selectedAnswer) {
         this.correctAnswer++;
         this.responseTime = Date.now();
         this.calculateResponseTime();
+        this.userInputs.push({
+          type: 'correct',
+          responseTime: responseTime,
+          timestamp: Date.now(),
+        });
+      } else {
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: responseTime,
+          timestamp: Date.now(),
+        });
       }
+
+      console.log('responseTime', responseTime);
+      console.log(this.userInputs[this.userInputs.length - 1], 'userInputs');
 
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
@@ -664,10 +673,23 @@ export default {
       clearTimeout(this.timeoutIdRemoveInterval);
       this.timeoutIdRemoveInterval = null;
 
-      setTimeout(() => {
-        this.generateCoordinat();
-        this.selectedAnswer = null; // Reset selected answer for the next question
-      }, 1500);
+      this.config.current_question++;
+
+      if (this.config.current_question >= this.config.number_of_questions) {
+        this.endGame();
+      } else {
+        setTimeout(() => {
+          this.generateCoordinat();
+          this.selectedAnswer = null;
+        }, 1500);
+      }
+    },
+    endGame() {
+      clearInterval(this.tailRemoveInterval);
+      clearInterval(this.drawLineinterval);
+      clearTimeout(this.timeoutIdRemoveInterval);
+
+      this.calculatedResult();
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
@@ -679,7 +701,8 @@ export default {
       return 0;
     },
     calculateResponseTime() {
-      return this.responseDurations.push(this.responseTime - this.responseQuestion);
+      const responseTime = Date.now() - this.questionStartTime;
+      this.responseDurations.push(responseTime);
     },
   },
   computed: {
