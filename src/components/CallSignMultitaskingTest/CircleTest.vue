@@ -61,7 +61,7 @@ export default {
             this.initCircleConfig();
             this.initCanvas();
             this.drawVisual();
-            if (this.alertLightsData.play) {
+            if (this.alertLightsData?.play) {
                 this.startChangingLight();
             }
         },
@@ -70,8 +70,7 @@ export default {
             this.startChangingLight();
         },
         calculateInterval() {
-            const { speed, frequency } = this.alertLightsData;
-            this.setInterval = SPEED_INTERVALS[speed] + FREQUENCY_INTERVALS[frequency];
+            this.setInterval = SPEED_INTERVALS[this.alertLightsData?.speed] + FREQUENCY_INTERVALS[this.alertLightsData?.frequency];
         },
         initCircleConfig() {
             const letters = ['T', 'Y', 'U', 'I'];

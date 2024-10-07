@@ -59,7 +59,7 @@ export default {
             this.initVisual();
             this.callsign = this.generateCallSign();
             this.drawVisual();
-            if (this.callsignData.play) {
+            if (this.callsignData?.play) {
                 this.initConfig();
                 // this.initSpeech()
             }
@@ -126,8 +126,8 @@ export default {
                 'high': 0.7
             };
 
-            this.intervalTime = frequencyMap[this.callsignData.frequency] || 20000;
-            this.matchesCall = matchesMap[this.callsignData.matches] || 0.5;
+            this.intervalTime = frequencyMap[this.callsignData?.frequency] || 20000;
+            this.matchesCall = matchesMap[this.callsignData?.matches] || 0.5;
         },
         generateCallSign() {
             const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -217,7 +217,7 @@ export default {
             }
         },
         startSpeechTest() {
-            if (this.callsignData.play) {
+            if (this.callsignData?.play) {
                 this.initSpeech()
             }
         },

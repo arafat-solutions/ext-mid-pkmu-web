@@ -41,7 +41,21 @@ export default {
             gamepadIndex: null,
         };
     },
+    watch: {
+        horizonData: {
+            handler(newVal) {
+                if (newVal && newVal.play === true) {
+                    this.startAnimations();
+                } else {
+                    console.log("MASUK ELSE");
+                }
+            },
+            immediate: true,
+            deep: true
+        }
+    },
     mounted() {
+        console.log('Horizon mounted, horizonData:', this.horizonData);
         this.initializeTest();
     },
     unmounted() {
@@ -53,9 +67,6 @@ export default {
         initializeTest() {
             this.initVisual();
             this.drawVisual();
-            if (this.horizonData.play) {
-                this.startAnimations();
-            }
 
             window.addEventListener('gamepadconnected', this.onGamepadConnected);
             window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
@@ -265,7 +276,7 @@ export default {
                 medium: 4000,
                 fast: 3000
             };
-            return speedMap[this.horizonData.speed] || 4000;
+            return speedMap[this.horizonData?.speed] || 4000;
         },
         handleMouseEnter(event) {
             const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
@@ -329,6 +340,7 @@ export default {
         },
 
     },
+
 };
 </script>
 
