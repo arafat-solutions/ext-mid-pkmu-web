@@ -199,7 +199,7 @@ export default {
           // Add to userInputs for graph data
           this.userInputs.push({
             type: 'missed',
-            responseTime: null,
+            responseTime: 1000, // if missed, set response time to 1000ms
             timestamp: Date.now(),
             shapeType: obj.type
           });
@@ -373,10 +373,10 @@ export default {
       ctx.arc(this.width / 2, this.height / 2, radius, 0, 2 * Math.PI);
       ctx.stroke();
 
-      // Draw Scanner
+      // Draw Scanner (wider angle)
       ctx.beginPath();
       ctx.moveTo(this.width / 2, this.height / 2);
-      ctx.arc(this.width / 2, this.height / 2, radius, this.scannerAngle, this.scannerAngle + Math.PI / 6);
+      ctx.arc(this.width / 2, this.height / 2, radius, this.scannerAngle, this.scannerAngle + Math.PI / 3);
       ctx.closePath();
       ctx.fillStyle = "rgba(0, 255, 0, 0.2)";
       ctx.fill();
@@ -414,23 +414,14 @@ export default {
             this.drawTriangle(ctx, obj.x, obj.y, this.setShapeSize('triangle'));
           }
 
-          //Set Opacity Object
-          ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
+          // Set Opacity Object (gradual fade-in)
+          const opacity = Math.min((Date.now() - obj.creationTime) / 1000, 1);
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
           ctx.fill();
 
           // Detect and track object
           if (!obj.detected) {
-            obj.detected = true;
-            obj.appearanceTime = Date.now();
-            if (obj.type === this.config.targetShape) {
-              this.detectedObject++;
-              // Set a timeout to check if the user missed the target
-              setTimeout(() => {
-                if (this.currentVisibleObjects.includes(obj)) {
-                  this.handleMissedTarget(obj);
-                }
-              }, 2000); // Adjust this value based on how long you want to give the user to respond
-            }
+            this.detectShape(obj);
           }
 
           this.currentVisibleObjects.push(obj);
@@ -442,14 +433,6 @@ export default {
 
       // Update isTargetCurrentlyVisible based on currentVisibleObjects
       this.isTargetCurrentlyVisible = this.currentVisibleObjects.some(obj => obj.type === this.config.targetShape);
-
-      // Remove objects that are no longer visible
-      this.objects = this.objects.filter(obj => {
-        if (obj.sweepCount > 5) { // Adjust this value as needed
-          return false;
-        }
-        return true;
-      });
     },
 
     updateVisibleObjects() {
@@ -589,7 +572,7 @@ export default {
     },
     isInScannedArea(angle, distance, radius) {
       const scannerStartAngle = this.scannerAngle;
-      const scannerEndAngle = this.scannerAngle + Math.PI / 6;
+      const scannerEndAngle = this.scannerAngle + Math.PI / 3; // Widened to 60 degrees
       const normalizedAngle = angle < 0 ? angle + 2 * Math.PI : angle;
       const normalizedScannerEndAngle = scannerEndAngle > 2 * Math.PI ? scannerEndAngle - 2 * Math.PI : scannerEndAngle;
       const withinRadius = distance <= radius;
@@ -608,9 +591,10 @@ export default {
         obj.y = y;
         obj.detected = false;
         obj.sweepCount = 0;
+        obj.creationTime = Date.now(); // Add creation time for fade-in effect
         return obj;
       }
-      return { type, x, y, detected: false, sweepCount: 0 };
+      return { type, x, y, detected: false, sweepCount: 0, creationTime: Date.now() };
     },
 
     removeObject(obj) {
