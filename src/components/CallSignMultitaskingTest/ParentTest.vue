@@ -1,22 +1,35 @@
 <template>
     <div id="parent-callsign-multitask">
-        <ModalComponent :visible="isModalVisible" title="Start Test" message="Are you sure you want to start this test?"
-            @confirm="handleConfirm" @cancel="handleCancel" />
+        <!-- modal for start -->
+        <!-- <ModalComponent :visible="isModalVisible && indexConfig === 0" title="Start Test"
+            description="Are you sure you want to start this test?" @confirm="handleConfirm" @cancel="handleCancel" /> -->
+
+        <!-- Modal for change test -->
+        <ModalComponent
+            :visible="indexTrainingConfig >= 0 && indexTrainingConfig <= (trainingConfigs.length - 1) && isModalTrainingVisible"
+            title="Start Test Training" description="Are you sure you want to start this training test?"
+            @confirm="handleConfirmTraining" @cancel="handleCancel" />
+
         <div class="left-side">
-            <ColorTest :color-tank-data="configBe.color_tank" :update-results="updateResults"
+            <ColorTest v-if="configReady" :color-tank-data="configBe.color_tank" :update-results="updateResults"
                 :finalScore="results.color_tank.final_score" />
         </div>
         <div class="right-side">
-            <CircleTest :alert-lights-data="configBe.alert_lights" :update-results="updateResults"
+            <CircleTest v-if="configReady" :alert-lights-data="configBe.alert_lights" :update-results="updateResults"
                 :update-result-light-avg-time="updateResultLightAvgTime" />
-            <HorizonTest :horizon-data="configBe.horizon" :update-results="updateResults" />
-            <CallSignTest :callsign-data="configBe.callsign" :update-results="updateResults" ref="callSignTest" />
+            <HorizonTest v-if="configReady" :horizon-data="configBe.horizon" :update-results="updateResults" />
+            <CallSignTest v-if="configReady" :callsign-data="configBe.callsign" :update-results="updateResults"
+                ref="callSignTest" />
         </div>
         <div class="timer">
             <p>Waktu:</p>
             <p>{{ formatTime(testTime) }}</p>
         </div>
         <div v-if="seeResults" class="results">
+            <div class="test">
+                <p>index config: {{ indexConfig }}</p>
+                <p>index training config: {{ indexTrainingConfig }}</p>
+            </div>
             <div class="test">
                 <p class="title">Color </p>
                 <div class="test-result">
@@ -65,6 +78,7 @@ import CircleTest from './CircleTest.vue';
 import CallSignTest from './CallSignTest.vue';
 import ModalComponent from './Modal.vue'
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs, getCurrentConfig, getStoredIndices } from '@/utils/configs';
 
 export default {
     name: 'CallSignMultitask',
@@ -74,30 +88,29 @@ export default {
             startTest: false,
             testTime: 5 * 60,
             tesInterva: null,
-            callSignInputFocus: false,
             configBe: {
                 alert_lights: {
                     frequency: 'often',// seldom, medium, often // seberapa sering dia nyala
                     speed: 'fast',// slow, medium, fast
-                    play: true
+                    play: false
                 },
                 callsign: {
                     frequency: 'often', // seldom, medium, often seberapa sering dia texttospeech nya ngomong
                     matches: 'high', // low, medium, high = seberapa sering dia dipanggil
                     speed: 'slow', // 
-                    play: true,
+                    play: false,
                 },
                 color_tank: {
                     negative_score: true,
                     speed: 'fast',
                     descend_speed: "fast", // slow, medium, fast
                     colored_lower_tank: true,
-                    play: true,
+                    play: false,
                     final_score: 0
                 },
                 horizon: {
                     speed: 'medium', // slow, medium, fast
-                    play: true
+                    play: false
                 },
             },
             results: {
@@ -123,13 +136,20 @@ export default {
                     final_score: 120 // sisa yang 120
                 }
             },
-            testId: '',
+            seeResults: false, // untuk hide show debugging
+            refreshCount: 0,
+            // data for configs
+            configs: [],
+            trainingConfigs: [],
+            indexConfig: 0,
+            indexTrainingConfig: 0,
             moduleId: '',
             sessionId: '',
             userId: '',
-            seeResults: false, // untuk hide show debugging
+            testId: '',
+            isModalTrainingVisible: false,
             isModalVisible: true,
-            refreshCount: 0,
+            configReady: false,
         }
     },
     async mounted() {
@@ -149,6 +169,7 @@ export default {
     beforeUnmount() {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
+        window.removeEventListener('beforeunload', this.handleBeforeUnload)
 
         clearInterval(this.tesInterval);
     },
@@ -164,58 +185,107 @@ export default {
                     this.testTime--;
                 } else {
                     clearInterval(this.tesInterval);
-                    await this.submitResult();
+                    this.$refs.callSignTest.cleanup()
+
+                    if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+                        this.indexTrainingConfig++
+                        this.isModalTrainingVisible = true
+                    } else if (this.indexConfig < (this.configs.length - 1)) {
+                        this.indexConfig++
+                        this.isModalTrainingVisible = true
+                    } else {
+                        await this.submitResult();
+                    }
+
+                    // Update localStorage with new indices
+                    localStorage.setItem("index-config-call-sign", JSON.stringify({
+                        indexTrainingConfig: this.indexTrainingConfig,
+                        indexConfig: this.indexConfig
+                    }))
                 }
             }, 1000)
         },
         initConfig() {
-            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-            // @TODO: Config Flow
-            const config = scheduleData.tests.find((t) => t.testUrl === 'call-sign-multitask-test').configs[0]
-            const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
-            // const { alert_lights, callsign, color_tank, horizon, id, subtask } = config
-
-            const newConfig = {
-                alert_lights: {
-                    frequency: alert_lights.frequency,
-                    speed: alert_lights.speed,
-                    play: subtask.alert_lights
-                },
-                callsign: {
-                    frequency: callsign.frequency,
-                    matches: callsign.matches,
-                    speed: callsign.speed,
-                    play: subtask.callsign
-                },
-                color_tank: {
-                    negative_score: color_tank.negative_score,
-                    speed: color_tank.speed,
-                    descend_speed: color_tank.descend_speed,
-                    colored_lower_tank: color_tank.colored_lower_tank,
-                    play: subtask.color_tank,
-                },
-                horizon: {
-                    speed: horizon.speed,
-                    play: subtask.horizon
-                },
+            const configData = getConfigs('call-sign-multitask-test');
+            if (!configData) {
+                this.$router.push('/module');
+                return;
             }
-            this.configBe = newConfig
-            this.testTime = duration * 60
-            this.testId = id
-            this.moduleId = scheduleData.moduleId
-            this.sessionId = scheduleData.sessionId
-            this.userId = scheduleData.userId
-            this.results.color_tank.final_score = 120 // hardcode
+
+            this.configs = configData.configs;
+            this.trainingConfigs = configData.trainingConfigs;
+            this.moduleId = configData.moduleId;
+            this.sessionId = configData.sessionId;
+            this.userId = configData.userId;
+
+            const savedIndices = getStoredIndices('index-config-call-sign');
+            if (savedIndices) {
+                this.indexTrainingConfig = savedIndices.indexTrainingConfig;
+                this.indexConfig = savedIndices.indexConfig;
+            }
+
+            this.isModalTrainingVisible = true;
+            this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+        },
+        setConfig(config) {
+            // const { alert_lights, callsign, color_tank, duration, horizon, id, subtask } = config
+            const { alert_lights, callsign, color_tank, horizon, id, subtask } = config
+
+            this.$nextTick(() => {
+                this.configBe.alert_lights.frequency = alert_lights?.frequency
+                this.configBe.alert_lights.speed = alert_lights?.speed
+                this.configBe.alert_lights.play = subtask?.alert_lights
+
+                this.configBe.callsign.frequency = callsign?.frequency
+                this.configBe.callsign.matches = callsign?.matches
+                this.configBe.callsign.speed = callsign?.speed
+                this.configBe.callsign.play = subtask?.callsign
+
+                this.configBe.color_tank.negative_score = color_tank?.negative_score
+                this.configBe.color_tank.speed = color_tank?.speed
+                this.configBe.color_tank.descend_speed = color_tank?.descend_speed
+                this.configBe.color_tank.colored_lower_tank = color_tank?.colored_lower_tank
+                this.configBe.color_tank.play = subtask?.color_tank
+
+                this.configBe.horizon.speed = horizon?.speed
+                this.configBe.horizon.play = subtask?.horizon
+
+                this.testTime = 2 * 60
+                this.testId = id
+                this.results.color_tank.final_score = 120 // hardcode
+
+                this.configReady = true;
+            });
         },
         handleConfirm() {
             this.isModalVisible = false
             this.startTest = true
             this.countDownTestTime()
-            this.$refs.callSignTest.startSpeechTest()
+            if (this.configBe.callsign.play === true) {
+                this.$refs.callSignTest.startSpeechTest()
+            }
         },
         handleCancel() {
             this.isModalVisible = false;
             this.$router.replace('/module');
+        },
+        handleConfirmTraining() {
+            const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
+                ? this.trainingConfigs[this.indexTrainingConfig]
+                : this.configs[this.indexConfig]
+
+            this.setConfig(config)
+
+            console.log(config, "<<< config")
+
+            localStorage.setItem("index-config-call-sign", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
+
+            this.isModalTrainingVisible = false
+            this.countDownTestTime()
+
+            if (this.configBe.callsign.play === true) {
+                this.$refs.callSignTest.startSpeechTest()
+            }
         },
         updateResults(component, data) {
             if (Object.hasOwn(this.results, component)) {
@@ -255,6 +325,7 @@ export default {
                 removeTestByNameAndUpdateLocalStorage('Multitasking Mix With Call Sign')
                 // Remove the refresh count in localStorage after successful submission
                 localStorage.removeItem('refreshCallsignMultitaskTest');
+                localStorage.removeItem("index-config-call-sign")
                 this.$router.push('/module');
             } catch (error) {
                 console.log(error, "<< error")

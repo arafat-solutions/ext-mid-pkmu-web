@@ -62,12 +62,8 @@ export default {
     },
     mounted() {
         this.initializeTest()
-        window.addEventListener('keydown', this.handlePhysicalKeyPress);
-        window.addEventListener('keyup', this.handlePhysicalKeyRelease);
     },
     beforeUnmount() {
-        window.removeEventListener('keydown', this.handlePhysicalKeyPress);
-        window.removeEventListener('keyup', this.handlePhysicalKeyRelease);
         clearInterval(this.animationInterval)
     },
     methods: {
@@ -75,7 +71,7 @@ export default {
             this.initConfig();
             this.initVisual();
             this.drawVisual();
-            if (this.colorTankData.play) {
+            if (this.colorTankData?.play === true) {
                 this.startDecreaseAnimation()
             }
         },
@@ -89,9 +85,8 @@ export default {
                 medium: 25000,
                 fast: 20000
             }
-            const { descend_speed, speed } = this.colorTankData;
-            this.currentDescendSpeed = descend_speed || 'medium'; // Set default if undefined
-            this.decreaseInterval = DECREASE_INTERVAL[speed] || 20000; // Set default if undefined
+            this.currentDescendSpeed = this.colorTankData?.descend_speed || 'medium'; // Set default if undefined
+            this.decreaseInterval = DECREASE_INTERVAL[this.colorTankData?.speed] || 20000; // Set default if undefined
         },
 
         drawVisual() {
@@ -224,7 +219,7 @@ export default {
 
 
             fillColor.forEach((color, colorIndex) => {
-                ctx.fillStyle = this.colorTankData.colored_lower_tank ? color : 'gray';
+                ctx.fillStyle = this.colorTankData?.colored_lower_tank ? color : 'gray';
                 const currentHeight = this.currentHeights[index][colorIndex];
                 ctx.fillRect(x + colorIndex * w, y + height - currentHeight, w, currentHeight);
                 ctx.strokeStyle = 'black';
@@ -324,69 +319,40 @@ export default {
         getRandomNumber(max) {
             return Math.floor(Math.random() * max);
         },
-        handlePhysicalKeyPress(event) {
-            this.handleKeyPress(event);
-        },
-        handlePhysicalKeyRelease(event) {
-            this.handleKeyRelease({ key: event.key });
-        },
         handleKeyPress(event) {
-            this.processKeyPress(event);
-        },
 
-        handleKeyRelease(event) {
-            const key = event.key.toUpperCase();
-            const index = this.activeKeys.indexOf(key);
-            if (index > -1) {
-                this.activeKeys.splice(index, 1);
-            }
-        },
-        processKeyPress(event) {
-            let key = event.key;
-            if (typeof key === 'string') {
-                key = key.toUpperCase();
-            } else if (typeof event === 'object' && event.key && typeof event.key === 'string') {
-                key = event.key.toUpperCase();
-            } else {
-                console.warn('Unexpected key format:', event);
-                return;  // Exit the function if we can't process the key
-            }
+            let key = event.key.toUpperCase();
 
-            if ('QWER'.includes(key)) {
-                this.currentPattern = [key];
-            } else if ('ASDF'.includes(key) && this.currentPattern.length > 0 && this.currentPattern.length < 3) {
-                if (this.currentPattern.length === 1) {
-                    // This is the first ASDF key
-                    this.currentPattern.push(key);
-                } else if (this.currentPattern.length === 2) {
-                    // This is the second ASDF key, check if it corresponds to the same color as the first
-                    const firstTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === this.currentPattern[1]);
-                    const secondTankIndex = this.rectanglesColorize.findIndex(rect => rect.letter === key);
-
-                    if (firstTankIndex !== -1 && secondTankIndex !== -1) {
-                        const selectedColor = this.rectangles.find(rect => rect.letter === this.currentPattern[0])?.fillColor;
-                        const firstColorIndex = this.rectanglesColorize[firstTankIndex].fillColor.indexOf(selectedColor);
-                        const secondColorIndex = this.rectanglesColorize[secondTankIndex].fillColor.indexOf(selectedColor);
-
-                        if (firstColorIndex !== -1 && secondColorIndex !== -1) {
-                            this.currentPattern.push(key);
-                        } else {
-                            // Colors don't match, reset the pattern
-                            this.currentPattern = [this.currentPattern[0]];
-                        }
-                    } else {
-                        // Invalid tank keys, reset the pattern
-                        this.currentPattern = [this.currentPattern[0]];
-                    }
+            if ("QWER".includes(key)) {
+                this.resetPatternAndKeyboard()
+                this.activeKeys[0] = key;
+            } else if ('ASDF'.includes(key)) {
+                if (this.activeKeys.length < 3 && !this.activeKeys.includes(key)) {
+                    this.activeKeys.push(key)
                 }
             }
 
-            if (!this.activeKeys.includes(key)) {
-                this.activeKeys.push(key);
-            }
 
-            if (this.currentPattern.length === 3) {
+            if (this.activeKeys.length === 3) {
+                this.processKeyPress(this.activeKeys);
                 this.handleCompletePattern();
+            }
+        },
+
+        handleKeyRelease() {
+            // const key = event.key.toUpperCase();
+            // const index = this.activeKeys.indexOf(key);
+            // if (index > -1) {
+            //     this.activeKeys.splice(index, 1);
+            // }
+        },
+        processKeyPress(keys) {
+            const [colorKey, firstTankKey, secondTankKey] = keys;
+
+            if ('QWER'.includes(colorKey) && 'ASDF'.includes(firstTankKey) && 'ASDF'.includes(secondTankKey)) {
+                this.currentPattern = keys;
+            } else {
+                this.currentPattern = [];
             }
         },
 
@@ -408,8 +374,6 @@ export default {
                     }
                 }
             }
-
-            this.resetPatternAndKeyboard();
         },
 
         resetPatternAndKeyboard() {
@@ -481,7 +445,7 @@ export default {
             ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
 
             rect.fillColor.forEach((color, index) => {
-                ctx.fillStyle = this.colorTankData.colored_lower_tank ? color : 'gray';
+                ctx.fillStyle = this.colorTankData?.colored_lower_tank ? color : 'gray';
                 const height = this.currentHeights[tankIndex][index];
                 ctx.fillRect(rect.x + index * w, rect.y + rect.height - height, w, height);
                 ctx.strokeStyle = 'black';
