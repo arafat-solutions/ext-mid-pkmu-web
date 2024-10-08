@@ -9,6 +9,7 @@
             @click="handleInstrumentClick(instrument.key)">
             <svg :ref="'gauge' + index" width="120" height="120" viewBox="0 0 120 120"></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
+            <div class="wrong-inputs">Wrong: {{ wrongInputs[instrument.key] }}</div>
           </div>
         </div>
         <div class="simulation-box">
@@ -19,6 +20,7 @@
             @click="handleInstrumentClick(instrument.key)">
             <svg :ref="'gauge' + (index + 2)" width="120" height="120" viewBox="0 0 120 120"></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
+            <div class="wrong-inputs">Wrong: {{ wrongInputs[instrument.key] }}</div>
           </div>
         </div>
       </div>
@@ -83,7 +85,14 @@ export default {
         V: 0,
         N: 0,
         B: 0
-      }
+      },
+      wrongInputs: {
+        C: 0,
+        V: 0,
+        N: 0,
+        B: 0
+      },
+      redZoneThreshold: 75,
     };
   },
   computed: {
@@ -93,7 +102,6 @@ export default {
   },
   mounted() {
     this.initializeGame();
-    console.log(this.config, 'config')
   },
   activated() {
     this.resumeGame();
@@ -291,16 +299,16 @@ export default {
         .attr('font-size', '16px')
         .attr('font-weight', 'bold');
 
-      const updateGauge = (value) => {
+        const updateGauge = (value) => {
         const angle = this.valueToAngle(value);
         needle.attr('transform', `rotate(${angle}, ${centerX}, ${centerY})`);
         valueText.text(Math.round(value));
 
-        if (value >= 75 && !this.gaugeTimers[instrument.key]) {
+        if (value >= this.redZoneThreshold && !this.gaugeTimers[instrument.key]) {
           this.gaugeTimers[instrument.key] = setInterval(() => {
             this.gaugeLateTime[instrument.key] += 10;
           }, 10);
-        } else if (value < 75 && this.gaugeTimers[instrument.key]) {
+        } else if (value < this.redZoneThreshold && this.gaugeTimers[instrument.key]) {
           clearInterval(this.gaugeTimers[instrument.key]);
           this.gaugeTimers[instrument.key] = null;
         }
@@ -355,21 +363,28 @@ export default {
       }
     },
     handleInstrumentClick(key) {
-      this.handleInstrumentKey(key);
-    },
-    handleInstrumentKey(key) {
       const instrument = [...this.instrumentsLeft, ...this.instrumentsRight].find(i => i.key === key);
       if (instrument) {
-        instrument.targetValue = 0;
-        this.updateGauges();
+        if (instrument.value >= this.redZoneThreshold) {
+          instrument.targetValue = 0;
+          this.updateGauges();
 
-        if (this.gaugeTimers[key]) {
-          clearInterval(this.gaugeTimers[key]);
-          this.gaugeTimers[key] = null;
-          console.log(`Late time for ${key}: ${this.gaugeLateTime[key]}ms`);
-          this.gaugeLateTime[key] = 0;
+          if (this.gaugeTimers[key]) {
+            clearInterval(this.gaugeTimers[key]);
+            this.gaugeTimers[key] = null;
+            console.log(`Late time for ${key}: ${this.gaugeLateTime[key]}ms`);
+            this.gaugeLateTime[key] = 0;
+          }
+        } else {
+          // Count as wrong input
+          this.wrongInputs[key]++;
+          console.log(`Wrong input for ${key}. Total wrong inputs: ${this.wrongInputs[key]}`);
         }
       }
+    },
+    
+    handleInstrumentKey(key) {
+      this.handleInstrumentClick(key);
     },
     checkCollision() {
       const currentTime = Date.now();
@@ -533,7 +548,7 @@ export default {
     finishGame() {
       this.pauseGame();
       console.log('Game finished');
-      this.$emit('test-finished', { collisionCount: this.collisionCount, gaugeLateTime: this.gaugeLateTime });
+      this.$emit('test-finished', { collisionCount: this.collisionCount, gaugeLateTime: this.gaugeLateTime, wrongInputs: this.wrongInputs });
       console.log(`Collisions: ${this.collisionCount}`);
       console.log(`Late time for C: ${this.gaugeLateTime.C}ms`);
       console.log(`Late time for V: ${this.gaugeLateTime.V}ms`);
@@ -616,5 +631,25 @@ export default {
   text-align: center;
   margin-top: 20px;
   font-weight: bold;
+}
+
+.instrument.clickable {
+  cursor: pointer;
+}
+
+.instrument.clickable::after {
+  content: "Click!";
+  color: red;
+  font-weight: bold;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.wrong-inputs {
+  font-size: 12px;
+  color: red;
+  margin-top: 5px;
 }
 </style>
