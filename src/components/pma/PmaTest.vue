@@ -136,11 +136,9 @@ export default {
       } catch (error) {
         console.error(error), "error";
       } finally {
-        this.isLoading = false;
-
         removeTestByNameAndUpdateLocalStorage('PMA Test');
         localStorage.removeItem('reloadCountRadarVigilance');
-        this.$router.push('/module');
+        window.location.href = '/module';
       }
     };
 
