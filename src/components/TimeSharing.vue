@@ -10,7 +10,7 @@
 <script>
 import PlaneSimulator from '@/components/time-sharing/PlaneSimulator.vue';
 import MathTest from '@/components/time-sharing/MathTest.vue';
-import { getConfigs, getCurrentConfig, getStoredIndices } from '@/utils/configs';
+import { getConfigs, getStoredIndices } from '@/utils/configs';
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
 
 export default {
@@ -25,6 +25,7 @@ export default {
       indexConfig: 0,
       indexTrainingConfig: 0,
       config: {
+        id:'',
         arithmetics: { frequency: "medium", complexity: "medium", output: "sound" },
         difficultyLevel: "Mudah",
         duration: "2",
@@ -39,10 +40,10 @@ export default {
       testId: '',
     };
   },
+  mounted() {
+    this.initConfig();
+  },
   methods: {
-    mounted() {
-      this.initConfig()
-    },
     initConfig() {
       const configData = getConfigs('time-sharing-test');
       if (!configData) {
@@ -50,6 +51,8 @@ export default {
         return;
       }
       this.configs = configData.configs;
+      this.config = this.configs[0]; 
+      this.testId = this.configs[0].id; 
       this.trainingConfigs = configData.trainingConfigs;
       this.moduleId = configData.moduleId;
       this.sessionId = configData.sessionId;
@@ -60,13 +63,14 @@ export default {
         this.indexConfig = savedIndices.indexConfig;
       }
       this.isModalTrainingVisible = true;
-      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+      // this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+      this.setConfig(this.config);
     },
     setConfig(config) {
       this.$nextTick(() => {
+        console.log('Current config:', config);
         this.config = config;
         this.testId = config.id;
-        console.log('true config parent', this.config);
       });
     },
     switchTask() {
@@ -85,11 +89,10 @@ export default {
     async handleSubmitTest(results) {
       const payload = {
         moduleId: this.moduleId,
-        sessionId: this.sessionId,
+        testSessionId: this.sessionId,
         userId: this.userId,
-        testId: this.testId,
         batteryTestConfigId: this.testId,
-        results: {
+        result: {
           mathTestResults: this.mathTestResults,
           graph_data: this.userInputsMathTest,
           ...results,
