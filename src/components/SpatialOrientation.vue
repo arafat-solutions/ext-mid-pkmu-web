@@ -86,7 +86,7 @@ export default {
         right_turn: null, //true or false
         speed: null,
         speed_increasing: null, //true or false,
-        max_turns: 5, // New configurable variable for maximum turns
+        max_turns: 199, // New configurable variable for maximum turns
       },
       totalQuestion: 0,
       correctAnswer: 0,
