@@ -67,7 +67,7 @@ export default {
       page: 1,
       currentRowDisabled: false,
       currentTask: 1,
-      numberOfTask: null, //positive number
+      numberOfTask: 10, //positive number
       totalRow: 10,
       stringSize: null, //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: null, //true or false
@@ -136,7 +136,7 @@ export default {
           this.includeDigits = accousticMemoryConfig.combination.include_number;
           this.excludeVowels = !accousticMemoryConfig.combination.vocal;
           this.readingSpeed = accousticMemoryConfig.speed;
-          this.numberOfTask = accousticMemoryConfig.number_of_task;
+          this.numberOfTask = accousticMemoryConfig.number_of_task ?? 10;
           this.isConfigLoaded = true;
         } catch (e) {
           console.error('Error parsing schedule data:', e);
@@ -247,7 +247,7 @@ export default {
     async readQuestion() {
       const synth = window.speechSynthesis;
       const utterance = this.setupSound();
-      utterance.text = 'The reference letter';
+      utterance.text = 'Perhatikan kombinasi huruf berikut:';
       // Wrap speechSynthesis.speak in a promise
       await new Promise((resolve, reject) => {
         if (this.isPause) {
@@ -258,7 +258,9 @@ export default {
         synth.speak(utterance);
       });
       await this.spellOutString(this.problem.randomString);
-      utterance.text = 'is introduces. The query letter strings read out are:';
+      // utterance.text = 'is introduces. The query letter strings read out are:';
+      // in bahasa
+      utterance.text = 'Cocokan kombinasi huruf berikut dengan yang sudah di bacakan sebelumnya:';
       // Wrap speechSynthesis.speak in a promise
       await new Promise((resolve, reject) => {
         if (this.isPause) {
@@ -285,7 +287,7 @@ export default {
       }
 
       const utterance = new SpeechSynthesisUtterance();
-      utterance.lang = 'en-US';
+      utterance.lang = 'id-ID';
       utterance.rate = this.getRate();
       utterance.pitch = 1.2;
       utterance.volume = 1;
