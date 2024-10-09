@@ -491,6 +491,9 @@ function checkGamepad() {
 function handleGamepadInput(gamepad) {
     const [leftStickX, leftStickY] = gamepad.axes;
     const canvasRect = canvas.value?.getBoundingClientRect();
+    if (!canvasRect) {
+        return;
+    }
     const canvasWidth = canvasRect.width;
     const canvasHeight = canvasRect.height;
 
