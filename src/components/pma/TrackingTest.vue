@@ -14,11 +14,11 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 export default {
     name: 'PMATrackingTest',
-    setup() {
+    setup(props, { emit }) {
         const canvas = ref(null);
         const joystickConnected = ref(false);
         const thrusterConnected = ref(false);
@@ -175,7 +175,6 @@ export default {
             // Update dot position based on joystick input
             if (joystick) {
                 const joystickState = navigator.getGamepads()[joystick.index];
-                console.log(joystickState)
 
                 if (joystickState) {
                     const axes = joystickState.axes;
@@ -258,6 +257,18 @@ export default {
             window.removeEventListener("gamepadconnected", handleGamepadConnected);
             window.removeEventListener("gamepaddisconnected", handleGamepadDisconnected);
         });
+
+        const emitScoreUpdate = () => {
+            emit('update-score', {
+                blueTime: blueTime.value,
+                redTime: redTime.value,
+                greenTime: greenTime.value,
+                dotRedTime: dotRedTime.value
+            });
+        };
+
+        // Use watch to emit score updates whenever any of the time values change
+        watch([blueTime, redTime, greenTime, dotRedTime], emitScoreUpdate);
 
         return { canvas, joystickConnected, thrusterConnected, blueTime, redTime, greenTime, dotRedTime, greenPillTime, yellowPillTime, redPillTime };
     }
