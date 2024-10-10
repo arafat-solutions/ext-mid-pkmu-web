@@ -44,8 +44,8 @@
         </div>
     </div>
     <div class="timerMaze">
-        <p>Waktu:</p>
-        <p>{{ formatTime(config.duration) }}</p>
+        <p>Progress:</p>
+        <p>{{ completedMazes }} / {{ config.numberOfMaze }}</p>
     </div>
 </template>
 
@@ -59,10 +59,9 @@ export default {
     setup() {
         const router = useRouter()
 
-        const tesInterval = ref(null)
         const loadingSubmit = ref(false)
-        const mazeWidth = ref(400);
-        const mazeHeight = ref(400);
+        const mazeWidth = ref(400)
+        const mazeHeight = ref(400)
         const gridSizeX = ref(0)
         const gridSizeY = ref(0)
         const cellSize = ref(0)
@@ -84,10 +83,10 @@ export default {
         const lastMoveTime = ref(performance.now());
         const rotationDegree = ref(0);
         const isRotating = ref(false)
-        const isRotationActive = ref(true);
+        const isRotationActive = ref(true)
         const loadingGenerating = ref(false)
         const config = ref({
-            duration: 0,
+            numberOfMaze: 10,
             rotationFrequency: 0,
             size: '',
             difficulty: '',
@@ -104,16 +103,17 @@ export default {
         })
         const arrayMetrics = ref([])
         const refreshCount = ref(0)
+        const completedMazes = ref(0)
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 15;
             switch (config.value.difficulty) {
                 case 'Mudah':
-                    return Math.floor(baseSize * 0.75); // Smaller maze
+                    return Math.floor(baseSize * 0.75);
                 case 'Sedang':
-                    return baseSize; // Original size
+                    return baseSize;
                 case 'Sulit':
-                    return Math.floor(baseSize * 1.25); // Larger maze
+                    return Math.floor(baseSize * 1.25);
                 default:
                     return baseSize;
             }
@@ -131,6 +131,7 @@ export default {
 
             cellSize.value = Math.floor(mazeHeight.value / maxGridSize) - 1;
         }
+
 
         const clearGrid = () => {
             for (let i = 0; i < gridSizeX.value; i++) {
@@ -398,7 +399,6 @@ export default {
                         updateStartTargetCells();
                         generating.value = false;
                         loadingGenerating.value = false
-                        countDownTestTime()
                         restartRotation()
                     }
                 } catch (error) {
@@ -607,11 +607,9 @@ export default {
             if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
                 console.log("Congratulations! You've reached the target!");
 
-                // 1. Push quizMetrics to arrayMetrics
                 arrayMetrics.value.push({ ...quizMetrics.value });
                 localStorage.setItem('arrayMetrics', JSON.stringify(arrayMetrics.value))
 
-                // 2. Reset quizMetrics
                 quizMetrics.value = {
                     correctTurn: 0,
                     wrongTurn: 0,
@@ -620,24 +618,17 @@ export default {
                     avgStepResponse: 0,
                 };
 
-                // 3. Generate new maze
-                // 4. Pause the config.duration countdown
-                clearInterval(tesInterval.value);
+                completedMazes.value++;
 
-                // 5. Reset rotationDegree and stop rotating
-                rotationDegree.value = 0;
-                stopRotation();
-
-                // Generate new maze
-                loadingGenerating.value = true;
-                await generateGrid();
-                await mazeGenerator();
-
-                // Resume the countdown
-                countDownTestTime();
-
-                // Restart rotation
-                restartRotation();
+                if (completedMazes.value >= config.value.numberOfMaze) {
+                    await submitResult();
+                } else {
+                    stopRotation();
+                    loadingGenerating.value = true;
+                    await generateGrid();
+                    await mazeGenerator();
+                    restartRotation();
+                }
             }
         };
 
@@ -653,11 +644,25 @@ export default {
             isRotating.value = true;
             const startTime = Date.now();
             const initialRotation = rotationDegree.value
-            const rotationSpeed = 30
-            const rotationDuration = 5000
+            const rotationDuration = 1000
+
+            let maxRotation;
+            switch (config.value.difficulty) {
+                case 'Mudah':
+                    maxRotation = 90;
+                    break;
+                case 'Sedang':
+                    maxRotation = 180;
+                    break;
+                case 'Sulit':
+                    maxRotation = 270;
+                    break;
+                default:
+                    maxRotation = 90;
+            }
 
             const rotationDirection = Math.random() < 0.5 ? 1 : -1;
-            const currentRotationSpeed = rotationSpeed * rotationDirection;
+            const targetRotation = rotationDirection * (Math.random() * maxRotation);
 
             const animate = () => {
                 if (!isRotationActive.value) {
@@ -667,13 +672,15 @@ export default {
 
                 const elapsedTime = Date.now() - startTime;
                 if (elapsedTime < rotationDuration) {
-                    rotationDegree.value = initialRotation + currentRotationSpeed * elapsedTime / 1000
+                    const progress = elapsedTime / rotationDuration;
+                    rotationDegree.value = initialRotation + targetRotation * progress;
                     requestAnimationFrame(animate);
                 } else {
+                    rotationDegree.value = initialRotation + targetRotation;
                     isRotating.value = false;
                     setTimeout(() => {
                         startRotation();
-                    }, config.value.rotationFrequency);
+                    }, 10000); // 5 seconds longer interval
                 }
             };
             requestAnimationFrame(animate);
@@ -693,9 +700,8 @@ export default {
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-            // @TODO: Config Flow
 
-            const { duration, rotation_frequency, id, size } = configRotatingMaze.configs[0]
+            const { rotation_frequency, id, size, number_of_question } = configRotatingMaze.configs[0]
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,
@@ -704,7 +710,7 @@ export default {
             }
 
             config.value = {
-                duration: duration * 60,
+                numberOfMaze: number_of_question ?? 10,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency],
                 size,
                 difficulty: configRotatingMaze.difficulty,
@@ -712,12 +718,6 @@ export default {
                 sessionId: scheduleData.sessionId,
                 testId: id
             }
-        }
-
-        const formatTime = (seconds) => {
-            const minutes = Math.floor(seconds / 60);
-            const remainderSeconds = seconds % 60;
-            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
         }
 
         const submitResult = async () => {
@@ -750,23 +750,14 @@ export default {
             } catch (error) {
                 console.log(error, "<< error")
             } finally {
-                loadingSubmit.value = false; // Set loading to false when the submission is complete
+                loadingSubmit.value = false;
             }
         }
 
-        const countDownTestTime = () => {
-            if (tesInterval.value) {
-                clearInterval(tesInterval.value);
-            }
-
-            tesInterval.value = setInterval(async () => {
-                if (config.value.duration > 0) {
-                    config.value.duration--;
-                } else {
-                    clearInterval(tesInterval.value);
-                    await submitResult();
-                }
-            }, 1000)
+        const formatTime = (seconds) => {
+            const minutes = Math.floor(seconds / 60);
+            const remainderSeconds = seconds % 60;
+            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
         }
 
         const handleBeforeUnload = () => {
@@ -795,7 +786,7 @@ export default {
         onUnmounted(() => {
             window.removeEventListener('keydown', handleKeyPress)
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            clearInterval(tesInterval.value);
+            
         })
 
         return {
@@ -817,6 +808,8 @@ export default {
             greedyBestFirst,
             changeDifficulty,
             formatTime,
+            completedMazes
+
         };
 
     }
