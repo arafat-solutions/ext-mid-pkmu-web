@@ -89,7 +89,6 @@ export default {
       userId: '',
       testId: '',
 
-      //For Result
       totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
@@ -111,6 +110,17 @@ export default {
       const seconds = (this.config.duration % 60).toString().padStart(2, '0');
       return `${minutes}:${seconds}`;
     },
+  },
+  mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemorySpan') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountRunningMemorySpan', reloadCount.toString())
+
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountRunningMemorySpan', reloadCount.toString())
+    })
+
+    this.initConfig();
   },
   methods: {
     closeModal() {
@@ -164,8 +174,8 @@ export default {
 
           // Update localStorage with new indices
           localStorage.setItem("index-config-running-memory-span", JSON.stringify({
-              indexTrainingConfig: this.indexTrainingConfig,
-              indexConfig: this.indexConfig
+            indexTrainingConfig: this.indexTrainingConfig,
+            indexConfig: this.indexConfig
           }))
         }
       }, 1000);
@@ -190,7 +200,12 @@ export default {
         this.indexConfig = savedIndices.indexConfig;
       }
 
-      this.isModalTrainingVisible = true;
+      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+        this.isModalTrainingVisible = true;
+      } else{
+        this.isModalVisible = true;
+      }
+
       this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
     },
     setConfig(config) {
@@ -233,7 +248,7 @@ export default {
           testSessionId: this.sessionId,
           userId: this.userId,
           batteryTestConfigId: this.testId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemory')),
+          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemorySpan')),
           result: this.result,
         }
 
@@ -256,7 +271,7 @@ export default {
         this.isLoading = false;
 
         removeTestByNameAndUpdateLocalStorage('Running Memory Span Test');
-        localStorage.removeItem('reloadCountRunningMemory');
+        localStorage.removeItem('reloadCountRunningMemorySpan');
         localStorage.removeItem('index-config-running-memory-span')
         this.$router.push('/module');
       }
@@ -318,36 +333,32 @@ export default {
 
       //For Training
       if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
-        this.clearExpression();
-        this.generateAudio();
-        this.isShowQuestion = false;
-
-        return;
-      }
-
-      this.totalQuestion++;
-
-      const reverseAudios = [...this.audios].reverse();
-      let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
-
-      this.responseTime = Date.now();
-
-      if (checkAnswer) {
-        this.correctAnswer++;
-        this.userInputs.push({
-          type: 'correct',
-          responseTime: this.responseTime - this.responseQuestion,
-          timestamp: Date.now(),
-        });
+        //noop
       } else {
-        this.userInputs.push({
-          type: 'wrong',
-          responseTime: this.responseTime - this.responseQuestion,
-          timestamp: Date.now(),
-        });
-      }
+        this.totalQuestion++;
 
-      this.responseDurations.push(this.responseTime - this.responseQuestion)
+        const reverseAudios = [...this.audios].reverse();
+        let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
+
+        this.responseTime = Date.now();
+
+        if (checkAnswer) {
+          this.correctAnswer++;
+          this.userInputs.push({
+            type: 'correct',
+            responseTime: this.responseTime - this.responseQuestion,
+            timestamp: Date.now(),
+          });
+        } else {
+          this.userInputs.push({
+            type: 'wrong',
+            responseTime: this.responseTime - this.responseQuestion,
+            timestamp: Date.now(),
+          });
+        }
+
+        this.responseDurations.push(this.responseTime - this.responseQuestion)
+      }
 
       this.clearExpression();
       this.generateAudio();
@@ -416,17 +427,6 @@ export default {
         alert('Sorry, your browser does not support text-to-speech.');
       }
     },
-  },
-  mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemory') || '0')
-    reloadCount++
-    localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
-
-    window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
-    })
-
-    this.initConfig();
   },
 };
 </script>

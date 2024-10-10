@@ -1,15 +1,28 @@
 <template>
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Spatial Orientation?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal()">Ya</button>
+    </div>
+  </div>
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Spatial Orientation?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal()">Ya</button>
+    </div>
+  </div>
+
   <div class="main-view" v-if="isConfigLoaded">
     <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
       <div class="text">submitting a result</div>
     </div>
 
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container'">
-      Question: {{ config.current_question }} / {{ config.number_of_questions }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+    <div class="timer-container">
+      Question: {{ config.currentQuestion }} / {{ config.numberOfQuestions }}
     </div>
 
     <div class="line-container">
@@ -36,11 +49,8 @@
                 :class="{ 'selected': selectedAnswer === x }" @click="pressAnswer(x)">
                 {{ x }}
               </button>
-              <button class="digit-number next" @click="pressAnswer()" :disabled="selectedAnswer === null">
-                Next
-              </button>
             </div>
-          </div>˝
+          </div>
 
         </div>
       </div>
@@ -50,16 +60,17 @@
 
 <script>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
 
 export default {
   name: 'SpatialOrientation',
   data() {
     return {
+      isModalTrainingVisible: false,
+      isModalVisible: false,
       isButtonDisabled: false,
       isConfigLoaded: false,
       isLoading: false,
-      isTrial: this.$route.query.isTrial ?? false,
-      isPause: false,
       isShowAnswerBox: false,
       width: 480,
       height: 480,
@@ -77,18 +88,18 @@ export default {
       timeoutIdRemoveInterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
-      config: {
-        crash: null,
-        number_of_questions: null,
-        current_question: 0,
-        full_image: null, //true or false
-        left_turn: null, //true or false
-        right_turn: null, //true or false
-        speed: null,
-        speed_increasing: null, //true or false,
-        max_turns: 5, // New configurable variable for maximum turns
-      },
-      totalQuestion: 0,
+
+      //For Config
+      config: {},
+      configs: [],
+      trainingConfigs: [],
+      indexConfig: 0,
+      indexTrainingConfig: 0,
+      moduleId: '',
+      sessionId: '',
+      userId: '',
+      testId: '',
+
       correctAnswer: 0,
       responseQuestion: 0,
       responseTime: 0,
@@ -98,91 +109,119 @@ export default {
         correct_answer: 0,
         avg_response_time: 0,
         graph_data: [],
+        response_times: 0
       },
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      trainingMode: false
     };
   },
-  async mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountSpatial') || '0')
+  mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountSpatialOrientation') || '0')
     reloadCount++
-    localStorage.setItem('reloadCountSpatial', reloadCount.toString())
+    localStorage.setItem('reloadCountSpatialOrientation', reloadCount.toString())
+
     window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountSpatial', reloadCount.toString())
+      localStorage.setItem('reloadCountSpatialOrientation', reloadCount.toString())
     })
 
     this.initConfig();
   },
   methods: {
-    pause() {
-      clearInterval(this.countdownInterval);
+    closeModal() {
+      const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
+        ? this.trainingConfigs[this.indexTrainingConfig]
+        : this.configs[this.indexConfig]
 
-      if (this.drawLineinterval) {
-        clearInterval(this.drawLineinterval);
-      }
+      this.setConfig(config)
+      localStorage.setItem("index-config-spatial-orientation", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
 
-      if (this.drawIndexRemoval > 0) {
-        clearInterval(this.tailRemoveInterval);
-      }
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
 
-      this.isPause = true;
+      setTimeout(() => {
+        this.generateCoordinat();
+      }, 1000);
     },
-    startAgain() {
-      if (!this.config.full_image) {
-        this.drawLineOneByOne(this.drawIndex);
-      }
+    endGame() {
+      clearInterval(this.tailRemoveInterval);
+      this.tailRemoveInterval = null;
 
-      if (this.drawIndexRemoval > 0) {
-        this.startTailDisappearance(this.drawIndexRemoval);
-      }
+      clearInterval(this.drawLineinterval);
+      this.drawLineinterval = null;
 
-      this.isPause = false;
+      clearTimeout(this.timeoutIdRemoveInterval);
+      this.timeoutIdRemoveInterval = null;
     },
     exit() {
       if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
         this.$router.push('module');
       }
     },
-    setSpeed(speed) {
-      return speed * 3000;
-    },
     initConfig() {
-      let config = JSON.parse(localStorage.getItem('scheduleData'));
-
-      if (config) {
-        try {
-          // @TODO: Config Flow
-          const spatialOrientation = config.tests.find(test => test.testUrl === 'spatial-orientation-test').configs[0];
-          console.log(spatialOrientation, 'spatialOrientation');
-          this.config.number_of_questions = spatialOrientation.number_of_question;
-          this.config.batteryTestConfigId = spatialOrientation.id;
-          this.config.sessionId = config.sessionId;
-          this.config.userId = config.userId;
-
-          this.config.crash = spatialOrientation.crash
-          // this.config.crash = 20
-
-          this.config.full_image = spatialOrientation.full_image,
-            this.config.left_turn = spatialOrientation.left_turn,
-            this.config.right_turn = spatialOrientation.right_turn,
-            this.config.speed = this.setSpeed(spatialOrientation.speed),
-            this.config.speed_increasing = spatialOrientation.speed_increasing,
-            this.config.max_turns = spatialOrientation.max_turns || 5, // Set max_turns from config or default to 5
-
-            this.isConfigLoaded = true;
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
-        } finally {
-          this.generateCoordinat();
-        }
-      } else {
-        console.warn('No schedule data found in localStorage.');
+      const configData = getConfigs('spatial-orientation-test');
+      if (!configData) {
+        this.$router.push('/module');
+        return;
       }
+
+      this.configs = configData.configs;
+      this.trainingConfigs = configData.trainingConfigs;
+      this.moduleId = configData.moduleId;
+      this.sessionId = configData.sessionId;
+      this.userId = configData.userId;
+      this.testId = configData.testId;
+
+      const savedIndices = getStoredIndices('spatial-orientation');
+      if (savedIndices) {
+        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
+        this.indexConfig = savedIndices.indexConfig;
+      }
+
+      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+        this.isModalTrainingVisible = true;
+      } else{
+        this.isModalVisible = true;
+      }
+
+      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+    },
+    setConfig(config) {
+      const {
+        crash,
+        difficulty_level,
+        full_image,
+        id,
+        left_turn,
+        number_of_question,
+        right_turn,
+        speed,
+        speed_increasing,
+        subtask,
+        max_turns
+      } = config
+
+      this.$nextTick(() => {
+          this.config.crash = crash
+          this.config.difficultyLevel = difficulty_level
+          this.config.fullImage = full_image
+          this.config.speed = speed * 3000,
+          this.config.speedIncreasing = speed_increasing,
+          this.config.leftTurn = left_turn
+          this.config.rightTurn = right_turn
+          this.config.numberOfQuestions = number_of_question ?? 10;
+          this.config.maxTurns = max_turns ?? 5, // Set max_turns from config or default to 5
+          this.config.subtask = subtask
+          this.config.testId = id
+          this.config.currentQuestion = 1
+
+          this.isConfigLoaded = true;
+      });
     },
     calculatedResult() {
-      this.result.total_question = this.config.number_of_questions;
+      this.result.total_question = this.configs.reduce((total, obj) => {
+        return total + parseInt(obj.number_of_question);
+      }, 0);
       this.result.correct_answer = this.correctAnswer;
 
       const resultTimeResponded = this.averageResponseTime()
@@ -193,16 +232,13 @@ export default {
         responseTime: duration,
         timestamp: Date.now()
       }));
+
       this.result.graph_data = this.userInputs;
+
       this.submitResult()
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
@@ -210,7 +246,7 @@ export default {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestConfigId: this.config.batteryTestConfigId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountSpatial')),
+          refreshCount: parseInt(localStorage.getItem('reloadCountSpatialOrientation')),
           result: this.result,
         }
 
@@ -232,8 +268,9 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Spatial Orientation')
-        localStorage.removeItem('reloadCountSpatial');
+        removeTestByNameAndUpdateLocalStorage('Spatial Orientation');
+        localStorage.removeItem('reloadCountSpatialOrientation');
+        localStorage.removeItem('index-config-spatial-orientation')
         this.$router.push('/module');
       }
     },
@@ -247,15 +284,15 @@ export default {
       this.isShowAnswerBox = false
 
       this.question = null;
-      if (this.config.left_turn && this.config.right_turn) {
+      if (this.config.leftTurn && this.config.rightTurn) {
         this.question = Math.random() < 0.5 ? 'right' : 'left';
-      } else if (this.config.left_turn) {
+      } else if (this.config.leftTurn) {
         this.question = 'left';
-      } else if (this.config.right_turn) {
+      } else if (this.config.rightTurn) {
         this.question = 'right';
       }
 
-      if (this.config.full_image) {
+      if (this.config.fullImage) {
         await this.drawLineFull();
       } else {
         await this.drawLineOneByOne();
@@ -286,7 +323,7 @@ export default {
         this.lines = choosenlines[randomIndex]
 
         // Limit the number of turns based on the config
-        this.lines = this.limitTurns(this.lines, this.config.max_turns);
+        this.lines = this.limitTurns(this.lines, this.config.maxTurns);
 
         this.generateLines()
       } catch (error) {
@@ -343,7 +380,6 @@ export default {
       ctx.stroke();
 
       this.drawArrowHead('init');
-      this.totalQuestion++;
       this.responseQuestion = Date.now();
       this.setAnswerOption();
 
@@ -394,7 +430,6 @@ export default {
         if (i === this.lines.length) {
           clearInterval(this.drawLineinterval);
           this.drawArrowHead('init');
-          this.totalQuestion++;
           this.responseQuestion = Date.now();
           this.setAnswerOption();
         } else {
@@ -431,11 +466,11 @@ export default {
       }
     },
     setAnswerOption() {
-      if (this.config.left_turn && this.config.right_turn) {
+      if (this.config.leftTurn && this.config.rightTurn) {
         this.question = Math.random() < 0.5 ? 'right' : 'left';
-      } else if (this.config.left_turn) {
+      } else if (this.config.leftTurn) {
         this.question = 'left';
-      } else if (this.config.right_turn) {
+      } else if (this.config.rightTurn) {
         this.question = 'right';
       }
 
@@ -523,17 +558,13 @@ export default {
         }
       }
     },
-    stopInterval() {
-      clearInterval(this.drawLineinterval);
-      this.drawLineinterval = null;
-    },
     startTailDisappearance(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
       const ctx = canvas.getContext('2d');
 
       let i = startIndex;
 
-      if (this.config.full_image) {
+      if (this.config.fullImage) {
         const halfLength = Math.floor(this.lines.length / 2);
 
         const tailRemove = () => {
@@ -581,7 +612,7 @@ export default {
             this.tailRemoveInterval = null;
           }
 
-          if (i === halfLength && this.config.speed_increasing) {
+          if (i === halfLength && this.config.speedIncreasing) {
             clearInterval(this.tailRemoveInterval);
 
             // Increase Speed Remove
@@ -595,7 +626,7 @@ export default {
         this.tailRemoveInterval = setInterval(tailRemove, 2000);
       }
 
-      if (!this.config.full_image) {
+      if (!this.config.fullImage) {
         const tailRemove = () => {
           if (this.isPause) {
             clearInterval(this.tailRemoveInterval);
@@ -633,36 +664,34 @@ export default {
 
     },
     pressAnswer(value) {
-      console.log('answer', value);
       if (!this.isButtonDisabled) {
         this.selectedAnswer = value;
       }
-      if (this.isPause || this.isButtonDisabled || this.selectedAnswer === null) {
-        return;
-      }
 
       this.isButtonDisabled = true;
-      const responseTime = Date.now() - this.questionStartTime;
+      this.responseTime = Date.now();
 
-      if (this.answer === this.selectedAnswer) {
-        this.correctAnswer++;
-        this.responseTime = Date.now();
-        this.calculateResponseTime();
-        this.userInputs.push({
-          type: 'correct',
-          responseTime: responseTime,
-          timestamp: Date.now(),
-        });
+      //For Training
+      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+        //noop
       } else {
-        this.userInputs.push({
-          type: 'wrong',
-          responseTime: responseTime,
-          timestamp: Date.now(),
-        });
-      }
+        if (this.answer === this.selectedAnswer) {
+          this.correctAnswer++;
+          this.userInputs.push({
+            type: 'correct',
+            responseTime: this.responseTime - this.questionStartTime,
+            timestamp: Date.now(),
+          });
+        } else {
+          this.userInputs.push({
+            type: 'wrong',
+            responseTime: this.responseTime - this.questionStartTime,
+            timestamp: Date.now(),
+          });
+        }
 
-      console.log('responseTime', responseTime);
-      console.log(this.userInputs[this.userInputs.length - 1], 'userInputs');
+        this.responseDurations.push(this.responseTime - this.questionStartTime)
+      }
 
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
@@ -673,23 +702,36 @@ export default {
       clearTimeout(this.timeoutIdRemoveInterval);
       this.timeoutIdRemoveInterval = null;
 
-      this.config.current_question++;
-
-      if (this.config.current_question >= this.config.number_of_questions) {
+      if (this.config.currentQuestion >= this.config.numberOfQuestions) {
         this.endGame();
+
+        setTimeout(() => {
+          if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+            this.indexTrainingConfig++
+            this.isModalTrainingVisible = true
+          } else if (this.indexConfig < (this.configs.length - 1)) {
+            this.indexConfig++
+            this.isModalVisible = true
+          } else {
+            setTimeout(() => {
+              this.calculatedResult();
+            }, 1000);
+          }
+          this.selectedAnswer = null;
+        }, 2000);
+
+        // Update localStorage with new indices
+        localStorage.setItem("index-config-spatial-orientation", JSON.stringify({
+          indexTrainingConfig: this.indexTrainingConfig,
+          indexConfig: this.indexConfig
+        }))
       } else {
         setTimeout(() => {
+          this.config.currentQuestion++;
           this.generateCoordinat();
           this.selectedAnswer = null;
         }, 1500);
       }
-    },
-    endGame() {
-      clearInterval(this.tailRemoveInterval);
-      clearInterval(this.drawLineinterval);
-      clearTimeout(this.timeoutIdRemoveInterval);
-
-      this.calculatedResult();
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
@@ -700,186 +742,166 @@ export default {
 
       return 0;
     },
-    calculateResponseTime() {
-      const responseTime = Date.now() - this.questionStartTime;
-      this.responseDurations.push(responseTime);
-    },
-  },
-  computed: {
-    formattedTime() {
-      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
-      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
-      return `${minutes}:${seconds}`;
-    },
   },
 };
 </script>
 
 <style scoped>
-.main-view {
-  justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
-  margin: 60px auto;
-}
-
-.timer-container-trial {
-  position: absolute;
-  right: 0;
-  top: 0;
-  background-color: #0349D0;
-  padding: 0.75rem;
-  color: #ffffff;
-  font-weight: bold;
-  border-bottom-left-radius: 15px;
-}
-
-.timer-container-trial button {
-  color: #000000;
-  font-weight: bold;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-radius: 5px;
-  border-color: transparent;
-  min-width: 100px;
-  cursor: pointer;
-}
-
-.timer-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #0349D0;
-  padding: 1.5rem 5rem;
-  color: #ffffff;
-  font-weight: bold;
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
-}
-
-.loading-container {
-  /* Add your loading indicator styles here */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Black background with 80% opacity */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  /* Ensure it is above other content */
-}
-
-.spinner {
-  border: 8px solid rgba(255, 255, 255, 0.3);
-  /* Light border */
-  border-top: 8px solid #ffffff;
-  /* White border for the spinning part */
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  .main-view {
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 60px auto;
   }
-
-  100% {
-    transform: rotate(360deg);
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
   }
-}
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+  .modal-content button {
+    background-color: #6200ee;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  .modal-content button:hover {
+    background-color: #5e37a6;
+  }
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
+  .spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
 
-.text {
-  color: #ffffff;
-  margin-top: 20px;
-  font-size: 1.2em;
-}
-
-.center {
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
-}
-
-.line-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.line-turns {
-  padding: 10px;
-  position: relative;
-  margin-bottom: 10px;
-  margin-top: 10px;
-}
-
-canvas {
-  border: 1px solid #000;
-  background-color: white;
-}
-
-.question {
-  padding: 30px;
-  font-size: 1em;
-  font-weight: bold;
-}
-
-.answer-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-gap: 10px;
-}
-
-.digit-number {
-  padding: 15px;
-  font-size: 18px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #505250;
-  color: white;
-}
-
-.next {
-  background-color: #0349D0;
-}
-
-.digit-number {
-  padding: 15px;
-  font-size: 18px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #505250;
-  color: white;
-  transition: background-color 0.3s ease;
-}
-
-.digit-number.selected {
-  background-color: #4CAF50;
-  /* Green color for selected button */
-}
-
-.digit-number.next {
-  background-color: #0349D0;
-}
-
-.digit-number.next:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
+  .center {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+  }
+  .line-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .line-turns {
+    padding: 10px;
+    position: relative;
+    margin-bottom: 10px;
+    margin-top: 10px;
+  }
+  canvas {
+    border: 1px solid #000;
+    background-color: white;
+  }
+  .question {
+    padding: 30px;
+    font-size: 1em;
+    font-weight: bold;
+  }
+  .answer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 10px;
+  }
+  .digit-number {
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #505250;
+    color: white;
+  }
+  .next {
+    background-color: #0349D0;
+  }
+  .digit-number {
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #505250;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  .digit-number.selected {
+    background-color: #4CAF50;
+    /* Green color for selected button */
+  }
+  .digit-number.next {
+    background-color: #0349D0;
+  }
+  .digit-number.next:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
 </style>
