@@ -233,7 +233,7 @@ function toggleRectangles() {
         if (!gameState.value.userAnswered) {
             userInputs.value.push({
                 type: 'missed',
-                responseTime: 5000, // if missed, set response time to 1000ms
+                responseTime: 5000, 
                 timestamp: Date.now(),
             })
             metrics.value.button_task.incorrect_answer++;
@@ -337,7 +337,7 @@ function handleKeydown(event) {
         metrics.value.button_task.correct_answer++;
         userInputs.value.push({
             type: 'correct',
-            responseTime: 5000, // if missed, set response time to 1000ms
+            responseTime: 5000,
             timestamp: Date.now(),
         })
         gameState.value.userAnswered = true;
@@ -347,14 +347,14 @@ function handleKeydown(event) {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
                     type: 'correct',
-                    responseTime: 5000, // if missed, set response time to 1000ms
+                    responseTime: 5000,
                     timestamp: Date.now(),
                 })
             } else {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
                     type: 'wrong',
-                    responseTime: 5000, // if missed, set response time to 1000ms
+                    responseTime: 5000,
                     timestamp: Date.now(),
                 })
             }
