@@ -104,6 +104,9 @@ export default {
         const arrayMetrics = ref([])
         const refreshCount = ref(0)
         const completedMazes = ref(0)
+        // 
+        const mazeCompletionTime = ref([])
+        const mazeStartTime = ref(0)
 
         const setGridSizeByDifficulty = () => {
             let baseSize = 15;
@@ -368,7 +371,7 @@ export default {
             while (!solvableMaze && attempts < maxAttempts) {
                 attempts++;
                 console.log(`Attempting to generate maze: Attempt ${attempts}`);
-
+                mazeStartTime.value = Date.now()
                 // Clear the old maze
                 clearGrid();
 
@@ -606,8 +609,14 @@ export default {
             // Check if player reached the target
             if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
                 console.log("Congratulations! You've reached the target!");
+                const completeTime = Date.now() - mazeStartTime.value;
+                mazeCompletionTime.value.push({
+                    type: 'correct',
+                    responseTime: completeTime,
+                    timestamp: Date.now(),
+                });
 
-                arrayMetrics.value.push({ ...quizMetrics.value });
+                arrayMetrics.value.push({ ...quizMetrics.value, completionTime: completeTime });
                 localStorage.setItem('arrayMetrics', JSON.stringify(arrayMetrics.value))
 
                 quizMetrics.value = {
@@ -728,7 +737,10 @@ export default {
                     testSessionId: config.value.sessionId,
                     userId: config.value.userId,
                     batteryTestConfigId: config.value.testId,
-                    result: arrayMetrics.value,
+                    result: {
+                        ...arrayMetrics.value,
+                        graph_data: mazeCompletionTime.value
+                    },
                     refreshCount: refreshCount.value
                 }
 
@@ -786,7 +798,7 @@ export default {
         onUnmounted(() => {
             window.removeEventListener('keydown', handleKeyPress)
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            
+
         })
 
         return {
