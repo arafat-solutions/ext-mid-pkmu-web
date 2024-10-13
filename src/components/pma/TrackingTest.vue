@@ -5,10 +5,12 @@
         <div v-if="thrusterConnected" class="joystick-status connected">Thruster Connected</div>
         <div v-else class="joystick-status disconnected">Joystick Disconnected</div>
         <div class="score-display">
-            <div>Circle Time - Blue: {{ blueTime.toFixed(1) }}s, Red: {{ redTime.toFixed(1) }}s</div>
-            <div>Dot Time - Green: {{ greenTime.toFixed(1) }}s, Red: {{ dotRedTime.toFixed(1) }}s</div>
-            <div>Pill Time - Green: {{ greenPillTime.toFixed(1) }}s, Yellow: {{ yellowPillTime.toFixed(1) }}s, Red: {{
-                redPillTime.toFixed(1) }}s</div>
+            <div>Circle Time - Blue: {{ circle_correct_position.toFixed(1) }}s, Red: {{ circle_wrong_position.toFixed(1)
+                }}s</div>
+            <div>Dot Time - Green: {{ dot_correct_position.toFixed(1) }}s, Red: {{ dot_wrong_position.toFixed(1) }}s
+            </div>
+            <div>Pill Time - Green: {{ pill_correct_position.toFixed(1) }}s, Yellow: {{ pill_wrong_position.toFixed(1)
+                }}s</div>
         </div>
     </div>
 </template>
@@ -41,13 +43,12 @@ export default {
         const pillMoveInterval = 2000; // 2 seconds
 
         // Scoring variables
-        const blueTime = ref(0);
-        const redTime = ref(0);
-        const greenTime = ref(0);
-        const dotRedTime = ref(0);
-        const greenPillTime = ref(0);
-        const yellowPillTime = ref(0);
-        const redPillTime = ref(0);
+        const circle_correct_position = ref(0);
+        const circle_wrong_position = ref(0);
+        const dot_correct_position = ref(0);
+        const dot_wrong_position = ref(0);
+        const pill_correct_position = ref(0);
+        const pill_wrong_position = ref(0);
         let targetRadius = 150; // Initial target radius
         const smoothingFactor = 0.1; // Adjust this value to control smoothness (0.05 to 0.2 recommended)
 
@@ -123,14 +124,11 @@ export default {
             }
         };
 
-        const updatePillTime = (deltaTime) => {
-            const color = getPillColor();
-            if (color === 'green') greenPillTime.value += deltaTime;
-            else if (color === 'yellow') yellowPillTime.value += deltaTime;
-            else redPillTime.value += deltaTime;
-        };
-
         const updateGameState = (timestamp, deltaTime) => {
+            if (typeof deltaTime !== 'number' || isNaN(deltaTime)) {
+                console.error('Invalid deltaTime:', deltaTime);
+                return;
+            }
             // Update reference circle size at random intervals
             if (timestamp - lastExpandTime > expandInterval) {
                 expanding = Math.random() < 0.5;
@@ -193,19 +191,25 @@ export default {
             // Update scores
             const radiusDifference = Math.abs(solidCircleRadius - referenceCircleRadius);
             if (radiusDifference <= 20) {
-                blueTime.value += deltaTime;
+                circle_correct_position.value += deltaTime;
             } else {
-                redTime.value += deltaTime;
+                console.log('Wrong position');
+                circle_wrong_position.value += deltaTime;
             }
 
             const distanceFromCenter = Math.sqrt(Math.pow(dotX - centerX, 2) + Math.pow(dotY - centerY, 2));
             if (distanceFromCenter <= solidCircleRadius) {
-                greenTime.value += deltaTime;
+                dot_correct_position.value += deltaTime;
             } else {
-                dotRedTime.value += deltaTime;
+                dot_wrong_position.value += deltaTime;
             }
 
-            updatePillTime(deltaTime);
+            const pillColor = getPillColor();
+            if (pillColor === 'yellow') {
+                pill_correct_position.value += deltaTime;
+            } else if (pillColor === 'red') {
+                pill_wrong_position.value += deltaTime;
+            }
         };
 
         // Update solid circle radius based on thruster input
@@ -277,17 +281,32 @@ export default {
 
         const emitScoreUpdate = () => {
             emit('update-score', {
-                blueTime: blueTime.value,
-                redTime: redTime.value,
-                greenTime: greenTime.value,
-                dotRedTime: dotRedTime.value
+                circle_correct_position: circle_correct_position.value,
+                circle_wrong_position: circle_wrong_position.value,
+                dot_correct_position: dot_correct_position.value,
+                dot_wrong_position: dot_wrong_position.value,
+                pill_correct_position: pill_correct_position.value,
+                pill_wrong_position: pill_wrong_position.value
             });
         };
 
         // Use watch to emit score updates whenever any of the time values change
-        watch([blueTime, redTime, greenTime, dotRedTime], emitScoreUpdate);
+        watch([circle_correct_position, circle_wrong_position, dot_correct_position, dot_wrong_position, pill_correct_position, pill_wrong_position], emitScoreUpdate);
 
-        return { canvas, joystickConnected, thrusterConnected, blueTime, redTime, greenTime, dotRedTime, greenPillTime, yellowPillTime, redPillTime };
+        watch(circle_wrong_position, (newVal, oldVal) => {
+            console.log('circle_wrong_position changed:', oldVal, '->', newVal);
+        });
+        return {
+            canvas,
+            joystickConnected,
+            thrusterConnected,
+            circle_correct_position,
+            circle_wrong_position,
+            dot_correct_position,
+            dot_wrong_position,
+            pill_correct_position,
+            pill_wrong_position
+        };
     }
 };
 </script>

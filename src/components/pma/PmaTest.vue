@@ -17,13 +17,6 @@
       </div>
     </div>
 
-    <div class="score-display">
-      <div>Circle Time - Blue: {{ scores.tracking.blueTime.toFixed(1) }}s, Red: {{ scores.tracking.redTime.toFixed(1)
-        }}s</div>
-      <div>Dot Time - Green: {{ scores.tracking.greenTime.toFixed(1) }}s, Red: {{ scores.tracking.dotRedTime.toFixed(1)
-        }}s</div>
-    </div>
-
     <button @click="submitTest" :disabled="!testFinished">Submit Test</button>
   </div>
 </template>
@@ -50,9 +43,9 @@ export default {
       isLoading: false,
       isTrial: false,
       config: {
-       
+
       },
-      
+
     };
   },
   setup() {
@@ -66,10 +59,17 @@ export default {
     const sessionId = ref('');
     const userId = ref('');
     const configTest = ref({});
-    
+
 
     const scores = ref({
-      tracking: { blueTime: 0, redTime: 0, greenTime: 0, dotRedTime: 0 },
+      tracking: {
+        circle_correct_position: 0,
+        circle_wrong_position: 0,
+        dot_correct_position: 0,
+        dot_wrong_position: 0,
+        pill_correct_position: 0,
+        pill_wrong_position: 0
+      },
       string: 0,
       ordering: 0,
       audio: 0
@@ -85,9 +85,8 @@ export default {
     moduleId.value = config.moduleId;
     sessionId.value = config.sessionId;
     userId.value = config.userId;
-    
+
     const updateTrackingScore = (newScores) => {
-      console.log('Tracking scores updated:', newScores);
       scores.value.tracking = newScores;
     };
 
