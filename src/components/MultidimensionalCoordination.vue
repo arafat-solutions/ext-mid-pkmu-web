@@ -17,7 +17,8 @@ export default {
     const perspectiveOffset = ref(0);
     let originalVertices;
     const BACKWARD_SPEED = 0.05;
-    const MAX_BACKWARD_POSITION = 5.5; // Just outside the box
+    const MAX_BACKWARD_POSITION = 5.5;
+    const MIN_FORWARD_POSITION = -4.5;
 
     const initScene = () => {
       scene = new THREE.Scene();
@@ -25,7 +26,9 @@ export default {
       renderer = new THREE.WebGLRenderer({ canvas: canvas.value, alpha: true });
       renderer.setSize(container.value.clientWidth, container.value.clientHeight);
 
-      // Create open box geometry with gradient color
+      // Box creation code remains the same...
+
+      // Create improved marker
       const geometry = new THREE.BufferGeometry();
       originalVertices = new Float32Array([
         -5, -5, -5, 5, -5, -5, 5, 5, -5, -5, 5, -5, // back
@@ -55,7 +58,6 @@ export default {
       box = new THREE.Mesh(geometry, material);
       scene.add(box);
 
-      // Create improved marker
       const markerShape = new THREE.Shape();
       markerShape.moveTo(0, 0);
       markerShape.lineTo(0.5, -1);
@@ -86,32 +88,32 @@ export default {
       const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 32);
       const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
       const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-      body.rotation.z = Math.PI / 2; // Align horizontally
+      body.rotation.z = Math.PI / 2;
       airplaneGroup.add(body);
 
       // Plane wings (boxes)
       const wingGeometry = new THREE.BoxGeometry(3, 0.1, 0.5);
       const wingMaterial = new THREE.MeshStandardMaterial({ color: 0x404040 });
       const wings = new THREE.Mesh(wingGeometry, wingMaterial);
-      wings.position.set(0, 0, 0); // Position the wings in the center
       airplaneGroup.add(wings);
 
       // Plane tail (cone)
       const tailGeometry = new THREE.ConeGeometry(0.5, 1, 32);
       const tailMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
       const tail = new THREE.Mesh(tailGeometry, tailMaterial);
-      tail.position.set(-2.5, 0, 0); // Move tail to the back
+      tail.position.set(-1.5, 0, 0);
+      tail.rotation.z = -Math.PI / 2;
       airplaneGroup.add(tail);
 
-      // New airplane geometry (provided code)
-      const airplaneGeometry = new THREE.ConeGeometry(0.5, 1, 4);
-      const airplaneMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-      const airplaneMesh = new THREE.Mesh(airplaneGeometry, airplaneMaterial);
-      airplaneMesh.rotation.x = Math.PI / 2; // Rotate to point forward
-      airplaneMesh.position.set(0, 0, 1.5); // Move to the front of the body
-      airplaneGroup.add(airplaneMesh);
+      // Red nose cone
+      const noseGeometry = new THREE.ConeGeometry(0.5, 1, 4);
+      const noseMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+      const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+      nose.rotation.z = Math.PI / 2;
+      nose.position.set(1.5, 0, 0);
+      airplaneGroup.add(nose);
 
-      // Add the group to the scene
+      airplaneGroup.position.set(0, 0, 0);
       scene.add(airplaneGroup);
 
       camera.position.z = 15;
@@ -119,7 +121,7 @@ export default {
 
     const animate = () => {
       requestAnimationFrame(animate);
-
+      
       // Update perspective
       perspectiveOffset.value = Math.sin(Date.now() * 0.001) * 2;
       const positions = box.geometry.attributes.position.array;
@@ -137,20 +139,21 @@ export default {
         airplaneGroup.position.z += BACKWARD_SPEED;
       }
 
+      // Scale airplane based on its Z position
+      const scale = 0.1 - (-airplaneGroup.position.z + 4.5) / 10; // 1 at z=-4.5, 0.5 at z=5.5
+      airplaneGroup.scale.set(scale, scale, scale);
+
       renderer.render(scene, camera);
     };
 
     const handleKeyDown = (e) => {
       const speed = 0.1;
-      console.log(e)
       switch (e.key) {
         case 'ArrowUp': airplaneGroup.position.y = Math.min(4.5, airplaneGroup.position.y + speed); break;
         case 'ArrowDown': airplaneGroup.position.y = Math.max(-4.5, airplaneGroup.position.y - speed); break;
         case 'ArrowLeft': airplaneGroup.position.x = Math.max(-4.5, airplaneGroup.position.x - speed); break;
         case 'ArrowRight': airplaneGroup.position.x = Math.min(4.5, airplaneGroup.position.x + speed); break;
-        case 'w':
-          console.log(airplaneGroup.positionw)
-          airplaneGroup.position.z = Math.max(-4.5, airplaneGroup.position.z - speed); break;
+        case 'w': airplaneGroup.position.z = Math.max(MIN_FORWARD_POSITION, airplaneGroup.position.z - speed); break;
         case 's': airplaneGroup.position.z = Math.min(MAX_BACKWARD_POSITION, airplaneGroup.position.z + speed); break;
         case 'q': airplaneGroup.rotation.z += 0.1; break;
         case 'e': airplaneGroup.rotation.z -= 0.1; break;
