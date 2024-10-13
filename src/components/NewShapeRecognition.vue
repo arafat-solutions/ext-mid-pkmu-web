@@ -23,15 +23,14 @@
             <p>correct : {{ quizMetrics.correctAnswer }}</p>
             <p>wrong: {{ quizMetrics.wrongAnswer }}</p>
             <p>unanswered: {{ quizMetrics.unanswered }}</p>
-            <p>totalQuestion: {{ quizMetrics.totalQuestion }}</p>
             <p>avgResponseTime: {{ quizMetrics.avgResponseTime.toFixed(2) }} s</p>
             <p>answer count: {{ answerCount }}</p>
             <p>Time left: {{ questionCountdown }}s</p>
         </div>
     </div> -->
     <div class="timer">
-        <p>Waktu:</p>
-        <p>{{ formatTime(config.duration) }}</p>
+        <p>Question: {{ currentQuestion }} / {{ config.numberOfQuestion }}</p>
+        <p>Time left: {{ questionCountdown }}s</p>
     </div>
 </template>
 
@@ -49,33 +48,34 @@ export default {
         const buttonCanvases = ref([]);
         const correctShapeIndex = ref(0);
         const shapes = ref([]);
-        const tesInterval = ref(null)
-        const answerCount = ref(0)
+        // const answerCount = ref(0)
         const startTime = ref(null);
         const totalResponseTime = ref(0);
         const responseCount = ref(0);
         const questionCountdown = ref(0);
         const questionCountDownInterval = ref(null)
         const loading = ref(false)
+        const currentQuestion = ref(1);
         const config = ref({
-            duration: 0,
             size: '',
             variation: 0,
             userId: '',
             sessionId: '',
             testId: '',
-            timePerQuestion: 0
+            timePerQuestion: 0,
+            numberOfQuestion: 0
         })
+
         const quizMetrics = ref({
             correctAnswer: 0,
             wrongAnswer: 0,
             unanswered: 0,
-            totalQuestion: 30,
             avgResponseTime: 0 //in seconds
         })
         const STROKE_WIDTH = 2;
         const ANGLES = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
         const refreshCount = ref(0)
+        const userInputs = ref([])
 
         const shapeGenerators = [
             generateOctagon,
@@ -112,53 +112,42 @@ export default {
             ctx.restore();
         }
 
-        async function checkAnswer(index) {
-
-            // count average user answer in seconds
+        function checkAnswer(index) {
             const currentTime = Date.now();
             if (!startTime.value) {
                 startTime.value = currentTime;
             }
-            const elapsedTime = (currentTime - startTime.value) / 1000; // Convert to seconds
+            const elapsedTime = (currentTime - startTime.value) / 1000;
             totalResponseTime.value += elapsedTime;
             responseCount.value++;
             quizMetrics.value.avgResponseTime = totalResponseTime.value / responseCount.value;
 
             startTime.value = currentTime;
 
-            // check the answer if correct or wrong
             if (index === correctShapeIndex.value) {
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: elapsedTime * 1000,
+                    timestamp: currentTime
+                })
                 quizMetrics.value.correctAnswer++
             } else {
                 quizMetrics.value.wrongAnswer++
+                userInputs.value.push({
+                    type: 'wrong',
+                    responseTime: elapsedTime * 1000,
+                    timestamp: currentTime
+                })
             }
 
-            // count unanswered
-            quizMetrics.value.unanswered = quizMetrics.value.totalQuestion - (quizMetrics.value.correctAnswer + quizMetrics.value.wrongAnswer)
-
-            if (answerCount.value < config.value.variation - 1) {
-                answerCount.value++
-
-                // keep the button shape
-                correctShapeIndex.value = Math.floor(Math.random() * shapes.value.length);
-                const randomAngle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
-
-                drawInButtons(randomAngle);
-                drawInCenter(randomAngle);
-
-                startQuestionCountdown();
+            if (currentQuestion.value < config.value.numberOfQuestion) {
+                currentQuestion.value++;
+                drawQuestions();
             } else {
-                answerCount.value = 0
-
-                if (quizMetrics.value.correctAnswer + quizMetrics.value.wrongAnswer >= quizMetrics.value.totalQuestion) {
-                    await submitResult();
-                } else {
-
-                    drawQuestions()
-                }
-
+                submitResult();
             }
         }
+
 
         function drawInButtons(randomAngle) {
             buttonCanvases.value.forEach((canvas, index) => {
@@ -600,7 +589,6 @@ export default {
         }
 
         function drawQuestions() {
-            // Randomly select 5 shapes from shapeGenerators
             shapes.value = [...shapeGenerators].sort(() => Math.random() - 0.5).slice(0, 5);
             correctShapeIndex.value = Math.floor(Math.random() * shapes.value.length);
 
@@ -609,32 +597,24 @@ export default {
             drawInButtons(randomAngle);
             drawInCenter(randomAngle);
 
-            startQuestionCountdown()
+            startQuestionCountdown();
         }
 
         function initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
-            // @TODO: Config Flow
-            const { size, variation, id, duration, time_per_question } = configShapeRecognition.configs[0]
+            const { size, variation, id, time_per_question, number_of_question } = configShapeRecognition.configs[0]
 
             config.value = {
-                duration: duration * 60,
-                size, // very_small, small, normal, large, very_large
+                size,
                 variation,
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
                 testId: id,
-                timePerQuestion: time_per_question
+                timePerQuestion: time_per_question,
+                numberOfQuestion: number_of_question ?? 10
             }
-            quizMetrics.value.unanswered = 30 // still hardcode
-            quizMetrics.value.totalQuestion = 30 // still hardcode
-        }
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainderSeconds = seconds % 60;
-            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+            quizMetrics.value.unanswered = number_of_question;
         }
 
         async function submitResult() {
@@ -645,7 +625,10 @@ export default {
                     testSessionId: config.value.sessionId,
                     userId: config.value.userId,
                     batteryTestConfigId: config.value.testId,
-                    result: quizMetrics.value,
+                    result: {
+                        ...quizMetrics.value,
+                        graph_data: userInputs.value
+                    },
                     refreshCount: refreshCount.value
                 }
                 const response = await fetch(`${API_URL}/api/submission`, {
@@ -665,27 +648,11 @@ export default {
             } catch (error) {
                 console.log("error submit shape recognition:", error)
             } finally {
-                loading.value = false; // Set loading to false when the submission is complete
+                loading.value = false;
             }
-        }
-
-        function countDownTestTime() {
-            if (tesInterval.value) {
-                clearInterval(tesInterval.value);
-            }
-
-            tesInterval.value = setInterval(async () => {
-                if (config.value.duration > 0) {
-                    config.value.duration--;
-                } else {
-                    clearInterval(tesInterval.value);
-                    await submitResult();
-                }
-            }, 1000)
         }
 
         function startQuestionCountdown() {
-            // Clear any existing interval to avoid multiple intervals running simultaneously
             if (questionCountDownInterval.value) {
                 clearInterval(questionCountDownInterval.value);
             }
@@ -695,8 +662,19 @@ export default {
                 if (questionCountdown.value > 0) {
                     questionCountdown.value--;
                 } else {
-                    clearInterval(questionCountDownInterval);
-                    drawQuestions();
+                    clearInterval(questionCountDownInterval.value);
+                    quizMetrics.value.unanswered++;
+                    userInputs.value.push({
+                        type: 'missed',
+                        responseTime: config.value.timePerQuestion * 1000,
+                        timestamp: Date.now()
+                    })
+                    if (currentQuestion.value < config.value.numberOfQuestion) {
+                        currentQuestion.value++;
+                        drawQuestions();
+                    } else {
+                        submitResult();
+                    }
                 }
             }, 1000);
         }
@@ -718,14 +696,12 @@ export default {
 
             nextTick(() => {
                 initConfig()
-                countDownTestTime()
                 drawQuestions();
             });
         });
 
         onUnmounted(() => {
             clearInterval(questionCountDownInterval.value);
-            clearInterval(tesInterval.value)
             // Remove the beforeunload event listener
             window.removeEventListener('beforeunload', handleBeforeUnload);
         })
@@ -740,12 +716,11 @@ export default {
             buttonCanvases,
             checkAnswer,
             drawQuestions,
-            formatTime,
             quizMetrics,
             config,
-            answerCount,
             questionCountdown,
-            loading
+            loading,
+            currentQuestion
         };
     }
 }
