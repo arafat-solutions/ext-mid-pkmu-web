@@ -671,27 +671,22 @@ export default {
       this.isButtonDisabled = true;
       this.responseTime = Date.now();
 
-      //For Training
-      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
-        //noop
+      if (this.answer === this.selectedAnswer) {
+        this.correctAnswer++;
+        this.userInputs.push({
+          type: 'correct',
+          responseTime: this.responseTime - this.questionStartTime,
+          timestamp: Date.now(),
+        });
       } else {
-        if (this.answer === this.selectedAnswer) {
-          this.correctAnswer++;
-          this.userInputs.push({
-            type: 'correct',
-            responseTime: this.responseTime - this.questionStartTime,
-            timestamp: Date.now(),
-          });
-        } else {
-          this.userInputs.push({
-            type: 'wrong',
-            responseTime: this.responseTime - this.questionStartTime,
-            timestamp: Date.now(),
-          });
-        }
-
-        this.responseDurations.push(this.responseTime - this.questionStartTime)
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: this.responseTime - this.questionStartTime,
+          timestamp: Date.now(),
+        });
       }
+
+      this.responseDurations.push(this.responseTime - this.questionStartTime)
 
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
@@ -710,6 +705,13 @@ export default {
             this.indexTrainingConfig++
             this.isModalTrainingVisible = true
           } else if (this.indexConfig < (this.configs.length - 1)) {
+            // Initiate Record Result
+            if (this.indexConfig === 0) {
+              this.correctAnswer = 0;
+              this.responseDurations = [];
+              this.userInputs = [];
+            }
+
             this.indexConfig++
             this.isModalVisible = true
           } else {

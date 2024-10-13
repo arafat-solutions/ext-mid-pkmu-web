@@ -1,15 +1,28 @@
 <template>
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Radar Vigillance?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal()">Ya</button>
+    </div>
+  </div>
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Radar Vigillance?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal()">Ya</button>
+    </div>
+  </div>
+
   <div class="main-view" v-if="isConfigLoaded">
     <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
       <div class="text">submitting a result</div>
     </div>
 
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container'">
+    <div class="timer-container">
       Time: {{ formattedTime }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
 
     <div class="radar-container">
@@ -32,13 +45,14 @@
 
 <script>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
 
 export default {
   data() {
     return {
+      isModalTrainingVisible: false,
+      isModalVisible: false,
       isConfigLoaded: false,
-      isTrial: this.$route.query.isTrial ?? false,
-      isPause: false,
       isCanClick: false,
       isLoading: false,
       width: 600,
@@ -55,6 +69,18 @@ export default {
       radarInterval: null,
       objectInterval: null,
       countdownInterval: null,
+
+      //For Config
+      config: {},
+      configs: [],
+      trainingConfigs: [],
+      indexConfig: 0,
+      indexTrainingConfig: 0,
+      moduleId: '',
+      sessionId: '',
+      userId: '',
+      testId: '',
+
       result: {
         total_all_shape_object: 0,
         total_object: 0,
@@ -62,16 +88,6 @@ export default {
         missed_object: 0,
         false_positives: 0,
         avg_response_time: 0,
-      },
-      config: {
-        direction: null, //clockwise, counter_clockwise
-        duration: null, //milisecond
-        frequency: null, // very_often, often, sometimes, sheldom, very_seldom
-        shapeSize: null, // very_big, big, medium, small, very_small
-        shapes: [], //'circle', 'square', 'triangle'
-        targetShape: null, //'circle', 'square', 'triangle'
-        speed: null, // very_slow, slow, medium, fast, very_fast
-        density: null //'very_easy', 'easy', 'medium', 'hard', 'very_hard'
       },
       gamepad: null,
       gamepadPolling: null,
@@ -90,36 +106,204 @@ export default {
       lastUpdateTime: 0,
     };
   },
+  computed: {
+    formattedTime() {
+      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
+      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      return `${minutes}:${seconds}`;
+    },
+  },
   mounted() {
     window.addEventListener("gamepadconnected", this.handleGamepadConnected);
     window.addEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
     this.checkForGamepads();
     this.startGamepadPolling();
+
     let reloadCount = parseInt(localStorage.getItem('reloadCountRadarVigilance') || '0')
     reloadCount++
     localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
+
     window.addEventListener('beforeunload', () => {
       localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
     })
 
     this.initConfig();
-
-  },
-  created() {
-    window.addEventListener('keydown', this.handleKeydown);
-  },
-  beforeUnmount() {
-    window.removeEventListener("gamepadconnected", this.handleGamepadConnected);
-    window.removeEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
-    this.stopGamepadPolling();
-    window.removeEventListener("keydown", this.handleKeydown);
-
-    // Existing code...
-    clearInterval(this.radarInterval);
-    clearInterval(this.objectInterval);
-    clearInterval(this.countdownInterval);
   },
   methods: {
+    closeModal() {
+      const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
+        ? this.trainingConfigs[this.indexTrainingConfig]
+        : this.configs[this.indexConfig]
+
+      this.setConfig(config)
+      localStorage.setItem("index-config-radar-vigillance", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
+
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
+
+      setTimeout(() => {
+        this.initRadar();
+      }, 500);
+
+      this.startCountdown();
+    },
+    cleanUp() {
+      this.stopRadar();
+      clearInterval(this.countdownInterval);
+    },
+    exit() {
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
+    },
+    startCountdown() {
+      this.countdownInterval = setInterval(() => {
+        if (this.config.duration > 0) {
+          //Remove Object when Duration Under 5 second
+          if (this.config.duration === 5) {
+            clearInterval(this.objectInterval);
+            this.objectInterval = null;
+            this.objects = []
+          }
+          this.config.duration--;
+        } else {
+          this.cleanUp();
+
+          if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+            this.indexTrainingConfig++
+            this.isModalTrainingVisible = true
+          } else if (this.indexConfig < (this.configs.length - 1)) {
+            // Initiate Record Result
+            if (this.indexConfig === 0) {
+              this.totalAllShapeObject = 0;
+              this.detectedObject = 0;
+              this.userCorrectClickCount = 0;
+              this.falsePositives = 0;
+              this.userInputs = []
+            }
+
+            this.indexConfig++
+            this.isModalVisible = true
+          } else {
+            setTimeout(() => {
+              this.calculatedResult();
+            }, 1000);
+          }
+
+          // Update localStorage with new indices
+          localStorage.setItem("index-config-radar-vigillance", JSON.stringify({
+            indexTrainingConfig: this.indexTrainingConfig,
+            indexConfig: this.indexConfig
+          }))
+        }
+      }, 1000);
+    },
+    initConfig() {
+      const configData = getConfigs('radar-vigilance-test');
+      if (!configData) {
+        this.$router.push('/module');
+        return;
+      }
+
+      this.configs = configData.configs;
+      this.trainingConfigs = configData.trainingConfigs;
+      this.moduleId = configData.moduleId;
+      this.sessionId = configData.sessionId;
+      this.userId = configData.userId;
+      this.testId = configData.testId;
+
+      const savedIndices = getStoredIndices('radar-vigillance');
+      if (savedIndices) {
+        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
+        this.indexConfig = savedIndices.indexConfig;
+      }
+
+      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+        this.isModalTrainingVisible = true;
+      } else{
+        this.isModalVisible = true;
+      }
+
+      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+    },
+    setConfig(config) {
+      const { density, difficulty_level, direction, duration, frequency, id, shapeSize, shapes, speed, subtask, targetShape  } = config
+
+      this.$nextTick(() => {
+          this.config.duration = duration * 60;
+          this.config.difficultyLevel = difficulty_level
+          this.config.direction = direction;
+          this.config.shapeSize = shapeSize;
+          this.config.frequency = frequency;
+          this.config.shapes = this.setShapeConfig(shapes);
+          this.config.targetShape = targetShape;
+          this.config.speed = speed;
+          this.config.density = density;
+          this.config.subtask = subtask
+          this.config.testId = id
+
+          this.isConfigLoaded = true;
+      });
+    },
+    calculatedResult() {
+      this.result.total_all_shape_object = this.totalAllShapeObject;
+      this.result.total_object = this.detectedObject;
+      this.result.corrected_object = this.userCorrectClickCount;
+      this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
+      this.result.false_positives = this.falsePositives;
+
+      // get avg from array of userInputs[i].responseTime
+      this.result.avg_response_time = this.userInputs.reduce((acc, curr) => {
+        if (curr.responseTime) {
+          return acc + curr.responseTime;
+        }
+        return acc;
+      }, 0) / this.userInputs.length;
+
+
+      // Include graph data in the result
+      this.result.graph_data = this.userInputs;
+
+      console.log(this.result, 'submit result');
+      this.submitResult();
+    },
+    async submitResult() {
+      try {
+        this.isLoading = true;
+
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = {
+          testSessionId: this.config.sessionId,
+          userId: this.config.userId,
+          batteryTestConfigId: this.config.batteryTestConfigId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountRadarVigilance')),
+          result: this.result,
+        }
+
+        const res = await fetch(`${API_URL}/api/submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed Submit Test');
+        }
+      } catch (error) {
+        console.error(error), "error";
+      } finally {
+        this.isLoading = false;
+
+        removeTestByNameAndUpdateLocalStorage('Radar Vigilance Test');
+        localStorage.removeItem('reloadCountRadarVigilance');
+        localStorage.removeItem('index-config-radar-vigillance')
+        this.$router.push('/module');
+      }
+    },
     handleGamepadConnected(event) {
       console.log("A gamepad connected:", event.gamepad);
       if (event.gamepad.id == 'T.16000M (Vendor: 044f Product: b10a)')
@@ -186,7 +370,6 @@ export default {
         }
       }
     },
-
     handleMissedTarget(obj) {
       const index = this.currentVisibleObjects.indexOf(obj);
       if (index > -1) {
@@ -212,7 +395,6 @@ export default {
         }
       }
     },
-
     handleTriggerPress() {
       if (this.isCanClick) {
         const currentTime = Date.now();
@@ -265,67 +447,16 @@ export default {
         });
       }
     },
-
     clearFeedback() {
       this.feedbackText = "";
       this.feedbackColor = "";
     },
-    pause() {
-      this.stopRadar();
-      clearInterval(this.countdownInterval);
-      this.isPause = true;
-    },
-    startAgain() {
-      this.startCountdown();
-      this.initRadar();
-      this.isPause = false;
-    },
-    exit() {
-      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
-        this.$router.push('module');
-      }
-    },
-    initConfig() {
-      let config = JSON.parse(localStorage.getItem('scheduleData'));
-
-      if (config) {
-        try {
-          // @TODO: Config Flow
-          const radarVigillance = config.tests.find(test => test.testUrl === 'radar-vigilance-test').configs[0];
-
-          this.config.duration = radarVigillance.duration * 60;
-          this.config.batteryTestConfigId = radarVigillance.id;
-          this.config.sessionId = config.sessionId;
-          this.config.userId = config.userId;
-
-          this.config.direction = radarVigillance.direction;
-          this.config.shapeSize = radarVigillance.shapeSize;
-          this.config.frequency = radarVigillance.frequency;
-          this.config.shapes = this.setShapeConfig(radarVigillance.shapes);
-          this.config.targetShape = radarVigillance.targetShape;
-          this.config.speed = radarVigillance.speed;
-          this.config.density = radarVigillance.density;
-
-          this.isConfigLoaded = true;
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
-        } finally {
-          this.initRadar();
-          this.startCountdown();
-        }
-      } else {
-        console.warn('No schedule data found in localStorage.');
-      }
-    },
-
     initRadar() {
       this.isCanClick = true;
       this.lastUpdateTime = 0;
       this.animationFrameId = requestAnimationFrame(this.updateRadar);
       this.objectInterval = setInterval(this.addShape, this.setFrequency());
     },
-
-
     updateRadar(currentTime) {
       if (!this.lastUpdateTime) {
         this.lastUpdateTime = currentTime;
@@ -434,7 +565,6 @@ export default {
       // Update isTargetCurrentlyVisible based on currentVisibleObjects
       this.isTargetCurrentlyVisible = this.currentVisibleObjects.some(obj => obj.type === this.config.targetShape);
     },
-
     updateVisibleObjects() {
       const radius = Math.min(this.width, this.height) / 2;
       this.currentVisibleObjects = this.currentVisibleObjects.filter(obj =>
@@ -596,7 +726,6 @@ export default {
       }
       return { type, x, y, detected: false, sweepCount: 0, creationTime: Date.now() };
     },
-
     removeObject(obj) {
       const index = this.objects.indexOf(obj);
       if (index > -1) {
@@ -677,195 +806,122 @@ export default {
       }
       return 0;
     },
-    startCountdown() {
-      this.countdownInterval = setInterval(() => {
-        if (this.config.duration > 0) {
-          //Remove Object when Duration Under 5 second
-          if (this.config.duration === 5) {
-            clearInterval(this.objectInterval);
-            this.objectInterval = null;
-            this.objects = []
-          }
-          this.config.duration--;
-        } else {
-          clearInterval(this.countdownInterval);
-          this.stopRadar();
-
-          // Submit Answer
-          this.calculatedResult();
-        }
-      }, 1000);
-    },
-    calculatedResult() {
-      this.result.total_all_shape_object = this.totalAllShapeObject;
-      this.result.total_object = this.detectedObject;
-      this.result.corrected_object = this.userCorrectClickCount;
-      this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
-      this.result.false_positives = this.falsePositives;
-
-      // get avg from array of userInputs[i].responseTime
-      this.result.avg_response_time = this.userInputs.reduce((acc, curr) => {
-        if (curr.responseTime) {
-          return acc + curr.responseTime;
-        }
-        return acc;
-      }, 0) / this.userInputs.length;
-
-
-      // Include graph data in the result
-      this.result.graph_data = this.userInputs;
-
-      console.log(this.result, 'submit result');
-      this.submitResult();
-    },
-    async submitResult() {
-      try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
-        this.isLoading = true;
-
-        const API_URL = process.env.VUE_APP_API_URL;
-        const payload = {
-          testSessionId: this.config.sessionId,
-          userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountRadarVigilance')),
-          result: this.result,
-        }
-
-        const res = await fetch(`${API_URL}/api/submission`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        )
-
-        if (!res.ok) {
-          throw new Error('Failed Submit Test');
-        }
-      } catch (error) {
-        console.error(error), "error";
-      } finally {
-        this.isLoading = false;
-
-        removeTestByNameAndUpdateLocalStorage('Radar Vigilance Test');
-        localStorage.removeItem('reloadCountRadarVigilance');
-        this.$router.push('/module');
-      }
-    },
   },
-  computed: {
-    formattedTime() {
-      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
-      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
-      return `${minutes}:${seconds}`;
-    },
+  created() {
+    window.addEventListener('keydown', this.handleKeydown);
+  },
+  beforeUnmount() {
+    window.removeEventListener("gamepadconnected", this.handleGamepadConnected);
+    window.removeEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
+    this.stopGamepadPolling();
+    window.removeEventListener("keydown", this.handleKeydown);
+
+    // Existing code...
+    clearInterval(this.radarInterval);
+    clearInterval(this.objectInterval);
+    clearInterval(this.countdownInterval);
   },
 };
 </script>
 
 <style scoped>
-.main-view {
-  justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
-  margin: 60px auto;
-}
-
-.timer-container-trial {
-  position: absolute;
-  right: 0;
-  top: 0;
-  background-color: #0349D0;
-  padding: 0.75rem;
-  color: #ffffff;
-  font-weight: bold;
-  border-bottom-left-radius: 15px;
-}
-
-.timer-container-trial button {
-  color: #000000;
-  font-weight: bold;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-radius: 5px;
-  border-color: transparent;
-  min-width: 100px;
-  cursor: pointer;
-}
-
-.timer-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #0349D0;
-  padding: 1.5rem 5rem;
-  color: #ffffff;
-  font-weight: bold;
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
-}
-
-.radar-container {
-  display: flex;
-  align-items: center;
-}
-
-canvas {
-  margin-top: 15px !important;
-  display: block;
-  margin: 0 auto;
-  background-color: black;
-}
-
-.loading-container {
-  /* Add your loading indicator styles here */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Black background with 80% opacity */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  /* Ensure it is above other content */
-}
-
-.spinner {
-  border: 8px solid rgba(255, 255, 255, 0.3);
-  /* Light border */
-  border-top: 8px solid #ffffff;
-  /* White border for the spinning part */
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  .main-view {
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 60px auto;
   }
-
-  100% {
-    transform: rotate(360deg);
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
   }
-}
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+  .modal-content button {
+    background-color: #6200ee;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  .modal-content button:hover {
+    background-color: #5e37a6;
+  }
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+  .radar-container {
+    display: flex;
+    align-items: center;
+  }
+  canvas {
+    margin-top: 15px !important;
+    display: block;
+    margin: 0 auto;
+    background-color: black;
+  }
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
+  .spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
 
-.text {
-  color: #ffffff;
-  margin-top: 20px;
-  font-size: 1.2em;
-}
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
 </style>

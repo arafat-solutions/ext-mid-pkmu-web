@@ -164,6 +164,14 @@ export default {
             this.indexTrainingConfig++
             this.isModalTrainingVisible = true
           } else if (this.indexConfig < (this.configs.length - 1)) {
+            // Initatiate Record Result
+            if (this.indexConfig === 0) {
+              this.totalQuestion = [];
+              this.correctAnswer = [];
+              this.responseDurations = []
+              this.userInputs = [];
+            }
+
             this.indexConfig++
             this.isModalVisible = true
           } else {
@@ -330,35 +338,29 @@ export default {
     },
     submitAnswer() {
       clearInterval(this.countdownNextQuestion);
+      this.totalQuestion++;
 
-      //For Training
-      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
-        //noop
+      const reverseAudios = [...this.audios].reverse();
+      let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
+
+      this.responseTime = Date.now();
+
+      if (checkAnswer) {
+        this.correctAnswer++;
+        this.userInputs.push({
+          type: 'correct',
+          responseTime: this.responseTime - this.responseQuestion,
+          timestamp: Date.now(),
+        });
       } else {
-        this.totalQuestion++;
-
-        const reverseAudios = [...this.audios].reverse();
-        let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
-
-        this.responseTime = Date.now();
-
-        if (checkAnswer) {
-          this.correctAnswer++;
-          this.userInputs.push({
-            type: 'correct',
-            responseTime: this.responseTime - this.responseQuestion,
-            timestamp: Date.now(),
-          });
-        } else {
-          this.userInputs.push({
-            type: 'wrong',
-            responseTime: this.responseTime - this.responseQuestion,
-            timestamp: Date.now(),
-          });
-        }
-
-        this.responseDurations.push(this.responseTime - this.responseQuestion)
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: this.responseTime - this.responseQuestion,
+          timestamp: Date.now(),
+        });
       }
+
+      this.responseDurations.push(this.responseTime - this.responseQuestion)
 
       this.clearExpression();
       this.generateAudio();
