@@ -55,9 +55,9 @@ const airspeed = ref(100);
 const heading = ref(0);
 const altitude = ref(5000);
 const currentTime = ref(new Date());
-const airspeedTarget = ref(100);
-const headingTarget = ref(0);
-const altitudeTarget = ref(5000);
+const airspeedTarget = ref(140);
+const headingTarget = ref(150);
+const altitudeTarget = ref(8000);
 const airspeedChangeDirection = ref(null);
 const headingChangeDirection = ref(null);
 const altitudeChangeDirection = ref(null);
@@ -171,25 +171,33 @@ const updateScore = () => {
     }
 };
 
+const lastRecordedTime = ref(Date.now());
+
 const updatePerformanceData = () => {
-    headingPerformanceData.value.push({
-        type: isHeadingOutOfTarget.value ? 'wrong' : 'correct',
-        deviations: heading.value - headingTarget.value,
-        timestamp: Date.now()
-    })
+    const currentTime = Date.now();
+    if (currentTime - lastRecordedTime.value >= 1000) { // Check if 1 second has passed
+        headingPerformanceData.value.push({
+            type: isHeadingOutOfTarget.value ? 'wrong' : 'correct',
+            deviations: heading.value - headingTarget.value,
+            timestamp: currentTime
+        });
 
-    airspeedPerformanceData.value.push({
-        type: isAirspeedOutOfTarget.value ? 'wrong' : 'correct',
-        deviations: airspeed.value - airspeedTarget.value,
-        timestamp: Date.now()
-    })
+        airspeedPerformanceData.value.push({
+            type: isAirspeedOutOfTarget.value ? 'wrong' : 'correct',
+            deviations: airspeed.value - airspeedTarget.value,
+            timestamp: currentTime
+        });
 
-    altitudePerformanceData.value.push({
-        type: isAltitudeOutOfTarget.value ? 'wrong' : 'correct',
-        deviations: altitude.value - altitudeTarget.value,
-        timestamp: Date.now()
-    })
+        altitudePerformanceData.value.push({
+            type: isAltitudeOutOfTarget.value ? 'wrong' : 'correct',
+            deviations: altitude.value - altitudeTarget.value,
+            timestamp: currentTime
+        });
+
+        lastRecordedTime.value = currentTime;
+    }
 };
+
 
 const updatePlanePosition = () => {
     // Handle user input
@@ -345,7 +353,7 @@ const sendPerformanceData = async () => {
         const payload = {
             testSessionId: config.value.sessionId,
             userId: config.value.userId,
-            batteryTestConfigId: config.value.testId,
+            batteryTestConfigId: config.value.batteryTestConfigId,
             result: {
                 multi_graph_data: {
                     heading: headingPerformanceData.value,
