@@ -1,38 +1,39 @@
 <template>
     <div class="pilot-exam">
-        <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
-        <div class="indicators">
-            <div class="indicator-wrapper" :class="{ 'blink': isAirspeedOutOfTarget }">
-                <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
-                <div class="target-text">
-                    Target: {{ Math.round(airspeedTarget) }} knots
-                    <span v-if="airspeedChangeDirection"
-                        :class="['direction-indicator', airspeedChangeDirection]"></span>
-                </div>
-            </div>
-            <div class="indicator-wrapper" :class="{ 'blink': isHeadingOutOfTarget }">
-                <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
-                <div class="target-text">
-                    Target: {{ Math.round(headingTarget) }}°
-                    <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
-                </div>
-            </div>
-            <div class="indicator-wrapper" :class="{ 'blink': isAltitudeOutOfTarget }">
-                <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
-                <div class="target-text">
-                    Target: {{ Math.round(altitudeTarget) }} ft
-                    <span v-if="altitudeChangeDirection"
-                        :class="['direction-indicator', altitudeChangeDirection]"></span>
-                </div>
-            </div>
-            <clock-indicator :time="currentTime" />
+      <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
+      <div class="indicators">
+        <div class="indicator-wrapper" :class="{ 'blink': isAirspeedOutOfTarget }">
+          <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
+          <div class="target-text">
+            Target: {{ Math.round(airspeedTarget) }} knots
+            <span v-if="airspeedChangeDirection" :class="['direction-indicator', airspeedChangeDirection]"></span>
+          </div>
         </div>
-        <div class="controls">
-            <button @click="toggleMode">Toggle Mode: {{ mode }}</button>
-            <button @click="startExam" :disabled="examRunning">Start Exam</button>
+        <div class="indicator-wrapper" :class="{ 'blink': isHeadingOutOfTarget }">
+          <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
+          <div class="target-text">
+            Target: {{ Math.round(headingTarget) }}°
+            <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
+          </div>
         </div>
+        <div class="indicator-wrapper" :class="{ 'blink': isAltitudeOutOfTarget }">
+          <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
+          <div class="target-text">
+            Target: {{ Math.round(altitudeTarget) }} ft
+            <span v-if="altitudeChangeDirection" :class="['direction-indicator', altitudeChangeDirection]"></span>
+          </div>
+        </div>
+        <clock-indicator :time="currentTime" />
+      </div>
+      <div class="controls">
+        <button @click="toggleMode">Toggle Mode: {{ mode }}</button>
+        <button @click="startExam" :disabled="examRunning">Start Exam</button>
+      </div>
+      <div v-if="examRunning">
+        <p>Score: {{ score }}</p>
+      </div>
     </div>
-</template>
+  </template>
 
 <script setup>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
@@ -72,12 +73,21 @@ const score = ref(0);
 const timeRemaining = ref(300); // 5 minutes exam
 
 // Computed properties for out-of-target indicators
-const isAirspeedOutOfTarget = computed(() => Math.abs(airspeed.value - airspeedTarget.value) > 5);
+const isAirspeedOutOfTarget = computed(() => {
+    if (config.value.airspeed === 'inactive') return false;
+    return Math.abs(airspeed.value - airspeedTarget.value) > 5;
+});
+
 const isHeadingOutOfTarget = computed(() => {
+    if (config.value.compass === 'inactive') return false;
     const diff = Math.abs(heading.value - headingTarget.value);
     return Math.min(diff, 360 - diff) > 5;
 });
-const isAltitudeOutOfTarget = computed(() => Math.abs(altitude.value - altitudeTarget.value) > 100);
+
+const isAltitudeOutOfTarget = computed(() => {
+    if (config.value.altimeter === 'inactive') return false;
+    return Math.abs(altitude.value - altitudeTarget.value) > 100;
+});
 
 const headingPerformanceData = ref([]);
 const airspeedPerformanceData = ref([]);
@@ -144,17 +154,19 @@ const updateLoop = () => {
 };
 
 const updateScore = () => {
-    if (!isAirspeedOutOfTarget.value) {
+    if (config.value.airspeed !== 'inactive' && !isAirspeedOutOfTarget.value) {
         timeOnTargetAirspeed.value += 1 / 60;
     }
-    if (!isHeadingOutOfTarget.value) {
+    if (config.value.compass !== 'inactive' && !isHeadingOutOfTarget.value) {
         timeOnTargetHeading.value += 1 / 60;
     }
-    if (!isAltitudeOutOfTarget.value) {
+    if (config.value.altimeter !== 'inactive' && !isAltitudeOutOfTarget.value) {
         timeOnTargetAltitude.value += 1 / 60;
     }
 
-    if (!isAirspeedOutOfTarget.value && !isHeadingOutOfTarget.value && !isAltitudeOutOfTarget.value) {
+    if ((!isAirspeedOutOfTarget.value || config.value.airspeed === 'inactive') &&
+        (!isHeadingOutOfTarget.value || config.value.compass === 'inactive') &&
+        (!isAltitudeOutOfTarget.value || config.value.altimeter === 'inactive')) {
         score.value += 1;
     }
 };
@@ -205,28 +217,74 @@ const updatePlanePosition = () => {
     }
 };
 
-const updateTargets = () => {
-    if (Math.random() < 0.001) { // 0.1% chance each frame to change targets (about once every 16 seconds at 60 FPS)
-        const newAirspeedTarget = Math.floor(Math.random() * 150) + 50; // 50 to 200 knots
-        const newHeadingTarget = Math.floor(Math.random() * 360); // 0 to 359 degrees
-        const newAltitudeTarget = Math.floor(Math.random() * 8000) + 1000; // 1000 to 9000 feet
+const updateIndicator = (indicator, mode) => {
+    if (mode === 'inactive') {
+        // Don't update the target, change the label
+        if (indicator === 'airspeed') {
+            airspeedTarget.value = 'Inactive';
+        } else if (indicator === 'heading') {
+            headingTarget.value = 'Inactive';
+        } else if (indicator === 'altitude') {
+            altitudeTarget.value = 'Inactive';
+        }
+        return;
+    }
 
-        // Gradually move targets
-        const moveTargets = () => {
-            airspeedTarget.value += Math.sign(newAirspeedTarget - airspeedTarget.value) * Math.min(Math.abs(newAirspeedTarget - airspeedTarget.value), MOVEMENT_SPEED.AIRSPEED);
+    if (mode === 'keep_indicator') {
+        // Don't update the target
+        return;
+    }
 
-            const headingDiff = newHeadingTarget - headingTarget.value;
+    let newTarget;
+    let currentTarget;
+    let changeDirection;
+
+    if (indicator === 'airspeed') {
+        newTarget = Math.floor(Math.random() * 150) + 50; // 50 to 200 knots
+        currentTarget = airspeedTarget.value;
+        changeDirection = airspeedChangeDirection;
+    } else if (indicator === 'heading') {
+        newTarget = Math.floor(Math.random() * 360); // 0 to 359 degrees
+        currentTarget = headingTarget.value;
+        changeDirection = headingChangeDirection;
+    } else if (indicator === 'altitude') {
+        newTarget = Math.floor(Math.random() * 8000) + 1000; // 1000 to 9000 feet
+        currentTarget = altitudeTarget.value;
+        changeDirection = altitudeChangeDirection;
+    }
+
+    if (mode === 'adjust_for_consistent_updates') {
+        if (changeDirection.value === null) {
+            changeDirection.value = newTarget > currentTarget ? 'up' : 'down';
+        }
+        newTarget = changeDirection.value === 'up' ? currentTarget + 10 : currentTarget - 10;
+    }
+
+    // Update the target gradually
+    const moveTarget = () => {
+        if (indicator === 'airspeed') {
+            airspeedTarget.value += Math.sign(newTarget - airspeedTarget.value) * Math.min(Math.abs(newTarget - airspeedTarget.value), MOVEMENT_SPEED.AIRSPEED);
+        } else if (indicator === 'heading') {
+            const headingDiff = newTarget - headingTarget.value;
             const shortestPath = (Math.abs(headingDiff) > 180) ? -Math.sign(headingDiff) * (360 - Math.abs(headingDiff)) : headingDiff;
             headingTarget.value = (headingTarget.value + Math.sign(shortestPath) * Math.min(Math.abs(shortestPath), MOVEMENT_SPEED.HEADING) + 360) % 360;
+        } else if (indicator === 'altitude') {
+            altitudeTarget.value += Math.sign(newTarget - altitudeTarget.value) * Math.min(Math.abs(newTarget - altitudeTarget.value), MOVEMENT_SPEED.ALTITUDE);
+        }
 
-            altitudeTarget.value += Math.sign(newAltitudeTarget - altitudeTarget.value) * Math.min(Math.abs(newAltitudeTarget - altitudeTarget.value), MOVEMENT_SPEED.ALTITUDE);
+        if (currentTarget !== newTarget) {
+            requestAnimationFrame(moveTarget);
+        }
+    };
 
-            if (airspeedTarget.value !== newAirspeedTarget || headingTarget.value !== newHeadingTarget || altitudeTarget.value !== newAltitudeTarget) {
-                requestAnimationFrame(moveTargets);
-            }
-        };
+    moveTarget();
+};
 
-        moveTargets();
+const updateTargets = () => {
+    if (Math.random() < 0.001) { // 0.1% chance each frame to change targets
+        updateIndicator('airspeed', config.value.airspeed);
+        updateIndicator('heading', config.value.compass);
+        updateIndicator('altitude', config.value.altimeter);
     }
 };
 
@@ -244,7 +302,7 @@ const toggleMode = () => {
 const startExam = () => {
     examRunning.value = true;
     score.value = 0;
-    timeRemaining.value = 300;
+    timeRemaining.value = config.value.duration * 60; // Convert minutes to seconds
     // Initialize exam parameters
     airspeed.value = 100;
     heading.value = 0;
