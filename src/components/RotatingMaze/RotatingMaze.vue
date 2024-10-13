@@ -738,7 +738,7 @@ export default {
                     userId: config.value.userId,
                     batteryTestConfigId: config.value.testId,
                     result: {
-                        ...arrayMetrics.value,
+                        mazecompletions: arrayMetrics.value,
                         graph_data: mazeCompletionTime.value
                     },
                     refreshCount: refreshCount.value

@@ -48,6 +48,8 @@ export default {
         const greenPillTime = ref(0);
         const yellowPillTime = ref(0);
         const redPillTime = ref(0);
+        let targetRadius = 150; // Initial target radius
+        const smoothingFactor = 0.1; // Adjust this value to control smoothness (0.05 to 0.2 recommended)
 
         const drawTrackingTest = () => {
             ctx.clearRect(0, 0, 500, 500);
@@ -165,11 +167,7 @@ export default {
 
             // Update solid circle radius based on thruster input
             if (thruster) {
-                const thrusterState = navigator.getGamepads()[thruster.index];
-                if (thrusterState) {
-                    solidCircleRadius += thrusterState.axes[2] * 2;
-                    solidCircleRadius = Math.max(50, Math.min(250, solidCircleRadius)); // Keep radius within bounds
-                }
+                updateSolidCircleRadius()
             }
 
             // Update dot position based on joystick input
@@ -208,6 +206,25 @@ export default {
             }
 
             updatePillTime(deltaTime);
+        };
+
+        // Update solid circle radius based on thruster input
+        const updateSolidCircleRadius = () => {
+            if (thruster) {
+                const thrusterState = navigator.getGamepads()[thruster.index];
+                if (thrusterState) {
+                    const axisValue = thrusterState.axes[2];
+                    // Map the axis value (-1 to 1) to a radius range (50 to 250)
+                    targetRadius = ((axisValue + 1) / 2) * (250 - 50) + 50;
+                }
+            }
+
+            // Smoothly interpolate between current radius and target radius
+            const diff = targetRadius - solidCircleRadius;
+            solidCircleRadius += diff * smoothingFactor;
+
+            // Ensure the radius stays within bounds
+            solidCircleRadius = Math.max(50, Math.min(250, solidCircleRadius));
         };
 
         let lastTimestamp = 0;
