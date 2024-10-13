@@ -172,7 +172,7 @@ export default {
           if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
             this.indexTrainingConfig++
             this.isModalTrainingVisible = true
-          } else if (this.indexConfig < (this.configs.length - 1)) {
+          } else if (this.indexConfig <= (this.configs.length - 1)) {
             // Initiate Record Result
             if (this.indexConfig === 0) {
               this.totalAllShapeObject = 0;

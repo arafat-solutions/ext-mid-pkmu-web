@@ -66,6 +66,7 @@ export default {
   name: 'RunningMemorySpan',
   data() {
     return {
+      isRecordResult: true,
       isModalTrainingVisible: false,
       isModalVisible: false,
       isShowQuestion: false,
@@ -159,18 +160,24 @@ export default {
           this.config.duration--;
         } else {
           this.cleanUp();
-
           if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+            console.log('training')
+
             this.indexTrainingConfig++
             this.isModalTrainingVisible = true
-          } else if (this.indexConfig < (this.configs.length - 1)) {
-            // Initatiate Record Result
-            if (this.indexConfig === 0) {
-              this.totalQuestion = [];
-              this.correctAnswer = [];
+          } else if (this.indexConfig <= (this.configs.length - 1)) {
+            // Initiate Record Result
+            if (this.indexConfig === 0 && this.isRecordResult) {
+              console.log('kesini')
+              this.isRecordResult = false;
+
+              this.totalQuestion = 0;
+              this.correctAnswer = 0;
               this.responseDurations = []
               this.userInputs = [];
             }
+
+            console.log('test')
 
             this.indexConfig++
             this.isModalVisible = true
