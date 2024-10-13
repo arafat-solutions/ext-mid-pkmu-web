@@ -21,10 +21,10 @@ export default {
   },
   data() {
     return {
-      altitude: null,
+      altitude: 11000,
       altitudeVariants: [9000, 10000, 11000],
-      minimumAltitude: null,
-      maximumAltitude: null,
+      minimumAltitude: 9000,
+      maximumAltitude: 12000,
       signRandoms: ['+', '-'],
       currenSignTarget: null,
       defaultIntervalTarget: 3000, //in ms
@@ -40,23 +40,24 @@ export default {
       greenStartTime: null,
       greenDuration: 0,
       isPressed: false,
+      gamepad: null,
+      gamepadConnected: false,
+      lastGamepadValue: 0,
     }
   },
   created() {
-    window.addEventListener('keydown', this.handleKeyDownPress);
-    window.addEventListener('keyup', this.handleKeyUpPress);
+    window.addEventListener('gamepadconnected', this.onGamepadConnected);
+    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
   },
   beforeUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDownPress);
-    window.removeEventListener('keyup', this.handleKeyUpPress);
+    window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+    window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
     cancelAnimationFrame(this.animationFrameId);
   },
   watch: {
     isTimesUp(newValue) {
       if (newValue) {
         this.checkDurationTarget();
-        window.removeEventListener('keydown', this.handleKeyDownPress);
-        window.removeEventListener('keyup', this.handleKeyUpPress);
         cancelAnimationFrame(this.animationFrameId);
         this.$emit('getResult', this.greenDuration);
       }
@@ -81,39 +82,64 @@ export default {
     },
   },
   mounted: function () {
+    this.initAltitude();
     if (this.changeType !== 'inactive') {
       if (this.changeType !== 'keep_indicator') {
-        this.initAltitude();
         this.executeTargetMovement();
       }
       this.executeAltitudeMovement();
     }
+    this.startGamepadPolling();
   },
   methods: {
-    handleKeyDownPress(event) {
-      if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
-        return;
-      }
-
-      if (event.key === 'ArrowUp' && this.altitude <= this.maximumAltitude) {
-        this.isPressed = true;
-        this.altitude += 3;
-        this.checkDurationTarget();
-      } else if (event.key === 'ArrowDown' && this.altitude >= this.minimumAltitude) {
-        this.isPressed = true;
-        this.altitude -= 3;
-        this.checkDurationTarget();
+    onGamepadConnected(e) {
+      console.log('Connected:', e);
+      if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+        console.log("Correct gamepad connected:", e.gamepad);
+        this.gamepad = e.gamepad;
+        this.gamepadConnected = true;
+      } 
+    },
+    onGamepadDisconnected(e) {
+      console.log('Disconnected:', e);
+      if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+        console.log("Gamepad disconnected:", e.gamepad);
+        this.gamepad = null;
+        this.gamepadConnected = false;
       }
     },
-    handleKeyUpPress(event) {
-      if (this.isPause || this.isTimesUp || this.changeType === 'inactive' || this.changeType === 'keep_indicator') {
-        return;
+    startGamepadPolling() {
+      const pollGamepad = () => {
+        if (this.gamepadConnected && !this.isPause && !this.isTimesUp && this.changeType !== 'inactive' && this.changeType !== 'keep_indicator') {
+          const gamepad = navigator.getGamepads()[this.gamepad.index];
+          const yAxis = gamepad.axes[1]; // Assuming Y-axis is at index 1
+          
+          // Only move if there's a significant change in the joystick position
+          if (Math.abs(yAxis - this.lastGamepadValue) > 0.05) {
+            // Invert the y-axis value for intuitive control (up is negative, down is positive)
+            const movement = -yAxis * 10; // Adjust sensitivity as needed
+            this.altitude = Math.max(this.minimumAltitude, Math.min(this.maximumAltitude, this.altitude + movement));
+            this.checkDurationTarget();
+            this.lastGamepadValue = yAxis;
+          }
+        }
+        
+        if (!this.isPause && !this.isTimesUp && this.changeType !== 'inactive' && this.changeType !== 'keep_indicator') {
+          this.executeAutomaticMovement();
+        }
+        
+        requestAnimationFrame(pollGamepad);
+      };
+      pollGamepad();
+    },
+    executeAutomaticMovement() {
+      if (this.changeType === 'adjust_for_consistent_updates') {
+        this.altitude = Math.min(this.altitude + 1, this.maximumAltitude);
+      } else if (this.changeType === 'adjust_for_irregular_updates') {
+        const randomAddedAltitude = Math.floor(Math.random() * 3) + 1;
+        this.altitude = Math.min(this.altitude + randomAddedAltitude, this.maximumAltitude);
       }
-
-      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-        this.isPressed = false;
-        this.executeAltitudeMovement();
-      }
+      this.checkDurationTarget();
     },
     getRandomInterval(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -141,15 +167,10 @@ export default {
       return this.executeAltitudeMovement();
     },
     generateRandomNumber(min, max) {
-      // Ensure the number is within the range [min, max]
       let number = Math.floor(Math.random() * (max - min + 1)) + min;
-
-      // Adjust to the nearest multiple of 10
       if (number % 10 !== 0) {
         number = number - (number % 10) + 10;
       }
-
-      // Ensure the adjusted number is still within the range [min, max]
       return Math.min(Math.max(number, min), max);
     },
     getRandomOperator() {
@@ -191,28 +212,25 @@ export default {
     },
     drawTarget() {
       const canvas = this.$refs.targetCanvas;
+      if (!canvas) {
+        return;
+      }
       const ctx = canvas.getContext('2d');
 
-      // Clear canvas
       ctx.clearRect(0, 0, this.width, this.height);
 
-      // Center coordinates
       const centerX = this.width / 2;
       const centerY = this.height / 2;
 
-      // Calculate the target angle
       const adjustedTarget = ((this.target - this.minimumAltitude) / (this.maximumAltitude - this.minimumAltitude)) * 360 - 90;
 
-      // Convert adjustedTarget from degrees to radians
       const targetRadians = adjustedTarget * (Math.PI / 180);
 
-      // Coordinates for the yellow object
       const yellowX = centerX + this.radius * Math.cos(targetRadians);
       const yellowY = centerY + this.radius * Math.sin(targetRadians);
 
-      // Calculate the points of the triangle
-      const triangleSize = 12; // Size of the triangle
-      const angleOffset = Math.PI / 6; // Angle offset for the triangle
+      const triangleSize = 12;
+      const angleOffset = Math.PI / 6;
 
       const point1X = yellowX;
       const point1Y = yellowY;
@@ -223,12 +241,11 @@ export default {
       const point3X = yellowX + triangleSize * Math.cos(targetRadians - angleOffset);
       const point3Y = yellowY + triangleSize * Math.sin(targetRadians - angleOffset);
 
-      // Draw the triangle
       ctx.beginPath();
-      ctx.moveTo(point1X, point1Y); // Top point of the triangle
-      ctx.lineTo(point2X, point2Y); // Bottom left point of the triangle
-      ctx.lineTo(point3X, point3Y); // Bottom right point of the triangle
-      ctx.closePath(); // Close the path to form the triangle
+      ctx.moveTo(point1X, point1Y);
+      ctx.lineTo(point2X, point2Y);
+      ctx.lineTo(point3X, point3Y);
+      ctx.closePath();
 
       ctx.fillStyle = 'rgb(72, 200, 68)';
       ctx.fill();
@@ -248,7 +265,6 @@ export default {
       if (this.changeType === 'inactive' || this.changeType == 'keep_indicator') {
         this.greenStartTime = null;
         this.greenDuration = 0;
-
         return;
       }
 
@@ -267,6 +283,7 @@ export default {
     }
   }
 }
+
 </script>
 
 <style scoped>
