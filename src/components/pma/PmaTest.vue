@@ -49,7 +49,7 @@ export default {
     };
   },
   setup() {
-    const testDuration = 0.5 * 60; // 3 minutes in seconds
+    const testDuration = 2 * 60; // 3 minutes in seconds
     const remainingTime = ref(testDuration);
     const currentSegment = ref(1);
     const segmentDuration = testDuration / 3;
