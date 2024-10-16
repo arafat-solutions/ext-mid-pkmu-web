@@ -102,7 +102,8 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      trainingMode: false
+      trainingMode: false,
+      questionDuration: 15000
     };
   },
   async mounted() {
@@ -237,6 +238,41 @@ export default {
         this.$router.push('/module');
       }
     },
+    startQuestionTimer() {
+      this.questionTimer = setTimeout(() => {
+        this.handleQuestionTimeout();
+      }, this.questionDuration);
+    },
+
+    handleQuestionTimeout() {
+      if (this.selectedAnswer === null) {
+        // If no answer was selected, record it as a wrong answer
+        const responseTime = this.questionDuration;
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: responseTime,
+          timestamp: Date.now(),
+        });
+        this.responseDurations.push(responseTime);
+      }
+
+      this.moveToNextQuestion();
+    },
+    moveToNextQuestion() {
+      clearTimeout(this.questionTimer);
+      clearInterval(this.tailRemoveInterval);
+      clearInterval(this.drawLineinterval);
+      clearTimeout(this.timeoutIdRemoveInterval);
+
+      this.config.current_question++;
+
+      if (this.config.current_question >= this.config.number_of_questions) {
+        this.endGame();
+      } else {
+        this.generateCoordinat();
+        this.selectedAnswer = null;
+      }
+    },
     async generateLines() {
       this.optionAnswers = [];
       this.rightTurns = 0;
@@ -289,6 +325,7 @@ export default {
         this.lines = this.limitTurns(this.lines, this.config.max_turns);
 
         this.generateLines()
+        this.startQuestionTimer()
       } catch (error) {
         console.log(error)
       }
@@ -633,7 +670,6 @@ export default {
 
     },
     pressAnswer(value) {
-      console.log('answer', value);
       if (!this.isButtonDisabled) {
         this.selectedAnswer = value;
       }
@@ -661,28 +697,7 @@ export default {
         });
       }
 
-      console.log('responseTime', responseTime);
-      console.log(this.userInputs[this.userInputs.length - 1], 'userInputs');
-
-      clearInterval(this.tailRemoveInterval);
-      this.tailRemoveInterval = null;
-
-      clearInterval(this.drawLineinterval);
-      this.drawLineinterval = null;
-
-      clearTimeout(this.timeoutIdRemoveInterval);
-      this.timeoutIdRemoveInterval = null;
-
-      this.config.current_question++;
-
-      if (this.config.current_question >= this.config.number_of_questions) {
-        this.endGame();
-      } else {
-        setTimeout(() => {
-          this.generateCoordinat();
-          this.selectedAnswer = null;
-        }, 1500);
-      }
+      this.moveToNextQuestion();
     },
     endGame() {
       clearInterval(this.tailRemoveInterval);
