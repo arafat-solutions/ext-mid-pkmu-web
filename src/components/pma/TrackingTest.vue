@@ -124,7 +124,23 @@ export default {
             }
         };
 
+        const checkGamepadConnection = () => {
+            const gamepads = navigator.getGamepads();
+            for (let i = 0; i < gamepads.length; i++) {
+                if (gamepads[i]) {
+                    if (gamepads[i].id === 'T.16000M (Vendor: 044f Product: b10a)') {
+                        joystick = gamepads[i];
+                        console.log("Reconnected to joystick:", joystick);
+                    } else if (gamepads[i].id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
+                        thruster = gamepads[i];
+                        console.log("Reconnected to throttle:", thruster);
+                    }
+                }
+            }
+        }
+
         const updateGameState = (timestamp, deltaTime) => {
+            checkGamepadConnection(); // Check connection each frame
             if (typeof deltaTime !== 'number' || isNaN(deltaTime)) {
                 console.error('Invalid deltaTime:', deltaTime);
                 return;
@@ -271,6 +287,7 @@ export default {
 
             window.addEventListener("gamepadconnected", handleGamepadConnected);
             window.addEventListener("gamepaddisconnected", handleGamepadDisconnected);
+            checkGamepadConnection()
         });
 
         onUnmounted(() => {
