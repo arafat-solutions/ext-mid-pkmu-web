@@ -1,5 +1,6 @@
 <template>
   <div ref="container" class="coordination-test">
+    <div class="countdown">{{ formattedTime }}</div>
     <canvas ref="canvas"></canvas>
     <img src="@/assets/airplane-icon.png" alt="Airplane" :style="airplaneStyle" class="airplane"
       :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }" />
@@ -28,7 +29,8 @@ const CONFIG = {
   MIN_FORWARD_POSITION: -4.5,
   PLANE_ROTATION_SPEED: 0.1,
   MAX_PLANE_ROTATION: Math.PI / 4, // 45 degrees
-  ALIGNMENT_THRESHOLD: 0.5
+  ALIGNMENT_THRESHOLD: 0.5,
+  DURATION: 60 * 1000 // 1 minute in milliseconds
 };
 
 export default {
@@ -49,6 +51,10 @@ export default {
     const gamepadConnected = ref(false);
     const thrustConnected = ref(false);
 
+    const timeRemaining = ref(CONFIG.DURATION);
+    const userInputs = ref([]);
+    const startTime = ref(Date.now());
+
     // Current configuration
     const currentConfig = {
       perspectiveSpeed: CONFIG.PERSPECTIVE_SPEED.MEDIUM,
@@ -59,6 +65,13 @@ export default {
       const dx = Math.abs(airplanePosition.value.x - markerPosition.value.x);
       const dy = Math.abs(airplanePosition.value.y - markerPosition.value.y);
       return dx < CONFIG.ALIGNMENT_THRESHOLD && dy < CONFIG.ALIGNMENT_THRESHOLD;
+    });
+
+    const formattedTime = computed(() => {
+      const seconds = Math.ceil(timeRemaining.value / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     });
 
     const airplaneStyle = computed(() => ({
@@ -118,12 +131,20 @@ export default {
 
     let lastPerspectiveChange = 0;
     let perspectiveDirection = 1;
+    let lastMetricRecordTime = 0;
 
     const animate = () => {
       requestAnimationFrame(animate);
 
-      // Update perspective
       const now = Date.now();
+      timeRemaining.value = Math.max(0, CONFIG.DURATION - (now - startTime.value));
+
+      if (timeRemaining.value === 0) {
+        submitResults();
+        return;
+      }
+
+      // Update perspective
       if (now - lastPerspectiveChange > CONFIG.PERSPECTIVE_INTERVAL) {
         perspectiveDirection *= -1;
         lastPerspectiveChange = now;
@@ -182,7 +203,26 @@ export default {
         airplanePosition.value.z = Math.max(CONFIG.MIN_FORWARD_POSITION, Math.min(CONFIG.MAX_BACKWARD_POSITION, airplanePosition.value.z));
       }
 
+      // Record metrics every second
+      if (now - lastMetricRecordTime >= 1000) {
+        userInputs.value.push({
+          type: isAligned.value ? 'correct' : 'wrong',
+          deviations: {
+            x: airplanePosition.value.x - markerPosition.value.x,
+            y: airplanePosition.value.y - markerPosition.value.y,
+            z: airplanePosition.value.z - markerPosition.value.z,
+          },
+          timestamp: now - startTime.value
+        });
+        lastMetricRecordTime = now;
+      }
+
       renderer.render(scene, camera);
+    };
+
+    const submitResults = () => {
+      console.log('Test completed. Submitting results:', userInputs.value);
+      // Here you would typically send the results to a server
     };
 
     const onGamepadConnected = (e) => {
@@ -225,6 +265,7 @@ export default {
       canvas,
       airplaneStyle,
       isAligned,
+      formattedTime,
     };
   }
 }
@@ -259,5 +300,18 @@ canvas {
 
 .in-target {
   filter: drop-shadow(0 0 5px green);
+}
+
+.countdown {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: blue;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 24px;
+  z-index: 10;
 }
 </style>
