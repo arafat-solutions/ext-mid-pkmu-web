@@ -15,11 +15,18 @@
         <button @click="closeModal">Close</button>
       </div>
     </div>
+    <div v-if="showInstructionModal" class="instruction-modal">
+      <div class="instruction-modal-content">
+        <h2>{{ currentTrainingTask ? 'Training: ' + currentTrainingTask : 'Instructions' }}</h2>
+        <p>{{ instructionModalContent }}</p>
+        <button @click="startTrainingTask">{{ trainingCompleted ? 'Start Test' : 'Start Task' }}</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils';
 
 export default {
   data() {
@@ -66,6 +73,7 @@ export default {
       currentAnswer: 0,
       questionTimer: null,
       timeRemaining: 0,
+      timerInterval: null,
       duration: 300,
       showModal: false,
       drawInterval: null,
@@ -83,6 +91,17 @@ export default {
       topSectionHeight: 150, // Reduced top section height
       cursorRadius: 15, // Increased cursor size
       nearThreshold: 30, // Distance threshold for "near" cursor state
+      trainingCompleted: false,
+      currentTrainingTask: null,
+      trainingTasks: ['navigation', 'math', 'alertLight', 'combined'],
+      showInstructionModal: false,
+      instructionModalContent: '',
+      trainingDuration: 15000, // 15 seconds for each training task
+      activeTasks: {
+        navigation: false,
+        math: false,
+        alertLight: false
+      },
     };
   },
   computed: {
@@ -108,22 +127,29 @@ export default {
       ctx.strokeStyle = this.separatorColor;
       ctx.lineWidth = 2;
 
-      // Vertical separator at 15% width
+      // Always draw the vertical separator
       ctx.beginPath();
       ctx.moveTo(this.canvasWidth * 0.15, 0);
       ctx.lineTo(this.canvasWidth * 0.15, this.canvasHeight);
       ctx.stroke();
 
-      // Horizontal separator at reduced height
-      ctx.beginPath();
-      ctx.moveTo(0, this.topSectionHeight);
-      ctx.lineTo(this.canvasWidth, this.topSectionHeight);
-      ctx.stroke();
+      // Only draw the horizontal separator if more than one task is active
+      if (Object.values(this.activeTasks).filter(Boolean).length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(0, this.topSectionHeight);
+        ctx.lineTo(this.canvasWidth, this.topSectionHeight);
+        ctx.stroke();
+      }
 
-      this.drawAlertLights(ctx);
-      this.drawMathTask(ctx);
-      this.drawNavigationTasks(ctx);
-      this.drawVirtualKeyboard(ctx);
+      if (this.activeTasks.alertLight) {
+        this.drawAlertLights(ctx);
+      }
+      if (this.activeTasks.math) {
+        this.drawMathTask(ctx);
+      }
+      if (this.activeTasks.navigation) {
+        this.drawNavigationTasks(ctx);
+      }
     },
 
     drawAlertLights(ctx) {
@@ -151,7 +177,7 @@ export default {
       } else if (this.answerState === 'incorrect') {
         boxColor = 'red';
       }
-      
+
       const leftSectionWidth = this.canvasWidth * 0.15;
       const mathSectionWidth = this.canvasWidth - leftSectionWidth;
       const keyboardWidth = mathSectionWidth * 0.6;
@@ -165,7 +191,7 @@ export default {
       ctx.font = '24px Arial';
       ctx.textAlign = 'left';
       ctx.fillText(this.question, leftSectionWidth + keyboardWidth + 20, 40);
-      
+
       this.drawVirtualKeyboard(ctx, leftSectionWidth, keyboardWidth, keyboardHeight);
     },
 
@@ -337,6 +363,9 @@ export default {
       if (this.animationFrameId) {
         cancelAnimationFrame(this.animationFrameId);
       }
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+      }
       // Clear other intervals
       // ... (clear intervals for activateRandomLight, moveTargets, etc.)
     },
@@ -475,6 +504,128 @@ export default {
     },
 
     startSimulation() {
+      if (!this.trainingCompleted) {
+        this.startTraining();
+      } else {
+        this.startActualTest();
+      }
+    },
+
+    startTraining() {
+      this.currentTrainingTask = this.trainingTasks[0];
+      this.showTrainingInstructions();
+    },
+
+    showTrainingInstructions() {
+      const instructions = {
+        navigation: "Practice following the white target with your cursor. Use the joystick for the right target and the throttle for the left target.",
+        math: "Solve simple addition problems. Use the on-screen keyboard to input your answers.",
+        alertLight: "Click on red lights as quickly as possible. Ignore yellow lights.",
+        combined: "Practice all tasks together. This is your final training before the actual test."
+      };
+
+      this.instructionModalContent = instructions[this.currentTrainingTask];
+      this.showInstructionModal = true;
+    },
+
+    startTrainingTask() {
+      this.showInstructionModal = false;
+      switch (this.currentTrainingTask) {
+        case 'navigation':
+          this.startNavigationTraining();
+          break;
+        case 'math':
+          this.startMathTraining();
+          break;
+        case 'alertLight':
+          this.startAlertLightTraining();
+          break;
+        case 'combined':
+          this.startCombinedTraining();
+          break;
+      }
+    },
+
+    startNavigationTraining() {
+      this.resetSimulation();
+      this.activeTasks = { navigation: true, math: false, alertLight: false };
+      setInterval(this.moveTargets, 50);
+      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.gameLoop(performance.now());
+      setTimeout(() => this.endTrainingTask(), this.trainingDuration);
+    },
+
+    startMathTraining() {
+      this.resetSimulation();
+      this.activeTasks = { navigation: false, math: true, alertLight: false };
+      this.generateNewQuestion();
+      this.lastQuestionTime = performance.now();
+      this.gameLoop(performance.now());
+      setTimeout(() => this.endTrainingTask(), this.trainingDuration);
+    },
+
+    startAlertLightTraining() {
+      this.resetSimulation();
+      this.activeTasks = { navigation: false, math: false, alertLight: true };
+      setInterval(this.activateRandomLight, 5000);
+      this.gameLoop(performance.now());
+      setTimeout(() => this.endTrainingTask(), this.trainingDuration);
+    },
+
+    startCombinedTraining() {
+      this.resetSimulation();
+      this.activeTasks = { navigation: true, math: true, alertLight: true };
+      setInterval(this.activateRandomLight, 5000);
+      setInterval(this.moveTargets, 50);
+      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.generateNewQuestion();
+      this.lastQuestionTime = performance.now();
+      this.gameLoop(performance.now());
+      setTimeout(() => this.endTrainingTask(), 120000); // 2 minutes for combined training
+    },
+
+    resetSimulation() {
+      this.stopSimulation();
+      this.leftCursor = { x: 75, y: 450 };
+      this.rightCursor = { x: 700, y: 300 };
+      this.alertResponses = [];
+      this.mathResponses = [];
+      this.navigationResponses = [];
+      this.activeTasks = { navigation: false, math: false, alertLight: false };
+      // ... reset other necessary variables ...
+    },
+
+    endTrainingTask() {
+      this.stopSimulation();
+      const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
+      if (currentTaskIndex < this.trainingTasks.length - 1) {
+        this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
+        this.showTrainingInstructions();
+      } else {
+        this.completeTraining();
+      }
+    },
+
+    completeTraining() {
+      this.trainingCompleted = true;
+      this.updateLocalStorage();
+      this.showInstructionModal = true;
+      this.instructionModalContent = "Training completed! The actual test will begin now.";
+    },
+
+
+    updateLocalStorage() {
+      let scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+      const testIndex = scheduleData.tests.findIndex(test => test.name === 'Test For Operative Multitasking');
+      if (testIndex !== -1) {
+        scheduleData.tests[testIndex].trainingCompleted = true;
+        localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+      }
+    },
+
+    startActualTest() {
+      this.resetSimulation();
+      this.activeTasks = { navigation: true, math: true, alertLight: true };
       setInterval(this.activateRandomLight, 5000);
       setInterval(this.moveTargets, 50);
       setInterval(this.changeTargetDirections, this.directionChangeInterval);
@@ -490,7 +641,7 @@ export default {
 
       this.handleGamepadInput();
       this.draw();
-      
+
       // Check deviation every 1 second
       if (timestamp - this.lastDeviationCheck >= this.deviationCheckInterval) {
         this.checkDeviation();
@@ -541,18 +692,27 @@ export default {
     },
 
     startTimer() {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+      }
       this.timeRemaining = this.duration;
-      const timerInterval = setInterval(() => {
+      this.timerInterval = setInterval(() => {
         if (this.timeRemaining > 0) {
           this.timeRemaining--;
         } else {
-          clearInterval(timerInterval);
+          clearInterval(this.timerInterval);
           this.endSimulation();
         }
       }, 1000);
     },
 
     async endSimulation() {
+      if (!this.trainingCompleted) {
+        this.trainingCompleted = true;
+        completeTrainingTestAndUpdateLocalStorage("Test For Operative Multitasking");
+        // start over for actual test
+
+      }
       clearInterval(this.drawInterval);
       this.showModal = true;
       try {
@@ -615,9 +775,11 @@ export default {
 
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
     const tests = scheduleData.tests;
-    const config = tests?.find((test) => {
+    const operativeTest = tests?.find((test) => {
       return test.name === 'Test For Operative Multitasking';
-    }).configs[0];
+    });
+    this.trainingCompleted = operativeTest?.trainingCompleted; //default false
+    const config = operativeTest?.configs[0];
     this.config = scheduleData;
     this.config.sessionId = scheduleData.sessionId;
     this.config.userId = scheduleData.userId;
@@ -659,6 +821,7 @@ export default {
   padding: 10px;
   font-size: 24px;
   border-radius: 5px;
+  z-index: 1000; /* Ensure it's above the canvas */
 }
 
 canvas {
@@ -710,6 +873,46 @@ button {
 }
 
 button:hover {
+  background-color: #0056b3;
+}
+
+.instruction-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.instruction-modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+  max-width: 80%;
+}
+
+.instruction-modal-content h2 {
+  margin-top: 0;
+}
+
+.instruction-modal-content button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.instruction-modal-content button:hover {
   background-color: #0056b3;
 }
 </style>
