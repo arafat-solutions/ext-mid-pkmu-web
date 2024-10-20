@@ -88,18 +88,18 @@ export default {
       timeoutIdRemoveInterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
-
-      //For Config
-      config: {},
-      configs: [],
-      trainingConfigs: [],
-      indexConfig: 0,
-      indexTrainingConfig: 0,
-      moduleId: '',
-      sessionId: '',
-      userId: '',
-      testId: '',
-
+      config: {
+        crash: null,
+        number_of_questions: null,
+        current_question: 0,
+        full_image: null, //true or false
+        left_turn: null, //true or false
+        right_turn: null, //true or false
+        speed: null,
+        speed_increasing: null, //true or false,
+        max_turns: 199, // New configurable variable for maximum turns
+      },
+      totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
       responseTime: 0,
@@ -114,6 +114,8 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
+      trainingMode: false,
+      questionDuration: 15000
     };
   },
   mounted() {
@@ -180,7 +182,7 @@ export default {
 
       if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
         this.isModalTrainingVisible = true;
-      } else{
+      } else {
         this.isModalVisible = true;
       }
 
@@ -202,20 +204,20 @@ export default {
       } = config
 
       this.$nextTick(() => {
-          this.config.crash = crash
-          this.config.difficultyLevel = difficulty_level
-          this.config.fullImage = full_image
-          this.config.speed = speed * 3000,
+        this.config.crash = crash
+        this.config.difficultyLevel = difficulty_level
+        this.config.fullImage = full_image
+        this.config.speed = speed * 3000,
           this.config.speedIncreasing = speed_increasing,
           this.config.leftTurn = left_turn
-          this.config.rightTurn = right_turn
-          this.config.numberOfQuestions = number_of_question ?? 10;
-          this.config.maxTurns = max_turns ?? 5, // Set max_turns from config or default to 5
+        this.config.rightTurn = right_turn
+        this.config.numberOfQuestions = number_of_question ?? 10;
+        this.config.maxTurns = max_turns ?? 5, // Set max_turns from config or default to 5
           this.config.subtask = subtask
-          this.config.testId = id
-          this.config.currentQuestion = 1
+        this.config.testId = id
+        this.config.currentQuestion = 1
 
-          this.isConfigLoaded = true;
+        this.isConfigLoaded = true;
       });
     },
     calculatedResult() {
@@ -274,6 +276,41 @@ export default {
         this.$router.push('/module');
       }
     },
+    startQuestionTimer() {
+      this.questionTimer = setTimeout(() => {
+        this.handleQuestionTimeout();
+      }, this.questionDuration);
+    },
+
+    handleQuestionTimeout() {
+      if (this.selectedAnswer === null) {
+        // If no answer was selected, record it as a wrong answer
+        const responseTime = this.questionDuration;
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: responseTime,
+          timestamp: Date.now(),
+        });
+        this.responseDurations.push(responseTime);
+      }
+
+      this.moveToNextQuestion();
+    },
+    moveToNextQuestion() {
+      clearTimeout(this.questionTimer);
+      clearInterval(this.tailRemoveInterval);
+      clearInterval(this.drawLineinterval);
+      clearTimeout(this.timeoutIdRemoveInterval);
+
+      this.config.current_question++;
+
+      if (this.config.current_question >= this.config.number_of_questions) {
+        this.endGame();
+      } else {
+        this.generateCoordinat();
+        this.selectedAnswer = null;
+      }
+    },
     async generateLines() {
       this.optionAnswers = [];
       this.rightTurns = 0;
@@ -326,6 +363,7 @@ export default {
         this.lines = this.limitTurns(this.lines, this.config.maxTurns);
 
         this.generateLines()
+        this.startQuestionTimer()
       } catch (error) {
         console.log(error)
       }
@@ -686,54 +724,7 @@ export default {
         });
       }
 
-      this.responseDurations.push(this.responseTime - this.questionStartTime)
-
-      clearInterval(this.tailRemoveInterval);
-      this.tailRemoveInterval = null;
-
-      clearInterval(this.drawLineinterval);
-      this.drawLineinterval = null;
-
-      clearTimeout(this.timeoutIdRemoveInterval);
-      this.timeoutIdRemoveInterval = null;
-
-      if (this.config.currentQuestion >= this.config.numberOfQuestions) {
-        this.endGame();
-
-        setTimeout(() => {
-          if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
-            this.indexTrainingConfig++
-            this.isModalTrainingVisible = true
-          } else if (this.indexConfig <= (this.configs.length - 1)) {
-            // Initiate Record Result
-            if (this.indexConfig === 0) {
-              this.correctAnswer = 0;
-              this.responseDurations = [];
-              this.userInputs = [];
-            }
-
-            this.indexConfig++
-            this.isModalVisible = true
-          } else {
-            setTimeout(() => {
-              this.calculatedResult();
-            }, 1000);
-          }
-          this.selectedAnswer = null;
-        }, 2000);
-
-        // Update localStorage with new indices
-        localStorage.setItem("index-config-spatial-orientation", JSON.stringify({
-          indexTrainingConfig: this.indexTrainingConfig,
-          indexConfig: this.indexConfig
-        }))
-      } else {
-        setTimeout(() => {
-          this.config.currentQuestion++;
-          this.generateCoordinat();
-          this.selectedAnswer = null;
-        }, 1500);
-      }
+      this.moveToNextQuestion();
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
@@ -749,161 +740,183 @@ export default {
 </script>
 
 <style scoped>
-  .main-view {
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 60px auto;
-  }
-  .modal-overlay {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
-  }
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-  }
-  .modal-content button {
-    background-color: #6200ee;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-  }
-  .modal-content button:hover {
-    background-color: #5e37a6;
-  }
-  .timer-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0349D0;
-    padding: 1.5rem 5rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
-  .loading-container {
-    /* Add your loading indicator styles here */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    /* Black background with 80% opacity */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    /* Ensure it is above other content */
-  }
-  .spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3);
-    /* Light border */
-    border-top: 8px solid #ffffff;
-    /* White border for the spinning part */
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
+.main-view {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 60px auto;
+}
 
-    100% {
-      transform: rotate(360deg);
-    }
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.modal-content button {
+  background-color: #6200ee;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-content button:hover {
+  background-color: #5e37a6;
+}
+
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0349D0;
+  padding: 1.5rem 5rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  .text {
-    color: #ffffff;
-    margin-top: 20px;
-    font-size: 1.2em;
+
+  100% {
+    transform: rotate(360deg);
   }
-  .center {
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-  }
-  .line-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .line-turns {
-    padding: 10px;
-    position: relative;
-    margin-bottom: 10px;
-    margin-top: 10px;
-  }
-  canvas {
-    border: 1px solid #000;
-    background-color: white;
-  }
-  .question {
-    padding: 30px;
-    font-size: 1em;
-    font-weight: bold;
-  }
-  .answer-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .buttons {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 10px;
-  }
-  .digit-number {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #505250;
-    color: white;
-  }
-  .next {
-    background-color: #0349D0;
-  }
-  .digit-number {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #505250;
-    color: white;
-    transition: background-color 0.3s ease;
-  }
-  .digit-number.selected {
-    background-color: #4CAF50;
-    /* Green color for selected button */
-  }
-  .digit-number.next {
-    background-color: #0349D0;
-  }
-  .digit-number.next:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-  }
+}
+
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.line-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.line-turns {
+  padding: 10px;
+  position: relative;
+  margin-bottom: 10px;
+  margin-top: 10px;
+}
+
+canvas {
+  border: 1px solid #000;
+  background-color: white;
+}
+
+.question {
+  padding: 30px;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.answer-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 10px;
+}
+
+.digit-number {
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #505250;
+  color: white;
+}
+
+.next {
+  background-color: #0349D0;
+}
+
+.digit-number {
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #505250;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.digit-number.selected {
+  background-color: #4CAF50;
+  /* Green color for selected button */
+}
+
+.digit-number.next {
+  background-color: #0349D0;
+}
+
+.digit-number.next:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
 </style>

@@ -5,20 +5,22 @@
         <div v-if="thrusterConnected" class="joystick-status connected">Thruster Connected</div>
         <div v-else class="joystick-status disconnected">Joystick Disconnected</div>
         <div class="score-display">
-            <div>Circle Time - Blue: {{ blueTime.toFixed(1) }}s, Red: {{ redTime.toFixed(1) }}s</div>
-            <div>Dot Time - Green: {{ greenTime.toFixed(1) }}s, Red: {{ dotRedTime.toFixed(1) }}s</div>
-            <div>Pill Time - Green: {{ greenPillTime.toFixed(1) }}s, Yellow: {{ yellowPillTime.toFixed(1) }}s, Red: {{
-                redPillTime.toFixed(1) }}s</div>
+            <div>Circle Time - Blue: {{ circle_correct_position.toFixed(1) }}s, Red: {{ circle_wrong_position.toFixed(1)
+                }}s</div>
+            <div>Dot Time - Green: {{ dot_correct_position.toFixed(1) }}s, Red: {{ dot_wrong_position.toFixed(1) }}s
+            </div>
+            <div>Pill Time - Green: {{ pill_correct_position.toFixed(1) }}s, Yellow: {{ pill_wrong_position.toFixed(1)
+                }}s</div>
         </div>
     </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 export default {
     name: 'PMATrackingTest',
-    setup() {
+    setup(props, { emit }) {
         const canvas = ref(null);
         const joystickConnected = ref(false);
         const thrusterConnected = ref(false);
@@ -41,13 +43,14 @@ export default {
         const pillMoveInterval = 2000; // 2 seconds
 
         // Scoring variables
-        const blueTime = ref(0);
-        const redTime = ref(0);
-        const greenTime = ref(0);
-        const dotRedTime = ref(0);
-        const greenPillTime = ref(0);
-        const yellowPillTime = ref(0);
-        const redPillTime = ref(0);
+        const circle_correct_position = ref(0);
+        const circle_wrong_position = ref(0);
+        const dot_correct_position = ref(0);
+        const dot_wrong_position = ref(0);
+        const pill_correct_position = ref(0);
+        const pill_wrong_position = ref(0);
+        let targetRadius = 150; // Initial target radius
+        const smoothingFactor = 0.1; // Adjust this value to control smoothness (0.05 to 0.2 recommended)
 
         const drawTrackingTest = () => {
             ctx.clearRect(0, 0, 500, 500);
@@ -121,14 +124,27 @@ export default {
             }
         };
 
-        const updatePillTime = (deltaTime) => {
-            const color = getPillColor();
-            if (color === 'green') greenPillTime.value += deltaTime;
-            else if (color === 'yellow') yellowPillTime.value += deltaTime;
-            else redPillTime.value += deltaTime;
-        };
+        const checkGamepadConnection = () => {
+            const gamepads = navigator.getGamepads();
+            for (let i = 0; i < gamepads.length; i++) {
+                if (gamepads[i]) {
+                    if (gamepads[i].id === 'T.16000M (Vendor: 044f Product: b10a)') {
+                        joystick = gamepads[i];
+                        console.log("Reconnected to joystick:", joystick);
+                    } else if (gamepads[i].id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
+                        thruster = gamepads[i];
+                        console.log("Reconnected to throttle:", thruster);
+                    }
+                }
+            }
+        }
 
         const updateGameState = (timestamp, deltaTime) => {
+            checkGamepadConnection(); // Check connection each frame
+            if (typeof deltaTime !== 'number' || isNaN(deltaTime)) {
+                console.error('Invalid deltaTime:', deltaTime);
+                return;
+            }
             // Update reference circle size at random intervals
             if (timestamp - lastExpandTime > expandInterval) {
                 expanding = Math.random() < 0.5;
@@ -165,17 +181,12 @@ export default {
 
             // Update solid circle radius based on thruster input
             if (thruster) {
-                const thrusterState = navigator.getGamepads()[thruster.index];
-                if (thrusterState) {
-                    solidCircleRadius += thrusterState.axes[2] * 2;
-                    solidCircleRadius = Math.max(50, Math.min(250, solidCircleRadius)); // Keep radius within bounds
-                }
+                updateSolidCircleRadius()
             }
 
             // Update dot position based on joystick input
             if (joystick) {
                 const joystickState = navigator.getGamepads()[joystick.index];
-                console.log(joystickState)
 
                 if (joystickState) {
                     const axes = joystickState.axes;
@@ -196,19 +207,44 @@ export default {
             // Update scores
             const radiusDifference = Math.abs(solidCircleRadius - referenceCircleRadius);
             if (radiusDifference <= 20) {
-                blueTime.value += deltaTime;
+                circle_correct_position.value += deltaTime;
             } else {
-                redTime.value += deltaTime;
+                console.log('Wrong position');
+                circle_wrong_position.value += deltaTime;
             }
 
             const distanceFromCenter = Math.sqrt(Math.pow(dotX - centerX, 2) + Math.pow(dotY - centerY, 2));
             if (distanceFromCenter <= solidCircleRadius) {
-                greenTime.value += deltaTime;
+                dot_correct_position.value += deltaTime;
             } else {
-                dotRedTime.value += deltaTime;
+                dot_wrong_position.value += deltaTime;
             }
 
-            updatePillTime(deltaTime);
+            const pillColor = getPillColor();
+            if (pillColor === 'yellow') {
+                pill_correct_position.value += deltaTime;
+            } else if (pillColor === 'red') {
+                pill_wrong_position.value += deltaTime;
+            }
+        };
+
+        // Update solid circle radius based on thruster input
+        const updateSolidCircleRadius = () => {
+            if (thruster) {
+                const thrusterState = navigator.getGamepads()[thruster.index];
+                if (thrusterState) {
+                    const axisValue = thrusterState.axes[2];
+                    // Map the axis value (-1 to 1) to a radius range (50 to 250)
+                    targetRadius = ((axisValue + 1) / 2) * (250 - 50) + 50;
+                }
+            }
+
+            // Smoothly interpolate between current radius and target radius
+            const diff = targetRadius - solidCircleRadius;
+            solidCircleRadius += diff * smoothingFactor;
+
+            // Ensure the radius stays within bounds
+            solidCircleRadius = Math.max(50, Math.min(250, solidCircleRadius));
         };
 
         let lastTimestamp = 0;
@@ -251,6 +287,7 @@ export default {
 
             window.addEventListener("gamepadconnected", handleGamepadConnected);
             window.addEventListener("gamepaddisconnected", handleGamepadDisconnected);
+            checkGamepadConnection()
         });
 
         onUnmounted(() => {
@@ -259,7 +296,34 @@ export default {
             window.removeEventListener("gamepaddisconnected", handleGamepadDisconnected);
         });
 
-        return { canvas, joystickConnected, thrusterConnected, blueTime, redTime, greenTime, dotRedTime, greenPillTime, yellowPillTime, redPillTime };
+        const emitScoreUpdate = () => {
+            emit('update-score', {
+                circle_correct_position: circle_correct_position.value,
+                circle_wrong_position: circle_wrong_position.value,
+                dot_correct_position: dot_correct_position.value,
+                dot_wrong_position: dot_wrong_position.value,
+                pill_correct_position: pill_correct_position.value,
+                pill_wrong_position: pill_wrong_position.value
+            });
+        };
+
+        // Use watch to emit score updates whenever any of the time values change
+        watch([circle_correct_position, circle_wrong_position, dot_correct_position, dot_wrong_position, pill_correct_position, pill_wrong_position], emitScoreUpdate);
+
+        watch(circle_wrong_position, (newVal, oldVal) => {
+            console.log('circle_wrong_position changed:', oldVal, '->', newVal);
+        });
+        return {
+            canvas,
+            joystickConnected,
+            thrusterConnected,
+            circle_correct_position,
+            circle_wrong_position,
+            dot_correct_position,
+            dot_wrong_position,
+            pill_correct_position,
+            pill_wrong_position
+        };
     }
 };
 </script>

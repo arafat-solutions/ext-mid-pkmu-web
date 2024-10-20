@@ -382,7 +382,7 @@ export default {
           // Add to userInputs for graph data
           this.userInputs.push({
             type: 'missed',
-            responseTime: 1000, // if missed, set response time to 1000ms
+            responseTime: 1000, 
             timestamp: Date.now(),
             shapeType: obj.type
           });

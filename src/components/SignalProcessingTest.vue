@@ -34,6 +34,7 @@ export default {
       intervalCountdownId: null,
       intervalQuestionId: null,
       displayDuration: null, // in seconds
+      batteryTestConfigId: null,
       clickedAnswer: false,
       isWrongAnswer: false,
       isTrial: this.$route.query.isTrial ?? false,
@@ -48,6 +49,7 @@ export default {
         wrong: 0,
         answerTimes: [],
       },
+      userInputs: [],
       greenCorrectAnswer: {
         1: 3,
         2: 4,
@@ -139,6 +141,7 @@ export default {
           this.timeLeft = this.minuteTime * 60;
           this.level = config.difficulty;
           this.displayDuration = config.display_duration;
+          this.batteryTestConfigId = config.id;
           // this.frequent = config.frequency_change;
           this.isConfigLoaded = true;
           this.generateQuestions();
@@ -234,6 +237,9 @@ export default {
         return;
       }
 
+
+      const now = Date.now();
+      const responseTime = now - this.startTimeAnswer?.getTime();
       // calculate diff answer
       if (this.startTimeAnswer) {
         const endTime = new Date(); // End time after operation
@@ -245,12 +251,32 @@ export default {
       this.clickedAnswer = true;
       if (this.currentQuestion.color === 'red' && this.currentQuestion.position === n) {
         this.result.correct++;
+        this.userInputs.push({
+          type: 'correct',
+          responseTime:responseTime,
+          timestamp: Date.now(),
+        })
       } else if (this.currentQuestion.color === 'green' && this.greenCorrectAnswer[this.currentQuestion.position] === n) {
+        this.userInputs.push({
+          type: 'correct',
+          responseTime:responseTime,
+          timestamp: Date.now(),
+        })
         this.result.correct++;
       } else if (this.currentQuestion.color === 'blue' && this.blueCorrectAnswer[this.currentQuestion.position] === n) {
         this.result.correct++;
+        this.userInputs.push({
+          type: 'correct',
+          responseTime:responseTime,
+          timestamp: Date.now(),
+        })
       } else {
         this.result.wrong++;
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime:responseTime,
+          timestamp: Date.now(),
+        })
         this.isWrongAnswer = true;
       }
     },
@@ -269,18 +295,18 @@ export default {
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === this.testName);
       const totalQuestion = this.currentIndexQuestion + 1;
       const payload = {
         'testSessionId': scheduleData.sessionId,
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
-        'batteryTestConfigId': test.config.id,
+        'batteryTestConfigId': this.batteryTestConfigId,
         'refreshCount': parseInt(localStorage.getItem('reloadCountSignalProcessing')),
         'result': {
           'totalQuestion': totalQuestion,
           'correctAnswer': this.result.correct,
-          'avgResponseTIme': this.averageAnswerTime
+          'avgResponseTIme': this.averageAnswerTime,
+          'graph_data': this.userInputs,
         }
       }
 

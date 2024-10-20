@@ -19,10 +19,11 @@ import RunningMemorySpan from '@/components/RunningMemorySpan.vue';
 import ConfigPage from '@/components/ConfigPage.vue';
 import AccousticMemory from '@/components/AccousticMemory.vue';
 import MultiMonitoringTest from '@/components/MultiMonitoringTest.vue'
-import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
+// import InstrumentCoordination from '@/components/InstrumentCoordination.vue';
 import SymbolAddition from '@/components/SymbolAddition.vue';
 import SignalProcessingTest from '@/components/SignalProcessingTest.vue';
 import PmaTest from '@/components/pma/PmaTest.vue';
+import MultiInstrumentCoordination from '@/components/NewMIC/MultiInstrumentCoordination.vue';
 
 const routes = [
   {
@@ -123,7 +124,7 @@ const routes = [
   {
     path: '/monitoring-instrument-coordination-test',
     name: 'Instrument Coordination',
-    component: InstrumentCoordination
+    component: MultiInstrumentCoordination
   },
   {
     path: '/symbol-addition-test',

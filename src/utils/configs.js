@@ -2,7 +2,6 @@
 export const getConfigs = (testUrl) => {
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
     const test = scheduleData?.tests.find((t) => t.testUrl === testUrl);
-
     if (test) {
         return {
             configs: test.configs,

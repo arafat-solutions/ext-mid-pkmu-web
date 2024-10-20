@@ -78,9 +78,13 @@ export default {
           throw new Error('Login failed');
         }
         const data = await res.json();
-        console.log(data);
 
+        data.tests.map(test => {
+          test.trainingCompleted = false
+          return test;
+        });
         localStorage.setItem('scheduleData', JSON.stringify(data));
+
 
         this.$router.push('/module');
       } catch (error) {

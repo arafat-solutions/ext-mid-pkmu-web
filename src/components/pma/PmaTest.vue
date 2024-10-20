@@ -17,13 +17,6 @@
       </div>
     </div>
 
-    <div class="score-display">
-      <div>Circle Time - Blue: {{ scores.tracking.blueTime.toFixed(1) }}s, Red: {{ scores.tracking.redTime.toFixed(1)
-        }}s</div>
-      <div>Dot Time - Green: {{ scores.tracking.greenTime.toFixed(1) }}s, Red: {{ scores.tracking.dotRedTime.toFixed(1)
-        }}s</div>
-    </div>
-
     <button @click="submitTest" :disabled="!testFinished">Submit Test</button>
   </div>
 </template>
@@ -34,6 +27,8 @@ import TrackingTest from './TrackingTest.vue';
 import StringMemorization from './StringMemory.vue';
 import InformationOrdering from './InformationOrdering.vue';
 import AudioInformation from './AudioInformation.vue';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
+import { getConfigs } from '@/utils/configs';
 
 export default {
   name: 'PMATest',
@@ -43,19 +38,53 @@ export default {
     InformationOrdering,
     AudioInformation
   },
+  data() {
+    return {
+      isLoading: false,
+      isTrial: false,
+      config: {
+
+      },
+
+    };
+  },
   setup() {
-    const testDuration = 3 * 60; // 3 minutes in seconds
+    const testDuration = 2 * 60; // 3 minutes in seconds
     const remainingTime = ref(testDuration);
     const currentSegment = ref(1);
     const segmentDuration = testDuration / 3;
     const testFinished = ref(false);
+    const testId = ref('');
+    const moduleId = ref('');
+    const sessionId = ref('');
+    const userId = ref('');
+    const configTest = ref({});
+
 
     const scores = ref({
-      tracking: { blueTime: 0, redTime: 0, greenTime: 0, dotRedTime: 0 },
+      tracking: {
+        circle_correct_position: 0,
+        circle_wrong_position: 0,
+        dot_correct_position: 0,
+        dot_wrong_position: 0,
+        pill_correct_position: 0,
+        pill_wrong_position: 0
+      },
       string: 0,
       ordering: 0,
       audio: 0
     });
+
+    const config = getConfigs('pma-test');
+    if (!config) {
+      this.$router.push('/module');
+      return;
+    }
+    configTest.value = config.configs[0];
+    testId.value = config.configs[0].id;
+    moduleId.value = config.moduleId;
+    sessionId.value = config.sessionId;
+    userId.value = config.userId;
 
     const updateTrackingScore = (newScores) => {
       scores.value.tracking = newScores;
@@ -79,9 +108,37 @@ export default {
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const submitTest = () => {
+    const submitTest = async () => {
       console.log('Test submitted with scores:', scores.value);
-      // Here you would typically send the scores to a server
+      try {
+        const API_URL = process.env.VUE_APP_API_URL;
+        const payload = {
+          testSessionId: sessionId.value,
+          userId: userId.value,
+          batteryTestConfigId: testId.value,
+          result: scores.value,
+        }
+
+        const res = await fetch(`${API_URL}/api/submission`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed Submit Test');
+        }
+      } catch (error) {
+        console.error(error), "error";
+      } finally {
+        removeTestByNameAndUpdateLocalStorage('PMA Test');
+        localStorage.removeItem('reloadCountRadarVigilance');
+        window.location.href = '/module';
+      }
     };
 
     let timer;
@@ -94,6 +151,7 @@ export default {
           }
         } else {
           clearInterval(timer);
+          submitTest();
           testFinished.value = true;
         }
       }, 1000);

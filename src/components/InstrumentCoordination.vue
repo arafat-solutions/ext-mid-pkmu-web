@@ -118,8 +118,7 @@ export default {
       localStorage.setItem('reloadCountInstrumentCoordination', reloadCount.toString());
     });
 
-    window.addEventListener('gamepadconnected', this.onGamepadConnected);
-    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    
     this.loadConfig();
   },
   beforeUnmount() {

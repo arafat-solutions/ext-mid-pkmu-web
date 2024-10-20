@@ -16,7 +16,7 @@
             <div class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"></div>
             <p class="mt-12 text-2xl">Your result is submitting...</p>
         </div>
-        <!-- <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
+        <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
             <p>correctTime: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
             <p>Button:</p>
             <p>correct: {{ metrics.button_task.correct_answer }}</p>
@@ -26,7 +26,7 @@
             <p>correct: {{ metrics.acoustic_task.correct_answer }}</p>
             <p>wrong: {{ metrics.acoustic_task.incorrect_answer }}</p>
             <p>total: {{ metrics.acoustic_task.total_question }}</p>
-        </div> -->
+        </div>
     </div>
 </template>
 
@@ -54,6 +54,7 @@ const gameObjects = ref({
     rectangles: []
 });
 const refreshCount = ref(0)
+const userInputs = ref([])
 
 const config = ref({
     speed: "normal",
@@ -230,6 +231,11 @@ function toggleRectangles() {
         metrics.value.button_task.total_question++;
     } else {
         if (!gameState.value.userAnswered) {
+            userInputs.value.push({
+                type: 'missed',
+                responseTime: 5000, 
+                timestamp: Date.now(),
+            })
             metrics.value.button_task.incorrect_answer++;
         }
         gameState.value.userAnswered = false;
@@ -268,6 +274,7 @@ async function submitResult() {
         const API_URL = process.env.VUE_APP_API_URL;
         const result = {
             ...metrics.value,
+            graph_data: userInputs.value,
             tracking_task: {
                 correctTime: Number(metrics.value.tracking_task.correctTime.toFixed(2))
             }
@@ -328,13 +335,28 @@ function playSound(frequency, duration) {
 function handleKeydown(event) {
     if (event.code === 'Space' && gameState.value.rectanglesVisible && !gameState.value.userAnswered) {
         metrics.value.button_task.correct_answer++;
+        userInputs.value.push({
+            type: 'correct',
+            responseTime: 5000,
+            timestamp: Date.now(),
+        })
         gameState.value.userAnswered = true;
     } else if (event.code === 'Enter') {
         if (gameState.value.acousticAnswerAllowed) {
             if (isSoundSame.value) {
                 metrics.value.acoustic_task.correct_answer++;
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: 5000,
+                    timestamp: Date.now(),
+                })
             } else {
                 metrics.value.acoustic_task.incorrect_answer++;
+                userInputs.value.push({
+                    type: 'wrong',
+                    responseTime: 5000,
+                    timestamp: Date.now(),
+                })
             }
             isSoundSame.value = false;
             gameState.value.acousticAnswerAllowed = false;
@@ -422,8 +444,18 @@ function playRandomSounds() {
         if (gameState.value.acousticAnswerAllowed) {
             if (isSoundSame.value) {
                 metrics.value.acoustic_task.incorrect_answer++;
+                userInputs.value.push({
+                    type: 'wrong',
+                    responseTime: 5000, // if missed, set response time to 1000ms
+                    timestamp: Date.now(),
+                })
             } else {
                 metrics.value.acoustic_task.correct_answer++;
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: 5000, // if missed, set response time to 1000ms
+                    timestamp: Date.now(),
+                })
             }
         }
 
@@ -491,6 +523,9 @@ function checkGamepad() {
 function handleGamepadInput(gamepad) {
     const [leftStickX, leftStickY] = gamepad.axes;
     const canvasRect = canvas.value?.getBoundingClientRect();
+    if (!canvasRect) {
+        return;
+    }
     const canvasWidth = canvasRect.width;
     const canvasHeight = canvasRect.height;
 
