@@ -1,7 +1,15 @@
 <template>
-  <div v-if="isShowModal" class="modal-overlay">
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai test Running Memory Span?</strong></p>
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Running Memory Span?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal()">Ya</button>
+    </div>
+  </div>
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Running Memory Span?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
       <button @click="closeModal()">Ya</button>
     </div>
@@ -13,11 +21,8 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
+    <div class="timer-container">
       Time: {{ formattedTime }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
 
     <div class="input-simulation-container">
@@ -55,32 +60,36 @@
 
 <script>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
 
 export default {
   name: 'RunningMemorySpan',
   data() {
     return {
+      isRecordResult: true,
+      isModalTrainingVisible: false,
+      isModalVisible: false,
       isShowQuestion: false,
-      isShowModal: false,
       isConfigLoaded: false,
-      isTrial: this.$route.query.isTrial ?? false,
-      isPause: false,
       isLoading: false,
-      timer: {
-        minutes: 0,
-        seconds: 0
-      },
       countdownInterval: null,
+      countdownNextQuestion: null,
       expression: '',
       audios: [],
       utterances: [],
       answer: [],
-      config: {
-        broadcast_length: null, // short, medium, long
-        duration: null,
-        sequence_pattern: null, // up or down
-        include_zero: null // true or false
-      },
+
+      //For Config
+      config: {},
+      configs: [],
+      trainingConfigs: [],
+      indexConfig: 0,
+      indexTrainingConfig: 0,
+      moduleId: '',
+      sessionId: '',
+      userId: '',
+      testId: '',
+
       totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
@@ -90,7 +99,10 @@ export default {
         total_question: 0,
         correct_answer: 0,
         avg_response_time: 0,
+        response_times: 0,
+        graph_data: [],
       },
+      userInputs: []
     };
   },
   computed: {
@@ -100,10 +112,28 @@ export default {
       return `${minutes}:${seconds}`;
     },
   },
+  mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemorySpan') || '0')
+    reloadCount++
+    localStorage.setItem('reloadCountRunningMemorySpan', reloadCount.toString())
+
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('reloadCountRunningMemorySpan', reloadCount.toString())
+    })
+
+    this.initConfig();
+  },
   methods: {
     closeModal() {
-      this.isShowModal = false;
-      this.isConfigLoaded = true;
+      const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
+        ? this.trainingConfigs[this.indexTrainingConfig]
+        : this.configs[this.indexConfig]
+
+      this.setConfig(config)
+      localStorage.setItem("index-config-running-memory-span", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
+
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
 
       setTimeout(() => {
         this.generateAudio();
@@ -111,13 +141,13 @@ export default {
 
       this.startCountdown();
     },
-    pause() {
+    cleanUp() {
       clearInterval(this.countdownInterval);
-      this.isPause = true;
-    },
-    startAgain() {
-      this.startCountdown();
-      this.isPause = false;
+      clearInterval(this.countdownNextQuestion);
+
+      if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel()
+			}
     },
     exit() {
       if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
@@ -129,43 +159,84 @@ export default {
         if (this.config.duration > 0) {
           this.config.duration--;
         } else {
-          if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel()
+          this.cleanUp();
+          if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+            console.log('training')
+
+            this.indexTrainingConfig++
+            this.isModalTrainingVisible = true
+          } else if (this.indexConfig <= (this.configs.length - 1)) {
+            // Initiate Record Result
+            if (this.indexConfig === 0 && this.isRecordResult) {
+              console.log('kesini')
+              this.isRecordResult = false;
+
+              this.totalQuestion = 0;
+              this.correctAnswer = 0;
+              this.responseDurations = []
+              this.userInputs = [];
+            }
+
+            console.log('test')
+
+            this.indexConfig++
+            this.isModalVisible = true
+          } else {
+            setTimeout(() => {
+              this.calculatedResult();
+            }, 1000);
           }
 
-          clearInterval(this.countdownInterval);
-
-          // Submit Answer
-          setTimeout(() => {
-            this.calculatedResult();
-          }, 1000);
+          // Update localStorage with new indices
+          localStorage.setItem("index-config-running-memory-span", JSON.stringify({
+            indexTrainingConfig: this.indexTrainingConfig,
+            indexConfig: this.indexConfig
+          }))
         }
       }, 1000);
     },
     initConfig() {
-      let config = JSON.parse(localStorage.getItem('scheduleData'));
-
-      if (config) {
-        try {
-          // @TODO: Config Flow
-          const runningMemorySpan = config.tests.find(test => test.testUrl === 'running-memory-span-test' || test.name === 'Running Memory Span Test').configs[0];
-          this.config.duration = 1 * 60;
-          this.config.batteryTestConfigId = runningMemorySpan.id;
-          this.config.sessionId = config.sessionId;
-          this.config.userId = config.userId;
-
-          this.config.broadcast_length = runningMemorySpan.broadcast_length;
-          this.config.sequence_pattern = runningMemorySpan.sequence_pattern;
-          this.config.include_zero = runningMemorySpan.include_zero;
-          this.config.speed = runningMemorySpan.speed;
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
-        } finally {
-          this.isShowModal = true;
-        }
-      } else {
-        console.warn('No schedule data found in localStorage.');
+      const configData = getConfigs('running-memory-span-test');
+      if (!configData) {
+        this.$router.push('/module');
+        return;
       }
+
+      this.configs = configData.configs;
+      this.trainingConfigs = configData.trainingConfigs;
+      this.moduleId = configData.moduleId;
+      this.sessionId = configData.sessionId;
+      this.userId = configData.userId;
+      this.testId = configData.testId;
+
+      const savedIndices = getStoredIndices('running-memory-span');
+      if (savedIndices) {
+        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
+        this.indexConfig = savedIndices.indexConfig;
+      }
+
+      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+        this.isModalTrainingVisible = true;
+      } else{
+        this.isModalVisible = true;
+      }
+
+      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+    },
+    setConfig(config) {
+      const { broadcast_length, difficulty_level, include_zero, speed, id, subtask, duration } = config
+
+      this.$nextTick(() => {
+          this.config.broadcastLength = broadcast_length
+          this.config.difficultyLevel = difficulty_level
+          this.config.includeZero = include_zero
+          this.config.speed = speed
+          this.config.subtask = subtask
+          this.config.duration = duration * 60
+          this.config.testId = id
+
+          this.isConfigLoaded = true;
+      });
     },
     calculatedResult() {
       this.result.total_question = this.totalQuestion;
@@ -174,23 +245,25 @@ export default {
       const resultTimeResonded = this.averageResponseTime()
       this.result.avg_response_time = resultTimeResonded.toFixed(2);
 
+      this.result.response_times = this.responseDurations.map(duration => ({
+        responseTime: duration,
+        timestamp: Date.now()
+      }));
+
+      this.result.graph_data = this.userInputs;
+
       this.submitResult()
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
-          testSessionId: this.config.sessionId,
-          userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemory')),
+          testSessionId: this.sessionId,
+          userId: this.userId,
+          batteryTestConfigId: this.testId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemorySpan')),
           result: this.result,
         }
 
@@ -213,28 +286,25 @@ export default {
         this.isLoading = false;
 
         removeTestByNameAndUpdateLocalStorage('Running Memory Span Test');
-        localStorage.removeItem('reloadCountRunningMemory');
+        localStorage.removeItem('reloadCountRunningMemorySpan');
+        localStorage.removeItem('index-config-running-memory-span')
         this.$router.push('/module');
       }
     },
     setLength() {
-      if (this.config.broadcast_length === 'short') {
+      if (this.config.broadcastLength === 'short') {
         return 5;
       }
 
-      if (this.config.broadcast_length === 'medium') {
+      if (this.config.broadcastLength === 'medium') {
         return 7;
       }
 
-      if (this.config.broadcast_length === 'long') {
+      if (this.config.broadcastLength === 'long') {
         return 9;
       }
     },
     generateAudio() {
-      if (this.isPause) {
-        return;
-      }
-
       this.audios = [];
       this.utterances = [];
       this.responseQuestion = 0;
@@ -243,7 +313,7 @@ export default {
       for (let i = 0; i < this.setLength(); i++) {
         let number = null
 
-        if (!this.config.include_zero) {
+        if (!this.config.includeZero) {
           number = Math.floor(Math.random() * 9) + 1;
         } else {
           number = Math.floor(Math.random() * 10);
@@ -253,14 +323,14 @@ export default {
       }
 
       // Check Sequence Pattern
-      if (this.config.sequence_pattern === 'up') {
-        this.audios = [...this.audios].sort((a, b) => a - b);
-      }
+      // if (this.config.sequence_pattern === 'up') {
+      //   this.audios = [...this.audios].sort((a, b) => a - b);
+      // }
 
       // Check Sequence Pattern
-      if (this.config.sequence_pattern === 'down') {
-        this.audios = [...this.audios].sort((a, b) =>b - a);
-      }
+      // if (this.config.sequence_pattern === 'down') {
+      //   this.audios = [...this.audios].sort((a, b) =>b - a);
+      // }
 
       if (this.audios.length > 0) {
         this.utterances = this.audios.map(audio => {
@@ -274,18 +344,30 @@ export default {
       }
     },
     submitAnswer() {
-      if (this.isPause) {
-        return;
-      }
+      clearInterval(this.countdownNextQuestion);
+      this.totalQuestion++;
 
       const reverseAudios = [...this.audios].reverse();
       let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
 
+      this.responseTime = Date.now();
+
       if (checkAnswer) {
         this.correctAnswer++;
-        this.responseTime = Date.now();
-				this.calculateResponseTime();
+        this.userInputs.push({
+          type: 'correct',
+          responseTime: this.responseTime - this.responseQuestion,
+          timestamp: Date.now(),
+        });
+      } else {
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: this.responseTime - this.responseQuestion,
+          timestamp: Date.now(),
+        });
       }
+
+      this.responseDurations.push(this.responseTime - this.responseQuestion)
 
       this.clearExpression();
       this.generateAudio();
@@ -300,22 +382,11 @@ export default {
 
       return 0;
     },
-    calculateResponseTime() {
-      return this.responseDurations.push(this.responseTime - this.responseQuestion);
-    },
     appendToExpression(value) {
-      if (this.isPause) {
-        return;
-      }
-
       this.expression += value;
       this.answer.push(parseInt(value));
     },
     clearExpression() {
-      if (this.isPause) {
-        return;
-      }
-
       this.expression = '';
       this.answer = [];
     },
@@ -336,7 +407,7 @@ export default {
           const speakNext = () => {
             if (index < this.utterances.length) {
               const utterance = this.utterances[index];
-              utterance.rate = this.setSpeed();
+              utterance.rate = 1 + (this.config.speed - 1) / 10;
               utterance.pitch = 1.2;
               utterance.volume = 1;
               utterance.lang = 'id-ID';
@@ -346,9 +417,17 @@ export default {
               };
               window.speechSynthesis.speak(utterance);
             } else {
-              this.totalQuestion++;
               this.responseQuestion = Date.now();
               this.isShowQuestion = true;
+
+              let intervalQuestion = 10
+              this.countdownNextQuestion = setInterval(() => {
+                if (intervalQuestion > 0) {
+                  intervalQuestion--;
+                } else {
+                  this.submitAnswer()
+                }
+              }, 1000);
             }
           };
           speakNext();
@@ -357,20 +436,7 @@ export default {
         alert('Sorry, your browser does not support text-to-speech.');
       }
     },
-    setSpeed() {
-      return 1 + (this.config.speed - 1) / 10;
-    }
   },
-  mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemory') || '0')
-    reloadCount++
-    localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
-    window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountRunningMemory', reloadCount.toString())
-    })
-
-    this.initConfig();
-  }
 };
 </script>
 
@@ -411,24 +477,6 @@ export default {
   }
   .modal-content button:hover {
     background-color: #5e37a6;
-  }
-  .timer-container-trial {
-    position: absolute;
-    right: 0;
-    top: 0;
-    background-color: #0349D0;
-    padding: 0.75rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-  }
-  .timer-container-trial button {
-    color: #000000;
-    font-weight: bold;
-    padding: 0.5rem;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
   }
   .timer-container {
     position: absolute;

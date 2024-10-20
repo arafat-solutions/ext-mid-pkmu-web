@@ -1,19 +1,31 @@
 <template>
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Spatial Orientation?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal('training')">Ya</button>
+    </div>
+  </div>
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Spatial Orientation?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="closeModal('exam')">Ya</button>
+    </div>
+  </div>
+
   <div class="main-view" v-if="isConfigLoaded">
     <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
       <div class="text">submitting a result</div>
     </div>
 
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container'">
+    <div class="timer-container">
       Question: {{ config.current_question }} / {{ config.number_of_questions }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-6" style="margin-right: 5px;">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-6" style="margin-right: 5px;">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
     </div>
 
     <div class="line-container">
-
       <div class="left-content" style="width: 55%;">
         <div class="line-turns">
           <canvas class="center" ref="lineCanvas" :width="width" :height="height"></canvas>
@@ -36,12 +48,8 @@
                 :class="{ 'selected': selectedAnswer === x }" @click="pressAnswer(x)">
                 {{ x }}
               </button>
-              <button class="digit-number next" @click="pressAnswer()" :disabled="selectedAnswer === null">
-                Next
-              </button>
             </div>
-          </div>˝
-
+          </div>
         </div>
       </div>
     </div>
@@ -50,16 +58,17 @@
 
 <script>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
 
 export default {
   name: 'SpatialOrientation',
   data() {
     return {
+      isModalTrainingVisible: false,
+      isModalVisible: false,
       isButtonDisabled: false,
       isConfigLoaded: false,
       isLoading: false,
-      isTrial: this.$route.query.isTrial ?? false,
-      isPause: false,
       isShowAnswerBox: false,
       width: 480,
       height: 480,
@@ -77,17 +86,25 @@ export default {
       timeoutIdRemoveInterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
+      configs: [],
+      indexTrainingConfig: 0,
+      indexConfig: 0,
+      trainingConfigs: [],
       config: {
         crash: null,
         number_of_questions: null,
-        current_question: 0,
-        full_image: null, //true or false
-        left_turn: null, //true or false
-        right_turn: null, //true or false
+        current_question: 1,
+        full_image: null,
+        left_turn: null,
+        right_turn: null,
         speed: null,
-        speed_increasing: null, //true or false,
-        max_turns: 199, // New configurable variable for maximum turns
+        speed_increasing: null,
+        max_turns: 10,
       },
+      moduleId: null,
+      sessionId: null,
+      userId: null,
+      testId: null,
       totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
@@ -98,120 +115,168 @@ export default {
         correct_answer: 0,
         avg_response_time: 0,
         graph_data: [],
+        response_times: 0
       },
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      trainingMode: false,
-      questionDuration: 15000
+      questionDuration: 1000,
+      isTraining: true,
     };
   },
-  async mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountSpatial') || '0')
+  mounted() {
+    let reloadCount = parseInt(localStorage.getItem('reloadCountSpatialOrientation') || '0')
     reloadCount++
-    localStorage.setItem('reloadCountSpatial', reloadCount.toString())
+    localStorage.setItem('reloadCountSpatialOrientation', reloadCount.toString())
+
     window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountSpatial', reloadCount.toString())
+      localStorage.setItem('reloadCountSpatialOrientation', reloadCount.toString())
     })
 
     this.initConfig();
   },
   methods: {
-    pause() {
-      clearInterval(this.countdownInterval);
-
-      if (this.drawLineinterval) {
-        clearInterval(this.drawLineinterval);
+    closeModal(mode) {
+      if (mode === 'training') {
+        this.isTraining = true;
+        this.config = this.trainingConfigs[this.indexTrainingConfig];
+      } else if (mode === 'exam') {
+        this.isTraining = false;
+        this.config = this.configs[this.indexConfig];
       }
 
-      if (this.drawIndexRemoval > 0) {
-        clearInterval(this.tailRemoveInterval);
-      }
+      this.setConfig(this.config);
+      localStorage.setItem("index-config-spatial-orientation", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }));
 
-      this.isPause = true;
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
+
+      setTimeout(() => {
+        this.generateCoordinat();
+      }, 1000);
     },
-    startAgain() {
-      if (!this.config.full_image) {
-        this.drawLineOneByOne(this.drawIndex);
-      }
+    endGame() {
+      clearInterval(this.tailRemoveInterval);
+      this.tailRemoveInterval = null;
 
-      if (this.drawIndexRemoval > 0) {
-        this.startTailDisappearance(this.drawIndexRemoval);
-      }
+      clearInterval(this.drawLineinterval);
+      this.drawLineinterval = null;
 
-      this.isPause = false;
+      clearTimeout(this.timeoutIdRemoveInterval);
+      this.timeoutIdRemoveInterval = null;
+
+      if (this.isTraining) {
+        this.startExam();
+      } else {
+        this.calculatedResult();
+      }
+    },
+    startExam() {
+      this.isModalVisible = true;
+      this.indexConfig = 0;
+      this.config = this.configs[this.indexConfig];
+      // reset progress
+      this.correctAnswer = 0;
+      this.responseDurations = [];
+      this.userInputs = [];
+      
+      this.setConfig(this.config);
     },
     exit() {
       if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
         this.$router.push('module');
       }
     },
-    setSpeed(speed) {
-      return speed * 3000;
-    },
     initConfig() {
-      let config = JSON.parse(localStorage.getItem('scheduleData'));
-
-      if (config) {
-        try {
-          // @TODO: Config Flow
-          const spatialOrientation = config.tests.find(test => test.testUrl === 'spatial-orientation-test').configs[0];
-          console.log(spatialOrientation, 'spatialOrientation');
-          this.config.number_of_questions = spatialOrientation.number_of_question;
-          this.config.batteryTestConfigId = spatialOrientation.id;
-          this.config.sessionId = config.sessionId;
-          this.config.userId = config.userId;
-
-          this.config.crash = spatialOrientation.crash
-          // this.config.crash = 20
-
-          this.config.full_image = spatialOrientation.full_image,
-            this.config.left_turn = spatialOrientation.left_turn,
-            this.config.right_turn = spatialOrientation.right_turn,
-            this.config.speed = this.setSpeed(spatialOrientation.speed),
-            this.config.speed_increasing = spatialOrientation.speed_increasing,
-            this.config.max_turns = spatialOrientation.max_turns || 5, // Set max_turns from config or default to 5
-
-            this.isConfigLoaded = true;
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
-        } finally {
-          this.generateCoordinat();
-        }
-      } else {
-        console.warn('No schedule data found in localStorage.');
+      const configData = getConfigs('spatial-orientation-test');
+      if (!configData) {
+        this.$router.push('/module');
+        return;
       }
+      console.log(configData, 'configData');
+      this.configs = configData.configs;
+      this.trainingConfigs = configData.trainingConfigs;
+      this.moduleId = configData.moduleId;
+      this.sessionId = configData.sessionId;
+      this.userId = configData.userId;
+      this.testId = configData.testId;
+
+      const savedIndices = getStoredIndices('spatial-orientation');
+      if (savedIndices) {
+        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
+        this.indexConfig = savedIndices.indexConfig;
+      }
+
+      if (this.indexTrainingConfig < this.trainingConfigs.length) {
+        this.isModalTrainingVisible = true;
+      } else {
+        this.isModalVisible = true;
+      }
+      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+    },
+    setConfig(config) {
+      const {
+        crash,
+        difficulty_level,
+        full_image,
+        id,
+        left_turn,
+        number_of_question,
+        right_turn,
+        speed,
+        speed_increasing,
+        subtask,
+        max_turns
+      } = config
+      console.log(max_turns, 'set config');
+      this.$nextTick(() => {
+        this.config.difficultyLevel = difficulty_level
+        this.config.speed = speed * 3000
+        this.config.subtask = subtask
+        this.config.testId = id
+        this.config = {
+          full_image: full_image,
+          left_turn: left_turn,
+          right_turn: right_turn,
+          speed: speed * 3000,
+          speed_increasing: speed_increasing,
+          max_turns: 15,
+          crash: crash,
+          number_of_questions: number_of_question,
+          current_question: 0
+        }
+
+        this.isConfigLoaded = true;
+      });
     },
     calculatedResult() {
-      this.result.total_question = this.config.number_of_questions;
+      this.result.total_question = this.configs.reduce((total, obj) => {
+        return total + parseInt(obj.number_of_question);
+      }, 0);
       this.result.correct_answer = this.correctAnswer;
 
       const resultTimeResponded = this.averageResponseTime()
       this.result.avg_response_time = resultTimeResponded.toFixed(2);
 
-      // Add this to include the response times for each question
       this.result.response_times = this.responseDurations.map(duration => ({
         responseTime: duration,
         timestamp: Date.now()
       }));
+
       this.result.graph_data = this.userInputs;
+
       this.submitResult()
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
-          testSessionId: this.config.sessionId,
-          userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountSpatial')),
+          testSessionId: this.sessionId,
+          userId: this.userId,
+          batteryTestId: this.testId,
+          refreshCount: parseInt(localStorage.getItem('reloadCountSpatialOrientation')),
           result: this.result,
         }
 
@@ -233,8 +298,9 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Spatial Orientation')
-        localStorage.removeItem('reloadCountSpatial');
+        removeTestByNameAndUpdateLocalStorage('Spatial Orientation');
+        localStorage.removeItem('reloadCountSpatialOrientation');
+        localStorage.removeItem('index-config-spatial-orientation')
         this.$router.push('/module');
       }
     },
@@ -243,10 +309,8 @@ export default {
         this.handleQuestionTimeout();
       }, this.questionDuration);
     },
-
     handleQuestionTimeout() {
       if (this.selectedAnswer === null) {
-        // If no answer was selected, record it as a wrong answer
         const responseTime = this.questionDuration;
         this.userInputs.push({
           type: 'wrong',
@@ -266,11 +330,13 @@ export default {
 
       this.config.current_question++;
 
-      if (this.config.current_question >= this.config.number_of_questions) {
+      if (this.config.current_question > this.config.number_of_questions) {
         this.endGame();
       } else {
-        this.generateCoordinat();
-        this.selectedAnswer = null;
+        setTimeout(() => {
+          this.generateCoordinat();
+          this.selectedAnswer = null;
+        }, this.questionDuration - (Date.now() - this.questionStartTime));
       }
     },
     async generateLines() {
@@ -321,7 +387,6 @@ export default {
         this.linesUsed.push(randomIndex)
         this.lines = choosenlines[randomIndex]
 
-        // Limit the number of turns based on the config
         this.lines = this.limitTurns(this.lines, this.config.max_turns);
 
         this.generateLines()
@@ -360,8 +425,10 @@ export default {
 
       return limitedLines;
     },
+
     async drawLineFull() {
       const canvas = this.$refs.lineCanvas;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, this.width, this.height);
 
@@ -380,7 +447,6 @@ export default {
       ctx.stroke();
 
       this.drawArrowHead('init');
-      this.totalQuestion++;
       this.responseQuestion = Date.now();
       this.setAnswerOption();
 
@@ -397,11 +463,6 @@ export default {
       let i = startIndex;
 
       this.drawLineinterval = setInterval(() => {
-        if (this.isPause) {
-          clearInterval(this.drawLineinterval);
-          return;
-        }
-
         if (i === 0) {
           ctx.beginPath();
           ctx.moveTo(this.lines[i].x, this.lines[i].y);
@@ -409,7 +470,6 @@ export default {
         } else if (i === 1 || i === 2 || i === 3) {
           ctx.lineTo(this.lines[i].x, this.lines[i].y);
           this.countTurns(i);
-
           i++;
         } else if (i === 4 || i < this.lines.length) {
           ctx.clearRect(0, 0, this.width, this.height);
@@ -420,7 +480,6 @@ export default {
           ctx.lineTo(this.lines[i - 1].x, this.lines[i - 1].y);
           ctx.lineTo(this.lines[i].x, this.lines[i].y);
           this.countTurns(i);
-
           i++;
         }
 
@@ -431,7 +490,6 @@ export default {
         if (i === this.lines.length) {
           clearInterval(this.drawLineinterval);
           this.drawArrowHead('init');
-          this.totalQuestion++;
           this.responseQuestion = Date.now();
           this.setAnswerOption();
         } else {
@@ -478,14 +536,12 @@ export default {
 
       this.answer = this.question === 'left' ? this.leftTurns : this.rightTurns;
 
-      const totalOptions = 10; // Number of options to display
+      const totalOptions = 10;
       this.optionAnswers = [];
 
-      // Generate a range of possible answers around the correct answer
       const minOption = Math.max(0, this.answer - 2);
       const maxOption = this.answer + 2;
 
-      // Create an array of all possible options within the range
       const possibleOptions = [];
       for (let i = minOption; i <= maxOption; i++) {
         if (i !== this.answer) {
@@ -493,29 +549,24 @@ export default {
         }
       }
 
-      // Shuffle the possible options
       for (let i = possibleOptions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [possibleOptions[i], possibleOptions[j]] = [possibleOptions[j], possibleOptions[i]];
       }
 
-      // Select options to display
       while (this.optionAnswers.length < totalOptions - 1) {
         if (possibleOptions.length > 0) {
           this.optionAnswers.push(possibleOptions.pop());
         } else {
-          // If we run out of options in the initial range, add more
           this.optionAnswers.push(maxOption + this.optionAnswers.length + 1);
         }
       }
 
-      // Insert the correct answer at a random position
       const correctAnswerIndex = Math.floor(Math.random() * totalOptions);
       this.optionAnswers.splice(correctAnswerIndex, 0, this.answer);
 
       this.isButtonDisabled = false;
       this.isShowAnswerBox = true;
-      console.log(this.answer, 'answer');
     },
     drawArrowHead(isInit = false) {
       const canvas = this.$refs.lineCanvas;
@@ -560,10 +611,6 @@ export default {
         }
       }
     },
-    stopInterval() {
-      clearInterval(this.drawLineinterval);
-      this.drawLineinterval = null;
-    },
     startTailDisappearance(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
       const ctx = canvas.getContext('2d');
@@ -574,11 +621,6 @@ export default {
         const halfLength = Math.floor(this.lines.length / 2);
 
         const tailRemove = () => {
-          if (this.isPause) {
-            clearInterval(this.tailRemoveInterval);
-            return;
-          }
-
           if (i < halfLength) {
             ctx.clearRect(0, 0, this.width, this.height);
 
@@ -620,25 +662,17 @@ export default {
 
           if (i === halfLength && this.config.speed_increasing) {
             clearInterval(this.tailRemoveInterval);
-
-            // Increase Speed Remove
             this.tailRemoveInterval = setInterval(tailRemove, 2000 / 2);
           }
 
           this.drawIndexRemoval = i;
         };
 
-        // Speed Remove
         this.tailRemoveInterval = setInterval(tailRemove, 2000);
       }
 
       if (!this.config.full_image) {
         const tailRemove = () => {
-          if (this.isPause) {
-            clearInterval(this.tailRemoveInterval);
-            return;
-          }
-
           if (i < this.lines.length - 2) {
             ctx.clearRect(0, 0, this.width, this.height);
 
@@ -664,67 +698,43 @@ export default {
           this.drawIndexRemoval = i;
         };
 
-        // Speed Remove
         this.tailRemoveInterval = setInterval(tailRemove, 1000);
       }
-
     },
     pressAnswer(value) {
       if (!this.isButtonDisabled) {
         this.selectedAnswer = value;
       }
-      if (this.isPause || this.isButtonDisabled || this.selectedAnswer === null) {
-        return;
-      }
 
       this.isButtonDisabled = true;
-      const responseTime = Date.now() - this.questionStartTime;
+      this.responseTime = Date.now();
 
       if (this.answer === this.selectedAnswer) {
         this.correctAnswer++;
-        this.responseTime = Date.now();
-        this.calculateResponseTime();
         this.userInputs.push({
           type: 'correct',
-          responseTime: responseTime,
+          responseTime: this.responseTime - this.questionStartTime,
           timestamp: Date.now(),
         });
       } else {
         this.userInputs.push({
           type: 'wrong',
-          responseTime: responseTime,
+          responseTime: this.responseTime - this.questionStartTime,
           timestamp: Date.now(),
         });
       }
 
-      this.moveToNextQuestion();
-    },
-    endGame() {
-      clearInterval(this.tailRemoveInterval);
-      clearInterval(this.drawLineinterval);
-      clearTimeout(this.timeoutIdRemoveInterval);
+      this.responseDurations.push(this.responseTime - this.questionStartTime);
 
-      this.calculatedResult();
+      // Don't move to the next question immediately
+      // The moveToNextQuestion method will be called when the fixed interval is over
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
         const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
-
         return (sum / this.responseDurations.length) / 1000;
       }
-
       return 0;
-    },
-    calculateResponseTime() {
-      const responseTime = Date.now() - this.questionStartTime;
-      this.responseDurations.push(responseTime);
-    },
-  },
-  computed: {
-    formattedTime() {
-      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
-      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
-      return `${minutes}:${seconds}`;
     },
   },
 };
@@ -738,26 +748,39 @@ export default {
   margin: 60px auto;
 }
 
-.timer-container-trial {
-  position: absolute;
-  right: 0;
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
   top: 0;
-  background-color: #0349D0;
-  padding: 0.75rem;
-  color: #ffffff;
-  font-weight: bold;
-  border-bottom-left-radius: 15px;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
 }
 
-.timer-container-trial button {
-  color: #000000;
-  font-weight: bold;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+.modal-content {
+  background-color: white;
+  padding: 20px;
   border-radius: 5px;
-  border-color: transparent;
-  min-width: 100px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.modal-content button {
+  background-color: #6200ee;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
   cursor: pointer;
+}
+
+.modal-content button:hover {
+  background-color: #5e37a6;
 }
 
 .timer-container {

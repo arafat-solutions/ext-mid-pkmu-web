@@ -4,8 +4,9 @@ export const getConfigs = (testUrl) => {
     const test = scheduleData?.tests.find((t) => t.testUrl === testUrl);
     if (test) {
         return {
+            testId: test.id,
             configs: test.configs,
-            trainingConfigs: test.trainingConfigs,
+            trainingConfigs: test.training_configs,
             moduleId: scheduleData.moduleId,
             sessionId: scheduleData.sessionId,
             userId: scheduleData.userId
