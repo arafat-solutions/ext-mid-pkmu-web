@@ -273,9 +273,9 @@ export default {
 
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
-          testSessionId: this.config.sessionId,
-          userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
+          testSessionId: this.sessionId,
+          userId: this.userId,
+          batteryTestId: this.testId,
           refreshCount: parseInt(localStorage.getItem('reloadCountRadarVigilance')),
           result: this.result,
         }
