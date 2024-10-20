@@ -3,7 +3,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Spatial Orientation?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="closeModal('training')">Ya</button>
     </div>
   </div>
 
@@ -11,7 +11,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Spatial Orientation?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="closeModal('exam')">Ya</button>
     </div>
   </div>
 
@@ -22,11 +22,10 @@
     </div>
 
     <div class="timer-container">
-      Question: {{ config.currentQuestion }} / {{ config.numberOfQuestions }}
+      Question: {{ config.current_question }} / {{ config.number_of_questions }}
     </div>
 
     <div class="line-container">
-
       <div class="left-content" style="width: 55%;">
         <div class="line-turns">
           <canvas class="center" ref="lineCanvas" :width="width" :height="height"></canvas>
@@ -51,7 +50,6 @@
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -88,17 +86,25 @@ export default {
       timeoutIdRemoveInterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
+      configs: [],
+      indexTrainingConfig: 0,
+      indexConfig: 0,
+      trainingConfigs: [],
       config: {
         crash: null,
         number_of_questions: null,
-        current_question: 0,
-        full_image: null, //true or false
-        left_turn: null, //true or false
-        right_turn: null, //true or false
+        current_question: 1,
+        full_image: null,
+        left_turn: null,
+        right_turn: null,
         speed: null,
-        speed_increasing: null, //true or false,
-        max_turns: 199, // New configurable variable for maximum turns
+        speed_increasing: null,
+        max_turns: 10,
       },
+      moduleId: null,
+      sessionId: null,
+      userId: null,
+      testId: null,
       totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
@@ -114,8 +120,8 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      trainingMode: false,
-      questionDuration: 15000
+      questionDuration: 1000,
+      isTraining: true,
     };
   },
   mounted() {
@@ -130,13 +136,17 @@ export default {
     this.initConfig();
   },
   methods: {
-    closeModal() {
-      const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
-        ? this.trainingConfigs[this.indexTrainingConfig]
-        : this.configs[this.indexConfig]
+    closeModal(mode) {
+      if (mode === 'training') {
+        this.isTraining = true;
+        this.config = this.trainingConfigs[this.indexTrainingConfig];
+      } else if (mode === 'exam') {
+        this.isTraining = false;
+        this.config = this.configs[this.indexConfig];
+      }
 
-      this.setConfig(config)
-      localStorage.setItem("index-config-spatial-orientation", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
+      this.setConfig(this.config);
+      localStorage.setItem("index-config-spatial-orientation", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }));
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -154,6 +164,23 @@ export default {
 
       clearTimeout(this.timeoutIdRemoveInterval);
       this.timeoutIdRemoveInterval = null;
+
+      if (this.isTraining) {
+        this.startExam();
+      } else {
+        this.calculatedResult();
+      }
+    },
+    startExam() {
+      this.isModalVisible = true;
+      this.indexConfig = 0;
+      this.config = this.configs[this.indexConfig];
+      // reset progress
+      this.correctAnswer = 0;
+      this.responseDurations = [];
+      this.userInputs = [];
+      
+      this.setConfig(this.config);
     },
     exit() {
       if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
@@ -166,7 +193,7 @@ export default {
         this.$router.push('/module');
         return;
       }
-
+      console.log(configData, 'configData');
       this.configs = configData.configs;
       this.trainingConfigs = configData.trainingConfigs;
       this.moduleId = configData.moduleId;
@@ -180,12 +207,11 @@ export default {
         this.indexConfig = savedIndices.indexConfig;
       }
 
-      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+      if (this.indexTrainingConfig < this.trainingConfigs.length) {
         this.isModalTrainingVisible = true;
       } else {
         this.isModalVisible = true;
       }
-
       this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
     },
     setConfig(config) {
@@ -202,20 +228,23 @@ export default {
         subtask,
         max_turns
       } = config
-
+      console.log(max_turns, 'set config');
       this.$nextTick(() => {
-        this.config.crash = crash
         this.config.difficultyLevel = difficulty_level
-        this.config.fullImage = full_image
-        this.config.speed = speed * 3000,
-          this.config.speedIncreasing = speed_increasing,
-          this.config.leftTurn = left_turn
-        this.config.rightTurn = right_turn
-        this.config.numberOfQuestions = number_of_question ?? 10;
-        this.config.maxTurns = max_turns ?? 5, // Set max_turns from config or default to 5
-          this.config.subtask = subtask
+        this.config.speed = speed * 3000
+        this.config.subtask = subtask
         this.config.testId = id
-        this.config.currentQuestion = 1
+        this.config = {
+          full_image: full_image,
+          left_turn: left_turn,
+          right_turn: right_turn,
+          speed: speed * 3000,
+          speed_increasing: speed_increasing,
+          max_turns: 15,
+          crash: crash,
+          number_of_questions: number_of_question,
+          current_question: 0
+        }
 
         this.isConfigLoaded = true;
       });
@@ -229,7 +258,6 @@ export default {
       const resultTimeResponded = this.averageResponseTime()
       this.result.avg_response_time = resultTimeResponded.toFixed(2);
 
-      // Add this to include the response times for each question
       this.result.response_times = this.responseDurations.map(duration => ({
         responseTime: duration,
         timestamp: Date.now()
@@ -245,9 +273,9 @@ export default {
 
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
-          testSessionId: this.config.sessionId,
-          userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
+          testSessionId: this.sessionId,
+          userId: this.userId,
+          batteryTestId: this.testId,
           refreshCount: parseInt(localStorage.getItem('reloadCountSpatialOrientation')),
           result: this.result,
         }
@@ -281,10 +309,8 @@ export default {
         this.handleQuestionTimeout();
       }, this.questionDuration);
     },
-
     handleQuestionTimeout() {
       if (this.selectedAnswer === null) {
-        // If no answer was selected, record it as a wrong answer
         const responseTime = this.questionDuration;
         this.userInputs.push({
           type: 'wrong',
@@ -304,11 +330,13 @@ export default {
 
       this.config.current_question++;
 
-      if (this.config.current_question >= this.config.number_of_questions) {
+      if (this.config.current_question > this.config.number_of_questions) {
         this.endGame();
       } else {
-        this.generateCoordinat();
-        this.selectedAnswer = null;
+        setTimeout(() => {
+          this.generateCoordinat();
+          this.selectedAnswer = null;
+        }, this.questionDuration - (Date.now() - this.questionStartTime));
       }
     },
     async generateLines() {
@@ -321,15 +349,15 @@ export default {
       this.isShowAnswerBox = false
 
       this.question = null;
-      if (this.config.leftTurn && this.config.rightTurn) {
+      if (this.config.left_turn && this.config.right_turn) {
         this.question = Math.random() < 0.5 ? 'right' : 'left';
-      } else if (this.config.leftTurn) {
+      } else if (this.config.left_turn) {
         this.question = 'left';
-      } else if (this.config.rightTurn) {
+      } else if (this.config.right_turn) {
         this.question = 'right';
       }
 
-      if (this.config.fullImage) {
+      if (this.config.full_image) {
         await this.drawLineFull();
       } else {
         await this.drawLineOneByOne();
@@ -359,8 +387,7 @@ export default {
         this.linesUsed.push(randomIndex)
         this.lines = choosenlines[randomIndex]
 
-        // Limit the number of turns based on the config
-        this.lines = this.limitTurns(this.lines, this.config.maxTurns);
+        this.lines = this.limitTurns(this.lines, this.config.max_turns);
 
         this.generateLines()
         this.startQuestionTimer()
@@ -398,8 +425,10 @@ export default {
 
       return limitedLines;
     },
+
     async drawLineFull() {
       const canvas = this.$refs.lineCanvas;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, this.width, this.height);
 
@@ -434,11 +463,6 @@ export default {
       let i = startIndex;
 
       this.drawLineinterval = setInterval(() => {
-        if (this.isPause) {
-          clearInterval(this.drawLineinterval);
-          return;
-        }
-
         if (i === 0) {
           ctx.beginPath();
           ctx.moveTo(this.lines[i].x, this.lines[i].y);
@@ -446,7 +470,6 @@ export default {
         } else if (i === 1 || i === 2 || i === 3) {
           ctx.lineTo(this.lines[i].x, this.lines[i].y);
           this.countTurns(i);
-
           i++;
         } else if (i === 4 || i < this.lines.length) {
           ctx.clearRect(0, 0, this.width, this.height);
@@ -457,7 +480,6 @@ export default {
           ctx.lineTo(this.lines[i - 1].x, this.lines[i - 1].y);
           ctx.lineTo(this.lines[i].x, this.lines[i].y);
           this.countTurns(i);
-
           i++;
         }
 
@@ -504,24 +526,22 @@ export default {
       }
     },
     setAnswerOption() {
-      if (this.config.leftTurn && this.config.rightTurn) {
+      if (this.config.left_turn && this.config.right_turn) {
         this.question = Math.random() < 0.5 ? 'right' : 'left';
-      } else if (this.config.leftTurn) {
+      } else if (this.config.left_turn) {
         this.question = 'left';
-      } else if (this.config.rightTurn) {
+      } else if (this.config.right_turn) {
         this.question = 'right';
       }
 
       this.answer = this.question === 'left' ? this.leftTurns : this.rightTurns;
 
-      const totalOptions = 10; // Number of options to display
+      const totalOptions = 10;
       this.optionAnswers = [];
 
-      // Generate a range of possible answers around the correct answer
       const minOption = Math.max(0, this.answer - 2);
       const maxOption = this.answer + 2;
 
-      // Create an array of all possible options within the range
       const possibleOptions = [];
       for (let i = minOption; i <= maxOption; i++) {
         if (i !== this.answer) {
@@ -529,29 +549,24 @@ export default {
         }
       }
 
-      // Shuffle the possible options
       for (let i = possibleOptions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [possibleOptions[i], possibleOptions[j]] = [possibleOptions[j], possibleOptions[i]];
       }
 
-      // Select options to display
       while (this.optionAnswers.length < totalOptions - 1) {
         if (possibleOptions.length > 0) {
           this.optionAnswers.push(possibleOptions.pop());
         } else {
-          // If we run out of options in the initial range, add more
           this.optionAnswers.push(maxOption + this.optionAnswers.length + 1);
         }
       }
 
-      // Insert the correct answer at a random position
       const correctAnswerIndex = Math.floor(Math.random() * totalOptions);
       this.optionAnswers.splice(correctAnswerIndex, 0, this.answer);
 
       this.isButtonDisabled = false;
       this.isShowAnswerBox = true;
-      console.log(this.answer, 'answer');
     },
     drawArrowHead(isInit = false) {
       const canvas = this.$refs.lineCanvas;
@@ -602,15 +617,10 @@ export default {
 
       let i = startIndex;
 
-      if (this.config.fullImage) {
+      if (this.config.full_image) {
         const halfLength = Math.floor(this.lines.length / 2);
 
         const tailRemove = () => {
-          if (this.isPause) {
-            clearInterval(this.tailRemoveInterval);
-            return;
-          }
-
           if (i < halfLength) {
             ctx.clearRect(0, 0, this.width, this.height);
 
@@ -650,27 +660,19 @@ export default {
             this.tailRemoveInterval = null;
           }
 
-          if (i === halfLength && this.config.speedIncreasing) {
+          if (i === halfLength && this.config.speed_increasing) {
             clearInterval(this.tailRemoveInterval);
-
-            // Increase Speed Remove
             this.tailRemoveInterval = setInterval(tailRemove, 2000 / 2);
           }
 
           this.drawIndexRemoval = i;
         };
 
-        // Speed Remove
         this.tailRemoveInterval = setInterval(tailRemove, 2000);
       }
 
-      if (!this.config.fullImage) {
+      if (!this.config.full_image) {
         const tailRemove = () => {
-          if (this.isPause) {
-            clearInterval(this.tailRemoveInterval);
-            return;
-          }
-
           if (i < this.lines.length - 2) {
             ctx.clearRect(0, 0, this.width, this.height);
 
@@ -696,10 +698,8 @@ export default {
           this.drawIndexRemoval = i;
         };
 
-        // Speed Remove
         this.tailRemoveInterval = setInterval(tailRemove, 1000);
       }
-
     },
     pressAnswer(value) {
       if (!this.isButtonDisabled) {
@@ -724,15 +724,16 @@ export default {
         });
       }
 
-      this.moveToNextQuestion();
+      this.responseDurations.push(this.responseTime - this.questionStartTime);
+
+      // Don't move to the next question immediately
+      // The moveToNextQuestion method will be called when the fixed interval is over
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
         const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
-
         return (sum / this.responseDurations.length) / 1000;
       }
-
       return 0;
     },
   },
