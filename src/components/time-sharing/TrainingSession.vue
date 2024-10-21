@@ -4,13 +4,14 @@
             <div class="modal-content">
                 <h2>{{ currentTask.charAt(0).toUpperCase() + currentTask.slice(1) }} Training</h2>
                 <p>{{ getInstructions() }}</p>
-                <button @click="startTraining">Start Training</button>
+                <button @click="startTraining" class="start-button">Start Training</button>
             </div>
         </div>
         <div v-else>
             <div class="timer">Time remaining: {{ formatTime(remainingTime) }}</div>
             <component :is="getComponentForTask(currentTask)" :config="getConfigForTask(currentTask)"
-                @test-finished="handleTrainingFinished"></component>
+                :isTrainingMode="true" @test-finished="handleTrainingFinished" @switch-task="handleSwitchTask">
+            </component>
         </div>
     </div>
 </template>
@@ -18,6 +19,7 @@
 <script>
 import PlaneSimulator from './PlaneSimulator.vue';
 import MathTest from './MathTest.vue';
+import { checkIfTrainingTestCompleted, completeTrainingTestAndUpdateLocalStorage } from '@/utils';
 
 export default {
     name: 'TrainingSession',
@@ -27,10 +29,10 @@ export default {
     },
     data() {
         return {
-            trainingTasks: ['instrument', 'combined'],
+            trainingTasks: ['combined'],
             currentTaskIndex: 0,
             showModal: true,
-            remainingTime: 30, // half minutes
+            remainingTime: 60, // 1 minute
             timerInterval: null,
         };
     },
@@ -38,6 +40,13 @@ export default {
         currentTask() {
             return this.trainingTasks[this.currentTaskIndex];
         },
+    },
+    mounted() {
+        const completed = checkIfTrainingTestCompleted('Time Sharing Test 2023');
+        if (completed) {
+            this.$emit('training-completed');
+        }
+        return completed;
     },
     methods: {
         getInstructions() {
@@ -82,8 +91,8 @@ export default {
             const baseConfig = {
                 duration: 1,
                 navigation: { speed: 'medium', density: 'medium', control_perspective: 'cockpit_crew' },
-                observer: { speed: 'very_fast', frequency: 'very_fast' },
-                arithmetics: { frequency: 'medium', complexity: 'medium', output: 'sound' },
+                observer: { speed: 'medium', frequency: 'medium' },
+                arithmetics: { frequency: 'medium', complexity: 'medium', output: 'sound_and_visual' },
             };
 
             switch (task) {
@@ -91,6 +100,8 @@ export default {
                     return { ...baseConfig, subtask: { navigation: true, observer: false } };
                 case 'instrument':
                     return { ...baseConfig, subtask: { navigation: false, observer: true } };
+                case 'math':
+                    return baseConfig;
                 case 'combined':
                     return { ...baseConfig, subtask: { navigation: true, observer: true } };
                 default:
@@ -102,9 +113,17 @@ export default {
             this.currentTaskIndex++;
             if (this.currentTaskIndex < this.trainingTasks.length) {
                 this.showModal = true;
-                this.remainingTime = 30;
+                this.remainingTime = 60;
             } else {
                 this.$emit('training-completed');
+                completeTrainingTestAndUpdateLocalStorage('Time Sharing Test 2023');
+            }
+        },
+        handleSwitchTask() {
+            // Only allow task switching in combined mode
+            if (this.currentTask === 'combined') {
+                // Switch between PlaneSimulator and MathTest
+                this.$emit('switch-task');
             }
         },
     },
@@ -113,14 +132,70 @@ export default {
 
 <style scoped>
 .training-session {
-    /* Add your styles here */
+    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
 .modal {
-    /* Add your modal styles here */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h2 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.modal-content p {
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+.start-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.start-button:hover {
+    background-color: #45a049;
 }
 
 .timer {
-    /* Add your timer styles here */
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 1rem;
 }
 </style>
