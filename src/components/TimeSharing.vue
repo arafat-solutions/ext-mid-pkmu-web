@@ -1,15 +1,21 @@
 <template>
   <div>
-    <keep-alive>
-      <component :is="currentComponent" @switch-task="switchTask" @question-result="handleQuestionResult"
-        :config="config" @test-finished="handleSubmitTest" />
+    <training-session v-if="isTraining" @training-completed="startExam" />
+    <keep-alive v-else>
+      <component
+        :is="currentComponent"
+        @switch-task="switchTask"
+        @question-result="handleQuestionResult"
+        :config="config"
+        @test-finished="handleSubmitTest"
+      />
     </keep-alive>
   </div>
 </template>
-
 <script>
 import PlaneSimulator from '@/components/time-sharing/PlaneSimulator.vue';
 import MathTest from '@/components/time-sharing/MathTest.vue';
+import TrainingSession from '@/components/time-sharing/TrainingSession.vue';
 import { getConfigs, getStoredIndices } from '@/utils/configs';
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
 
@@ -17,6 +23,7 @@ export default {
   name: 'SimulatorParent',
   data() {
     return {
+      isTraining: true,
       currentComponent: 'PlaneSimulator',
       mathTestResults: [],
       userInputsMathTest: [],
@@ -64,6 +71,10 @@ export default {
       }
       this.isModalTrainingVisible = true;
       // this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
+      this.setConfig(this.config);
+    },
+    startExam() {
+      this.isTraining = false;
       this.setConfig(this.config);
     },
     setConfig(config) {
@@ -134,7 +145,8 @@ export default {
   },
   components: {
     PlaneSimulator,
-    MathTest
+    MathTest,
+    TrainingSession,
   }
 };
 </script>
