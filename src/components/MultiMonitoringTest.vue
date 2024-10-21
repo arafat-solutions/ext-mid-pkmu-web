@@ -1,7 +1,7 @@
 <template>
     <div class="relative h-full">
-        <ModalConfirmSound :visible="isModalVisible" title="Start Test"
-            message="Are you sure you want to start this test?" @confirm="handleConfirm" @cancel="handleCancel" />
+        <ModalConfirmSound :visible="isModalVisible" :title="getModalTitle()" :message="getModalMessage()"
+            @confirm="handleConfirm" @cancel="handleCancel" />
         <div class="bg-black h-full w-full flex justify-center items-center">
             <canvas ref="canvas" class="border border-white" :width="canvasWidth" :height="canvasHeight"></canvas>
         </div>
@@ -34,7 +34,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router'
 import ModalConfirmSound from './common/ModalConfirmSound.vue'
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 const loading = ref(false)
 const canvasWidth = ref(700)
@@ -55,6 +55,10 @@ const gameObjects = ref({
 });
 const refreshCount = ref(0)
 const userInputs = ref([])
+const isTraining = ref(true);
+const currentTrainingTask = ref('tracking');
+const trainingTasks = ['tracking', 'button', 'acoustic', 'combined'];
+const trainingDuration = 10; // 60 seconds for each training session
 
 const config = ref({
     speed: "normal",
@@ -110,6 +114,105 @@ const speedMap = {
 };
 
 const gamepadIndex = ref(null)
+
+function getModalTitle() {
+    if (isTraining.value) {
+        return `Mulai Latihan ${currentTrainingTask.value.charAt(0).toUpperCase() + currentTrainingTask.value.slice(1)} `;
+    }
+    return 'Start Test';
+}
+
+function getModalMessage() {
+    if (isTraining.value) {
+        switch (currentTrainingTask.value) {
+            case 'tracking':
+                return 'Arahkan crosshair kuning pada lingkaran putih yang bergerak.';
+            case 'button':
+                return 'Tekan SPACE ketika Anda melihat kotak biru muncul.';
+            case 'acoustic':
+                return 'Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.';
+            case 'combined':
+                return 'Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.';
+        }
+    }
+    return 'Apakah Anda siap untuk memulai tes?';
+}
+
+function handleConfirm() {
+    isModalVisible.value = false;
+    if (isTraining.value) {
+        startTrainingSession();
+    } else {
+        startFullTest();
+    }
+}
+
+function startTrainingSession() {
+    config.value.duration = trainingDuration;
+    countDownTestTime();
+
+    if (currentTrainingTask.value === 'tracking' || currentTrainingTask.value === 'combined') {
+        gameState.value.lastFrameTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+    if (currentTrainingTask.value === 'button' || currentTrainingTask.value === 'combined') {
+        initRectangleInterval();
+    }
+    if (currentTrainingTask.value === 'acoustic' || currentTrainingTask.value === 'combined') {
+        playRandomSounds();
+    }
+}
+
+function startFullTest() {
+    initConfig();
+    countDownTestTime();
+    gameState.value.lastFrameTime = performance.now();
+    requestAnimationFrame(gameLoop);
+    initRectangleInterval();
+    playRandomSounds();
+}
+
+function countDownTestTime() {
+    if (testInterval.value) {
+        clearInterval(testInterval.value);
+    }
+
+    testInterval.value = setInterval(async () => {
+        if (config.value.duration > 0) {
+            config.value.duration--;
+        } else {
+            clearInterval(testInterval.value);
+            if (isTraining.value) {
+                endTrainingSession();
+            } else {
+                await submitResult();
+            }
+        }
+    }, 1000)
+}
+
+function endTrainingSession() {
+    const currentIndex = trainingTasks.indexOf(currentTrainingTask.value);
+    if (currentIndex < trainingTasks.length - 1) {
+        currentTrainingTask.value = trainingTasks[currentIndex + 1];
+        isModalVisible.value = true;
+    } else {
+        isTraining.value = false;
+        isModalVisible.value = true;
+    }
+
+    metrics.value.tracking_task.correctTime = 0;
+    metrics.value.tracking_task.lastCheckTime = 0;
+    metrics.value.acoustic_task.correct_answer = 0;
+    metrics.value.acoustic_task.total_question = 0;
+    metrics.value.acoustic_task.incorrect_answer = 0;
+    metrics.value.button_task.correct_answer = 0;
+    metrics.value.button_task.total_question = 0;
+    metrics.value.button_task.incorrect_answer = 0;
+    userInputs.value = [];
+
+    completeTrainingTestAndUpdateLocalStorage('Multi Monitoring Test');
+}
 
 function moveCircle(deltaTime) {
     const { circle } = gameObjects.value;
@@ -233,7 +336,7 @@ function toggleRectangles() {
         if (!gameState.value.userAnswered) {
             userInputs.value.push({
                 type: 'missed',
-                responseTime: 5000, 
+                responseTime: 5000,
                 timestamp: Date.now(),
             })
             metrics.value.button_task.incorrect_answer++;
@@ -248,7 +351,7 @@ function initConfig() {
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
     const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
     // @TODO: Config Flow
-    const { duration, id, speed, speed_change, direction_change } = configMultiMonitoring.configs[0]
+    const { duration, speed, speed_change, direction_change } = configMultiMonitoring.configs[0]
 
     config.value = {
         ...config.value,
@@ -258,7 +361,7 @@ function initConfig() {
         directionChange: direction_change,
         userId: scheduleData.userId,
         sessionId: scheduleData.sessionId,
-        testId: id,
+        testId: configMultiMonitoring.id, // change to battery test id instead of config id.
     }
 }
 
@@ -282,7 +385,7 @@ async function submitResult() {
         const payload = {
             testSessionId: config.value.sessionId,
             userId: config.value.userId,
-            batteryTestConfigId: config.value.testId,
+            batteryTestId: config.value.testId,
             result,
             refreshCount: refreshCount.value
         }
@@ -308,21 +411,6 @@ async function submitResult() {
     }
 }
 
-function countDownTestTime() {
-    if (testInterval.value) {
-        clearInterval(testInterval.value);
-    }
-
-    testInterval.value = setInterval(async () => {
-        if (config.value.duration > 0) {
-            config.value.duration--;
-        } else {
-            clearInterval(testInterval.value);
-            await submitResult();
-
-        }
-    }, 1000)
-}
 
 function playSound(frequency, duration) {
     const oscillator = audioContext.createOscillator();
@@ -478,14 +566,6 @@ function playRandomSounds() {
     startSoundInterval();
 }
 
-function handleConfirm() {
-    isModalVisible.value = false
-    countDownTestTime();
-    playRandomSounds();
-    gameState.value.lastFrameTime = performance.now();
-    requestAnimationFrame(gameLoop);
-}
-
 function handleCancel() {
     router.replace('/module')
 }
@@ -554,8 +634,6 @@ onMounted(() => {
         updateCircleSpeed();
         metrics.value.tracking_task.lastCheckTime = performance.now() / 1000;
 
-        initRectangleInterval();
-
         canvas.value.addEventListener('mousemove', handleMouseMove);
         canvas.value.addEventListener('mouseenter', () => canvas.value.style.cursor = 'none');
         canvas.value.addEventListener('mouseleave', () => canvas.value.style.cursor = 'default');
@@ -565,14 +643,17 @@ onMounted(() => {
         window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
         checkGamepad();
 
-        // Load the refresh count from localStorage
         refreshCount.value = parseInt(localStorage.getItem('refreshCountMultiMonitoring') || '0');
-        // Increment the refresh count
         refreshCount.value++;
-        // Save the updated count to localStorage
         localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
-        // Add event listener for beforeunload
         window.addEventListener('beforeunload', handleBeforeUnload);
+
+
+        const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+        const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
+        isTraining.value = configMultiMonitoring.trainingCompleted ? false : true;
+        // Start with the first training session
+        isModalVisible.value = true;
     }
 });
 
@@ -598,7 +679,8 @@ onUnmounted(() => {
         soundInterval.value = null;
     }
     if (audioContext) {
-        audioContext.close();
+        if (audioContext.state !== 'closed')
+            audioContext.close();
     }
 });
 
