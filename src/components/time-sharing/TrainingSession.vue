@@ -7,6 +7,13 @@
                 <button @click="startTraining" class="start-button">Start Training</button>
             </div>
         </div>
+        <div v-else-if="showEndModal" class="modal">
+            <div class="modal-content">
+                <h2>Training Complete</h2>
+                <p>You have completed the training session. Are you ready to start the actual test?</p>
+                <button @click="startActualTest" class="start-button">Start Test</button>
+            </div>
+        </div>
         <div v-else>
             <div class="timer">Time remaining: {{ formatTime(remainingTime) }}</div>
             <component :is="getComponentForTask(currentTask)" :config="getConfigForTask(currentTask)"
@@ -29,9 +36,10 @@ export default {
     },
     data() {
         return {
-            trainingTasks: ['combined'],
+            trainingTasks: ['navigation', 'math', 'instrument', 'combined'],
             currentTaskIndex: 0,
             showModal: true,
+            showEndModal: false,
             remainingTime: 60, // 1 minute
             timerInterval: null,
         };
@@ -48,6 +56,7 @@ export default {
         }
         return completed;
     },
+
     methods: {
         getInstructions() {
             switch (this.currentTask) {
@@ -115,9 +124,14 @@ export default {
                 this.showModal = true;
                 this.remainingTime = 60;
             } else {
-                this.$emit('training-completed');
+                this.showEndModal = true;
                 completeTrainingTestAndUpdateLocalStorage('Time Sharing Test 2023');
             }
+        },
+
+        startActualTest() {
+            this.showEndModal = false;
+            this.$emit('training-completed');
         },
         handleSwitchTask() {
             // Only allow task switching in combined mode

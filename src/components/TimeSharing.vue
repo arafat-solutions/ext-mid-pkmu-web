@@ -59,7 +59,7 @@ export default {
       }
       this.configs = configData.configs;
       this.config = this.configs[0]; 
-      this.testId = this.configs[0].id; 
+      this.testId = configData.testId; 
       this.trainingConfigs = configData.trainingConfigs;
       this.moduleId = configData.moduleId;
       this.sessionId = configData.sessionId;
@@ -81,7 +81,6 @@ export default {
       this.$nextTick(() => {
         console.log('Current config:', config);
         this.config = config;
-        this.testId = config.id;
       });
     },
     switchTask() {
@@ -102,7 +101,7 @@ export default {
         moduleId: this.moduleId,
         testSessionId: this.sessionId,
         userId: this.userId,
-        batteryTestConfigId: this.testId,
+        batteryTestId: this.testId,
         result: {
           mathTestResults: this.mathTestResults,
           graph_data: this.userInputsMathTest,
@@ -136,7 +135,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('time-sharing-test');
+        removeTestByNameAndUpdateLocalStorage('Time Sharing Test 2023');
         localStorage.removeItem('reloadCountTimeSharing');
         this.$router.push('/module');
       }

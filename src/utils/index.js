@@ -31,6 +31,7 @@ export const removeTestByNameAndUpdateLocalStorage = (testName) => {
 
 export const completeTrainingTestAndUpdateLocalStorage = (testName) => {
     // Retrieve schedule data from localStorage
+    console.log('Training Completed', testName);
     const scheduleDataString = localStorage.getItem('scheduleData');
 
     if (!scheduleDataString) {
@@ -58,4 +59,31 @@ export const completeTrainingTestAndUpdateLocalStorage = (testName) => {
     // Save the updated schedule data back to localStorage
     const updatedScheduleDataString = JSON.stringify(scheduleData);
     localStorage.setItem('scheduleData', updatedScheduleDataString);
+}
+
+export const checkIfTrainingTestCompleted = (testName) => {
+    // Retrieve schedule data from localStorage
+    const scheduleDataString = localStorage.getItem('scheduleData');
+
+    if (!scheduleDataString) {
+        console.error('No schedule data found in localStorage.');
+        return false;
+    }
+
+    let scheduleData = JSON.parse(scheduleDataString);
+
+    if (!Array.isArray(scheduleData.tests)) {
+        console.error('Invalid schedule data format.');
+        return false;
+    }
+
+    // Find the test and check if it's completed
+    const test = scheduleData.tests.find(test => test.name === testName);
+
+    if (test) {
+        return test.trainingCompleted;
+    } else {
+        console.error('Test not found.');
+        return false;
+    }
 }
