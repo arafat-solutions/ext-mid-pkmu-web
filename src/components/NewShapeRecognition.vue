@@ -3,23 +3,28 @@
         <!-- Training Confirmation Modal -->
         <modal v-if="showTrainingModal" @close="startTraining">
             <h2>Training Session</h2>
-            <p>You are about to start a training session for the Shape Recognition game. This will help you familiarize
-                yourself with the game mechanics before the actual test.</p>
+            <p>Kamu akan melihat bentuk di tengah layar. Pilih bentuk yang sesuai dari opsi yang ada di bawah.</p>
             <h3>Basic Instructions:</h3>
             <ul>
-                <li>You will be shown a shape in the center of the screen.</li>
-                <li>Choose the matching shape from the options below.</li>
-                <li>Try to answer as quickly and accurately as possible.</li>
+                <li>Cermati bentuk yang ada di layar</li>
+                <li>Pilih opsi yang sesuai dengan object yang muncul pada opsi yang tersedia</li>
+                <li>jawab dengan cepat dan tepat.</li>
             </ul>
-            <button @click="startTraining">Start Training</button>
+            <button @click="startTraining">Mulai Latihan</button>
         </modal>
 
         <!-- Test Confirmation Modal -->
         <modal v-if="showTestModal" @close="startTest">
-            <h2>Start the Test</h2>
-            <p>You have completed the training session. You are now ready to start the actual test.</p>
-            <p>Your performance in this test will be recorded. Good luck!</p>
-            <button @click="startTest">Start Test</button>
+            <h2>Mulai Ujian</h2>
+            <p>
+                Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai ujian. Ujian ini akan berlangsung selama
+                {{ currentConfig.timePerQuestion }} detik per soal.
+            </p>
+            <p>
+                Performa kamu akan diukur berdasarkan jumlah jawaban benar, salah, dan tidak terjawab, serta rata-rata
+                waktu respon.
+            </p>
+            <button @click="startTest">Start Ujian</button>
         </modal>
 
         <!-- Main game component -->
