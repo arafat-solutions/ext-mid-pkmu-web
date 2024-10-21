@@ -518,10 +518,10 @@ export default {
 
     showTrainingInstructions() {
       const instructions = {
-        navigation: "Practice following the white target with your cursor. Use the joystick for the right target and the throttle for the left target.",
-        math: "Solve simple addition problems. Use the on-screen keyboard to input your answers.",
-        alertLight: "Click on red lights as quickly as possible. Ignore yellow lights.",
-        combined: "Practice all tasks together. This is your final training before the actual test."
+        navigation: "Gunakan joystick untuk menggerakkan kursor ke target. Pastikan kursor berada di target, warna akan berubah menjadi hijau.",
+        math: "Jawab soal matematika secepat mungkin. Jawaban benar akan berwarna hijau, jawaban salah akan berwarna merah.",
+        alertLight: "Klik lampu merah yang menyala. abaikan lampu kuning.",
+        combined: "Latihan gabungan dari ketiga tugas sebelumnya."
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
