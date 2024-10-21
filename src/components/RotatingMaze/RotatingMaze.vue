@@ -1,64 +1,74 @@
 <template>
-    <div v-if="loadingSubmit" class="loadingContainerMaze">
-        <div class="spinnerMaze"></div>
-        <p class="loadingText">Your result is submitting...</p>
-    </div>
-    <!-- <div class="containerSettingMaze">
-        <div class="settingMaze">
-            <button @click="async () => { await generateGrid(); await mazeGenerator(); }">new maze</button>
-            <br /> <br />
-            <div>
-                <button @click="changeDifficulty('easy')">Easy</button>
-                <button @click="changeDifficulty('normal')">Normal</button>
-                <button @click="changeDifficulty('hard')">Hard</button>
-            </div>
-            <div>
-                <p>correct turn: {{ quizMetrics.correctTurn }}</p>
-                <p>wrong turn: {{ quizMetrics.wrongTurn }}</p>
-                <p>least possible move: {{ quizMetrics.leastPossibleMove }}</p>
-                <p>wallHit: {{ quizMetrics.wallHit }}</p>
-                <p>avgStepResponse: {{ quizMetrics.avgStepResponse.toFixed(2) }}</p>
-                <p>total maze: {{ quizMetrics.total_maze }}</p>
-            </div>
+    <div>
+        <!-- Training Start Modal -->
+        <Modal v-if="showTrainingStartModal" @close="startTraining">
+            <h2>Welcome to the Maze Game Training</h2>
+            <p>
+                In this training session, you'll practice navigating through mazes.
+                Use the arrow keys to move. The goal is to reach the target as quickly as possible.
+                This session will help you get familiar with the controls and difficulty.
+            </p>
+            <button @click="startTraining">Start Training</button>
+        </Modal>
+
+        <!-- Actual Test Start Modal -->
+        <Modal v-if="showTestStartModal" @close="startActualTest">
+            <h2>Ready for the Actual Test?</h2>
+            <p>
+                Great job on completing the training!
+                You're now ready to start the actual test.
+                Remember, your performance in this test will be recorded.
+            </p>
+            <button @click="startActualTest">Start Test</button>
+        </Modal>
+
+        <!-- Existing game content -->
+        <div v-if="loadingSubmit" class="loadingContainerMaze">
+            <div class="spinnerMaze"></div>
+            <p class="loadingText">Your result is submitting...</p>
         </div>
-    </div> -->
-    <div id="containerMaze">
-        <div class="circularBaseMaze" :style="{
-            position: 'fixed',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-        }">
-            <div id="visualizerMaze" :style="{
-                width: `${mazeWidth}px`,
-                height: `${mazeHeight}px`,
-                position: 'absolute',
+
+        <div id="containerMaze">
+            <div class="circularBaseMaze" :style="{
+                position: 'fixed',
                 left: '50%',
                 top: '50%',
-                transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`
+                transform: 'translate(-50%, -50%)',
             }">
-                <div id="gridMaze" :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
+                <div id="visualizerMaze" :style="{
+                    width: `${mazeWidth}px`,
+                    height: `${mazeHeight}px`,
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`
+                }">
+                    <div id="gridMaze"
+                        :style="{ width: `${cellSize * gridSizeX}px`, height: `${cellSize * gridSizeY}px` }">
+                    </div>
+                    <div class="rotationIndicatorMaze"></div>
                 </div>
-                <div class="rotationIndicatorMaze"></div>
             </div>
         </div>
-    </div>
-    <div class="timerMaze">
-        <p>Progress:</p>
-        <p>{{ completedMazes }} / {{ config.numberOfMaze }}</p>
+
+        <div class="timerMaze">
+            <p>{{ isTraining ? 'Training' : 'Test' }} Progress:</p>
+            <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : config.numberOfMaze }}</p>
+        </div>
     </div>
 </template>
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 import { useRouter } from 'vue-router'
+import Modal from './ModalTraining.vue';  // Assume we have a Modal component
 
 export default {
     name: 'RotationMaze',
+    components: { Modal },
     setup() {
         const router = useRouter()
-
         const loadingSubmit = ref(false)
         const mazeWidth = ref(400)
         const mazeHeight = ref(400)
@@ -85,6 +95,10 @@ export default {
         const isRotating = ref(false)
         const isRotationActive = ref(true)
         const loadingGenerating = ref(false)
+        const isTraining = ref(true);
+        const showTrainingStartModal = ref(true);
+        const showTestStartModal = ref(false);
+        const trainingMazes = 3;  // Number of training mazes
         const config = ref({
             numberOfMaze: 10,
             rotationFrequency: 0,
@@ -109,6 +123,7 @@ export default {
         const mazeStartTime = ref(0)
 
         const setGridSizeByDifficulty = () => {
+            console.log('config.value.difficulty', config.value.difficulty)
             let baseSize = 15;
             switch (config.value.difficulty) {
                 case 'Mudah':
@@ -544,6 +559,35 @@ export default {
             }, 10);
         };
 
+        const startTraining = () => {
+            showTrainingStartModal.value = false;
+            isTraining.value = true;
+            resetGame();
+            generateGrid();
+            mazeGenerator();
+        };
+
+        const startActualTest = () => {
+            showTestStartModal.value = false;
+            isTraining.value = false;
+            resetGame();
+            generateGrid();
+            mazeGenerator();
+        };
+
+        const resetGame = () => {
+            completedMazes.value = 0;
+            arrayMetrics.value = [];
+            mazeCompletionTime.value = [];
+            quizMetrics.value = {
+                correctTurn: 0,
+                wrongTurn: 0,
+                leastPossibleMove: 0,
+                wallHit: 0,
+                avgStepResponse: 0,
+            };
+        };
+
         const movePlayer = async (direction) => {
             const [x, y] = startPos.value;
             let newX = x;
@@ -610,14 +654,17 @@ export default {
             if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
                 console.log("Congratulations! You've reached the target!");
                 const completeTime = Date.now() - mazeStartTime.value;
-                mazeCompletionTime.value.push({
-                    type: 'correct',
-                    responseTime: completeTime,
-                    timestamp: Date.now(),
-                });
 
-                arrayMetrics.value.push({ ...quizMetrics.value, completionTime: completeTime });
-                localStorage.setItem('arrayMetrics', JSON.stringify(arrayMetrics.value))
+                if (!isTraining.value) {
+                    mazeCompletionTime.value.push({
+                        type: 'correct',
+                        responseTime: completeTime,
+                        timestamp: Date.now(),
+                    });
+
+                    arrayMetrics.value.push({ ...quizMetrics.value, completionTime: completeTime });
+                    localStorage.setItem('arrayMetrics', JSON.stringify(arrayMetrics.value));
+                }
 
                 quizMetrics.value = {
                     correctTurn: 0,
@@ -629,7 +676,10 @@ export default {
 
                 completedMazes.value++;
 
-                if (completedMazes.value >= config.value.numberOfMaze) {
+                if (isTraining.value && completedMazes.value >= trainingMazes) {
+                    completeTrainingTestAndUpdateLocalStorage('Rotating Maze')
+                    showTestStartModal.value = true;
+                } else if (!isTraining.value && completedMazes.value >= config.value.numberOfMaze) {
                     await submitResult();
                 } else {
                     stopRotation();
@@ -709,8 +759,11 @@ export default {
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
-
-            const { rotation_frequency, id, size, number_of_question } = configRotatingMaze.configs[0]
+            if (configRotatingMaze.trainingCompleted) {
+                showTrainingStartModal.value = false;
+                showTestStartModal.value = true;
+            }
+            const { rotation_frequency, size, number_of_question } = configRotatingMaze.configs[0]
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,
@@ -725,8 +778,9 @@ export default {
                 difficulty: configRotatingMaze.difficulty,
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
-                testId: id
+                testId: configRotatingMaze.id
             }
+            console.log('config.value', config.value)
         }
 
         const submitResult = async () => {
@@ -736,7 +790,7 @@ export default {
                 const payload = {
                     testSessionId: config.value.sessionId,
                     userId: config.value.userId,
-                    batteryTestConfigId: config.value.testId,
+                    batteryTestId: config.value.testId,
                     result: {
                         mazecompletions: arrayMetrics.value,
                         graph_data: mazeCompletionTime.value
@@ -778,25 +832,14 @@ export default {
         }
 
         onMounted(() => {
-            loadingGenerating.value = true
-            initConfig()
-            generateGrid();
-            mazeGenerator();
-
-            window.addEventListener('keyup', handleKeyPress);
-
-            // Load the refresh count from localStorage
-            refreshCount.value = parseInt(localStorage.getItem('refreshCountRotatingMaze') || '0');
-            // Increment the refresh count
-            refreshCount.value++;
-            // Save the updated count to localStorage
-            localStorage.setItem('refreshCountRotatingMaze', refreshCount.value.toString());
-            // Add event listener for beforeunload
-            window.addEventListener('beforeunload', handleBeforeUnload);
+            loadingGenerating.value = true;
+            initConfig();
+            window.addEventListener('keyup', handleKeyPress)
+            // Don't generate grid or start maze here, wait for user to start training
         });
 
         onUnmounted(() => {
-            window.removeEventListener('keydown', handleKeyPress)
+            window.removeEventListener('keyup', handleKeyPress)
             window.removeEventListener('beforeunload', handleBeforeUnload);
 
         })
@@ -820,12 +863,15 @@ export default {
             greedyBestFirst,
             changeDifficulty,
             formatTime,
-            completedMazes
-
+            completedMazes,
+            isTraining,
+            showTrainingStartModal,
+            showTestStartModal,
+            startTraining,
+            startActualTest,
+            trainingMazes,
         };
-
     }
-
 };
 </script>
 
