@@ -1,6 +1,6 @@
 <template>
   <div class="math-test-container">
-    <div class="instructions">Press 'Space bar' to switch tasks</div>
+    <div class="instructions" v-if="!isTrainingMode">Press 'Space bar' to switch tasks</div>
     <div v-if="showQuestion" class="question">{{ currentQuestion }}</div>
     <div v-else class="waiting">Waiting for next question...</div>
     <input v-model="userInput" class="input-box" readonly :disabled="!showQuestion" />
@@ -18,11 +18,15 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 
 export default {
   name: 'MathTest',
-  emits: ['switch-task', 'question-result'],
+  emits: ['switch-task', 'question-result', 'test-finished'],
   props: {
     config: {
       type: Object,
       default: () => ({})
+    },
+    isTrainingMode: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props, { emit }) {
@@ -170,7 +174,7 @@ export default {
     };
 
     const handleKeydown = (event) => {
-      if (event.key === ' ') {
+      if (event.key === ' ' && !props.isTrainingMode) {
         emit('switch-task');
       }
     };
@@ -182,7 +186,12 @@ export default {
 
     onBeforeUnmount(() => {
       window.removeEventListener('keydown', handleKeydown);
+      if (props.isTrainingMode) {
+        emit('test-finished');
+      }
     });
+
+    // ... (keep the rest of the existing setup code)
 
     return {
       userInput,

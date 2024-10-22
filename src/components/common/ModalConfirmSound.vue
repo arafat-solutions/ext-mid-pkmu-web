@@ -3,12 +3,14 @@
         <div class="black-overlay"></div>
         <div class="modal-content">
             <div class="icon">
-                <i class="fas fa-sign-out-alt"></i>
+                <i class="fas fa-info-circle"></i>
             </div>
-            <h2>Are you sure you want to start this test?</h2>
+            <h2>{{ title }}</h2>
+            <p class="message">{{ message }}</p>
+            <p class="instructions">{{ instructions }}</p>
             <div class="button-group">
                 <button @click="cancel" class="cancel-btn">Cancel</button>
-                <button @click="confirm" class="logout-btn">Ya, Start the test</button>
+                <button @click="confirm" class="confirm-btn">{{ confirmButtonText }}</button>
             </div>
         </div>
     </div>
@@ -22,9 +24,21 @@ export default {
             type: Boolean,
             default: false
         },
+        title: {
+            type: String,
+            default: 'Confirmation'
+        },
         message: {
             type: String,
             default: 'Are you sure?'
+        },
+        instructions: {
+            type: String,
+            default: ''
+        },
+        confirmButtonText: {
+            type: String,
+            default: 'Confirm'
         }
     },
     methods: {
@@ -75,8 +89,8 @@ export default {
 }
 
 .icon {
-    background-color: #ffebee;
-    color: #f44336;
+    background-color: #e3f2fd;
+    color: #2196f3;
     width: 50px;
     height: 50px;
     border-radius: 50%;
@@ -87,8 +101,19 @@ export default {
 }
 
 h2 {
-    font-size: 18px;
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.message {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.instructions {
+    font-size: 14px;
     margin-bottom: 20px;
+    color: #666;
 }
 
 .button-group {
@@ -109,7 +134,7 @@ button {
     color: #333;
 }
 
-.logout-btn {
+.confirm-btn {
     background-color: #7e57c2;
     color: white;
 }

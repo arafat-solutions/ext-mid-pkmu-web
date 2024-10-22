@@ -2,9 +2,11 @@
   <div class="plane-simulation-wrapper">
     <div class="plane-simulation-container">
       <div class="timer">{{ formatTime(remainingTime) }}</div>
-      <div class="instructions">Press 'Space bar' to switch tasks</div>
+      <div class="instructions" v-if="config.subtask.navigation && config.subtask.observer">
+        Press 'Space bar' to switch tasks
+      </div>
       <div class="game-content">
-        <div class="instruments-left">
+        <div class="instruments-left" v-if="config.subtask.observer">
           <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index"
             @click="handleInstrumentClick(instrument.key)">
             <svg :ref="'gauge' + index" width="120" height="120" viewBox="0 0 120 120"></svg>
@@ -12,10 +14,10 @@
             <div class="wrong-inputs">Wrong: {{ wrongInputs[instrument.key] }}</div>
           </div>
         </div>
-        <div class="simulation-box">
+        <div class="simulation-box" v-if="config.subtask.navigation">
           <canvas ref="simulationCanvas" width="800" height="500"></canvas>
         </div>
-        <div class="instruments-right">
+        <div class="instruments-right" v-if="config.subtask.observer">
           <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index"
             @click="handleInstrumentClick(instrument.key)">
             <svg :ref="'gauge' + (index + 2)" width="120" height="120" viewBox="0 0 120 120"></svg>
@@ -24,7 +26,7 @@
           </div>
         </div>
       </div>
-      <div class="collision-count">Collisions: {{ collisionCount }}</div>
+      <div class="collision-count" v-if="config.subtask.navigation">Collisions: {{ collisionCount }}</div>
     </div>
   </div>
 </template>
@@ -112,27 +114,37 @@ export default {
   methods: {
     initializeGame() {
       this.setRandomObstacleConfig();
-      this.initGauges();
+      if (this.config.subtask.observer) {
+        this.initGauges();
+      }
       this.startGameLoops();
       this.setupEventListeners();
     },
     startGameLoops() {
-      this.obstacleInterval = setInterval(this.moveObstacles, 30);
-      this.generationInterval = setInterval(this.generateObstacles, this.getObstacleGenerationInterval());
-      this.gaugeInterval = setInterval(this.updateGauges, 50);
-      this.randomGaugeInterval = setInterval(this.randomGaugeIncrease, 2000);
+      if (this.config.subtask.navigation) {
+        this.obstacleInterval = setInterval(this.moveObstacles, 30);
+        this.generationInterval = setInterval(this.generateObstacles, this.getObstacleGenerationInterval());
+      }
+      if (this.config.subtask.observer) {
+        this.gaugeInterval = setInterval(this.updateGauges, 50);
+        this.randomGaugeInterval = setInterval(this.randomGaugeIncrease, 2000);
+      }
       this.animatePlane();
       this.startTimer();
     },
     setupEventListeners() {
-      window.addEventListener('gamepadconnected', this.onGamepadConnected);
-      window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      if (this.config.subtask.navigation) {
+        window.addEventListener('gamepadconnected', this.onGamepadConnected);
+        window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      }
       window.addEventListener('keydown', this.handleKeydown);
       this.checkGamepad();
     },
     removeEventListeners() {
-      window.removeEventListener('gamepadconnected', this.onGamepadConnected);
-      window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      if (this.config.subtask.navigation) {
+        window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+        window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      }
       window.removeEventListener('keydown', this.handleKeydown);
     },
     pauseGame() {
@@ -218,6 +230,7 @@ export default {
     },
     animatePlane() {
       const canvas = this.$refs.simulationCanvas;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const img = new Image();
       img.src = require('@/assets/top-view.png');
@@ -334,32 +347,39 @@ export default {
       });
     },
     handleKeydown(event) {
-      if (event.key === ' ') {
+      if (event.key === ' ' && this.config.subtask.navigation && this.config.subtask.observer) {
         this.$emit('switch-task');
         return;
       }
 
       if (this.isPaused) return;
 
-      switch (event.key) {
-        case 'a':
-        case 'A':
-          this.plane.targetX = Math.max(this.plane.x - 20, 0);
-          break;
-        case 'd':
-        case 'D':
-          this.plane.targetX = Math.min(this.plane.x + 20, 740);
-          break;
-        case 'c':
-        case 'C':
-        case 'v':
-        case 'V':
-        case 'n':
-        case 'N':
-        case 'b':
-        case 'B':
-          this.handleInstrumentKey(event.key.toUpperCase());
-          break;
+      if (this.config.subtask.navigation) {
+        switch (event.key) {
+          case 'a':
+          case 'A':
+            this.plane.targetX = Math.max(this.plane.x - 20, 0);
+            break;
+          case 'd':
+          case 'D':
+            this.plane.targetX = Math.min(this.plane.x + 20, 740);
+            break;
+        }
+      }
+
+      if (this.config.subtask.observer) {
+        switch (event.key) {
+          case 'c':
+          case 'C':
+          case 'v':
+          case 'V':
+          case 'n':
+          case 'N':
+          case 'b':
+          case 'B':
+            this.handleInstrumentKey(event.key.toUpperCase());
+            break;
+        }
       }
     },
     handleInstrumentClick(key) {

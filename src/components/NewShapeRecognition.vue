@@ -1,46 +1,72 @@
 <template>
-    <div class="w-full h-full max-w-[1200px] mx-auto relative flex flex-col items-center justify-center max-h-[1000px]">
-        <canvas id="shapeCanvas" ref="shapeCanvas" width="500" height="300"
-            class="border-[1px] border-black mt-[8%] mx-auto"></canvas>
-        <div class="w-[80%] flex items-center justify-between mx-auto mt-[40px]">
-            <div class="flex flex-col items-center justify-center" v-for="(shape, index) in shapes.slice(0, 5)"
-                :key="index" @click="checkAnswer(index)">
-                <canvas :ref="el => buttonCanvases[index] = el" width="200" height="100"></canvas>
-                <button
-                    class="cursor-pointer mt-[10px] h-[30px] w-[60px] bg-gray-200 border border-gray-300 rounded-sm">
-                    {{ ['A', 'B', 'C', 'D', 'E'][index] }}
-                </button>
+    <div>
+        <!-- Training Confirmation Modal -->
+        <modal v-if="showTrainingModal" @close="startTraining">
+            <h2>Training Session</h2>
+            <p>Kamu akan melihat bentuk di tengah layar. Pilih bentuk yang sesuai dari opsi yang ada di bawah.</p>
+            <h3>Basic Instructions:</h3>
+            <ul>
+                <li>Cermati bentuk yang ada di layar</li>
+                <li>Pilih opsi yang sesuai dengan object yang muncul pada opsi yang tersedia</li>
+                <li>jawab dengan cepat dan tepat.</li>
+            </ul>
+            <button @click="startTraining">Mulai Latihan</button>
+        </modal>
+
+        <!-- Test Confirmation Modal -->
+        <modal v-if="showTestModal" @close="startTest">
+            <h2>Mulai Ujian</h2>
+            <p>
+                Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai ujian. Ujian ini akan berlangsung selama
+                {{ currentConfig.timePerQuestion }} detik per soal.
+            </p>
+            <p>
+                Performa kamu akan diukur berdasarkan jumlah jawaban benar, salah, dan tidak terjawab, serta rata-rata
+                waktu respon.
+            </p>
+            <button @click="startTest">Start Ujian</button>
+        </modal>
+
+        <!-- Main game component -->
+        <div v-if="gameState !== 'idle'"
+            class="w-full h-full max-w-[1200px] mx-auto relative flex flex-col items-center justify-center max-h-[1000px]">
+            <canvas id="shapeCanvas" ref="shapeCanvas" width="500" height="300"
+                class="border-[1px] border-black mt-[8%] mx-auto"></canvas>
+            <div class="w-[80%] flex items-center justify-between mx-auto mt-[40px]">
+                <div class="flex flex-col items-center justify-center" v-for="(shape, index) in shapes.slice(0, 5)"
+                    :key="index" @click="checkAnswer(index)">
+                    <canvas :ref="el => buttonCanvases[index] = el" width="200" height="100"></canvas>
+                    <button
+                        class="cursor-pointer mt-[10px] h-[30px] w-[60px] bg-gray-200 border border-gray-300 rounded-sm">
+                        {{ ['A', 'B', 'C', 'D', 'E'][index] }}
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-    <div v-if="loading" class="loadingContainer">
-        <div class="spinner"></div>
-        <p class="loadingText">Your result is submitting...</p>
-    </div>
-    <!-- <div class="settings">
-        <button @click="drawQuestions">New Shape</button>
-        <div>
-            <p>correct : {{ quizMetrics.correctAnswer }}</p>
-            <p>wrong: {{ quizMetrics.wrongAnswer }}</p>
-            <p>unanswered: {{ quizMetrics.unanswered }}</p>
-            <p>avgResponseTime: {{ quizMetrics.avgResponseTime.toFixed(2) }} s</p>
-            <p>answer count: {{ answerCount }}</p>
+
+        <div v-if="loading" class="loadingContainer">
+            <div class="spinner"></div>
+            <p class="loadingText">Your result is submitting...</p>
+        </div>
+
+        <div class="timer" v-if="gameState !== 'idle'">
+            <p>Question: {{ currentQuestion }} / {{ currentConfig.numberOfQuestion }}</p>
             <p>Time left: {{ questionCountdown }}s</p>
         </div>
-    </div> -->
-    <div class="timer">
-        <p>Question: {{ currentQuestion }} / {{ config.numberOfQuestion }}</p>
-        <p>Time left: {{ questionCountdown }}s</p>
     </div>
 </template>
 
 <script>
 import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 import { useRouter } from 'vue-router'
+import Modal from './shape-recognition/ModalConfirmation.vue'
 
 export default {
     name: 'ShapeRecognition',
+    components: {
+        Modal
+    },
     setup() {
         const router = useRouter()
 
@@ -48,7 +74,6 @@ export default {
         const buttonCanvases = ref([]);
         const correctShapeIndex = ref(0);
         const shapes = ref([]);
-        // const answerCount = ref(0)
         const startTime = ref(null);
         const totalResponseTime = ref(0);
         const responseCount = ref(0);
@@ -56,6 +81,20 @@ export default {
         const questionCountDownInterval = ref(null)
         const loading = ref(false)
         const currentQuestion = ref(1);
+        const gameState = ref('idle'); // 'idle', 'training', 'test'
+        const showTrainingModal = ref(true);
+        const showTestModal = ref(false);
+        const currentConfigIndex = ref(0);
+        const currentConfig = ref({
+            size: '',
+            variation: 0,
+            userId: '',
+            sessionId: '',
+            testId: '',
+            timePerQuestion: 0,
+            numberOfQuestion: 0
+        });
+
         const config = ref({
             size: '',
             variation: 0,
@@ -72,6 +111,7 @@ export default {
             unanswered: 0,
             avgResponseTime: 0 //in seconds
         })
+
         const STROKE_WIDTH = 2;
         const ANGLES = [0, Math.PI / 2, Math.PI, 2 * Math.PI];
         const refreshCount = ref(0)
@@ -112,43 +152,6 @@ export default {
             ctx.restore();
         }
 
-        function checkAnswer(index) {
-            const currentTime = Date.now();
-            if (!startTime.value) {
-                startTime.value = currentTime;
-            }
-            const elapsedTime = (currentTime - startTime.value) / 1000;
-            totalResponseTime.value += elapsedTime;
-            responseCount.value++;
-            quizMetrics.value.avgResponseTime = totalResponseTime.value / responseCount.value;
-
-            startTime.value = currentTime;
-
-            if (index === correctShapeIndex.value) {
-                userInputs.value.push({
-                    type: 'correct',
-                    responseTime: elapsedTime * 1000,
-                    timestamp: currentTime
-                })
-                quizMetrics.value.correctAnswer++
-            } else {
-                quizMetrics.value.wrongAnswer++
-                userInputs.value.push({
-                    type: 'wrong',
-                    responseTime: elapsedTime * 1000,
-                    timestamp: currentTime
-                })
-            }
-
-            if (currentQuestion.value < config.value.numberOfQuestion) {
-                currentQuestion.value++;
-                drawQuestions();
-            } else {
-                submitResult();
-            }
-        }
-
-
         function drawInButtons(randomAngle) {
             buttonCanvases.value.forEach((canvas, index) => {
                 if (canvas) {
@@ -159,11 +162,13 @@ export default {
         }
 
         function drawInCenter(angle) {
-            const ctx = shapeCanvas.value.getContext('2d');
-            ctx.clearRect(0, 0, shapeCanvas.value.width, shapeCanvas.value.height);
+            if (shapeCanvas.value) {
+                const ctx = shapeCanvas.value.getContext('2d');
+                ctx.clearRect(0, 0, shapeCanvas.value.width, shapeCanvas.value.height);
 
-            // Only draw randomized shapes (including the correct one)
-            drawRandomizedShapes(ctx, angle);
+                // Only draw randomized shapes (including the correct one)
+                drawRandomizedShapes(ctx, angle);
+            }
         }
 
         function getScaleFactor(size) {
@@ -603,18 +608,24 @@ export default {
         function initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
-            const { size, variation, id, time_per_question, number_of_question } = configShapeRecognition.configs[0]
 
             config.value = {
-                size,
-                variation,
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
-                testId: id,
-                timePerQuestion: time_per_question,
-                numberOfQuestion: number_of_question ?? 10
+                testId: configShapeRecognition.id,
+                size: configShapeRecognition.configs[currentConfigIndex.value].size,
+                variation: configShapeRecognition.configs[currentConfigIndex.value].variation,
+                timePerQuestion: configShapeRecognition.configs[currentConfigIndex.value].time_per_question,
+                numberOfQuestion: configShapeRecognition.configs[currentConfigIndex.value].number_of_question ?? 10
             }
-            quizMetrics.value.unanswered = number_of_question;
+
+            currentConfig.value = {
+                ...configShapeRecognition.configs[currentConfigIndex.value],
+                numberOfQuestion: configShapeRecognition.configs[currentConfigIndex.value].number_of_question ?? 10,
+                timePerQuestion: configShapeRecognition.configs[currentConfigIndex.value].time_per_question
+            };
+            console.log('currentConfig:', currentConfig.value, config.value)
+            quizMetrics.value.unanswered = currentConfig.value.numberOfQuestion;
         }
 
         async function submitResult() {
@@ -624,7 +635,7 @@ export default {
                 const payload = {
                     testSessionId: config.value.sessionId,
                     userId: config.value.userId,
-                    batteryTestConfigId: config.value.testId,
+                    batteryTestId: config.value.testId,
                     result: {
                         ...quizMetrics.value,
                         graph_data: userInputs.value
@@ -642,9 +653,11 @@ export default {
                 if (!response.ok) {
                     throw new Error(`Error: ${response.statusText}`);
                 }
+
                 removeTestByNameAndUpdateLocalStorage('Shape Recognition')
                 localStorage.removeItem('refreshCountShapeRecognition')
                 router.push('/module');
+
             } catch (error) {
                 console.log("error submit shape recognition:", error)
             } finally {
@@ -657,7 +670,7 @@ export default {
                 clearInterval(questionCountDownInterval.value);
             }
 
-            questionCountdown.value = config.value.timePerQuestion;
+            questionCountdown.value = currentConfig.value.timePerQuestion;
             questionCountDownInterval.value = setInterval(() => {
                 if (questionCountdown.value > 0) {
                     questionCountdown.value--;
@@ -666,48 +679,137 @@ export default {
                     quizMetrics.value.unanswered++;
                     userInputs.value.push({
                         type: 'missed',
-                        responseTime: config.value.timePerQuestion * 1000,
+                        responseTime: currentConfig.value.timePerQuestion * 1000,
                         timestamp: Date.now()
                     })
-                    if (currentQuestion.value < config.value.numberOfQuestion) {
+                    if (currentQuestion.value < currentConfig.value.numberOfQuestion) {
                         currentQuestion.value++;
                         drawQuestions();
                     } else {
-                        submitResult();
+                        if (gameState.value === 'training') {
+                            endTraining();
+                        } else {
+                            // configs length should be always 3, mudah, sedang, sulit
+                            if (currentConfigIndex.value === 2) {
+                                submitResult();
+                            } else {
+                                currentConfigIndex.value++;
+                                initConfig();
+                                drawQuestions();
+                            }
+                        }
                     }
                 }
             }, 1000);
         }
 
         function handleBeforeUnload() {
-            // Save the current refresh count to localStorage before the page unloads
             localStorage.setItem('refreshCountShapeRecognition', refreshCount.value.toString());
         }
 
-        onMounted(() => {
-            // Load the refresh count from localStorage
-            refreshCount.value = parseInt(localStorage.getItem('refreshCountShapeRecognition') || '0');
-            // Increment the refresh count
-            refreshCount.value++;
-            // Save the updated count to localStorage
-            localStorage.setItem('refreshCountShapeRecognition', refreshCount.value.toString());
-            // Add event listener for beforeunload
-            window.addEventListener('beforeunload', handleBeforeUnload);
+        function startTraining() {
+            showTrainingModal.value = false;
+            gameState.value = 'training';
+            initConfig();
+            drawQuestions();
+        }
 
-            nextTick(() => {
-                initConfig()
+        function endTraining() {
+            gameState.value = 'idle';
+            showTestModal.value = true;
+            completeTrainingTestAndUpdateLocalStorage('Shape Recognition');
+            resetGameState();
+        }
+
+        function startTest() {
+            showTestModal.value = false;
+            gameState.value = 'test';
+            initConfig();
+            drawQuestions();
+        }
+
+        function resetGameState() {
+            currentQuestion.value = 1;
+            quizMetrics.value = {
+                correctAnswer: 0,
+                wrongAnswer: 0,
+                unanswered: 0,
+                avgResponseTime: 0
+            };
+            userInputs.value = [];
+        }
+
+        function checkAnswer(index) {
+            const currentTime = Date.now();
+            if (!startTime.value) {
+                startTime.value = currentTime;
+            }
+            const elapsedTime = (currentTime - startTime.value) / 1000;
+            totalResponseTime.value += elapsedTime;
+            responseCount.value++;
+            quizMetrics.value.avgResponseTime = totalResponseTime.value / responseCount.value;
+
+            startTime.value = currentTime;
+
+            if (index === correctShapeIndex.value) {
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: elapsedTime * 1000,
+                    timestamp: currentTime
+                })
+                quizMetrics.value.correctAnswer++
+            } else {
+                quizMetrics.value.wrongAnswer++
+                userInputs.value.push({
+                    type: 'wrong',
+                    responseTime: elapsedTime * 1000,
+                    timestamp: currentTime
+                })
+            }
+
+            if (currentQuestion.value < currentConfig.value.numberOfQuestion) {
+                currentQuestion.value++;
                 drawQuestions();
+            } else {
+                if (gameState.value === 'training') {
+                    endTraining();
+                } else {
+                    if (currentConfigIndex.value === 2) {
+                        submitResult();
+                    } else {
+                        currentConfigIndex.value++;
+                        initConfig();
+                        drawQuestions();
+                    }
+                }
+            }
+        }
+
+        onMounted(() => {
+            refreshCount.value = parseInt(localStorage.getItem('refreshCountShapeRecognition') || '0');
+            refreshCount.value++;
+            localStorage.setItem('refreshCountShapeRecognition', refreshCount.value.toString());
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
+            const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
+            if (configShapeRecognition.trainingCompleted) {
+                showTrainingModal.value = false;
+                showTestModal.value = true;
+            }
+            nextTick(() => {
+                initConfig();
             });
         });
 
         onUnmounted(() => {
             clearInterval(questionCountDownInterval.value);
-            // Remove the beforeunload event listener
             window.removeEventListener('beforeunload', handleBeforeUnload);
         })
 
         watch(buttonCanvases, () => {
-            drawQuestions();
+            if (gameState.value !== 'idle') {
+                drawQuestions();
+            }
         }, { deep: true });
 
         return {
@@ -720,7 +822,13 @@ export default {
             config,
             questionCountdown,
             loading,
-            currentQuestion
+            currentQuestion,
+            gameState,
+            showTrainingModal,
+            showTestModal,
+            startTraining,
+            startTest,
+            currentConfig
         };
     }
 }
