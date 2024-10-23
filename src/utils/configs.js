@@ -6,6 +6,7 @@ export const getConfigs = (testUrl) => {
         return {
             testId: test.id,
             configs: test.configs,
+            trainingCompleted: test.trainingCompleted ?? false,
             trainingConfigs: test.training_configs,
             moduleId: scheduleData.moduleId,
             sessionId: scheduleData.sessionId,
