@@ -3,7 +3,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Spatial Orientation?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal('training')">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 
@@ -11,7 +11,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Spatial Orientation?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal('exam')">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 
@@ -22,7 +22,7 @@
     </div>
 
     <div class="timer-container">
-      Question: {{ config.current_question }} / {{ config.number_of_questions }}
+      Question: {{ config.current_question }} / {{ totalQuestion }}
     </div>
 
     <div class="line-container">
@@ -57,8 +57,8 @@
 </template>
 
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from '@/utils/configs';
 
 export default {
   name: 'SpatialOrientation',
@@ -70,6 +70,7 @@ export default {
       isConfigLoaded: false,
       isLoading: false,
       isShowAnswerBox: false,
+      isTrainingCompleted: false,
       width: 480,
       height: 480,
       rightTurns: 0,
@@ -86,26 +87,15 @@ export default {
       timeoutIdRemoveInterval: null,
       tailRemoveInterval: null,
       countdownInterval: null,
-      configs: [],
-      indexTrainingConfig: 0,
       indexConfig: 0,
-      trainingConfigs: [],
-      config: {
-        crash: null,
-        number_of_questions: null,
-        current_question: 1,
-        full_image: null,
-        left_turn: null,
-        right_turn: null,
-        speed: null,
-        speed_increasing: null,
-        max_turns: 10,
-      },
+      config: {},
+      configs: [],
       moduleId: null,
       sessionId: null,
       userId: null,
       testId: null,
       totalQuestion: 0,
+      totalQuestionConfig: 1,
       correctAnswer: 0,
       responseQuestion: 0,
       responseTime: 0,
@@ -120,8 +110,7 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      questionDuration: 1000,
-      isTraining: true,
+      questionDuration: 2000,
     };
   },
   mounted() {
@@ -136,17 +125,21 @@ export default {
     this.initConfig();
   },
   methods: {
-    closeModal(mode) {
-      if (mode === 'training') {
-        this.isTraining = true;
-        this.config = this.trainingConfigs[this.indexTrainingConfig];
-      } else if (mode === 'exam') {
-        this.isTraining = false;
-        this.config = this.configs[this.indexConfig];
-      }
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.setConfig(this.configs[0])
 
-      this.setConfig(this.config);
-      localStorage.setItem("index-config-spatial-orientation", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }));
+        this.config.current_question = 1
+        this.totalQuestion = this.configs[0].number_of_question
+      } else {
+        this.setConfig(this.configs[this.indexConfig]);
+
+        this.config.current_question = 1
+        this.totalQuestion = 0
+        for (const i in this.configs) {
+          this.totalQuestion += parseInt(this.configs[i].number_of_question)
+        }
+      }
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -165,22 +158,21 @@ export default {
       clearTimeout(this.timeoutIdRemoveInterval);
       this.timeoutIdRemoveInterval = null;
 
-      if (this.isTraining) {
+      if (!this.isTrainingCompleted) {
+        this.isTrainingCompleted = true;
+        completeTrainingTestAndUpdateLocalStorage("Spatial Orientation");
+
         this.startExam();
       } else {
         this.calculatedResult();
       }
     },
     startExam() {
-      this.isModalVisible = true;
-      this.indexConfig = 0;
-      this.config = this.configs[this.indexConfig];
-      // reset progress
       this.correctAnswer = 0;
       this.responseDurations = [];
       this.userInputs = [];
-      
-      this.setConfig(this.config);
+
+      this.isModalVisible = true;
     },
     exit() {
       if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
@@ -193,7 +185,7 @@ export default {
         this.$router.push('/module');
         return;
       }
-      console.log(configData, 'configData');
+
       this.configs = configData.configs;
       this.trainingConfigs = configData.trainingConfigs;
       this.moduleId = configData.moduleId;
@@ -201,58 +193,33 @@ export default {
       this.userId = configData.userId;
       this.testId = configData.testId;
 
-      const savedIndices = getStoredIndices('spatial-orientation');
-      if (savedIndices) {
-        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
-        this.indexConfig = savedIndices.indexConfig;
-      }
+      //For Training
+      this.isTrainingCompleted = configData.trainingCompleted;
 
-      if (this.indexTrainingConfig < this.trainingConfigs.length) {
+      if (!this.isTrainingCompleted) {
         this.isModalTrainingVisible = true;
       } else {
         this.isModalVisible = true;
       }
-      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
     },
     setConfig(config) {
-      const {
-        crash,
-        difficulty_level,
-        full_image,
-        id,
-        left_turn,
-        number_of_question,
-        right_turn,
-        speed,
-        speed_increasing,
-        subtask,
-        max_turns
-      } = config
-      console.log(max_turns, 'set config');
-      this.$nextTick(() => {
-        this.config.difficultyLevel = difficulty_level
-        this.config.speed = speed * 3000
-        this.config.subtask = subtask
-        this.config.testId = id
-        this.config = {
-          full_image: full_image,
-          left_turn: left_turn,
-          right_turn: right_turn,
-          speed: speed * 3000,
-          speed_increasing: speed_increasing,
-          max_turns: 15,
-          crash: crash,
-          number_of_questions: number_of_question,
-          current_question: 0
-        }
+      this.config.difficultyLevel = config.difficulty_level
+      this.config.full_image = config.full_image
+      this.config.left_turn = config.left_turn
+      this.config.right_turn = config.right_turn
+      this.config.speed_increasing = config.speed_increasing
+      this.config.speed = config.speed * 3000
+      this.config.max_turns = 15
+      this.config.crash = config.crash
+      this.config.number_of_question = config.number_of_question
 
-        this.isConfigLoaded = true;
-      });
+      this.config.subtask = config.subtask
+      this.config.testId = config.id
+
+      this.isConfigLoaded = true;
     },
     calculatedResult() {
-      this.result.total_question = this.configs.reduce((total, obj) => {
-        return total + parseInt(obj.number_of_question);
-      }, 0);
+      this.result.total_question = this.totalQuestion;
       this.result.correct_answer = this.correctAnswer;
 
       const resultTimeResponded = this.averageResponseTime()
@@ -300,7 +267,6 @@ export default {
 
         removeTestByNameAndUpdateLocalStorage('Spatial Orientation');
         localStorage.removeItem('reloadCountSpatialOrientation');
-        localStorage.removeItem('index-config-spatial-orientation')
         this.$router.push('/module');
       }
     },
@@ -317,6 +283,7 @@ export default {
           responseTime: responseTime,
           timestamp: Date.now(),
         });
+
         this.responseDurations.push(responseTime);
       }
 
@@ -328,15 +295,27 @@ export default {
       clearInterval(this.drawLineinterval);
       clearTimeout(this.timeoutIdRemoveInterval);
 
-      this.config.current_question++;
-
-      if (this.config.current_question > this.config.number_of_questions) {
+      if (this.config.current_question >= this.totalQuestion) {
         this.endGame();
       } else {
+        if (this.isTrainingCompleted) {
+            this.setConfig(this.configs[this.indexConfig])
+          }
         setTimeout(() => {
           this.generateCoordinat();
           this.selectedAnswer = null;
         }, this.questionDuration - (Date.now() - this.questionStartTime));
+      }
+
+      this.config.current_question++
+      this.totalQuestionConfig++
+
+      if (
+        this.isTrainingCompleted &&
+        this.totalQuestionConfig >= parseInt(this.config.number_of_question) + 1
+      ) {
+        this.totalQuestionConfig = 1
+        this.indexConfig++
       }
     },
     async generateLines() {
@@ -425,7 +404,6 @@ export default {
 
       return limitedLines;
     },
-
     async drawLineFull() {
       const canvas = this.$refs.lineCanvas;
       if (!canvas) return;
@@ -741,183 +719,183 @@ export default {
 </script>
 
 <style scoped>
-.main-view {
-  justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
-  margin: 60px auto;
-}
-
-.modal-overlay {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  max-width: 90%;
-  max-height: 90%;
-  overflow-y: auto;
-}
-
-.modal-content button {
-  background-color: #6200ee;
-  color: white;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-}
-
-.modal-content button:hover {
-  background-color: #5e37a6;
-}
-
-.timer-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #0349D0;
-  padding: 1.5rem 5rem;
-  color: #ffffff;
-  font-weight: bold;
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
-}
-
-.loading-container {
-  /* Add your loading indicator styles here */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  /* Black background with 80% opacity */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  /* Ensure it is above other content */
-}
-
-.spinner {
-  border: 8px solid rgba(255, 255, 255, 0.3);
-  /* Light border */
-  border-top: 8px solid #ffffff;
-  /* White border for the spinning part */
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  .main-view {
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 60px auto;
   }
 
-  100% {
-    transform: rotate(360deg);
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
   }
-}
 
-.text {
-  color: #ffffff;
-  margin-top: 20px;
-  font-size: 1.2em;
-}
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
 
-.center {
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
-}
+  .modal-content button {
+    background-color: #6200ee;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
 
-.line-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+  .modal-content button:hover {
+    background-color: #5e37a6;
+  }
 
-.line-turns {
-  padding: 10px;
-  position: relative;
-  margin-bottom: 10px;
-  margin-top: 10px;
-}
+  .timer-container {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #0349D0;
+    padding: 1.5rem 5rem;
+    color: #ffffff;
+    font-weight: bold;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
 
-canvas {
-  border: 1px solid #000;
-  background-color: white;
-}
+  .loading-container {
+    /* Add your loading indicator styles here */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    /* Black background with 80% opacity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* Ensure it is above other content */
+  }
 
-.question {
-  padding: 30px;
-  font-size: 1em;
-  font-weight: bold;
-}
+  .spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    /* Light border */
+    border-top: 8px solid #ffffff;
+    /* White border for the spinning part */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
 
-.answer-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
 
-.buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-gap: 10px;
-}
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 
-.digit-number {
-  padding: 15px;
-  font-size: 18px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #505250;
-  color: white;
-}
+  .text {
+    color: #ffffff;
+    margin-top: 20px;
+    font-size: 1.2em;
+  }
 
-.next {
-  background-color: #0349D0;
-}
+  .center {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+  }
 
-.digit-number {
-  padding: 15px;
-  font-size: 18px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #505250;
-  color: white;
-  transition: background-color 0.3s ease;
-}
+  .line-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-.digit-number.selected {
-  background-color: #4CAF50;
-  /* Green color for selected button */
-}
+  .line-turns {
+    padding: 10px;
+    position: relative;
+    margin-bottom: 10px;
+    margin-top: 10px;
+  }
 
-.digit-number.next {
-  background-color: #0349D0;
-}
+  canvas {
+    border: 1px solid #000;
+    background-color: white;
+  }
 
-.digit-number.next:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
+  .question {
+    padding: 30px;
+    font-size: 1em;
+    font-weight: bold;
+  }
+
+  .answer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 10px;
+  }
+
+  .digit-number {
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #505250;
+    color: white;
+  }
+
+  .next {
+    background-color: #0349D0;
+  }
+
+  .digit-number {
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #505250;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+
+  .digit-number.selected {
+    background-color: #4CAF50;
+    /* Green color for selected button */
+  }
+
+  .digit-number.next {
+    background-color: #0349D0;
+  }
+
+  .digit-number.next:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
 </style>
