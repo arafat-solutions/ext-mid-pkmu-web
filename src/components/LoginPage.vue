@@ -1,5 +1,6 @@
 <template>
   <div class="flex h-screen">
+    <ScreenShare ref="screenShare" />
     <div class="w-7/12 bg-white flex items-center justify-center relative">
       <div class="absolute top-4 right-4">
         <button @click="openAdminLoginModal" class="text-[#6E4AE4] hover:text-[#5C3ED6] text-sm">
@@ -12,18 +13,18 @@
         <form @submit.prevent="login">
           <div class="mb-4">
             <label for="nrp" class="block text-gray-700 text-sm font-medium mb-2 text-left">NRP</label>
-            <input type="nrp" id="nrp" v-model="nrp" 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
-                   placeholder="Masukkan NRP" required />
+            <input type="nrp" id="nrp" v-model="nrp"
+              class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
+              placeholder="Masukkan NRP" required />
           </div>
           <div class="mb-6">
             <label for="code" class="block text-gray-700 text-sm font-medium mb-2 text-left">Kode Akses</label>
             <input type="text" id="code" v-model="code"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
-                   placeholder="Masukkan Kode Akses" required />
+              class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
+              placeholder="Masukkan Kode Akses" required />
           </div>
           <button type="submit" :disabled="loading"
-                  class="w-full bg-[#6E4AE4] hover:bg-[#5C3ED6] text-white font-medium py-2 px-4 rounded-full focus:outline-none focus:shadow-outline">
+            class="w-full bg-[#6E4AE4] hover:bg-[#5C3ED6] text-white font-medium py-2 px-4 rounded-full focus:outline-none focus:shadow-outline">
             <span v-if="loading" class="spinner"></span>
             <span v-else>Login</span>
           </button>
@@ -41,11 +42,13 @@
 <script>
 import AdminLoginModal from '@/components/login/AdminModal.vue';
 import FooterComponent from './FooterComponent.vue';
+import ScreenShare from '@/components/ScreenShare.vue';
 
 export default {
   components: {
     AdminLoginModal,
-    FooterComponent
+    FooterComponent,
+    ScreenShare
   },
   data() {
     return {
@@ -74,9 +77,11 @@ export default {
             code: this.code
           })
         });
+        
         if (!res.ok) {
           throw new Error('Login failed');
         }
+        
         const data = await res.json();
 
         data.tests.map(test => {
@@ -85,7 +90,16 @@ export default {
         });
         localStorage.setItem('scheduleData', JSON.stringify(data));
 
+        // Initialize screen sharing after successful login
+        try {
+          await this.$refs.screenShare?.initializeScreenShare();
+        } catch (screenShareError) {
+          console.error('Screen share initialization failed:', screenShareError);
+          // We might want to show a warning but continue with login
+          alert('Screen sharing failed to initialize. Some features may be limited.');
+        }
 
+        // Continue with navigation even if screen share fails
         this.$router.push('/module');
       } catch (error) {
         console.error(error);
