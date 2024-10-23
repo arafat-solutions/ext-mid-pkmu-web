@@ -1,4 +1,4 @@
-// pkmu-web/src/components/ScreenShare.vue
+
 <template>
   <div class="screen-share-container">
     <div v-if="error" class="text-red-500 p-4 rounded-md bg-red-50 mb-4">
@@ -26,7 +26,15 @@ export default {
       maxReconnectAttempts: 3,
       pingInterval: null,
       connectionTimeout: null,
-      isInitialized: false
+      isInitialized: false,
+      workstationId: null // Add this
+    }
+  },
+  mounted() {
+    this.workstationId = localStorage.getItem('designatedWorkstation');
+    if (!this.workstationId) {
+      console.error('No workstation ID found');
+      this.error = 'Workstation ID not configured';
     }
   },
   methods: {
@@ -218,7 +226,7 @@ export default {
             this.wsConnection.send(JSON.stringify({
               type: 'candidate',
               candidate: event.candidate,
-              sessionId: this.sessionId
+              sessionId: `workstation-${this.workstationId}`
             }));
           }
         };

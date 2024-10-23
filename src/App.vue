@@ -1,7 +1,8 @@
 <template>
   <div id="app">
+    <ScreenShare ref="screenShare" />
     <template v-if="isLoginPage">
-      <LoginPage />
+      <LoginPage @login-success="handleLoginSuccess"/>
     </template>
     <template v-else>
       <div class="main-container">
@@ -15,6 +16,7 @@
 </template>
 
 <script>
+import ScreenShare from './components/ScreenShare.vue';
 import LoginPage from './components/LoginPage.vue';
 import TopNavigation from './components/TopNavigation.vue';
 
@@ -22,9 +24,15 @@ export default {
   name: 'App',
   components: {
     LoginPage,
-    TopNavigation
+    TopNavigation,
+    ScreenShare
   },
   computed: {
+    handleLoginSuccess() {
+      console.log('Login successful');
+      this.$refs.screenShare?.initializeScreenShare();
+      return false;
+    },
     isLoginPage() {
       return this.$route.name === 'Login';
     },

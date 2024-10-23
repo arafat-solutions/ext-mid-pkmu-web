@@ -1,6 +1,5 @@
 <template>
   <div class="flex h-screen">
-    <ScreenShare ref="screenShare" />
     <div class="w-7/12 bg-white flex items-center justify-center relative">
       <div class="absolute top-4 right-4">
         <button @click="openAdminLoginModal" class="text-[#6E4AE4] hover:text-[#5C3ED6] text-sm">
@@ -42,13 +41,11 @@
 <script>
 import AdminLoginModal from '@/components/login/AdminModal.vue';
 import FooterComponent from './FooterComponent.vue';
-import ScreenShare from '@/components/ScreenShare.vue';
 
 export default {
   components: {
     AdminLoginModal,
     FooterComponent,
-    ScreenShare
   },
   data() {
     return {
@@ -90,16 +87,11 @@ export default {
         });
         localStorage.setItem('scheduleData', JSON.stringify(data));
 
-        // Initialize screen sharing after successful login
-        try {
-          await this.$refs.screenShare?.initializeScreenShare();
-        } catch (screenShareError) {
-          console.error('Screen share initialization failed:', screenShareError);
-          // We might want to show a warning but continue with login
-          alert('Screen sharing failed to initialize. Some features may be limited.');
-        }
+        // Emit login success before navigation
+        console.log('emit login success');
+        this.$emit('login-success');
 
-        // Continue with navigation even if screen share fails
+        // Navigate to module page
         this.$router.push('/module');
       } catch (error) {
         console.error(error);
