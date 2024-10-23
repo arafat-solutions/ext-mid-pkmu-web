@@ -224,9 +224,6 @@ export default {
         this.isModalVisible = true;
       }
     },
-    setDuration(config){
-      this.config.duration = config.duration * 60
-    },
     setConfig(config) {
       this.config.broadcastLength = config.broadcast_length
       this.config.difficultyLevel = config.difficulty_level
