@@ -3,7 +3,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Running Memory Span?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 
@@ -11,7 +11,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Running Memory Span?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 
@@ -59,56 +59,53 @@
 </template>
 
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from '@/utils/configs';
 
 export default {
   name: 'RunningMemorySpan',
   data() {
     return {
-      isRecordResult: true,
+      isNextLevel: false,
       isModalTrainingVisible: false,
       isModalVisible: false,
       isShowQuestion: false,
       isConfigLoaded: false,
       isLoading: false,
+      isTrainingCompleted: false,
       countdownInterval: null,
       countdownNextQuestion: null,
       expression: '',
       audios: [],
       utterances: [],
       answer: [],
-
-      //For Config
       config: {},
       configs: [],
-      trainingConfigs: [],
-      indexConfig: 0,
-      indexTrainingConfig: 0,
       moduleId: '',
       sessionId: '',
       userId: '',
       testId: '',
-
+      indexConfig: 0,
+      durationTest: 0,
       totalQuestion: 0,
       correctAnswer: 0,
       responseQuestion: 0,
       responseTime: 0,
       responseDurations: [],
+      userInputs: [],
       result: {
         total_question: 0,
         correct_answer: 0,
         avg_response_time: 0,
         response_times: 0,
         graph_data: [],
-      },
-      userInputs: []
+      }
     };
   },
   computed: {
     formattedTime() {
-      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
-      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      const minutes = Math.floor(this.durationTest / 60).toString().padStart(2, '0');
+      const seconds = (this.durationTest % 60).toString().padStart(2, '0');
       return `${minutes}:${seconds}`;
     },
   },
@@ -124,13 +121,21 @@ export default {
     this.initConfig();
   },
   methods: {
-    closeModal() {
-      const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
-        ? this.trainingConfigs[this.indexTrainingConfig]
-        : this.configs[this.indexConfig]
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.setConfig(this.configs[0])
 
-      this.setConfig(config)
-      localStorage.setItem("index-config-running-memory-span", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
+        this.durationTest = 1 * 60
+      } else {
+        this.setConfig(this.configs[this.indexConfig])
+
+        this.durationTest = 0
+        for (const i in this.configs) {
+          this.durationTest += this.configs[i].duration * 60
+        }
+
+        this.config.duration = this.configs[this.indexConfig].duration * 60
+      }
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -156,42 +161,44 @@ export default {
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
-        if (this.config.duration > 0) {
-          this.config.duration--;
+        if (this.durationTest > 0) {
+          this.durationTest--;
         } else {
           this.cleanUp();
-          if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
-            console.log('training')
 
-            this.indexTrainingConfig++
-            this.isModalTrainingVisible = true
-          } else if (this.indexConfig <= (this.configs.length - 1)) {
-            // Initiate Record Result
-            if (this.indexConfig === 0 && this.isRecordResult) {
-              console.log('kesini')
-              this.isRecordResult = false;
+          //For Training
+          if (!this.isTrainingCompleted) {
+            this.isTrainingCompleted = true;
+            completeTrainingTestAndUpdateLocalStorage("Running Memory Span Test");
 
-              this.totalQuestion = 0;
-              this.correctAnswer = 0;
-              this.responseDurations = []
-              this.userInputs = [];
-            }
-
-            console.log('test')
-
-            this.indexConfig++
+            //Start Exam After Training
             this.isModalVisible = true
+            this.totalQuestion = 0;
+            this.correctAnswer = 0;
+            this.responseDurations = []
+            this.userInputs = [];
           } else {
             setTimeout(() => {
               this.calculatedResult();
             }, 1000);
           }
+        }
 
-          // Update localStorage with new indices
-          localStorage.setItem("index-config-running-memory-span", JSON.stringify({
-            indexTrainingConfig: this.indexTrainingConfig,
-            indexConfig: this.indexConfig
-          }))
+        //Check timer for next level exam
+        if (this.isTrainingCompleted) {
+          if (this.config.duration >= 0) {
+            this.config.duration--
+
+            if (this.config.duration === 0) {
+              this.isNextLevel = true
+            }
+          } else {
+            if (this.isNextLevel) {
+              this.isNextLevel = false
+              this.indexConfig++
+              this.config.duration = this.configs[this.indexConfig].duration * 60
+            }
+          }
         }
       }, 1000);
     },
@@ -203,40 +210,29 @@ export default {
       }
 
       this.configs = configData.configs;
-      this.trainingConfigs = configData.trainingConfigs;
       this.moduleId = configData.moduleId;
       this.sessionId = configData.sessionId;
       this.userId = configData.userId;
       this.testId = configData.testId;
 
-      const savedIndices = getStoredIndices('running-memory-span');
-      if (savedIndices) {
-        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
-        this.indexConfig = savedIndices.indexConfig;
-      }
+      //For Training
+      this.isTrainingCompleted = configData.trainingCompleted;
 
-      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+      if (!this.isTrainingCompleted) {
         this.isModalTrainingVisible = true;
-      } else{
+      } else {
         this.isModalVisible = true;
       }
-
-      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
     },
     setConfig(config) {
-      const { broadcast_length, difficulty_level, include_zero, speed, id, subtask, duration } = config
+      this.config.broadcastLength = config.broadcast_length
+      this.config.difficultyLevel = config.difficulty_level
+      this.config.includeZero = config.include_zero
+      this.config.speed = config.speed
+      this.config.subtask = config.subtask
+      this.config.testId = config.id
 
-      this.$nextTick(() => {
-          this.config.broadcastLength = broadcast_length
-          this.config.difficultyLevel = difficulty_level
-          this.config.includeZero = include_zero
-          this.config.speed = speed
-          this.config.subtask = subtask
-          this.config.duration = duration * 60
-          this.config.testId = id
-
-          this.isConfigLoaded = true;
-      });
+      this.isConfigLoaded = true;
     },
     calculatedResult() {
       this.result.total_question = this.totalQuestion;
@@ -287,7 +283,6 @@ export default {
 
         removeTestByNameAndUpdateLocalStorage('Running Memory Span Test');
         localStorage.removeItem('reloadCountRunningMemorySpan');
-        localStorage.removeItem('index-config-running-memory-span')
         this.$router.push('/module');
       }
     },
@@ -305,6 +300,8 @@ export default {
       }
     },
     generateAudio() {
+      this.setConfig(this.configs[this.indexConfig])
+
       this.audios = [];
       this.utterances = [];
       this.responseQuestion = 0;
@@ -321,16 +318,6 @@ export default {
 
         this.audios.push(number);
       }
-
-      // Check Sequence Pattern
-      // if (this.config.sequence_pattern === 'up') {
-      //   this.audios = [...this.audios].sort((a, b) => a - b);
-      // }
-
-      // Check Sequence Pattern
-      // if (this.config.sequence_pattern === 'down') {
-      //   this.audios = [...this.audios].sort((a, b) =>b - a);
-      // }
 
       if (this.audios.length > 0) {
         this.utterances = this.audios.map(audio => {
