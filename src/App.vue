@@ -28,17 +28,20 @@ export default {
     ScreenShare
   },
   computed: {
-    handleLoginSuccess() {
-      console.log('Login successful');
-      this.$refs.screenShare?.initializeScreenShare();
-      return false;
-    },
+    
     isLoginPage() {
       return this.$route.name === 'Login';
     },
     showTopNavigation() {
       return (this.$route.name !== 'Login' && this.$route.name !== 'Config') && !this.$route.path.includes('test');
     }
+  },
+  methods: {
+    handleLoginSuccess() {
+      console.log('Login successful');
+      this.$refs.screenShare?.initializeScreenShare();
+      return false;
+    },
   }
 };
 </script>
