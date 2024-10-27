@@ -1,11 +1,24 @@
 <template>
-  <div :class="isTrial ? 'timer-container-trial' : 'timer-container' " v-if="!isTimesUp">
-    Task: {{ currentTask }} / {{ numberOfTask }}
-    <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
-    <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
-    <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Symbol Addition?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="startTest()">Ya</button>
+    </div>
   </div>
-  <div v-if="!isTimesUp" v-show="!isPause">
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Symbol Addition?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="startTest()">Ya</button>
+    </div>
+  </div>
+
+  <div class='timer-container' v-if="!isTimesUp">
+    Task: {{ currentTask }} / {{ numberOfTask }}
+  </div>
+  <div v-if="!isTimesUp">
     <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
@@ -47,22 +60,29 @@
   </div>
 </template>
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
 
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from '@/utils/configs';
 export default {
   data() {
     return {
-      testName: 'Symbol Addition',
+      isModalTrainingVisible: false,
+      isModalVisible: false,
+      isTrainingCompleted: false,
+      configs: [],
+      indexConfig: 0,
+
+
       currentTask: 1,
       numberOfTask: null,
+      numberOfTaskInConfig: null,
       selectedSymbols: null,
       resetQueryBarPerRow: null,
       varianceSymbols: null,
-      isPause: false,
       isLoading: false,
-      isTrial: this.$route.query.isTrial ?? false,
       isConfigLoaded: false,
       radioValues: [],
+      start: 0,
       totalRow: 8,
       choicesLength: 8,
       durationAnswer: 20, // in seconds
@@ -87,7 +107,7 @@ export default {
       localStorage.setItem('reloadCountSymbolAddition', reloadCount.toString());
     });
 
-    this.loadConfig();
+    this.initConfig();
   },
   computed: {
     isTimesUp() {
@@ -119,41 +139,116 @@ export default {
     },
     isTimesUp(value) {
       if (value) {
-        this.submitResult();
+        if (!this.isTrainingCompleted) {
+          this.isTrainingCompleted = true;
+          completeTrainingTestAndUpdateLocalStorage("Symbol Addition");
+
+          //Start Exam After Training
+          this.isModalVisible = true
+          this.result.correct = 0
+          this.result.wrong = 0
+        } else {
+          this.submitResult()
+        }
       }
     }
   },
   methods: {
-    loadConfig() {
-      const data = localStorage.getItem('scheduleData');
-      if (data) {
-        try {
-          const scheduleData = JSON.parse(data);
-          // @TODO: Config Flow
-          const config = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
-          this.numberOfTask = config.numberOfQuestion;
-          this.selectedSymbols = config.symbols;
-          this.resetQueryBarPerRow = config.resetQueryBar;
-          this.varianceSymbols = this.getVariation(config.variation);
-          this.isConfigLoaded = true;
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
-        } finally {
-          this.initiateRadioValues();
-          this.generateQueryBar();
-          this.generateQuestion();
-          this.startCountdown();
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.numberOfTask = this.configs[0].numberOfQuestion;
+      } else {
+        this.currentTask = 1
+        this.numberOfTask = 0
+        for (const i in this.configs) {
+          this.numberOfTask += parseInt(this.configs[i].numberOfQuestion)
         }
       }
-      console.warn('No schedule data found in localStorage.');
+
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
+
+      setTimeout(() => {
+        this.initiateRadioValues();
+        this.startExam();
+      }, 500);
+
+      this.startCountdown();
+    },
+    startExam() {
+      if (!this.isTrainingCompleted) {
+        this.setConfig(this.configs[0])
+        this.generateQueryBar();
+        this.generateQuestion();
+      } else {
+        for (var i in this.configs) {
+          this.setConfig(this.configs[i])
+          this.generateQueryBar();
+          this.generateQuestion();
+        }
+      }
+    },
+    exit() {
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
+    },
+    initConfig() {
+      const configData = getConfigs('symbol-addition-test');
+      if (!configData) {
+        this.$router.push('/module');
+        return;
+      }
+
+      this.configs = configData.configs;
+
+      //For Training
+      this.isTrainingCompleted = configData.trainingCompleted;
+
+      if (!this.isTrainingCompleted) {
+        this.isModalTrainingVisible = true;
+      } else {
+        this.isModalVisible = true;
+      }
+    },
+    setConfig(config) {
+      this.selectedSymbols = config.symbols;
+      this.resetQueryBarPerRow = config.resetQueryBar;
+      this.varianceSymbols = this.getVariation(config.variation);
+      this.numberOfTaskInConfig = config.numberOfQuestion
+
+      this.isConfigLoaded = true;
+    },
+    async startCountdown() {
+      if (this.currentRowDisabled || this.isTimesUp) {
+        return;
+      }
+
+      if (this.timeLeftAnswer > 0) {
+        this.timeLeftAnswer--;
+      } else {
+        this.checkRowAnswers();
+        this.currentRowDisabled = true;
+        await this.delay(this.moveNextTaskDuration * 1000);
+        this.currentRowDisabled = false;
+        this.currentWrong = null;
+        this.currentTask++;
+        this.timeLeftAnswer = this.durationAnswer;
+      }
+      await this.delay(1000);
+
+      this.startCountdown();
+    },
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
     initiateRadioValues() {
       this.radioValues = Array.from({ length: this.totalRow }, () => Array(this.choicesLength).fill(null));
     },
     generateQueryBar() {
-      let totalQueryBar = this.numberOfTask;
+      let totalQueryBar = this.numberOfTaskInConfig;
       if (!this.resetQueryBarPerRow) {
-        totalQueryBar = Math.ceil(this.numberOfTask / this.totalRow);
+        totalQueryBar = Math.ceil(this.numberOfTaskInConfig / this.totalRow);
       }
       const randomSymbols = this.getRandomSymbols();
 
@@ -201,23 +296,25 @@ export default {
       return shuffledArray.slice(0, this.varianceSymbols);
     },
     generateQuestion() {
-      for (let i = 0; i < this.numberOfTask; i++) {
+      for (let i = 0; i < this.numberOfTaskInConfig; i++) {
         // Initialize each row as an empty array
-        this.questions[i] = [];
+        this.questions[this.start] = [];
         const symbolsLength = this.currentQueryBar.length;
 
         for (let j = 0; j < this.totalRow; j++) {
           // Add a random symbol
           const randomSymbolIndex = Math.floor(Math.random() * symbolsLength);
-          this.questions[i].push(this.currentQueryBar[randomSymbolIndex]);
+          this.questions[this.start].push(this.currentQueryBar[randomSymbolIndex]);
 
           // Add a random number
-          this.questions[i].push(this.getRandomNumberQuestion());
+          this.questions[this.start].push(this.getRandomNumberQuestion());
         }
 
         // Add the final random symbol
         const finalRandomSymbolIndex = Math.floor(Math.random() * symbolsLength);
-        this.questions[i].push(this.currentQueryBar[finalRandomSymbolIndex]);
+        this.questions[this.start].push(this.currentQueryBar[finalRandomSymbolIndex]);
+
+        this.start++;
       }
 
       this.generateAnswers();
@@ -256,48 +353,15 @@ export default {
     getRandomNumberQuestion() {
         return Math.floor(Math.random() * 16) + 2;
     },
-    async startCountdown() {
-      if (this.isPause || this.currentRowDisabled || this.isTimesUp) {
-        return;
-      }
-
-      if (this.timeLeftAnswer > 0) {
-        this.timeLeftAnswer--;
-      } else {
-        this.checkRowAnswers();
-        this.currentRowDisabled = true;
-        await this.delay(this.moveNextTaskDuration * 1000);
-        this.currentRowDisabled = false;
-        this.currentWrong = null;
-        this.currentTask++;
-        this.timeLeftAnswer = this.durationAnswer;
-      }
-      await this.delay(1000);
-      this.startCountdown();
-    },
-    exit() {
-      this.$router.push('module');
-    },
-    pause() {
-      this.isPause = true;
-    },
-    startAgain() {
-      this.isPause = false;
-      this.startCountdown();
-    },
-    delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === this.testName);
       const totalQuestion = this.numberOfTask * this.choicesLength;
       const skippedQuestion = totalQuestion - this.result.correct - this.result.wrong;
       const payload = {
         'testSessionId': scheduleData.sessionId,
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
-        'batteryTestConfigId': test.config.id,
+        'batteryTestId': scheduleData.testId,
         'refreshCount': parseInt(localStorage.getItem('reloadCountSymbolAddition')),
         'result': {
           'correctAnswer': this.result.correct,
@@ -311,11 +375,6 @@ export default {
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
@@ -334,7 +393,7 @@ export default {
         console.error(error);
       } finally {
         this.isLoading = false;
-        removeTestByNameAndUpdateLocalStorage(this.testName);
+        removeTestByNameAndUpdateLocalStorage('Symbol Addition');
         localStorage.removeItem('reloadCountSymbolAddition');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
@@ -342,13 +401,41 @@ export default {
   }
 }
 </script>
-<style scoped>
-  .timer-container-trial {
-    @apply absolute right-0 top-0 bg-[#0349D0] p-3 text-white font-bold rounded-bl-[15px];
 
-    button {
-      @apply text-black font-bold py-2 rounded-md border-transparent min-w-[100px] cursor-pointer bg-gray-200;
-    }
+<style scoped>
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+
+  .modal-content button {
+    background-color: #6200ee;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background-color: #5e37a6;
   }
 
   .timer-container {
