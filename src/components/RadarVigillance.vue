@@ -3,7 +3,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Radar Vigillance?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 
@@ -11,7 +11,7 @@
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Radar Vigillance?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 
@@ -44,12 +44,16 @@
 </template>
 
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import { getConfigs, getStoredIndices, getCurrentConfig } from '@/utils/configs';
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from '@/utils/configs';
 
 export default {
   data() {
     return {
+      isNextLevel: false,
+      isTrainingCompleted: false,
+      durationTest: 0,
+
       isModalTrainingVisible: false,
       isModalVisible: false,
       isConfigLoaded: false,
@@ -73,9 +77,7 @@ export default {
       //For Config
       config: {},
       configs: [],
-      trainingConfigs: [],
       indexConfig: 0,
-      indexTrainingConfig: 0,
       moduleId: '',
       sessionId: '',
       userId: '',
@@ -108,8 +110,8 @@ export default {
   },
   computed: {
     formattedTime() {
-      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
-      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      const minutes = Math.floor(this.durationTest / 60).toString().padStart(2, '0');
+      const seconds = (this.durationTest % 60).toString().padStart(2, '0');
       return `${minutes}:${seconds}`;
     },
   },
@@ -130,13 +132,21 @@ export default {
     this.initConfig();
   },
   methods: {
-    closeModal() {
-      const config = this.indexTrainingConfig <= (this.trainingConfigs.length - 1)
-        ? this.trainingConfigs[this.indexTrainingConfig]
-        : this.configs[this.indexConfig]
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.setConfig(this.configs[0])
 
-      this.setConfig(config)
-      localStorage.setItem("index-config-radar-vigillance", JSON.stringify({ indexTrainingConfig: this.indexTrainingConfig, indexConfig: this.indexConfig }))
+        this.durationTest = 2 * 60
+      } else {
+        this.setConfig(this.configs[this.indexConfig])
+
+        this.durationTest = 0
+        for (const i in this.configs) {
+          this.durationTest += this.configs[i].duration * 60
+        }
+
+        this.config.duration = this.configs[this.indexConfig].duration * 60
+      }
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -158,43 +168,49 @@ export default {
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
-        if (this.config.duration > 0) {
-          //Remove Object when Duration Under 5 second
-          if (this.config.duration === 5) {
-            clearInterval(this.objectInterval);
-            this.objectInterval = null;
-            this.objects = []
-          }
-          this.config.duration--;
+
+        if (this.durationTest > 0) {
+          this.durationTest--;
         } else {
           this.cleanUp();
 
-          if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
-            this.indexTrainingConfig++
-            this.isModalTrainingVisible = true
-          } else if (this.indexConfig <= (this.configs.length - 1)) {
-            // Initiate Record Result
-            if (this.indexConfig === 0) {
-              this.totalAllShapeObject = 0;
-              this.detectedObject = 0;
-              this.userCorrectClickCount = 0;
-              this.falsePositives = 0;
-              this.userInputs = []
-            }
+          //For Training
+          if (!this.isTrainingCompleted) {
+            this.isTrainingCompleted = true;
+            completeTrainingTestAndUpdateLocalStorage("Radar Vigilance Test");
 
-            this.indexConfig++
+            //Start Exam After Training
             this.isModalVisible = true
+            this.totalAllShapeObject = 0;
+            this.detectedObject = 0;
+            this.userCorrectClickCount = 0;
+            this.falsePositives = 0;
+            this.userInputs = []
           } else {
             setTimeout(() => {
               this.calculatedResult();
             }, 1000);
           }
+        }
 
-          // Update localStorage with new indices
-          localStorage.setItem("index-config-radar-vigillance", JSON.stringify({
-            indexTrainingConfig: this.indexTrainingConfig,
-            indexConfig: this.indexConfig
-          }))
+        //Check timer for next level exam
+        if (this.isTrainingCompleted) {
+          if (this.config.duration >= 0) {
+            this.config.duration--
+
+            if (this.config.duration === 0) {
+              this.isNextLevel = true
+            }
+          } else {
+            if (this.isNextLevel) {
+              this.isNextLevel = false
+
+              console.log(this.indexConfig, 'indexConfig')
+
+              this.indexConfig++
+              this.config.duration = this.configs[this.indexConfig].duration * 60
+            }
+          }
         }
       }, 1000);
     },
@@ -212,38 +228,29 @@ export default {
       this.userId = configData.userId;
       this.testId = configData.testId;
 
-      const savedIndices = getStoredIndices('radar-vigillance');
-      if (savedIndices) {
-        this.indexTrainingConfig = savedIndices.indexTrainingConfig;
-        this.indexConfig = savedIndices.indexConfig;
-      }
+      //For Training
+      this.isTrainingCompleted = configData.trainingCompleted;
 
-      if (this.indexTrainingConfig < (this.trainingConfigs.length - 1)) {
+      if (!this.isTrainingCompleted) {
         this.isModalTrainingVisible = true;
-      } else{
+      } else {
         this.isModalVisible = true;
       }
-
-      this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
     },
     setConfig(config) {
-      const { density, difficulty_level, direction, duration, frequency, id, shapeSize, shapes, speed, subtask, targetShape  } = config
+      this.config.direction = config.direction
+      this.config.difficultyLevel = config.difficulty_level
+      this.config.shapeSize = config.shapeSize
+      this.config.frequency = config.frequency
+      this.config.shapes = this.setShapeConfig(config.shapes);
+      this.config.targetShape = config.targetShape;
+      this.config.speed = config.speed;
+      this.config.density = config.density;
 
-      this.$nextTick(() => {
-          this.config.duration = duration * 60;
-          this.config.difficultyLevel = difficulty_level
-          this.config.direction = direction;
-          this.config.shapeSize = shapeSize;
-          this.config.frequency = frequency;
-          this.config.shapes = this.setShapeConfig(shapes);
-          this.config.targetShape = targetShape;
-          this.config.speed = speed;
-          this.config.density = density;
-          this.config.subtask = subtask
-          this.config.testId = id
+      this.config.subtask = config.subtask
+      this.config.testId = config.id
 
-          this.isConfigLoaded = true;
-      });
+      this.isConfigLoaded = true;
     },
     calculatedResult() {
       this.result.total_all_shape_object = this.totalAllShapeObject;
@@ -382,7 +389,7 @@ export default {
           // Add to userInputs for graph data
           this.userInputs.push({
             type: 'missed',
-            responseTime: 1000, 
+            responseTime: 1000,
             timestamp: Date.now(),
             shapeType: obj.type
           });
