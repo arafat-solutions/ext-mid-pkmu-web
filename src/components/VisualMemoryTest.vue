@@ -954,7 +954,6 @@ export default {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    width: 100vw;
     position: relative;
 }
 
