@@ -18,7 +18,7 @@
 
   <div class="main-view" v-if="isConfigLoaded">
     <div class="timer-container">
-      Task: {{ currentTask }} / {{ numberOfTask }}
+      Task: {{ taskNow }} / {{ numberOfTask }}
     </div>
     <div class="checkbox-grid">
       <div v-for="(row, rowIndex) in totalRow" :key="rowIndex" class="checkbox-row">
@@ -69,15 +69,13 @@ export default {
       isModalVisible: false,
       isTrainingCompleted: false,
       configs: [],
-      indexConfig: 0,
-
       canContinue: false,
       page: 1,
       currentRowDisabled: false,
+      taskNow: 1,
       currentTask: 1,
-      numberOfTask: 3, //positive number
-      numberOfTaskInConfig: null,
-      totalRow: 3,
+      numberOfTask: 10, //positive number
+      totalRow: 10,
       stringSize: null, //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: null, //true or false
       excludeVowels: null, //true or false
@@ -140,7 +138,6 @@ export default {
       }
 
       this.configs = configData.configs;
-      this.setConfig(this.configs[0])
 
       //For Training
       this.isTrainingCompleted = configData.trainingCompleted;
@@ -150,9 +147,6 @@ export default {
       } else {
         this.isModalVisible = true;
       }
-
-      this.initiateCheckboxValues();
-      this.initiateWrongRows();
     },
     setConfig(config) {
       this.stringSize = config.string_size;
@@ -172,7 +166,6 @@ export default {
       const choices = this.generateChoices(randomString, this.stringSize, this.includeDigits, this.excludeVowels);
 
       this.problem = {randomString, choices};
-      console.log(this.problem, 'problem')
       // Read the question
       await this.readQuestion();
 
@@ -248,6 +241,7 @@ export default {
           const isAnswerCorrect = answers[column];
 
           if (isCorrectMatch === isAnswerCorrect) {
+            console.log('kesini yah')
             correct++;
           } else {
             wrong++;
@@ -331,6 +325,7 @@ export default {
             await this.delay(this.dashInterval);
           } else {
             await spellOut(char, this.charInterval); // Default interval between letters
+            await this.delay(this.charInterval / 2);
           }
         }
       })();
@@ -353,30 +348,28 @@ export default {
     },
     startTest() {
       if (!this.isTrainingCompleted) {
-        this.numberOfTask = this.configs[0].number_of_task ?? 3;
+        this.numberOfTask = this.configs[0].number_of_task ?? 10;
       } else {
         this.currentTask = 1
         this.numberOfTask = 0
         for (const i in this.configs) {
-          this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 3)
+          this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10)
         }
       }
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
 
-      if (!this.isTrainingCompleted) {
-        this.setConfig(this.configs[0])
+      this.setConfig(this.configs[this.page-1])
+      this.initiateCheckboxValues();
+      this.initiateWrongRows();
+
+      setTimeout(() => {
         this.generateProblem();
-      } else {
-        for (var i in this.configs) {
-          this.setConfig(this.configs[i])
-          this.generateProblem();
-        }
-      }
+      }, 1000);
     },
     continueTask() {
-      if (this.currentTask >= this.numberOfTask) {
+      if (this.taskNow >= this.numberOfTask) {
         if (!this.isTrainingCompleted) {
           this.isTrainingCompleted = true;
           completeTrainingTestAndUpdateLocalStorage("Acoustic Memory Test");
@@ -401,9 +394,12 @@ export default {
       this.wrong = 0;
       this.currentRowDisabled = false;
       this.currentTask++;
+      this.taskNow++;
 
       if (this.currentTask % this.totalRow === 1) {
+        this.currentTask = 1
         this.page++;
+        this.setConfig(this.configs[this.page-1])
         this.initiateCheckboxValues();
       }
       this.generateProblem();
@@ -445,7 +441,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage(this.testName);
+        removeTestByNameAndUpdateLocalStorage('Acoustic Memory Test');
         localStorage.removeItem('reloadCountAccousticMemory');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
