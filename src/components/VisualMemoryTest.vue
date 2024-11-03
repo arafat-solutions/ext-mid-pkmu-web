@@ -78,7 +78,8 @@ export default {
             },
             timerInterval: null,
             tesInterval: null,
-            refreshCount: 0
+            refreshCount: 0,
+            questionBank: [],
         };
     },
     async mounted() {
@@ -205,64 +206,91 @@ export default {
             ctx.textBaseline = "middle";
 
             this.innerConfig.forEach((item, i) => {
-                const pos = positions[i];
-                if (item.type === 'text' || item.type === 'number') {
-                    this.drawText({ ctx, text: item.text, x: pos.x, y: pos.y, bold: item.type === 'text' });
-                } else if (item.type === 'shape') {
-                    switch (item.shapeName) {
-                        case 'rectangle':
-                            this.drawRectangle({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'questionMark':
-                            this.drawQuestionMark({ ctx, x: pos.x, y: pos.y });
-                            break;
-                        case 'circle':
-                            this.drawCircle({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'triangle':
-                            this.drawTriangle({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'arrow':
-                            this.drawArrow({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'octagon':
-                            this.drawOctagon({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'star':
-                            this.drawStar({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'parallelogram':
-                            this.drawParallelogram({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'leftArrow':
-                            this.drawLeftArrow({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'hexagon':
-                            this.drawHexagon({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'chevronLeft':
-                            this.drawChevronLeft({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'plane':
-                            this.drawPlane({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'returnArrow':
-                            this.drawReturnArrow({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'heart':
-                            this.drawHeart({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 's':
-                            this.drawS({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 'l':
-                            this.drawL({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
-                        case 't':
-                            this.drawT({ ctx, shape: item, x: pos.x, y: pos.y });
-                            break;
+                let pos1
+                let pos2
+
+                Object.keys(item).forEach((val) => {
+                    if (val === 'number') {
+                        const toDraw = item[val]
+
+                        if (toDraw.position === "Top") {
+                            pos1 = positions[i]
+                        } else {
+                            pos1 = positions[i + 4]
+                        }
+
+                        if (toDraw.type === 'number') {
+                            this.drawText({ ctx, text: toDraw.text, x: pos1.x, y: pos1.y, bold: false });
+                        } else {
+                            this.drawQuestionMark({ ctx, x: pos1.x, y: pos1.y });
+                        }
+                    } else if (val === 'partner') {
+                        const toDraw = item[val]
+                        if (toDraw.position === "Top") {
+                            pos2 = positions[i]
+                        } else {
+                            pos2 = positions[i + 4]
+                        }
+
+                        if (toDraw.type === 'text') {
+                            this.drawText({ ctx, text: toDraw.text, x: pos2.x, y: pos2.y, bold: true });
+                        } else if (toDraw.type === 'shape') {
+                            switch (toDraw.shapeName) {
+                                case 'rectangle':
+                                    this.drawRectangle({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'questionMark':
+                                    this.drawQuestionMark({ ctx, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'circle':
+                                    this.drawCircle({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'triangle':
+                                    this.drawTriangle({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'arrow':
+                                    this.drawArrow({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'octagon':
+                                    this.drawOctagon({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'star':
+                                    this.drawStar({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'parallelogram':
+                                    this.drawParallelogram({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'leftArrow':
+                                    this.drawLeftArrow({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'hexagon':
+                                    this.drawHexagon({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'chevronLeft':
+                                    this.drawChevronLeft({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'plane':
+                                    this.drawPlane({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'returnArrow':
+                                    this.drawReturnArrow({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'heart':
+                                    this.drawHeart({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 's':
+                                    this.drawS({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 'l':
+                                    this.drawL({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                                case 't':
+                                    this.drawT({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
+                                    break;
+                            }
+                        }
                     }
-                }
+                })
             });
         },
         drawText({ ctx, text, x, y, bold = false }) {
@@ -554,17 +582,28 @@ export default {
             const inputWidth = 100;
             const verticalOffset = 40;
 
+            // Calculate all possible positions
             const positions = this.calculatePositions();
 
+            // Get positions for both question marks
+            const getQuestionMarkPosition = (index) => {
+                const questionConfig = this.innerConfig[this.questionMarkPositions[index]];
+                const positionIndex = this.questionMarkPositions[index];
+
+                // If number is in bottom position, add 4 to get to bottom row position
+                const actualPosition = questionConfig.number.position === 'Bottom' ?
+                    positionIndex + 4 :
+                    positionIndex;
+
+                return {
+                    top: positions[actualPosition].y + canvasTop + verticalOffset,
+                    left: positions[actualPosition].x + canvasLeft - inputWidth / 2
+                };
+            };
+
             return {
-                input1: {
-                    top: positions[this.questionMarkPositions[0]].y + canvasTop + verticalOffset,
-                    left: positions[this.questionMarkPositions[0]].x + canvasLeft - inputWidth / 2
-                },
-                input2: {
-                    top: positions[this.questionMarkPositions[1]].y + canvasTop + verticalOffset,
-                    left: positions[this.questionMarkPositions[1]].x + canvasLeft - inputWidth / 2
-                }
+                input1: getQuestionMarkPosition(0),
+                input2: getQuestionMarkPosition(1)
             };
         },
         drawInput({ input, inputType }) {
@@ -603,9 +642,9 @@ export default {
                     clearInterval(this.timerInterval);
 
                     while (this.questionMarkPositions.length < 2) {
-                        const randomIndex = Math.floor(Math.random() * 8);
-                        if (this.innerConfig[randomIndex].type === 'text' || this.innerConfig[randomIndex].type === 'number') {
-                            this.innerConfig[randomIndex] = { type: 'shape', shapeName: 'questionMark' }
+                        const randomIndex = Math.floor(Math.random() * 4);
+                        if (this.innerConfig[randomIndex].number.type === 'number') {
+                            this.innerConfig[randomIndex].number = { type: 'shape', shapeName: 'questionMark', position: this.innerConfig[randomIndex].number.position }
                             this.questionMarkPositions.push(randomIndex);
                         }
                     }
@@ -658,22 +697,14 @@ export default {
                         }
 
                         // check if answer is correct
-                        if (this.questions[this.questionMarkPositions[0]].type === 'number') {
-                            if (Number(input1.userInput) === this.questions[this.questionMarkPositions[0]].text) {
-                                resultQuestion1 = true
-                            }
-                        } else if (this.questions[this.questionMarkPositions[0]].type === 'text') {
-                            if (input1.userInput.toUpperCase() === this.questions[this.questionMarkPositions[0]].text) {
+                        if (this.questions[this.questionMarkPositions[0]].number.type === 'number') {
+                            if (Number(input1.userInput) === this.questions[this.questionMarkPositions[0]].number.text) {
                                 resultQuestion1 = true
                             }
                         }
 
-                        if (this.questions[this.questionMarkPositions[1]].type === 'number') {
-                            if (Number(input2.userInput) === this.questions[this.questionMarkPositions[1]].text) {
-                                resultQuestion2 = true
-                            }
-                        } else if (this.questions[this.questionMarkPositions[1]].type === 'text') {
-                            if (input2.userInput.toUpperCase() === this.questions[this.questionMarkPositions[1]].text) {
+                        if (this.questions[this.questionMarkPositions[1]].number.type === 'number') {
+                            if (Number(input2.userInput) === this.questions[this.questionMarkPositions[1]].number.text) {
                                 resultQuestion2 = true
                             }
                         }
@@ -705,52 +736,33 @@ export default {
                 }
             }
         },
-        createRandomQuestion() {
-            const { display } = this.configBe
-            const arrQuestion = []
-            let textOrNumberCount = 0
+        generateUniquePair() {
+            // Generate number using existing function
+            const number = this.generateRandomNumbers();
 
-            for (let i = 0; i < 8; i++) {
-                if (display.alphanumeric && display.shape) {
-                    if (Math.random() < 0.5 || textOrNumberCount < 2) {
-                        if (Math.random() < 0.5) {
-                            const number = this.generateRandomNumbers()
-                            arrQuestion.push(number)
-                        } else {
-                            const text = this.generateRandomLetters()
-                            arrQuestion.push(text);
-                        }
-                        textOrNumberCount++
-                    } else {
-                        const shape = this.getRandomShape();
-                        arrQuestion.push(shape);
-                    }
-                } else if (display.alphanumeric) {
-                    if (Math.random() < 0.5) {
-                        const number = this.generateRandomNumbers();
-                        arrQuestion.push(number);
-                    } else {
-                        const text = this.generateRandomLetters()
-                        arrQuestion.push(text);
-                    }
-                    textOrNumberCount++;
-                } else if (display.shape) {
-                    const shape = this.getRandomShape();
-                    arrQuestion.push(shape);
-                }
+            // Generate partner (either text or shape) using existing functions
+            let partner;
+            if (Math.random() < 0.5) {
+                partner = this.generateRandomLetters();
+            } else {
+                partner = this.getRandomShape();
             }
 
-            // Ensure at least 2 text or number elements
-            while (textOrNumberCount < 2) {
-                const randomIndex = Math.floor(Math.random() * 8);
-                if (arrQuestion[randomIndex].type === 'shape') {
-                    if (Math.random() < 0.5) {
-                        arrQuestion[randomIndex] = this.generateRandomNumbers();
-                    } else {
-                        arrQuestion[randomIndex] = this.generateRandomLetters();
-                    }
-                    textOrNumberCount++;
-                }
+            if (Math.random() < 0.5) {
+                number.position = 'Top'
+                partner.position = "Bottom"
+            } else {
+                number.position = 'Bottom'
+                partner.position = "Top"
+            }
+
+            return { number, partner };
+        },
+        createRandomQuestion() {
+            const arrQuestion = []
+
+            for (let i = 0; i < 4; i++) {
+                arrQuestion.push(this.generateUniquePair());
             }
 
             this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
@@ -758,12 +770,12 @@ export default {
         },
         generateRandomLetters() {
             const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let result = '';
-            for (let i = 0; i < 2; i++) {
-                result += letters.charAt(Math.floor(Math.random() * letters.length));
-            }
+            const numbers = '123456789';
 
-            return { type: 'text', text: result }
+            const randomNumber = numbers.charAt(Math.floor(Math.random() * numbers.length));
+            const randomLetter = letters.charAt(Math.floor(Math.random() * letters.length));
+
+            return { type: 'text', text: randomNumber + randomLetter };
         },
         generateRandomNumbers() {
             const number = Math.floor(Math.random() * 90) + 10; // Generates a number between 10 and 99
