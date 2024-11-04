@@ -241,7 +241,6 @@ export default {
           const isAnswerCorrect = answers[column];
 
           if (isCorrectMatch === isAnswerCorrect) {
-            console.log('kesini yah')
             correct++;
           } else {
             wrong++;
@@ -350,7 +349,14 @@ export default {
       if (!this.isTrainingCompleted) {
         this.numberOfTask = this.configs[0].number_of_task ?? 10;
       } else {
+        this.canContinue = false
+        this.wrong = null
+        this.taskNow = 1
         this.currentTask = 1
+        this.result.correct = 0
+        this.result.wrong = 0
+        this.result.problems = []
+
         this.numberOfTask = 0
         for (const i in this.configs) {
           this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10)
@@ -378,8 +384,7 @@ export default {
           this.isModalVisible = true
           this.result.correct = 0
           this.result.wrong = 0
-          this.result.problems = 0
-          this.result.correct_answer = 0
+          this.result.problems = []
 
           return;
         } else {
