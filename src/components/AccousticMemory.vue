@@ -1,21 +1,24 @@
 <template>
-  <div v-if="isShowModal" class="modal-overlay">
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p>
-        <strong>
-          Apakah Anda Yakin <br>akan memulai test Accoustic Memory?
-        </strong>
-        </p>
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Accoustic Memory?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="closeModal()">Ya</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Accoustic Memory?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="startTest()">Ya</button>
+    </div>
+  </div>
+
+
   <div class="main-view" v-if="isConfigLoaded">
-    <div :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
-      Task: {{ currentTask }} / {{ numberOfTask }}
-      <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
-      <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
-      <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+    <div class="timer-container">
+      Task: {{ taskNow }} / {{ numberOfTask }}
     </div>
     <div class="checkbox-grid">
       <div v-for="(row, rowIndex) in totalRow" :key="rowIndex" class="checkbox-row">
@@ -56,16 +59,20 @@
 </template>
 
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from '@/utils/configs';
 
 export default {
   data() {
     return {
-      testName: 'Acoustic Memory Test',
-      isShowModal: false,
+      isModalTrainingVisible: false,
+      isModalVisible: false,
+      isTrainingCompleted: false,
+      configs: [],
       canContinue: false,
       page: 1,
       currentRowDisabled: false,
+      taskNow: 1,
       currentTask: 1,
       numberOfTask: 10, //positive number
       totalRow: 10,
@@ -73,9 +80,7 @@ export default {
       includeDigits: null, //true or false
       excludeVowels: null, //true or false
       readingSpeed: null, // 1-100
-      isPause: false,
       isConfigLoaded: false,
-      isTrial: this.$route.query.isTrial ?? false,
       isLoading: false,
       problem: null,
       choicesLength: 4,
@@ -116,7 +121,7 @@ export default {
       localStorage.setItem('reloadCountAccousticMemory', reloadCount.toString());
     });
 
-    this.loadConfig();
+    this.initConfig();
   },
   methods: {
     initiateCheckboxValues() {
@@ -125,28 +130,31 @@ export default {
     initiateWrongRows() {
       this.wrongRows = Array.from({ length: this.totalRow }, () => Array(this.totalColumn).fill(false));
     },
-    loadConfig() {
-      const data = localStorage.getItem('scheduleData');
-      if (data) {
-        try {
-          const scheduleData = JSON.parse(data);
-          // @TODO: Config Flow
-          const accousticMemoryConfig = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
-          this.stringSize = accousticMemoryConfig.string_size;
-          this.includeDigits = accousticMemoryConfig.combination.include_number;
-          this.excludeVowels = !accousticMemoryConfig.combination.vocal;
-          this.readingSpeed = accousticMemoryConfig.speed;
-          this.numberOfTask = accousticMemoryConfig.number_of_task ?? 10;
-          this.isConfigLoaded = true;
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
-        } finally {
-          this.initiateCheckboxValues();
-          this.initiateWrongRows();
-          this.isShowModal = true;
-        }
+    initConfig() {
+      const configData = getConfigs('accoustic-memory-test');
+      if (!configData) {
+        this.$router.push('/module');
+        return;
       }
-      console.warn('No schedule data found in localStorage.');
+
+      this.configs = configData.configs;
+
+      //For Training
+      this.isTrainingCompleted = configData.trainingCompleted;
+
+      if (!this.isTrainingCompleted) {
+        this.isModalTrainingVisible = true;
+      } else {
+        this.isModalVisible = true;
+      }
+    },
+    setConfig(config) {
+      this.stringSize = config.string_size;
+      this.includeDigits = config.combination.include_number;
+      this.excludeVowels = !config.combination.vocal;
+      this.readingSpeed = config.speed;
+
+      this.isConfigLoaded = true;
     },
     async generateProblem() {
       if (this.utterance) {
@@ -250,9 +258,6 @@ export default {
       utterance.text = 'Perhatikan kombinasi huruf berikut:';
       // Wrap speechSynthesis.speak in a promise
       await new Promise((resolve, reject) => {
-        if (this.isPause) {
-          synth.pause();
-        }
         utterance.onend = resolve;
         utterance.onerror = reject;
         synth.speak(utterance);
@@ -263,9 +268,6 @@ export default {
       utterance.text = 'Cocokan kombinasi huruf berikut dengan yang sudah di bacakan sebelumnya:';
       // Wrap speechSynthesis.speak in a promise
       await new Promise((resolve, reject) => {
-        if (this.isPause) {
-          synth.pause();
-        }
         utterance.onend = resolve;
         utterance.onerror = reject;
         synth.speak(utterance);
@@ -318,14 +320,11 @@ export default {
 
       return (async () => { // Return the promise chain
         for (let char of text) {
-          if (this.isPause) {
-            await synth.pause();
-          }
-
           if (char === '-') {
             await this.delay(this.dashInterval);
           } else {
             await spellOut(char, this.charInterval); // Default interval between letters
+            await this.delay(this.charInterval / 2);
           }
         }
       })();
@@ -342,28 +341,56 @@ export default {
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
-    pause() {
-      this.isPause = true;
-      this.currentRowDisabled = true;
-      window.speechSynthesis.pause();
-    },
-    startAgain() {
-      this.isPause = false;
-      this.currentRowDisabled = false;
-      window.speechSynthesis.resume();
-    },
     exit() {
       window.speechSynthesis.cancel();
       this.$router.push('module');
     },
-    closeModal() {
-      this.isShowModal = false;
-      this.generateProblem();
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.numberOfTask = this.configs[0].number_of_task ?? 10;
+      } else {
+        this.canContinue = false
+        this.wrong = null
+        this.taskNow = 1
+        this.currentTask = 1
+        this.result.correct = 0
+        this.result.wrong = 0
+        this.result.problems = []
+
+        this.numberOfTask = 0
+        for (const i in this.configs) {
+          this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10)
+        }
+      }
+
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
+
+      this.setConfig(this.configs[this.page-1])
+      this.initiateCheckboxValues();
+      this.initiateWrongRows();
+
+      setTimeout(() => {
+        this.generateProblem();
+      }, 1000);
     },
     continueTask() {
-      if (this.currentTask >= this.numberOfTask) {
-        this.submitResult();
-        return;
+      if (this.taskNow >= this.numberOfTask) {
+        if (!this.isTrainingCompleted) {
+          this.isTrainingCompleted = true;
+          completeTrainingTestAndUpdateLocalStorage("Acoustic Memory Test");
+
+          //Start Exam After Training
+          this.isModalVisible = true
+          this.result.correct = 0
+          this.result.wrong = 0
+          this.result.problems = []
+
+          return;
+        } else {
+          this.submitResult();
+          return;
+        }
       }
 
       //Reset
@@ -372,21 +399,23 @@ export default {
       this.wrong = 0;
       this.currentRowDisabled = false;
       this.currentTask++;
+      this.taskNow++;
 
       if (this.currentTask % this.totalRow === 1) {
+        this.currentTask = 1
         this.page++;
+        this.setConfig(this.configs[this.page-1])
         this.initiateCheckboxValues();
       }
       this.generateProblem();
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === this.testName);
       const payload = {
         'testSessionId': scheduleData.sessionId,
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
-        'batteryTestConfigId': test.config.id,
+        'batteryTestConfigId': scheduleData.testId,
         'refreshCount': parseInt(localStorage.getItem('reloadCountAccousticMemory')),
         'result': {
           'total_question': this.numberOfTask,
@@ -398,11 +427,6 @@ export default {
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
@@ -422,7 +446,7 @@ export default {
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage(this.testName);
+        removeTestByNameAndUpdateLocalStorage('Acoustic Memory Test');
         localStorage.removeItem('reloadCountAccousticMemory');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
@@ -430,6 +454,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
   .main-view {
     gap: 20px;
