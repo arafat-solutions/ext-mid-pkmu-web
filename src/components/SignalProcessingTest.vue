@@ -1,11 +1,25 @@
 <template>
-  <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container' ">
-    Time: {{ formattedTime }}
-    <button v-if="isPause && isTrial" @click="startAgain" class="ml-4">Start</button>
-    <button v-if="!isPause && isTrial" @click="pause" class="ml-4">Pause</button>
-    <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
+  <div v-if="isModalTrainingVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Signal Processing?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="startTest()">Ya</button>
+    </div>
   </div>
-  <div class="relative w-[1280px] m-auto" v-if="!isTimesUp && !isPause">
+
+  <div v-if="isModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Signal Processing?</strong></p>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="startTest()">Ya</button>
+    </div>
+  </div>
+
+  <div v-if="timeLeft > 0" class="timer-container">
+    Time: {{ formattedTime }}
+  </div>
+
+  <div class="relative w-[1280px] m-auto" v-if="!isTimesUp">
     <div class="flex items-center justify-center mt-[300px]">
       <div class="grid grid-cols-2 gap-4">
         <div class="h-24 w-24 hover:cursor-pointer" :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'" v-for="i in 4" :key="i" @click="checkAnswer(i)"/>
@@ -18,18 +32,26 @@
     <div class="loading-text">Your result is submitting</div>
   </div>
 </template>
+
 <script>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from '@/utils/configs';
 
 export default {
   data() {
     return {
-      testName: 'Signal Processing Test',
+      isModalTrainingVisible: false,
+      isModalVisible: false,
+      indexConfig: 0,
+      config: [],
+      configs: [],
+      duration: 0,
+      isNextLevel: false,
+
       currentIndexQuestion: 0,
       isLoading: false,
       minuteTime: null,
       timeLeft: null, // Countdown time in seconds
-      isPause: false,
       isConfigLoaded: false,
       intervalCountdownId: null,
       intervalQuestionId: null,
@@ -37,7 +59,6 @@ export default {
       batteryTestConfigId: null,
       clickedAnswer: false,
       isWrongAnswer: false,
-      isTrial: this.$route.query.isTrial ?? false,
       colors: ['red', 'green', 'blue'],
       positions: [1, 2, 3, 4],
       level: null, //very_easy, easy, medium, difficult, very_difficult
@@ -68,11 +89,12 @@ export default {
     let reloadCount = parseInt(localStorage.getItem('reloadCountSignalProcessing') || '0');
     reloadCount++;
     localStorage.setItem('reloadCountSignalProcessing', reloadCount.toString());
+
     window.addEventListener('beforeunload', () => {
       localStorage.setItem('reloadCountSignalProcessing', reloadCount.toString());
     });
 
-    this.loadConfig();
+    this.initConfig();
   },
   computed: {
     isTimesUp() {
@@ -107,7 +129,6 @@ export default {
         return this.questions[0];
       }
 
-
       return this.questions[this.currentIndexQuestion];
     },
     resultMissed() {
@@ -123,50 +144,122 @@ export default {
   watch: {
     isTimesUp(value) {
       if (value) {
-        clearInterval(this.intervalCountdownId);
-        clearInterval(this.intervalQuestionId);
-        this.submitResult();
+        this.cleanUp();
+
+        if (!this.isTrainingCompleted) {
+          this.isTrainingCompleted = true;
+          completeTrainingTestAndUpdateLocalStorage("Signal Processing Test");
+
+          //Start Exam After Training
+          this.isModalVisible = true
+          this.currentIndexQuestion = 0
+          this.userInputs = [];
+          this.result.correct = 0;
+          this.result.wrong = 0;
+          this.result.answerTimes = [];
+        } else {
+          this.submitResult();
+        }
       }
     }
   },
   methods: {
-    loadConfig() {
-      const data = localStorage.getItem('scheduleData');
-      if (data) {
-        try {
-          const scheduleData = JSON.parse(data);
-          // @TODO: Config Flow
-          const config = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
-          this.minuteTime = Number(config.duration);
-          this.timeLeft = this.minuteTime * 60;
-          this.level = config.difficulty;
-          this.displayDuration = config.display_duration;
-          this.batteryTestConfigId = config.id;
-          // this.frequent = config.frequency_change;
-          this.isConfigLoaded = true;
-          this.generateQuestions();
-          this.startCountdown();
-          this.startChangeQuestion();
-        } catch (e) {
-          console.error('Error parsing schedule data:', e);
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.setConfig(this.configs[0])
+
+        this.minuteTime = Number(this.duration);
+        this.timeLeft = this.minuteTime * 60;
+      } else {
+        this.setConfig(this.configs[this.indexConfig])
+
+        this.minuteTime = 0;
+        this.timeLeft = 0;
+        for (const i in this.configs) {
+          this.minuteTime += Number(this.configs[i].duration)
         }
+
+        this.timeLeft = this.minuteTime * 60;
       }
 
-      console.warn('No schedule data found in localStorage.');
+      this.isModalTrainingVisible = false;
+      this.isModalVisible = false;
+
+      setTimeout(() => {
+        this.generateQuestions();
+        this.startChangeQuestion();
+      }, 500);
+
+      this.startCountdown();
     },
-    startCountdown() {
-      if (this.isPause) {
+    cleanUp() {
+      clearInterval(this.intervalCountdownId);
+      clearInterval(this.intervalQuestionId);
+    },
+    exit() {
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
+    },
+    initConfig() {
+      const configData = getConfigs('signal-processing-test');
+      if (!configData) {
+        this.$router.push('/module');
         return;
       }
 
+      this.configs = configData.configs;
+
+      //For Training
+      this.isTrainingCompleted = configData.trainingCompleted;
+
+      if (!this.isTrainingCompleted) {
+        this.isModalTrainingVisible = true;
+      } else {
+        this.isModalVisible = true;
+      }
+    },
+    setConfig(config) {
+      this.level = config.difficulty;
+      this.displayDuration = config.display_duration;
+
+      this.duration = config.duration * 60;
+
+      this.isConfigLoaded = true;
+    },
+    startCountdown() {
       this.intervalCountdownId = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft -= 1;
         }
+
+        //Check timer for next level exam
+        if (this.isTrainingCompleted) {
+          if (this.duration >= 0) {
+            this.duration--
+
+            if (this.duration === 0) {
+              this.isNextLevel = true
+            }
+          } else {
+            if (this.isNextLevel) {
+              this.cleanUp();
+              this.isNextLevel = false
+              this.indexConfig++
+              this.setConfig(this.configs[this.indexConfig])
+
+              setTimeout(() => {
+                this.generateQuestions();
+                this.startChangeQuestion();
+              }, 500);
+            }
+          }
+        }
+
       }, 1000);
     },
     startChangeQuestion() {
-      if (this.isPause || !this.displayDuration) {
+      if (!this.displayDuration) {
         return;
       }
 
@@ -280,19 +373,6 @@ export default {
         this.isWrongAnswer = true;
       }
     },
-    exit() {
-      this.$router.push('module');
-    },
-    pause() {
-      this.isPause = true;
-      clearInterval(this.intervalCountdownId);
-      clearInterval(this.intervalQuestionId);
-    },
-    startAgain() {
-      this.isPause = false;
-      this.startCountdown();
-      this.startChangeQuestion();
-    },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
       const totalQuestion = this.currentIndexQuestion + 1;
@@ -314,11 +394,6 @@ export default {
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
@@ -345,13 +420,41 @@ export default {
   },
 };
 </script>
-<style scoped>
-  .timer-container-trial {
-    @apply absolute right-0 top-0 bg-[#0349D0] p-3 text-white font-bold rounded-bl-[15px];
 
-    button {
-      @apply text-black font-bold py-2 rounded-md border-transparent min-w-[100px] cursor-pointer bg-gray-200;
-    }
+<style scoped>
+  .modal-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+
+  .modal-content button {
+    background-color: #6200ee;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .modal-content button:hover {
+    background-color: #5e37a6;
   }
 
   .timer-container {
