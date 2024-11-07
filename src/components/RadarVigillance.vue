@@ -53,7 +53,6 @@ export default {
       isNextLevel: false,
       isTrainingCompleted: false,
       durationTest: 0,
-
       isModalTrainingVisible: false,
       isModalVisible: false,
       isConfigLoaded: false,

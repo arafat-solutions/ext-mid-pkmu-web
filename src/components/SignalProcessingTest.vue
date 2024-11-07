@@ -43,11 +43,9 @@ export default {
       isModalTrainingVisible: false,
       isModalVisible: false,
       indexConfig: 0,
-      config: [],
       configs: [],
       duration: 0,
       isNextLevel: false,
-
       currentIndexQuestion: 0,
       isLoading: false,
       minuteTime: null,
@@ -169,7 +167,7 @@ export default {
         this.setConfig(this.configs[0])
 
         this.minuteTime = Number(this.duration);
-        this.timeLeft = this.minuteTime * 60;
+        this.timeLeft = this.minuteTime;
       } else {
         this.setConfig(this.configs[this.indexConfig])
 
@@ -249,7 +247,7 @@ export default {
               this.setConfig(this.configs[this.indexConfig])
 
               setTimeout(() => {
-                this.generateQuestions();
+                this.startCountdown();
                 this.startChangeQuestion();
               }, 500);
             }
@@ -330,7 +328,6 @@ export default {
         return;
       }
 
-
       const now = Date.now();
       const responseTime = now - this.startTimeAnswer?.getTime();
       // calculate diff answer
@@ -381,6 +378,7 @@ export default {
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
         'batteryTestConfigId': this.batteryTestConfigId,
+        'batteryTestId': scheduleData.testId,
         'refreshCount': parseInt(localStorage.getItem('reloadCountSignalProcessing')),
         'result': {
           'totalQuestion': totalQuestion,
@@ -412,7 +410,7 @@ export default {
         console.error(error);
       } finally {
         this.isLoading = false;
-        removeTestByNameAndUpdateLocalStorage(this.testName);
+        removeTestByNameAndUpdateLocalStorage("Signal Processing Test");
         localStorage.removeItem('reloadCountSignalProcessing');
         this.$router.push('/module');// Set isLoading to false when the submission is complete
       }
