@@ -59,8 +59,8 @@
     <div class="loading-text">Your result is submitting</div>
   </div>
 </template>
-<script>
 
+<script>
 import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 import { getConfigs } from '@/utils/configs';
 export default {

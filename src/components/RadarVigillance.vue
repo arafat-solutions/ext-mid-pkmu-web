@@ -53,7 +53,6 @@ export default {
       isNextLevel: false,
       isTrainingCompleted: false,
       durationTest: 0,
-
       isModalTrainingVisible: false,
       isModalVisible: false,
       isConfigLoaded: false,
@@ -204,9 +203,6 @@ export default {
           } else {
             if (this.isNextLevel) {
               this.isNextLevel = false
-
-              console.log(this.indexConfig, 'indexConfig')
-
               this.indexConfig++
               this.config.duration = this.configs[this.indexConfig].duration * 60
             }
@@ -271,7 +267,6 @@ export default {
       // Include graph data in the result
       this.result.graph_data = this.userInputs;
 
-      console.log(this.result, 'submit result');
       this.submitResult();
     },
     async submitResult() {
