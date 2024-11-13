@@ -34,6 +34,7 @@
 <script>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import * as THREE from 'three';
+import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
 
 // Intensity level configurations
 const ANOMALI_INTENSITY = {
@@ -298,6 +299,8 @@ export default {
         });
         const data = await response.json();
         console.log('Test results submitted:', data);
+        removeTestByNameAndUpdateLocalStorage('Multidimensional Coordination Test');
+        window.location.href = '/module';
       } catch (error) {
         console.error('Error submitting test results:', error);
       }
