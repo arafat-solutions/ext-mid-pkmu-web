@@ -23,7 +23,7 @@
       <div class="modal-content">
         <h2>Mulai Ujian</h2>
         <p>Latihan telah selesai! Anda akan memulai ujian yang sebenarnya.</p>
-        <p>Ujian akan berlangsung selama 1 menit.</p>
+        <p>Ujian akan berlangsung sesuai dengan waktu yang ditentukan.</p>
         <p>Ingat untuk tetap fokus dan konsentrasi.</p>
         <button @click="startActualTest" class="modal-button">Mulai Ujian</button>
       </div>
@@ -35,29 +35,32 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import * as THREE from 'three';
 
-// Configuration constants with reduced speeds
+// Intensity level configurations
+const ANOMALI_INTENSITY = {
+  LOW: 0.02,
+  MEDIUM: 0.04,
+  HIGH: 0.06
+};
+
+const TURBULENCE_INTENSITY = {
+  LOW: 0.0003,
+  MEDIUM: 0.0005,
+  HIGH: 0.001
+};
+
+const POV_CHANGE_SPEED = {
+  SLOW: 5000,
+  MEDIUM: 3000,
+  FAST: 1500
+};
+
 const CONFIG = {
-  PERSPECTIVE_SPEED: {
-    DISABLED: 0,
-    SLOW: 0.0003,    // Reduced from 0.0005
-    MEDIUM: 0.0005,   // Reduced from 0.001
-    FAST: 0.001      // Reduced from 0.002
-  },
-  PERSPECTIVE_INTERVAL: 5000,
-  BACKWARD_SPEED: {
-    LOW: 0.005,      // Reduced from 0.01
-    MEDIUM: 0.015,   // Reduced from 0.03
-    HIGH: 0.025      // Reduced from 0.05
-  },
   MAX_BACKWARD_POSITION: 5.5,
   MIN_FORWARD_POSITION: -4.5,
-  PLANE_ROTATION_SPEED: 0.03,  // Reduced from 0.05
+  PLANE_ROTATION_SPEED: 0.03,
   MAX_PLANE_ROTATION: Math.PI / 4,
   ALIGNMENT_THRESHOLD: 0.5,
-  RANDOM_BACKWARD_CHANCE: 0.02, // 2% chance per frame
-  RANDOM_BACKWARD_SPEED: 0.02,
-  TRAINING_DURATION: 5 * 1000,
-  TEST_DURATION: 10 * 1000
+  TRAINING_DURATION: 30 * 1000, // 30 seconds for training
 };
 
 export default {
@@ -68,6 +71,23 @@ export default {
     const canvas = ref(null);
     let animationFrameId = null;
 
+    // Get test configuration from storage
+    const schedule = JSON.parse(localStorage.getItem('scheduleData'));
+    const test = schedule.tests.find((t) => t.name === "Multidimensional Coordination Test");
+    const batteryTestId = test.id;
+    const configs = test.configs;
+    console.log('Test config', configs, batteryTestId);
+
+    // Config management
+    const activeConfig = ref(null);
+    const currentConfigIndex = ref(0);
+    const configStartTime = ref(null);
+
+    // Calculate total test duration
+    const getTotalDuration = (configs) => {
+      return configs.reduce((total, config) => total + Number(config.duration), 0);
+    };
+    const totalTestDuration = getTotalDuration(configs) * 1000; // Convert to milliseconds
     // Three.js objects
     let scene, camera, renderer, box, marker;
 
@@ -97,20 +117,39 @@ export default {
     let perspectiveDirection = 1;
     let lastMetricRecordTime = 0;
 
-    const currentConfig = {
-      perspectiveSpeed: CONFIG.PERSPECTIVE_SPEED.MEDIUM,
-      backwardSpeed: CONFIG.BACKWARD_SPEED.MEDIUM
+    // Config management functions
+    const updateActiveConfig = () => {
+      if (!configStartTime.value) {
+        configStartTime.value = Date.now();
+        activeConfig.value = configs[0];
+        return;
+      }
+
+      const elapsed = Date.now() - configStartTime.value;
+      if (elapsed >= activeConfig.value.duration * 1000) {
+        currentConfigIndex.value++;
+        if (currentConfigIndex.value < configs.length) {
+          configStartTime.value = Date.now();
+          activeConfig.value = configs[currentConfigIndex.value];
+          console.log('Switching to config:', currentConfigIndex.value, activeConfig.value);
+        }
+      }
     };
 
-    const schedule = JSON.parse(localStorage.getItem('scheduleData'));
-    const test = schedule.tests.find((t) => t.name === "Multidimensional Coordination Test");
-    const batteryTestId = test.id;
-    const configs = test.configs;
-    console.log('Test config', configs, batteryTestId);
+    const getAnomaliIntensity = (level) => {
+      return ANOMALI_INTENSITY[level.toUpperCase()] || ANOMALI_INTENSITY.LOW;
+    };
 
-    // Computed properties with updated alignment check
+    const getTurbulenceIntensity = (level) => {
+      return TURBULENCE_INTENSITY[level.toUpperCase()] || TURBULENCE_INTENSITY.LOW;
+    };
+
+    const getPovChangeSpeed = (speed) => {
+      return POV_CHANGE_SPEED[speed.toUpperCase()] || POV_CHANGE_SPEED.MEDIUM;
+    };
+
+    // Computed properties
     const isAligned = computed(() => {
-      // Adjust x position check based on perspective offset
       const adjustedX = airplanePosition.value.x - perspectiveOffset.value;
       const dx = Math.abs(adjustedX - markerPosition.value.x);
       const dy = Math.abs(airplanePosition.value.y - markerPosition.value.y);
@@ -189,6 +228,7 @@ export default {
       isTrainingMode.value = true;
       startTime.value = Date.now();
       timeRemaining.value = CONFIG.TRAINING_DURATION;
+      activeConfig.value = configs[0]; // Use first config for training
       userInputs.value = [];
       resetAirplanePosition();
     };
@@ -198,7 +238,10 @@ export default {
       showTestModal.value = false;
       isTrainingMode.value = false;
       startTime.value = Date.now();
-      timeRemaining.value = CONFIG.TEST_DURATION;
+      configStartTime.value = Date.now();
+      currentConfigIndex.value = 0;
+      activeConfig.value = configs[0];
+      timeRemaining.value = totalTestDuration;
       userInputs.value = [];
       resetAirplanePosition();
     };
@@ -229,9 +272,10 @@ export default {
         accuracyPercentage,
         totalAttempts: totalInputs,
         averageDeviations: avgDeviations,
-        timeSpent: CONFIG.TEST_DURATION - timeRemaining.value,
+        timeSpent: totalTestDuration - timeRemaining.value,
         graph_data: userInputs.value
       };
+
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
       const test = scheduleData.tests.find((t) => t.name === "Multidimensional Coordination Test");
       const payload = {
@@ -241,7 +285,6 @@ export default {
         'batteryTestId': test.id,
         'result': scores,
       };
-
 
       console.log('Simulation completed! Final scores:', scores);
       const API_URL = process.env.VUE_APP_API_URL;
@@ -258,36 +301,44 @@ export default {
       } catch (error) {
         console.error('Error submitting test results:', error);
       }
-      return scores;
     };
 
-    // Animation loop with random backward movement
+    // Animation loop with anomali and config-based adjustments
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const now = Date.now();
 
       // Update time and check for completion
       if (startTime.value) {
-        timeRemaining.value = Math.max(0, (isTrainingMode.value ? CONFIG.TRAINING_DURATION : CONFIG.TEST_DURATION) - (now - startTime.value));
+        timeRemaining.value = Math.max(0, (isTrainingMode.value ? CONFIG.TRAINING_DURATION : totalTestDuration) - (now - startTime.value));
 
         if (timeRemaining.value === 0) {
           if (isTrainingMode.value) {
             showTestModal.value = true;
           } else {
             finishSim();
-            // Cancel animation loop
             cancelAnimationFrame(animationFrameId);
           }
           return;
         }
+
+        // Update active config if not in training mode
+        if (!isTrainingMode.value) {
+          updateActiveConfig();
+        }
       }
 
-      // Update perspective
-      if (now - lastPerspectiveChange > CONFIG.PERSPECTIVE_INTERVAL) {
+      if (!activeConfig.value) return;
+
+      // Update perspective based on active config
+      const povSpeed = getPovChangeSpeed(activeConfig.value.turbulence.pov_change);
+      if (now - lastPerspectiveChange > povSpeed) {
         perspectiveDirection *= -1;
         lastPerspectiveChange = now;
       }
-      perspectiveOffset.value += currentConfig.perspectiveSpeed * perspectiveDirection;
+
+      const turbulenceIntensity = getTurbulenceIntensity(activeConfig.value.turbulence.intensity);
+      perspectiveOffset.value += turbulenceIntensity * perspectiveDirection;
 
       // Update box vertices
       const positions = box.geometry.attributes.position.array;
@@ -304,14 +355,24 @@ export default {
       markerPosition.value.x = perspectiveOffset.value;
       marker.position.x = markerPosition.value.x;
 
-      // Random backward movement
-      if (Math.random() < CONFIG.RANDOM_BACKWARD_CHANCE) {
-        airplanePosition.value.z += CONFIG.RANDOM_BACKWARD_SPEED;
+      // Apply anomali based on current config
+      if (!isTrainingMode.value) {
+        // X-axis anomali
+        const xAnomaliIntensity = getAnomaliIntensity(activeConfig.value.x_axis.anomali);
+        if (Math.random() < 0.1) { // 10% chance per frame
+          airplanePosition.value.x += (Math.random() - 0.5) * xAnomaliIntensity;
+        }
+
+        // Y-axis anomali
+        const yAnomaliIntensity = getAnomaliIntensity(activeConfig.value.y_axis.anomali);
+        if (Math.random() < 0.1) {
+          airplanePosition.value.y += (Math.random() - 0.5) * yAnomaliIntensity;
+        }
       }
 
       // Regular backward drift
       if (airplanePosition.value.z < CONFIG.MAX_BACKWARD_POSITION) {
-        airplanePosition.value.z += currentConfig.backwardSpeed;
+        airplanePosition.value.z += 0.015; // Base backward drift
       }
 
       // Handle gamepad input
@@ -320,13 +381,17 @@ export default {
         const gp = gamepads[gamepad.value.index];
 
         if (gp) {
-          // X-axis movement (reduced sensitivity)
-          const xMovement = gp.axes[0] * 0.05;
+          // Apply sensitivity from current config
+          const xSensitivity = activeConfig.value.x_axis.sensitivity / 1000;
+          const ySensitivity = activeConfig.value.y_axis.sensitivity / 1000;
+
+          // X-axis movement
+          const xMovement = gp.axes[0] * xSensitivity;
           airplanePosition.value.x += xMovement;
           airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
 
-          // Y-axis movement (reversed and reduced sensitivity)
-          const yMovement = gp.axes[1] * 0.05; // Removed negative sign to reverse
+          // Y-axis movement (reversed)
+          const yMovement = gp.axes[1] * ySensitivity;
           airplanePosition.value.y += yMovement;
           airplanePosition.value.y = Math.max(-4.5, Math.min(4.5, airplanePosition.value.y));
 
@@ -339,14 +404,13 @@ export default {
         }
       }
 
-      // Handle thruster input with reduced sensitivity
+      // Handle thruster input
       if (thrustConnected.value) {
         const gamepads = navigator.getGamepads();
         const th = gamepads[thruster.value.index];
 
         if (th) {
-          // Reduced throttle sensitivity
-          airplanePosition.value.z -= (th.axes[2] + 1) * 0.03;  // Reduced from 0.05
+          airplanePosition.value.z -= (th.axes[2] + 1) * 0.03;
           airplanePosition.value.z = Math.max(CONFIG.MIN_FORWARD_POSITION, Math.min(CONFIG.MAX_BACKWARD_POSITION, airplanePosition.value.z));
         }
       }
@@ -356,11 +420,12 @@ export default {
         userInputs.value.push({
           type: isAligned.value ? 'correct' : 'wrong',
           deviations: {
-            x: airplanePosition.value.x - (markerPosition.value.x + perspectiveOffset.value), // Adjusted for perspective
+            x: airplanePosition.value.x - (markerPosition.value.x + perspectiveOffset.value),
             y: airplanePosition.value.y - markerPosition.value.y,
             z: airplanePosition.value.z - markerPosition.value.z,
           },
-          timestamp: now - startTime.value
+          timestamp: now - startTime.value,
+          config: currentConfigIndex.value
         });
         lastMetricRecordTime = now;
       }
@@ -391,19 +456,59 @@ export default {
       }
     };
 
+    // Window resize handler
+    const handleResize = () => {
+      if (container.value && renderer) {
+        const width = container.value.clientWidth;
+        const height = container.value.clientHeight;
+        
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        
+        renderer.setSize(width, height);
+      }
+    };
+
     onMounted(() => {
+      // Initialize scene and start animation
       initScene();
       animate();
+
+      // Add event listeners
       window.addEventListener('gamepadconnected', onGamepadConnected);
       window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
+      window.addEventListener('resize', handleResize);
+
+      // Set initial config
+      activeConfig.value = configs[0];
     });
 
     onUnmounted(() => {
+      // Clean up
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
+      
+      // Remove event listeners
       window.removeEventListener('gamepadconnected', onGamepadConnected);
       window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
+      window.removeEventListener('resize', handleResize);
+
+      // Clean up Three.js resources
+      if (renderer) {
+        renderer.dispose();
+        scene.traverse((object) => {
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
+          if (object.material) {
+            if (object.material.map) {
+              object.material.map.dispose();
+            }
+            object.material.dispose();
+          }
+        });
+      }
     });
 
     return {
@@ -427,12 +532,15 @@ export default {
   height: 100vh;
   position: relative;
   overflow: hidden;
+  background-color: #f0f0f0;
 }
 
 canvas {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .airplane {
@@ -442,14 +550,15 @@ canvas {
   width: 50px;
   height: 50px;
   transform-origin: center;
+  transition: filter 0.2s ease;
 }
 
 .out-of-target {
-  filter: drop-shadow(0 0 5px red);
+  filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.7));
 }
 
 .in-target {
-  filter: drop-shadow(0 0 5px green);
+  filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.7));
 }
 
 .countdown {
@@ -457,12 +566,14 @@ canvas {
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: blue;
+  background-color: rgba(0, 0, 255, 0.8);
   color: white;
   padding: 10px 20px;
   border-radius: 5px;
   font-size: 24px;
+  font-weight: bold;
   z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .modal {
@@ -484,20 +595,28 @@ canvas {
   border-radius: 8px;
   text-align: center;
   max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .modal-button {
-  background-color: blue;
+  background-color: #2196F3;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 5px;
   font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
   margin-top: 1rem;
+  transition: background-color 0.2s ease;
 }
 
 .modal-button:hover {
-  background-color: darkblue;
+  background-color: #1976D2;
+}
+
+.modal-button:active {
+  background-color: #1565C0;
+  transform: translateY(1px);
 }
 </style>
