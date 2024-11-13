@@ -69,8 +69,6 @@ export default {
       isPauseGaugesMeter: false,
       configs: [],
       minuteTest: null,
-
-
       testName: 'Multitasking With Instrument',
       isLoading: false,
       minuteTime: null,
