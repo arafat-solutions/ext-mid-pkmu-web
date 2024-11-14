@@ -227,6 +227,9 @@ export default {
       }
 
       return operator;
+    },
+    stop() {
+      window.speechSynthesis.cancel();
     }
   }
 };
