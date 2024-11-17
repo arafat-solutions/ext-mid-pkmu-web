@@ -72,6 +72,11 @@ export default {
 		},
 	},
 	methods: {
+    stop() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    },
 		averageResponseTime() {
 			if (this.responseDurations.length > 0) {
 				const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
