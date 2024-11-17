@@ -79,7 +79,7 @@ export default {
                 x: 50 + index * 90,
                 y: 100,
                 radius: 40,
-                fillColor: this.alertLightsData?.play ? COLORS.DEFAULT : COLORS.DISABLED,
+                fillColor: COLORS.DEFAULT,
                 letter
             }));
         },
