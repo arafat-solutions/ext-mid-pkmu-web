@@ -60,6 +60,7 @@
 </template>
 
 <script>
+import { getConfigs } from '@/utils/configs';
 import Arithmetics from './color-multitask/Arithmetics';
 import ColorTank from './color-multitask/ColorTank';
 import Horizon from './color-multitask/Horizon';
@@ -96,6 +97,7 @@ export default {
       countdownInterval: null,
       isPause: false,
       isConfigLoaded: false,
+      testId: null,
       config: {
         duration : null,
         subtask: {
@@ -139,7 +141,8 @@ export default {
     window.addEventListener('beforeunload', () => {
       localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
     })
-
+    const configData = getConfigs('color-multitask-test')
+    this.testId = configData.testId
     this.initConfig();
   },
   beforeUnmount() {
@@ -173,7 +176,7 @@ export default {
           const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').configs[0];
 
           this.config.duration = colorMultitask.duration * 60;
-          this.config.batteryTestConfigId = config.testId;
+          this.config.batteryTestId = config.testId;
           this.config.sessionId = config.sessionId;
           this.config.userId = config.userId;
 
@@ -233,7 +236,7 @@ export default {
         arithmetic: "Peserta harus mendengarkan angka-angka yang diberikan.",
         colorTank: "Peserta harus merespons dengan mengisi tanki yang kosong dengan warna yang sesuai.",
         horizon: "Peserta harus menjaga parameter penerbangan (seperti ketinggian dan arah) dalam batas yang ditentukan.",
-        combined: "Latihan gabungan dari keempat tugas sebelumnya."
+        combined: "Latihan gabungan dari tugas sebelumnya."
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
@@ -300,7 +303,7 @@ export default {
       this.config.color_tank.is_active = false;
       this.config.horizon.is_active = false;
 
-      this.$refs.arithmeticTaskRef.generateAudio();
+      this.$refs.arithmeticTaskRef.generateNumbers();
 
       this.startCountdown();
     },
@@ -318,8 +321,7 @@ export default {
       this.$refs.colorTankTaskRef.initLowerTank();
       this.$refs.colorTankTaskRef.initScore();
       this.$refs.colorTankTaskRef.start();
-
-      this.$refs.arithmeticTaskRef.generateAudio();
+      this.$refs.arithmeticTaskRef.generateNumbers();
 
       this.startCountdown();
     },
@@ -367,8 +369,7 @@ export default {
       this.$refs.colorTankTaskRef.initLowerTank();
       this.$refs.colorTankTaskRef.initScore();
       this.$refs.colorTankTaskRef.start();
-
-      this.$refs.arithmeticTaskRef.generateAudio();
+      this.$refs.arithmeticTaskRef.generateNumbers();
 
       this.startCountdown();
     },
@@ -411,7 +412,7 @@ export default {
         const payload = {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
+          batteryTestId: this.testId,
           refreshCount: parseInt(localStorage.getItem('reloadCountColorTankMultitask')),
           result: this.result,
         }
