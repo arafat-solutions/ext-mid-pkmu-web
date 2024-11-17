@@ -1,32 +1,36 @@
 <template>
   <div>
-    <div id="fullPageModal" class="modal">
-      <div class="modal-content">
-        <p>Click the button to play sound:</p>
-        <button id="soundButton" class="modal-button" @click="playSound">Play Sound</button>
+    <div v-if="showInstructionModal" class="instruction-modal">
+      <div class="instruction-modal-content">
+        <h2 v-if="!trainingCompleted">{{ currentTrainingTask ? 'Training: ' + currentTrainingTask : 'Instructions' }}</h2>
+
+        <p v-if="!trainingCompleted">{{ instructionModalContent }}</p>
+        <p v-else>
+          Apakah Anda Yakin <br>akan memulai ujian {{ testName }}?
+        </p>
+
+        <button @click="startTrainingTask">{{ trainingCompleted ? 'Start Test' : 'Start Task' }}</button>
       </div>
     </div>
+
     <div class="main-view" v-if="isConfigLoaded">
-      <div v-if="timeLeft > 0" :class="isTrial ? 'timer-container-trial' : 'timer-container'">
+      <div v-if="timeLeft > 0" class="timer-container">
         Time: {{ formattedTime }}
-        <button v-if="isPause && isTrial" @click="startAgain" class="ml-6">Start</button>
-        <button v-if="!isPause && isTrial" @click="pause" class="ml-6">Pause</button>
-        <button v-if="isTrial" @click="exit" class="ml-1">Exit</button>
       </div>
-      <div class="column-45 mt-3" v-show="!isTimesUp && !isPause">
-        <HorizonTest :speed="config.horizon.speed" :minuteTime="minuteTime" :isTimesUp="isTimesUp" :isPause="isPause"
+      <div class="column-45 mt-3" v-show="!isTimesUp">
+        <HorizonTest ref="horizonTaskRef" :speed="config.horizon.speed" :minuteTime="minuteTime" :isTimesUp="isTimesUp" :isPause="isPauseHorizon"
           :isActive="config.horizon.isActive" @getResult="horizonResult" />
         <ArithmeticTask ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetic.difficulty"
-          :minuteTime="minuteTime" :isPause="isPause" :isActive="config.arithmetic.isActive"
+          :minuteTime="minuteTime" :isPause="isPauseArithmetic" :isActive="config.arithmetic.isActive"
           :useSound="config.arithmetic.useSound" :canPressAnswer="config.arithmetic.canPressAnswer"
-          :allowSound="allowSound" @getResult="arithmeticResult" @startAgain="startAgain" />
+          :allowSound="allowSound" @getResult="arithmeticResult" />
       </div>
-      <div class="column-10 mt-3" v-show="!isTimesUp && !isPause">
+      <div class="column-10 mt-3" v-show="!isTimesUp">
         <AlertLights :speed="config.alertLight.speed" :isTimesUp="isTimesUp" :frequency="config.alertLight.frequency"
-          :isPause="isPause" :isActive="config.alertLight.isActive" @getResult="alertLightResult" />
+          :isPause="isPauseAlertLight" :isActive="config.alertLight.isActive" @getResult="alertLightResult" />
       </div>
-      <div class="column-45 mt-3 text-left" v-show="!isTimesUp && !isPause">
-        <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPause" :frequency="config.gaugesMeter.frequency"
+      <div class="column-45 mt-3 text-left" v-show="!isTimesUp">
+        <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPauseGaugesMeter" :frequency="config.gaugesMeter.frequency"
           :isActive="config.gaugesMeter.isActive" @getResult="gaugesMeterResult" :size="50" />
       </div>
     </div>
@@ -42,7 +46,8 @@ import ArithmeticTask from './instrument-multitask/ArithmeticTask';
 import AlertLights from './instrument-multitask/AlertLights';
 import GaugesMeter from './instrument-multitask/GaugesMeter';
 import HorizonTest from './instrument-multitask/HorizonTest';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index';
+
+import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 
 export default {
   components: {
@@ -53,14 +58,23 @@ export default {
   },
   data() {
     return {
+      trainingCompleted: false,
+      showInstructionModal: false,
+      currentTrainingTask: null,
+      instructionModalContent: '',
+      trainingTasks: ['horizon', 'alertLight', 'arithmetic', 'gaugesMeter', 'combined'],
+      isPauseArithmetic: false,
+      isPauseAlertLight: false,
+      isPauseHorizon: false,
+      isPauseGaugesMeter: false,
+      configs: [],
+      minuteTest: null,
       testName: 'Multitasking With Instrument',
       isLoading: false,
       minuteTime: null,
       timeLeft: null, // Countdown time in seconds
       interval: null,
-      isPause: false,
       isConfigLoaded: false,
-      isTrial: this.$route.query.isTrial ?? false,
       allowSound: false,
       config: {
         alertLight: {
@@ -122,23 +136,27 @@ export default {
     },
   },
   methods: {
-    loadConfig() {
+    initConfig() {
       const data = localStorage.getItem('scheduleData');
       if (data) {
         try {
           const scheduleData = JSON.parse(data);
-          // @TODO: Config Flow
           const instrumentMultitaskConfig = scheduleData.tests.find((t) => t.name === this.testName).configs[0];
+
+          this.configs = scheduleData.tests.find((t) => t.name === this.testName).configs;
+          this.trainingCompleted = scheduleData.tests.find((t) => t.name === this.testName).trainingCompleted ?? false; //default false
+
           this.minuteTime = instrumentMultitaskConfig.duration;
           this.timeLeft = this.minuteTime * 60;
+
+          this.minuteTest = 0;
+          for (const i in this.configs){
+            this.minuteTest += parseInt(this.configs[i].duration)
+          }
+
           this.config.arithmetic.difficulty = instrumentMultitaskConfig.arithmetics.difficulty;
           this.config.arithmetic.useSound = instrumentMultitaskConfig.arithmetics.sound;
           this.config.arithmetic.isActive = instrumentMultitaskConfig.subtask.arithmetics;
-          // Trigger pause after user click button
-          if (this.config.arithmetic.useSound && this.config.arithmetic.isActive) {
-            this.pause();
-            document.getElementById('fullPageModal').style.display = 'flex';
-          }
           this.config.alertLight.speed = instrumentMultitaskConfig.alert_lights.speed;
           this.config.alertLight.frequency = instrumentMultitaskConfig.alert_lights.frequency;
           this.config.alertLight.isActive = instrumentMultitaskConfig.subtask.alert_lights;
@@ -147,7 +165,8 @@ export default {
           this.config.horizon.speed = instrumentMultitaskConfig.horizon.speed;
           this.config.horizon.isActive = instrumentMultitaskConfig.subtask.horizon;
           this.isConfigLoaded = true;
-          this.startCountdown();
+
+          this.startSimulation();
         } catch (e) {
           console.error('Error parsing schedule data:', e);
         }
@@ -155,17 +174,212 @@ export default {
         console.warn('No schedule data found in localStorage.');
       }
     },
-    startCountdown() {
-      if (this.isPause) {
-        return;
+    startSimulation() {
+      if (!this.trainingCompleted) {
+        this.startTraining();
+      } else {
+        this.showInstructionModal = true
+      }
+    },
+    startTraining() {
+      this.currentTrainingTask = this.trainingTasks[0];
+      this.showTrainingInstructions();
+    },
+    showTrainingInstructions() {
+      const instructions = {
+        gaugesMeter: "Peserta harus merespons perubahan yang terjadi pada instrumen penerbangan yang ditampilkan di layar.",
+        arithmetic: "Peserta harus menyelesaikan soal-soal matematika yang diberikan.",
+        alertLight: "Peserta harus merespons dengan mengeklik saat lampu merah yang menyala, abaikan lampu kuning.",
+        horizon: "Peserta harus menjaga parameter penerbangan (seperti ketinggian dan arah) dalam batas yang ditentukan.",
+        combined: "Latihan gabungan dari keempat tugas sebelumnya."
+      };
+
+      this.instructionModalContent = instructions[this.currentTrainingTask];
+      this.showInstructionModal = true;
+    },
+    startTrainingTask() {
+      this.showInstructionModal = false;
+
+      if (this.trainingCompleted) {
+        this.startActualTest();
+      } else {
+        switch (this.currentTrainingTask) {
+          case 'gaugesMeter':
+            this.startGaugesMeterTraining();
+            break;
+          case 'arithmetic':
+            this.startArithmeticTraining();
+            break;
+          case 'alertLight':
+            this.startAlertLightTraining();
+            break;
+          case 'horizon':
+            this.startHorizonTraining();
+            break;
+          case 'combined':
+            this.startCombinedTraining();
+            break;
+        }
+      }
+    },
+    startGaugesMeterTraining(){
+      this.minuteTime = 1
+      this.timeLeft = this.minuteTime * 60
+
+      this.isPauseGaugesMeter = false;
+      this.isPauseArithmetic = true;
+      this.isPauseAlertLight = true;
+      this.isPauseHorizon = true;
+
+      this.config.gaugesMeter.isActive = true;
+      this.config.alertLight.isActive = false;
+      this.config.arithmetic.isActive = false;
+      this.config.horizon.isActive = false;
+
+      this.startCountdown();
+    },
+    startArithmeticTraining(){
+      this.minuteTime = 1
+      this.timeLeft = this.minuteTime * 60
+
+      this.isPauseArithmetic = false;
+      this.isPauseGaugesMeter = true;
+      this.isPauseAlertLight = true;
+      this.isPauseHorizon = true;
+
+      this.config.arithmetic.isActive = true;
+      this.config.gaugesMeter.isActive = false;
+      this.config.alertLight.isActive = false;
+      this.config.horizon.isActive = false;
+
+      this.allowSound = true;
+      this.$refs.arithmeticTaskRef.generateProblem();
+
+      this.startCountdown();
+    },
+    startAlertLightTraining(){
+      this.minuteTime = 1
+      this.timeLeft = this.minuteTime * 60
+
+      this.isPauseAlertLight = false;
+      this.isPauseArithmetic = true;
+      this.isPauseGaugesMeter = true;
+      this.isPauseHorizon = true;
+
+      this.config.alertLight.isActive = true;
+      this.config.arithmetic.isActive = false;
+      this.config.gaugesMeter.isActive = false;
+      this.config.horizon.isActive = false;
+
+      this.startCountdown();
+    },
+    startHorizonTraining(){
+      this.minuteTime = 1
+      this.timeLeft = this.minuteTime * 60
+
+      this.isPauseHorizon = false;
+      this.isPauseAlertLight = true;
+      this.isPauseArithmetic = true;
+      this.isPauseGaugesMeter = true;
+
+      this.config.horizon.isActive = true;
+      this.config.alertLight.isActive = false;
+      this.config.arithmetic.isActive = false;
+      this.config.gaugesMeter.isActive = false;
+
+      this.startCountdown();
+    },
+    startCombinedTraining(){
+      this.isPauseHorizon = false;
+      this.isPauseAlertLight = false;
+      this.isPauseArithmetic = false;
+      this.isPauseGaugesMeter = false;
+
+      this.config.horizon.isActive = true;
+      this.config.alertLight.isActive = true;
+      this.config.arithmetic.isActive = true;
+      this.config.gaugesMeter.isActive = true;
+
+      this.allowSound = true;
+      this.$refs.arithmeticTaskRef.generateProblem();
+
+      this.minuteTime = 1
+      this.timeLeft = this.minuteTime * 60
+      this.startCountdown();
+    },
+    endTrainingTask() {
+      this.$refs.arithmeticTaskRef.stop();
+
+      const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
+      if (currentTaskIndex < this.trainingTasks.length - 1) {
+        this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
+        this.showTrainingInstructions();
+      } else {
+        this.completeTraining();
+      }
+    },
+    completeTraining() {
+      this.trainingCompleted = true;
+      this.showInstructionModal = true;
+      this.instructionModalContent = "Training completed! The actual test will begin now.";
+
+      completeTrainingTestAndUpdateLocalStorage(this.testName);
+    },
+    startActualTest() {
+      this.result = {
+        alertLight : {
+          correctResponse : null,
+          responseTime : null,
+          wrong : null,
+          correct : null,
+          alertCount : null,
+          warningCount : null,
+        },
+        arithmetic : {
+          correctResponse : null,
+          responseTime : null,
+          correctAnswer : null,
+          totalQuestion : null,
+        },
+        gaugesMeter : {
+          correctResponse : null,
+          responseTime : null,
+          correct : null,
+          occurance : null,
+        },
+        horizon : {
+          accuracy : null,
+          correctTime : null,
+        }
       }
 
+      this.interval = null;
+
+      this.minuteTime = this.minuteTest
+      this.timeLeft = this.minuteTime * 60
+
+      this.config.horizon.isActive = true;
+      this.config.alertLight.isActive = true;
+      this.config.arithmetic.isActive = true;
+      this.config.gaugesMeter.isActive = true;
+
+      this.allowSound = true;
+      this.$refs.arithmeticTaskRef.generateProblem();
+      this.$refs.horizonTaskRef.startAnimation();
+
+      this.startCountdown();
+    },
+    startCountdown() {
       this.interval = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft -= 1;
         } else {
-          this.submitResult();
           clearInterval(this.interval);
+          if (this.trainingCompleted) {
+            this.submitResult();
+          } else {
+            this.endTrainingTask();
+          }
         }
       }, 1000);
     },
@@ -181,31 +395,18 @@ export default {
     horizonResult(result) {
       this.result.horizon = result;
     },
-    pause() {
-      clearInterval(this.interval);
-      this.isPause = true;
-    },
-    startAgain() {
-      this.isPause = false;
-      this.startCountdown();
-    },
     exit() {
-      this.$router.push('module');
-    },
-    playSound() {
-      this.allowSound = true;
-      document.getElementById('fullPageModal').style.display = 'none';
-      this.$refs.arithmeticTaskRef.generateProblem();
-      this.startAgain();
+      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
+        this.$router.push('module');
+      }
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === this.testName);
       const payload = {
         'testSessionId': scheduleData.sessionId,
         'userId': scheduleData.userId,
         'moduleId': scheduleData.moduleId,
-        'batteryTestConfigId': test.config.id,
+        'batteryTestConfigId': scheduleData.testId,
         'refreshCount': parseInt(localStorage.getItem('reloadCountInstrumentMultitask')),
         'result': {
           'arithmetics': {
@@ -233,11 +434,6 @@ export default {
     },
     async submitResult() {
       try {
-        if (this.isTrial) {
-          this.$router.push('/module');
-          return;
-        }
-
         this.isLoading = true;
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
@@ -267,11 +463,12 @@ export default {
     let reloadCount = parseInt(localStorage.getItem('reloadCountInstrumentMultitask') || '0');
     reloadCount++;
     localStorage.setItem('reloadCountInstrumentMultitask', reloadCount.toString());
+
     window.addEventListener('beforeunload', () => {
       localStorage.setItem('reloadCountInstrumentMultitask', reloadCount.toString());
     });
 
-    this.loadConfig();
+    this.initConfig();
   },
   beforeUnmount() {
     clearInterval(this.interval);
@@ -467,5 +664,45 @@ h3 {
   color: #ffffff;
   margin-top: 20px;
   font-size: 1.2em;
+}
+
+.instruction-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.instruction-modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+  max-width: 80%;
+}
+
+.instruction-modal-content h2 {
+  margin-top: 0;
+}
+
+.instruction-modal-content button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.instruction-modal-content button:hover {
+  background-color: #0056b3;
 }
 </style>

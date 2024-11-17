@@ -434,6 +434,7 @@ export default {
     },
     async drawLineOneByOne(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
       ctx.clearRect(0, 0, this.width, this.height);
@@ -591,6 +592,7 @@ export default {
     },
     startTailDisappearance(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
       let i = startIndex;
