@@ -52,8 +52,6 @@ export default {
   },
   watch: {
 		isTimesUp() {
-      this.stopAnimation();
-
 			this.$emit('getResult', {
 				correctTime: this.greenLineDuration,
 			});

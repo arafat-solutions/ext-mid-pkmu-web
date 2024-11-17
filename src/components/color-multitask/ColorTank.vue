@@ -94,8 +94,7 @@ export default {
 			return;
 		}
 
-		this.runningInterval('check-fully-tank');
-		this.runningInterval('check-empty-tank');
+    this.start()
 	},
 	created() {
 		window.addEventListener('keydown', this.handleKeyDown);
@@ -129,6 +128,36 @@ export default {
 		},
 	},
 	methods: {
+    start() {
+      this.startEmptyTank()
+      this.checkStopStatus()
+
+      this.runningInterval('check-fully-tank');
+      this.runningInterval('check-empty-tank');
+    },
+    stop() {
+      this.finalScore = 120;
+
+      if (this.intervalStartEmptyTank) {
+        clearInterval(this.intervalStartEmptyTank);
+        this.intervalStartEmptyTank = null;
+      }
+
+      if (this.intervalCheckEmptyTank) {
+        clearInterval(this.intervalCheckEmptyTank);
+        this.intervalCheckEmptyTank = null;
+      }
+
+      if (this.intervalCheckFullyTank) {
+        clearInterval(this.intervalCheckFullyTank);
+        this.intervalCheckFullyTank = null;
+      }
+
+      if (this.intervalContinueEmptyTank) {
+        clearInterval(this.intervalContinueEmptyTank);
+        this.intervalContinueEmptyTank = null;
+      }
+    },
 		handleVirtualKeyDown(event) {
 			this.handleKeyDown({ key: event.key });
 		},
@@ -226,9 +255,6 @@ export default {
 					],
 				]
 			}
-
-			this.startEmptyTank()
-			this.checkStopStatus()
 		},
 		setMinimumHeight() {
 			return Math.floor(Math.random() * (70 - 40 + 1)) + 40 + '%';
@@ -414,7 +440,6 @@ export default {
 				this.keySequence = [];
 			}
 		},
-
 		checkKeyboardState(upper, lower1, lower2) {
 			console.log('Checking keyboard state:', upper, lower1, lower2);
 			if (upper == 'Q') {
