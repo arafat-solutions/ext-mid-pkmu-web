@@ -305,8 +305,6 @@ export default {
       this.startCountdown();
     },
     startCombinedTraining() {
-      this.$refs.colorTankTaskRef.initLowerTank();
-
       this.config.duration = 1 * 60
 
       this.isPauseArithmetics = false;
@@ -317,15 +315,15 @@ export default {
       this.config.color_tank.is_active = true;
       this.config.horizon.is_active = true;
 
+      this.$refs.colorTankTaskRef.initLowerTank();
+      this.$refs.colorTankTaskRef.initScore();
       this.$refs.colorTankTaskRef.start();
+
       this.$refs.arithmeticTaskRef.generateAudio();
 
       this.startCountdown();
     },
     endTrainingTask() {
-      this.$refs.colorTankTaskRef.stop();
-      this.$refs.arithmeticTaskRef.stop();
-
       const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
       if (currentTaskIndex < this.trainingTasks.length - 1) {
         this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
@@ -366,7 +364,10 @@ export default {
       this.config.color_tank.is_active = true;
       this.config.horizon.is_active = true;
 
+      this.$refs.colorTankTaskRef.initLowerTank();
+      this.$refs.colorTankTaskRef.initScore();
       this.$refs.colorTankTaskRef.start();
+
       this.$refs.arithmeticTaskRef.generateAudio();
 
       this.startCountdown();
