@@ -6,12 +6,8 @@
 			</div>
 			<ul class="options">
 				<li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item">
-					<button 
-						class="option-button"
-						:class="{ 'clickable': isCanChooseAudio }"
-						@click="handleOptionClick(option.key)"
-						:disabled="!isCanChooseAudio"
-					>
+					<button class="option-button" :class="{ 'clickable': isCanChooseAudio }"
+						@click="handleOptionClick(option.key)" :disabled="!isCanChooseAudio">
 						<span class="option-answer">{{ option.key }}</span>
 						<span class="option-value">{{ option.value }}</span>
 					</button>
@@ -40,6 +36,10 @@ export default {
 			responseQuestion: 0,
 			responseTime: 0,
 			responseDurations: [],
+			questionTimer: null,
+			QUESTION_DURATION: 20000, // 20 seconds in milliseconds
+			hasAnswered: false,
+			currentUtterance: null, // Track current speech utterance
 		};
 	},
 	props: {
@@ -60,11 +60,11 @@ export default {
 	},
 	beforeUnmount() {
 		window.removeEventListener('keyup', this.handleKeyPress);
-		this.stop();
+		this.cleanupQuestion();
 	},
 	watch: {
 		isTimesUp() {
-			this.stop();
+			this.cleanupQuestion();
 			this.$emit('getResult', {
 				correctAnswer: this.correctAnswer,
 				totalQuestion: this.totalQuestion,
@@ -73,26 +73,36 @@ export default {
 		},
 		isPause(newValue) {
 			if (newValue) {
-				this.stop();
+				this.cleanupQuestion();
+			} else if (this.isActive && !this.isTimesUp) {
+				// Small delay before starting new question when unpaused
+				setTimeout(() => {
+					this.generateQuestion();
+				}, 500);
 			}
 		}
 	},
 	methods: {
+		cleanupQuestion() {
+			this.stop();
+			if (this.questionTimer) {
+				clearTimeout(this.questionTimer);
+				this.questionTimer = null;
+			}
+			this.isCanChooseAudio = false;
+		},
 		stop() {
-			if ('speechSynthesis' in window) {
+			// Cancel any ongoing speech
+			if (this.currentUtterance) {
 				window.speechSynthesis.cancel();
+				this.currentUtterance = null;
 			}
 		},
-		averageResponseTime() {
-			if (this.responseDurations.length > 0) {
-				const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
-				return (sum / this.responseDurations.length) / 1000;
-			}
-			return 0;
+
+		handleOptionClick(key) {
+			this.pressAnswerAudio(key);
 		},
-		calculateResponseTime() {
-			return this.responseDurations.push(this.responseTime - this.responseQuestion);
-		},
+
 		generateNumbers() {
 			let num1, num2;
 			if (this.difficulty === 'hard') {
@@ -108,8 +118,8 @@ export default {
 			return [num1, num2];
 		},
 		generateOperation() {
-			const operations = this.difficulty === 'easy' 
-				? ['+', '-'] 
+			const operations = this.difficulty === 'easy'
+				? ['+', '-']
 				: ['+', '-', '×'];
 			return operations[Math.floor(Math.random() * operations.length)];
 		},
@@ -129,49 +139,117 @@ export default {
 				default: return '';
 			}
 		},
+
+		startQuestionTimer() {
+			if (this.questionTimer) {
+				clearTimeout(this.questionTimer);
+			}
+
+			this.questionTimer = setTimeout(() => {
+				if (!this.hasAnswered) {
+					this.totalQuestion++;
+				}
+				this.moveToNextQuestion();
+			}, this.QUESTION_DURATION);
+		},
+
+		moveToNextQuestion() {
+			this.cleanupQuestion();
+			if (!this.isTimesUp && !this.isPause && this.isActive) {
+				// Add delay before next question
+				setTimeout(() => {
+					this.generateQuestion();
+				}, 500);
+			}
+		},
+
 		generateQuestion() {
+			// Ensure any previous speech is stopped
+			this.stop();
+
+			this.hasAnswered = false;
+			this.startQuestionTimer();
+
 			let [num1, num2] = this.generateNumbers();
 			const operation = this.generateOperation();
-			
-			// Ensure subtraction doesn't result in negative numbers
+
 			if (operation === '-' && num1 < num2) {
 				[num1, num2] = [num2, num1];
 			}
 
 			const result = this.calculateResult(num1, num2, operation);
 			this.audio = result;
-			
-			// Format question for speech
+
 			const operationText = this.getOperationText(operation);
 			this.currentQuestion = `${num1} ${operationText} ${num2}`;
 
 			let correctLocationIndex = Math.floor(Math.random() * 4);
-			
-			// Generate wrong answers that are close to the correct answer
+
 			this.optionAnswerAudios = Array(4).fill().map((_, index) => {
 				if (index === correctLocationIndex) {
 					return { key: index + 1, value: result };
 				} else {
 					let wrongAnswer;
 					do {
-						// Generate wrong answer within ±10 of correct answer
 						wrongAnswer = result + (Math.floor(Math.random() * 21) - 10);
 					} while (
-						wrongAnswer === result || 
-						wrongAnswer < 0 || 
+						wrongAnswer === result ||
+						wrongAnswer < 0 ||
 						this.optionAnswerAudios.some(opt => opt.value === wrongAnswer)
 					);
 					return { key: index + 1, value: wrongAnswer };
 				}
 			});
 
-			this.startPlayback();
+			// Delay speech start slightly to ensure clean audio
+			setTimeout(() => {
+				this.startPlayback();
+			}, 100);
 		},
-		handleOptionClick(key) {
-			this.pressAnswerAudio(key);
+
+		startPlayback() {
+			this.isCanChooseAudio = false;
+
+			if ('speechSynthesis' in window) {
+				// Cancel any existing speech
+				this.stop();
+
+				// Create new utterance
+				this.currentUtterance = new SpeechSynthesisUtterance(this.currentQuestion);
+				this.currentUtterance.rate = 1;
+				this.currentUtterance.pitch = 1;
+				this.currentUtterance.volume = 1;
+				this.currentUtterance.lang = 'id-ID';
+
+				// Set up event handlers
+				this.currentUtterance.onend = () => {
+					if (!this.isTimesUp && !this.isPause && this.isActive) {
+						this.isCanChooseAudio = true;
+					}
+					this.currentUtterance = null;
+				};
+
+				this.currentUtterance.onerror = (event) => {
+					console.error('Speech synthesis error:', event);
+					this.isCanChooseAudio = true;
+					this.currentUtterance = null;
+				};
+
+				// Start speech
+				this.responseQuestion = Date.now();
+				window.speechSynthesis.speak(this.currentUtterance);
+			} else {
+				console.error('Text-to-speech not supported');
+				this.isCanChooseAudio = true;
+			}
 		},
+
+		calculateResponseTime() {
+			return this.responseDurations.push(this.responseTime - this.responseQuestion);
+		},
+
 		pressAnswerAudio(key) {
-			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
+			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio || this.hasAnswered) {
 				return;
 			}
 
@@ -183,6 +261,9 @@ export default {
 				}
 			}
 
+			this.hasAnswered = true;
+			this.totalQuestion++;
+
 			if (this.audio === value) {
 				this.responseTime = Date.now();
 				this.calculateResponseTime();
@@ -190,50 +271,20 @@ export default {
 			}
 
 			this.isCanChooseAudio = false;
-			this.stop();
-			setTimeout(() => {
-				this.generateQuestion();
-			}, 500);
 		},
-		startPlayback() {
-			this.totalQuestion++;
 
-			if ('speechSynthesis' in window) {
-				// Create and configure utterance
-				const utterance = new SpeechSynthesisUtterance(this.currentQuestion);
-				utterance.rate = 1;
-				utterance.pitch = 1;
-				utterance.volume = 1;
-				utterance.lang = 'id-ID';
-
-				// Start speaking
-				this.responseQuestion = Date.now();
-				window.speechSynthesis.speak(utterance);
-
-				// Enable answering after speech complete
-				utterance.onend = () => {
-					setTimeout(() => {
-						this.isCanChooseAudio = true;
-					}, 500);
-				};
-			} else {
-				console.error('Text-to-speech not supported');
-				this.isCanChooseAudio = true;
-			}
-		},
 		handleKeyPress(event) {
-			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
+			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio || this.hasAnswered) {
 				return;
 			}
 
 			if (event.key >= '1' && event.key <= '4') {
 				this.pressAnswerAudio(parseInt(event.key));
 			}
-		},
-	},
+		}
+	}
 };
 </script>
-
 <style scoped>
 .arithmetic {
 	display: flex;
