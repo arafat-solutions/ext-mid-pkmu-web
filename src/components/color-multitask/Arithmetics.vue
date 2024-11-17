@@ -5,14 +5,16 @@
 				<strong> Dengarkan dan masukkan jawaban Anda </strong>
 			</div>
 			<ul class="options">
-				<li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item"
-					@click="handleOptionClick(option.key)">
-					<label>
-						<span class="option-answer" :class="{ 'clickable': isCanChooseAudio }">
-							{{ option.key }}
-						</span>
-						{{ option.value }}
-					</label>
+				<li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item">
+					<button 
+						class="option-button"
+						:class="{ 'clickable': isCanChooseAudio }"
+						@click="handleOptionClick(option.key)"
+						:disabled="!isCanChooseAudio"
+					>
+						<span class="option-answer">{{ option.key }}</span>
+						<span class="option-value">{{ option.value }}</span>
+					</button>
 				</li>
 			</ul>
 		</div>
@@ -24,10 +26,11 @@ export default {
 	name: 'ArithmeticsView',
 	data() {
 		return {
-      isCanChooseAudio: false,
+			isCanChooseAudio: false,
 			audio: null,
 			correctAnswer: 0,
 			totalQuestion: 0,
+			currentQuestion: '',
 			optionAnswerAudios: [
 				{ key: 1, value: '' },
 				{ key: 2, value: '' },
@@ -49,7 +52,7 @@ export default {
 	},
 	async mounted() {
 		if (this.useSound && this.isActive) {
-			this.generateAudio();
+			this.generateQuestion();
 		}
 	},
 	created() {
@@ -57,80 +60,118 @@ export default {
 	},
 	beforeUnmount() {
 		window.removeEventListener('keyup', this.handleKeyPress);
+		this.stop();
 	},
 	watch: {
 		isTimesUp() {
-			if ('speechSynthesis' in window) {
-				window.speechSynthesis.cancel()
-			}
-
+			this.stop();
 			this.$emit('getResult', {
 				correctAnswer: this.correctAnswer,
 				totalQuestion: this.totalQuestion,
 				responseTime: this.averageResponseTime(),
 			});
 		},
+		isPause(newValue) {
+			if (newValue) {
+				this.stop();
+			}
+		}
 	},
 	methods: {
-    stop() {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    },
+		stop() {
+			if ('speechSynthesis' in window) {
+				window.speechSynthesis.cancel();
+			}
+		},
 		averageResponseTime() {
 			if (this.responseDurations.length > 0) {
 				const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
-
 				return (sum / this.responseDurations.length) / 1000;
 			}
-
 			return 0;
 		},
 		calculateResponseTime() {
 			return this.responseDurations.push(this.responseTime - this.responseQuestion);
 		},
-		generateAudio() {
-			this.audio = null;
-			this.responseQuestion = 0;
-			this.responseTime = 0;
-
+		generateNumbers() {
+			let num1, num2;
 			if (this.difficulty === 'hard') {
-				this.audio = Math.floor(Math.random() * 900) + 100;
+				num1 = Math.floor(Math.random() * 90) + 10; // 10-99
+				num2 = Math.floor(Math.random() * 90) + 10;
+			} else if (this.difficulty === 'medium') {
+				num1 = Math.floor(Math.random() * 90) + 10; // 10-99
+				num2 = Math.floor(Math.random() * 9) + 1;   // 1-9
+			} else { // easy
+				num1 = Math.floor(Math.random() * 9) + 1;   // 1-9
+				num2 = Math.floor(Math.random() * 9) + 1;   // 1-9
 			}
-			if (this.difficulty === 'medium') {
-				this.audio = Math.floor(Math.random() * 90) + 10;
+			return [num1, num2];
+		},
+		generateOperation() {
+			const operations = this.difficulty === 'easy' 
+				? ['+', '-'] 
+				: ['+', '-', '×'];
+			return operations[Math.floor(Math.random() * operations.length)];
+		},
+		calculateResult(num1, num2, operation) {
+			switch (operation) {
+				case '+': return num1 + num2;
+				case '-': return num1 - num2;
+				case '×': return num1 * num2;
+				default: return 0;
 			}
-			if (this.difficulty === 'easy') {
-				this.audio = Math.floor(Math.random() * 9) + 1;
+		},
+		getOperationText(operation) {
+			switch (operation) {
+				case '+': return 'tambah';
+				case '-': return 'kurang';
+				case '×': return 'kali';
+				default: return '';
+			}
+		},
+		generateQuestion() {
+			let [num1, num2] = this.generateNumbers();
+			const operation = this.generateOperation();
+			
+			// Ensure subtraction doesn't result in negative numbers
+			if (operation === '-' && num1 < num2) {
+				[num1, num2] = [num2, num1];
 			}
 
-			let correctLocationIndex = Math.floor(Math.random() * 4) + 1;
+			const result = this.calculateResult(num1, num2, operation);
+			this.audio = result;
+			
+			// Format question for speech
+			const operationText = this.getOperationText(operation);
+			this.currentQuestion = `${num1} ${operationText} ${num2}`;
 
-			for (var i = 0; i < 4; i++) {
-				if (this.optionAnswerAudios[i].key === correctLocationIndex) {
-					this.optionAnswerAudios[i].value = this.audio;
+			let correctLocationIndex = Math.floor(Math.random() * 4);
+			
+			// Generate wrong answers that are close to the correct answer
+			this.optionAnswerAudios = Array(4).fill().map((_, index) => {
+				if (index === correctLocationIndex) {
+					return { key: index + 1, value: result };
 				} else {
-					if (this.difficulty === 'hard') {
-						this.optionAnswerAudios[i].value = Math.floor(Math.random() * 900) + 100;
-					}
-					if (this.difficulty === 'medium') {
-						this.optionAnswerAudios[i].value = Math.floor(Math.random() * 90) + 10;
-					}
-					if (this.difficulty === 'easy') {
-						this.optionAnswerAudios[i].value = Math.floor(Math.random() * 9) + 1;
-					}
+					let wrongAnswer;
+					do {
+						// Generate wrong answer within ±10 of correct answer
+						wrongAnswer = result + (Math.floor(Math.random() * 21) - 10);
+					} while (
+						wrongAnswer === result || 
+						wrongAnswer < 0 || 
+						this.optionAnswerAudios.some(opt => opt.value === wrongAnswer)
+					);
+					return { key: index + 1, value: wrongAnswer };
 				}
-			}
+			});
 
-			setTimeout(() => {
-				this.startPlayback()
-			}, 1000)
+			this.startPlayback();
 		},
 		handleOptionClick(key) {
 			this.pressAnswerAudio(key);
 		},
 		pressAnswerAudio(key) {
-      if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
+			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
 				return;
 			}
 
@@ -149,59 +190,45 @@ export default {
 			}
 
 			this.isCanChooseAudio = false;
-			this.generateAudio();
+			this.stop();
+			setTimeout(() => {
+				this.generateQuestion();
+			}, 500);
 		},
 		startPlayback() {
 			this.totalQuestion++;
 
-			setTimeout(() => {
-				if ('speechSynthesis' in window) {
-					let number = this.audio
+			if ('speechSynthesis' in window) {
+				// Create and configure utterance
+				const utterance = new SpeechSynthesisUtterance(this.currentQuestion);
+				utterance.rate = 1;
+				utterance.pitch = 1;
+				utterance.volume = 1;
+				utterance.lang = 'id-ID';
 
-					const utterancePart1 = new SpeechSynthesisUtterance("  ");
-					const utterancePart2 = new SpeechSynthesisUtterance(number + " ");
-					utterancePart2.rate = 1;
-					utterancePart2.pitch = 1.2;
-					utterancePart2.volume = 1;
-					utterancePart2.lang = 'id-ID';
+				// Start speaking
+				this.responseQuestion = Date.now();
+				window.speechSynthesis.speak(utterance);
 
-					window.speechSynthesis.speak(utterancePart1);
-
-					utterancePart1.onend = () => {
-						setTimeout(() => {
-							this.responseQuestion = Date.now();
-							window.speechSynthesis.speak(utterancePart2);
-
-							setTimeout(() => {
-								this.isCanChooseAudio = true;
-							}, 500);
-						}, 500);
-					};
-				} else {
-					alert('Sorry, your browser does not support text-to-speech.');
-				}
-			}, 500);
+				// Enable answering after speech complete
+				utterance.onend = () => {
+					setTimeout(() => {
+						this.isCanChooseAudio = true;
+					}, 500);
+				};
+			} else {
+				console.error('Text-to-speech not supported');
+				this.isCanChooseAudio = true;
+			}
 		},
 		handleKeyPress(event) {
 			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio) {
 				return;
 			}
 
-      if (event.key.toUpperCase() == 1) {
-        this.pressAnswerAudio(1);
-      }
-
-      if (event.key.toUpperCase() == 2) {
-        this.pressAnswerAudio(2);
-      }
-
-      if (event.key.toUpperCase() == 3) {
-        this.pressAnswerAudio(3);
-      }
-
-      if (event.key.toUpperCase() == 4) {
-        this.pressAnswerAudio(4);
-      }
+			if (event.key >= '1' && event.key <= '4') {
+				this.pressAnswerAudio(parseInt(event.key));
+			}
 		},
 	},
 };
@@ -235,6 +262,7 @@ export default {
 	gap: 20px;
 	list-style: none;
 	padding: 0;
+	margin: 0;
 }
 
 .option-item {
@@ -253,7 +281,13 @@ export default {
 	border: 2px solid #333;
 	border-radius: 10px;
 	transition: all 0.3s ease;
+	cursor: pointer;
+	padding: 10px;
+}
+
+.option-button:disabled {
 	cursor: default;
+	opacity: 0.7;
 }
 
 .option-answer {
@@ -270,11 +304,7 @@ export default {
 	font-weight: bold;
 }
 
-.clickable {
-	cursor: pointer;
-}
-
-.clickable:hover {
+.clickable:not(:disabled):hover {
 	background-color: #e0e0e0;
 	transform: scale(1.05);
 }
