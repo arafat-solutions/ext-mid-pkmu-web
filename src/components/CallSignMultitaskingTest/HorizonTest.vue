@@ -56,7 +56,7 @@ export default {
         }
     },
     mounted() {
-        console.log('Horizon mounted, horizonData:', this.horizonData);
+        console.log(this.$props.horizonData, 'horizonData');
         this.initializeTest();
     },
     unmounted() {
@@ -75,6 +75,9 @@ export default {
         },
         initVisual() {
             const canvas = this.$refs.horizonCanvas;
+            if (!canvas) {
+                return;
+            }
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
             canvas.height = 400;

@@ -147,12 +147,12 @@ export default {
           num2 = this.getRandomNumber(this.minNumber, 10);
           break;
         case 'medium':
-          num1 = this.getRandomNumber(10, 50);
-          num2 = this.getRandomNumber(10, 50);
+          num1 = this.getRandomNumber(this.minNumber, 20);
+          num2 = this.getRandomNumber(11, 50);
           break;
         case 'difficult':
-          num1 = this.getRandomNumber(50, this.maxNumber);
-          num2 = this.getRandomNumber(50, this.maxNumber);
+          num1 = this.getRandomNumber(this.minNumber, this.maxNumber); // 0-99
+          num2 = this.getRandomNumber(this.minNumber, 9); // 0-9
           break;
         default:
           num1 = this.getRandomNumber(this.minNumber, this.maxNumber);

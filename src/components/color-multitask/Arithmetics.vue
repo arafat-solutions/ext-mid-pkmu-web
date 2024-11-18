@@ -71,6 +71,7 @@ export default {
 				responseTime: this.averageResponseTime(),
 			});
 		},
+		
 		isPause(newValue) {
 			if (newValue) {
 				this.cleanupQuestion();
@@ -83,6 +84,13 @@ export default {
 		}
 	},
 	methods: {
+		averageResponseTime() {
+			if (this.responseDurations.length > 0) {
+				const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
+				return (sum / this.responseDurations.length) / 1000;
+			}
+			return 0;
+		},
 		cleanupQuestion() {
 			this.stop();
 			if (this.questionTimer) {
