@@ -129,33 +129,36 @@ export default {
 	},
 	methods: {
     start() {
+      console.log(this.isTimesUp, 'lalla')
+
       this.startEmptyTank()
       this.checkStopStatus()
 
       this.runningInterval('check-fully-tank');
       this.runningInterval('check-empty-tank');
     },
-    stop() {
+    initScore() {
       this.finalScore = 120;
-
+    },
+    stop() {
       if (this.intervalStartEmptyTank) {
         clearInterval(this.intervalStartEmptyTank);
-        this.intervalStartEmptyTank = null;
+        this.intervalStartEmptyTank = 0;
       }
 
       if (this.intervalCheckEmptyTank) {
         clearInterval(this.intervalCheckEmptyTank);
-        this.intervalCheckEmptyTank = null;
+        this.intervalCheckEmptyTank = 0;
       }
 
       if (this.intervalCheckFullyTank) {
         clearInterval(this.intervalCheckFullyTank);
-        this.intervalCheckFullyTank = null;
+        this.intervalCheckFullyTank = 0;
       }
 
       if (this.intervalContinueEmptyTank) {
         clearInterval(this.intervalContinueEmptyTank);
-        this.intervalContinueEmptyTank = null;
+        this.intervalContinueEmptyTank = 0;
       }
     },
 		handleVirtualKeyDown(event) {
@@ -329,6 +332,11 @@ export default {
 		},
 		decreaseTankLevels(tankIndex, tankItem) {
 			const tank = this.lowerTanks[tankIndex][tankItem];
+
+      if (tank['color'] === 'black') {
+        return;
+      }
+
 			if (tank['height'] != '0%' && parseFloat(tank['height'].replace('%', '')) > 5) {
 				tank['height'] = this.decreaseHeight(tank['height']);
 			}
