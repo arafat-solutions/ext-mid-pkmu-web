@@ -1,22 +1,23 @@
 <!-- LinearGauge.vue -->
 <template>
     <div class="gauge-container" :class="{ vertical: isVertical }">
-        <div class="gauge-track">
-            <div class="gauge-scale">
-                <!-- Generate scale markers -->
-                <div v-for="value in scaleValues" :key="value" class="scale-mark">
-                    <span class="scale-label">{{ value }}</span>
-                </div>
-            </div>
-            <!-- Current value pointer -->
-            <div class="gauge-pointer" :style="pointerStyle"></div>
-            <!-- Target marker -->
-            <div class="target-marker" :style="targetStyle"></div>
+      <div class="gauge-track">
+        <!-- Scale lines -->
+        <div class="scale-lines">
+          <div v-for="value in scaleValues" 
+               :key="value" 
+               class="scale-mark"
+               :style="getScaleMarkStyle(value)">
+            <span class="scale-label">{{ formatLabel(value) }}</span>
+          </div>
         </div>
-        <div class="gauge-label">{{ label }}</div>
+        <!-- Target marker -->
+        <div class="target-marker" :style="targetStyle"></div>
+        <!-- Current value pointer -->
+        <div class="gauge-pointer" :style="pointerStyle"></div>
+      </div>
     </div>
-</template>
-
+  </template>
 <script setup>
 import { computed } from 'vue';
 import { defineProps } from 'vue';
@@ -51,14 +52,40 @@ const props = defineProps({
         default: 10
     }
 });
-
 const scaleValues = computed(() => {
-    const values = [];
+  const values = [];
+  if (props.isVertical) {
+    // Vertical gauges (speed and altitude) keep original logic
     for (let i = props.min; i <= props.max; i += props.step) {
-        values.push(i);
+      values.push(i);
     }
-    return values;
+  } else {
+    // Horizontal gauge (heading) - show only major cardinal directions
+    // and intermediate points
+    values.push(0);    // N
+    values.push(90);   // E
+    values.push(180);  // S
+    values.push(270);  // W
+    values.push(360);  // N
+  }
+  return values;
 });
+
+// Add function to format heading labels
+const formatLabel = (value) => {
+  if (!props.isVertical) {
+    // For heading, show cardinal directions
+    switch (value) {
+      case 0: return 'N';
+      case 90: return 'E';
+      case 180: return 'S';
+      case 270: return 'W';
+      case 360: return 'N';
+      default: return value;
+    }
+  }
+  return value;
+};
 
 const calculatePosition = (value) => {
     const percentage = ((value - props.min) / (props.max - props.min)) * 100;
@@ -78,40 +105,59 @@ const targetStyle = computed(() => {
         ? { bottom: pos }
         : { left: pos };
 });
+
+const getScaleMarkStyle = (value) => {
+    const pos = calculatePosition(value);
+    return props.isVertical
+        ? { bottom: pos }
+        : { left: pos };
+};
 </script>
 
 <style scoped>
 .gauge-container {
     position: relative;
-    width: 400px;
-    height: 60px;
-    margin: 20px;
+    width: 300px;
+    height: 40px;
+    margin: 10px;
 }
 
 .gauge-container.vertical {
-    width: 60px;
-    height: 400px;
+    width: 40px;
+    height: 300px;
 }
 
 .gauge-track {
     position: relative;
     width: 100%;
     height: 100%;
-    background: #2c3e50;
-    border-radius: 4px;
+    background: transparent;
+    border: 2px solid white;
 }
 
-.gauge-scale {
+.scale-lines {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
 }
 
 .scale-mark {
     position: absolute;
-    width: 100%;
+    background: white;
+}
+
+.vertical .scale-mark {
+    width: 10px;
     height: 2px;
-    background: #fff;
+    left: -10px;
+}
+
+.horizontal .scale-mark {
+    width: 2px;
+    height: 10px;
+    top: -10px;
 }
 
 .scale-label {
@@ -120,37 +166,50 @@ const targetStyle = computed(() => {
     font-size: 12px;
 }
 
-.gauge-pointer {
-    position: absolute;
-    width: 4px;
-    height: 100%;
-    background: white;
-    border-radius: 2px;
-    transition: all 0.1s ease;
+.vertical .scale-label {
+    right: 20px;
+    transform: translateY(50%);
 }
 
-.target-marker {
+.horizontal .scale-label {
+    top: 20px;
+    transform: translateX(-50%);
+}
+
+.gauge-pointer {
     position: absolute;
-    width: 16px;
-    height: 16px;
-    background: #2ecc71;
-    border-radius: 50%;
-    transform: translate(-6px, -8px);
+    background: white;
+    z-index: 2;
 }
 
 .vertical .gauge-pointer {
     width: 100%;
-    height: 4px;
+    height: 2px;
+    left: 0;
+}
+
+.horizontal .gauge-pointer {
+    width: 2px;
+    height: 100%;
+    top: 0;
+}
+
+.target-marker {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #2ecc71;
+    border-radius: 50%;
+    z-index: 1;
 }
 
 .vertical .target-marker {
-    transform: translate(-6px, 8px);
+    left: 50%;
+    transform: translate(-50%, 50%);
 }
 
-.gauge-label {
-    text-align: center;
-    margin-top: 8px;
-    color: white;
-    font-weight: bold;
+.horizontal .target-marker {
+    top: 50%;
+    transform: translate(-50%, -50%);
 }
 </style>

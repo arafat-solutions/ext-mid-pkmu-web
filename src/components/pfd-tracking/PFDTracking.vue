@@ -1,16 +1,16 @@
 <template>
-  <div class="pilot-exam">
+  <div class="tracking-test">
+    <!-- Start Modal -->
     <Transition name="modal">
       <div v-if="showStartModal" class="modal-overlay">
         <div class="modal-container">
           <div class="modal-content">
-            <h2 class="modal-title">Test Akan Dimulai</h2>
+            <h2 class="modal-title">PFD Tracking Test</h2>
             <div class="modal-body">
               <p>In this test, you will need to:</p>
               <ul class="modal-list">
                 <li>Control aircraft indicators using the joystick and throttle</li>
                 <li>Keep indicators within target ranges</li>
-                <li>Listen for number sequences and identify if they are all odd or even</li>
               </ul>
               <p class="modal-footer-text">Click OK when you are ready to begin.</p>
             </div>
@@ -21,39 +21,305 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Timer -->
     <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
-    <div class="indicators">
-      <div class="indicator-group">
+
+    <!-- Main Indicators -->
+    <div class="indicators-container">
+      <div class="indicators-row">
         <!-- Speed Indicator -->
-        <div class="indicator-wrapper" :class="{ 'blink': isAirspeedOutOfTarget }">
-          <LinearGauge :value="airspeed" :target="airspeedTarget" :min="MOVEMENT_SPEED.MIN_AIRSPEED"
-            :max="MOVEMENT_SPEED.MAX_AIRSPEED" label="AIRSPEED" :isVertical="true" />
-          <!-- Thrust indicator remains similar -->
-          <div class="thruster-indicator">
-            <!-- ... same thrust UI ... -->
+        <div class="indicator-group" :class="{ 'blink': isAirspeedOutOfTarget }">
+          <div class="indicator-label">SPEED</div>
+          <div class="indicator vertical">
+            <LinearGauge label="Airspeed" :value="airspeed" :target="airspeedTarget" :min="MOVEMENT_SPEED.MIN_AIRSPEED"
+              :max="MOVEMENT_SPEED.MAX_AIRSPEED" :isVertical="true" />
+            <!-- Thrust Control -->
+            <div class="thruster-indicator">
+              <div class="thruster-bar">
+                <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
+              </div>
+              <div class="thruster-value">{{ Math.round(thrustLevel) }}%</div>
+            </div>
           </div>
         </div>
 
         <!-- Heading Indicator -->
-        <div class="indicator-wrapper" :class="{ 'blink': isHeadingOutOfTarget }">
-          <LinearGauge :value="heading" :target="headingTarget" :min="0" :max="360" label="HEADING"
-            :isVertical="false" />
+        <div class="indicator-group" :class="{ 'blink': isHeadingOutOfTarget }">
+          <div class="indicator-label">HEADING</div>
+          <div class="indicator horizontal">
+            <LinearGauge label="compass" :value="heading" :target="headingTarget" :min="0" :max="360"
+              :isVertical="false" />
+          </div>
         </div>
 
         <!-- Altitude Indicator -->
-        <div class="indicator-wrapper" :class="{ 'blink': isAltitudeOutOfTarget }">
-          <LinearGauge :value="altitude" :target="altitudeTarget" :min="0" :max="10000" label="ALTITUDE"
-            :isVertical="true" />
+        <div class="indicator-group" :class="{ 'blink': isAltitudeOutOfTarget }">
+          <div class="indicator-label">ALTITUDE</div>
+          <div class="indicator vertical">
+            <LinearGauge label="altitude" :value="altitude" :target="altitudeTarget" :min="0" :max="10000"
+              :isVertical="true" :step="500" />
+          </div>
         </div>
       </div>
     </div>
 
-    
-    <div v-if="examRunning">
-      <p>Score: {{ score }}</p>
+    <!-- Score Display -->
+    <div v-if="examRunning" class="score-display">
+      Score: {{ score }}
     </div>
   </div>
 </template>
+
+<style scoped>
+.tracking-test {
+  background: #1a1a1a;
+  min-height: 100vh;
+  padding: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.countdown-timer {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 0 0 10px 10px;
+  z-index: 1000;
+}
+
+.indicators-container {
+  margin-top: 80px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 20px;
+}
+
+.indicators-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 40px;
+}
+
+.indicator-group {
+  background: #2c3e50;
+  padding: 20px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.indicator-label {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.indicator.vertical {
+  flex-direction: row;
+}
+
+.indicator.horizontal {
+  flex-direction: column;
+}
+
+.thruster-indicator {
+  width: 30px;
+  height: 300px;
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.thruster-bar {
+  height: 100%;
+  width: 100%;
+  background: #34495e;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.thruster-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: #ff6b6b;
+  transition: height 0.2s ease;
+}
+
+.thruster-value {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #fff;
+}
+
+.audio-test {
+  margin-top: 40px;
+  padding: 20px;
+  background: #2c3e50;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.number-display {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.response-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btn-red,
+.btn-green {
+  padding: 12px 30px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.btn-red {
+  background-color: #e74c3c;
+}
+
+.btn-green {
+  background-color: #2ecc71;
+}
+
+.btn-red:hover,
+.btn-green:hover {
+  transform: scale(1.05);
+}
+
+.btn-red:disabled,
+.btn-green:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.score-display {
+  margin-top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: #2c3e50;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.modal-title {
+  font-size: 24px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.modal-body {
+  color: #ecf0f1;
+}
+
+.modal-list {
+  list-style-type: disc;
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.modal-list li {
+  margin-bottom: 10px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.modal-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.modal-button:hover {
+  background-color: #2980b9;
+}
+
+/* Blink animation for out-of-target indicators */
+@keyframes blink {
+  0% {
+    background-color: #2c3e50;
+  }
+
+  50% {
+    background-color: rgba(231, 76, 60, 0.3);
+  }
+
+  100% {
+    background-color: #2c3e50;
+  }
+}
+
+.blink {
+  animation: blink 1s infinite;
+}
+
+/* Transition animations */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+</style>
 
 <script setup>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
@@ -70,7 +336,6 @@ const MOVEMENT_SPEED = {
   MAX_AIRSPEED: 160,
   GRAVITY_EFFECT: 0.08,
   VERTICAL_SPEED_MULTIPLIER: 1.2,
-  TARGET_CHANGE_RATE: 1,
   ACCELERATION_RATE: 0.001,     // Increased from 0.000001
   DECELERATION_RATE: 0.0008,     // Increased from 0.000001
   DRAG_COEFFICIENT: 0.00015,     // Adjusted to match new acceleration
@@ -79,6 +344,7 @@ const MOVEMENT_SPEED = {
   ALTITUDE_EFFECT_RATE: 0.0004,
   MAX_ALTITUDE_EFFECT: 5,
   THRUST_MULTIPLIER: 4,    // New: how much momentum is retained (close to 1)
+  TARGET_CHANGE_RATE: 5
 };
 
 // State
@@ -115,8 +381,8 @@ const harmonic1 = ref(null);
 const harmonic2 = ref(null);
 const currentAcceleration = ref(0);
 const targetSpeed = ref(MOVEMENT_SPEED.MIN_AIRSPEED);
-
-
+const UPDATE_INTERVAL = 2000; // Update every 2 seconds
+const lastTargetUpdate = ref(Date.now());
 
 // Audio test state
 const displayedNumbers = ref([]);
@@ -350,10 +616,8 @@ const checkGamepadConnection = () => {
     if (gamepads[i]) {
       if (gamepads[i].id === 'T.16000M (Vendor: 044f Product: b10a)') {
         gamepad.value = gamepads[i];
-        console.log("Reconnected to joystick:", gamepad.value);
       } else if (gamepads[i].id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
         thruster.value = gamepads[i];
-        console.log("Reconnected to throttle:", thruster.value);
       }
     }
   }
@@ -552,8 +816,12 @@ const updateTime = () => {
 
 const updateTargets = () => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
+  const currentTime = Date.now();
 
-  if (Math.random() < 0.005) {
+  // Update every UPDATE_INTERVAL milliseconds
+  if (currentTime - lastTargetUpdate.value >= UPDATE_INTERVAL) {
+    lastTargetUpdate.value = currentTime;
+
     updateIndicator('airspeed', currentConfig?.airspeed);
     updateIndicator('heading', currentConfig?.compass);
     updateIndicator('altitude', currentConfig?.altimeter);
@@ -562,71 +830,69 @@ const updateTargets = () => {
 
 const updateIndicator = (indicator, mode) => {
   if (mode === 'inactive' || mode === 'keep_indicator') return;
-
   const currentTime = Date.now();
   if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) return;
 
   lastUpdateTime.value = currentTime;
 
-  if (mode === 'adjust_for_consistent_updates') {
-    let currentValue, currentTarget, minValue, maxValue;
+  let currentValue, currentTarget, minValue, maxValue;
 
-    switch (indicator) {
-      case 'airspeed':
-        currentValue = airspeed.value;
-        currentTarget = airspeedTarget.value;
-        minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
-        maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
-        break;
-      case 'heading':
-        currentValue = heading.value;
-        currentTarget = headingTarget.value;
-        minValue = 0;
-        maxValue = 360;
-        break;
-      case 'altitude':
-        currentValue = altitude.value;
-        currentTarget = altitudeTarget.value;
-        minValue = 1000;
-        maxValue = 9000;
-        break;
-    }
-    console.log(currentValue)
+  switch (indicator) {
+    case 'airspeed':
+      currentValue = airspeed.value;
+      currentTarget = airspeedTarget.value;
+      minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
+      maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
+      break;
+    case 'heading':
+      currentValue = heading.value;
+      currentTarget = headingTarget.value;
+      minValue = 0;
+      maxValue = 360;
+      break;
+    case 'altitude':
+      currentValue = altitude.value;
+      currentTarget = altitudeTarget.value;
+      minValue = 1000;
+      maxValue = 9000;
+      break;
+  }
+  console.log(currentValue, 'currentValue')
+  // Calculate new target
+  let newTarget;
+  const changeDirection = Math.random() > 0.5 ? 1 : -1;
 
-    // Calculate new target
-    let newTarget;
-    const changeDirection = Math.random() > 0.5 ? 1 : -1;
+  if (indicator === 'heading') {
+    // Special handling for heading to handle 0-360 wrap
+    newTarget = (currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE) + 360) % 360;
+  } else {
+    newTarget = currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE);
 
-    if (indicator === 'heading') {
-      // Special handling for heading to handle 0-360 wrap
-      newTarget = (currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE) + 360) % 360;
-    } else {
-      newTarget = currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE);
-
-      // Bounce back if we hit limits
-      if (newTarget > maxValue) {
-        newTarget = maxValue - MOVEMENT_SPEED.TARGET_CHANGE_RATE;
-      } else if (newTarget < minValue) {
-        newTarget = minValue + MOVEMENT_SPEED.TARGET_CHANGE_RATE;
-      }
-    }
-
-    // Update the target
-    switch (indicator) {
-      case 'airspeed':
-        airspeedTarget.value = newTarget;
-        airspeedChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
-        break;
-      case 'heading':
-        headingTarget.value = newTarget;
-        headingChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
-        break;
-      case 'altitude':
-        altitudeTarget.value = newTarget;
-        altitudeChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
-        break;
+    // Bounce back if we hit limits
+    if (newTarget > maxValue) {
+      newTarget = maxValue - MOVEMENT_SPEED.TARGET_CHANGE_RATE;
+    } else if (newTarget < minValue) {
+      newTarget = minValue + MOVEMENT_SPEED.TARGET_CHANGE_RATE;
     }
   }
+
+  console.log('updating target', newTarget)
+  // Update the target
+  switch (indicator) {
+    case 'airspeed':
+      airspeedTarget.value = newTarget;
+      airspeedChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
+      break;
+    case 'heading':
+      headingTarget.value = newTarget;
+      headingChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
+      break;
+    case 'altitude':
+      altitudeTarget.value = newTarget;
+      altitudeChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
+      break;
+  }
+  console.log(newTarget, 'updated target')
 };
 
 
@@ -636,7 +902,8 @@ const startExam = () => {
   currentConfigIndex.value = 0;
 
   // Initialize first config duration
-  timeRemaining.value = config.value.configs[0].duration * 60;
+  const totalDur = config.value.configs.reduce((acc, cfg) => acc + Number(cfg.duration), 0);
+  timeRemaining.value = totalDur * 60;
 
   // Reset performance tracking
   airspeed.value = 120;
@@ -670,12 +937,12 @@ const endExam = () => {
 
 const initConfig = async () => {
   const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-  const configMIC = scheduleData.tests.find((t) => t.testUrl === "monitoring-instrument-coordination-test");
-  console.log(configMIC, 'config')
+  const configPFD = scheduleData.tests.find((t) => t.testUrl === "pfd-tracking-test");
+  console.log(configPFD, 'config')
   // Store all configs and calculate total duration
   config.value = {
-    configs: configMIC.configs,
-    totalDuration: configMIC.configs.reduce((total, cfg) => total + Number(cfg.duration), 0),
+    configs: configPFD.configs,
+    totalDuration: configPFD.configs.reduce((total, cfg) => total + Number(cfg.duration), 0),
     sessionId: scheduleData.sessionId,
     userId: scheduleData.userId
   };
@@ -737,8 +1004,7 @@ const sendPerformanceData = async () => {
       throw new Error(`Error: ${response.statusText}`);
     }
 
-    removeTestByNameAndUpdateLocalStorage('Monitoring & Instrument Koordination');
-    localStorage.removeItem('refreshCountShapeRecognition');
+    removeTestByNameAndUpdateLocalStorage('PFD Tracking Test');
     router.push('/module');
   } catch (error) {
     console.log("error submit:", error);
@@ -800,311 +1066,3 @@ onUnmounted(() => {
 });
 
 </script>
-
-<style scoped>
-.pilot-exam {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  padding-top: 60px;
-  /* Make room for the timer */
-}
-
-.countdown-timer {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #007bff;
-  color: white;
-  padding: 10px 20px;
-  font-size: 24px;
-  font-weight: bold;
-  border-radius: 0 0 10px 10px;
-  z-index: 1000;
-}
-
-.indicators {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.controls {
-  margin-top: 20px;
-}
-
-.indicator-bg {
-  background-color: #292929;
-  border-radius: 10px;
-  padding: 10px;
-}
-
-.indicator-wrapper {
-  position: relative;
-  width: 200px;
-  height: 240px;
-}
-
-.target-text {
-  text-align: center;
-  margin-top: 10px;
-  font-weight: bold;
-}
-
-.direction-indicator {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  margin-left: 5px;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-}
-
-.direction-indicator.up {
-  border-bottom: 10px solid lime;
-  animation: blink-green 1s infinite;
-}
-
-.direction-indicator.down {
-  border-top: 10px solid lime;
-  animation: blink-green 1s infinite;
-}
-
-@keyframes blink-green {
-  0% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes blink {
-  0% {
-    background-color: #292929;
-  }
-
-  50% {
-    background-color: rgba(255, 0, 0, 0.5);
-  }
-
-  100% {
-    background-color: #292929;
-  }
-}
-
-.blink .indicator-bg {
-  animation: blink 1s infinite;
-}
-
-.thruster-indicator {
-  position: absolute;
-  left: -40px;
-  top: 0;
-  height: 200px;
-  width: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.thruster-bar {
-  height: 180px;
-  width: 20px;
-  background-color: #333;
-  border-radius: 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.thruster-fill {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background-color: #ff6b6b;
-  transition: height 0.2s ease;
-}
-
-.thruster-value {
-  margin-top: 5px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-/* Audio test styles */
-.audio-test {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.number-display {
-  font-size: 24px;
-  margin-bottom: 15px;
-  min-height: 36px;
-}
-
-.response-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-
-.btn-red,
-.btn-green {
-  padding: 15px 30px;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-red {
-  background-color: #ff4444;
-}
-
-.btn-green {
-  background-color: #00C851;
-}
-
-.btn-red:hover,
-.btn-green:hover {
-  transform: scale(1.05);
-}
-
-.btn-red:disabled,
-.btn-green:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.modal-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.modal-body {
-  margin: 1rem 0;
-}
-
-.modal-list {
-  list-style-type: disc;
-  margin-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.modal-list li {
-  margin-bottom: 0.5rem;
-  color: #666;
-}
-
-.modal-footer-text {
-  margin-top: 1rem;
-  color: #666;
-  font-style: italic;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.modal-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 8px 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
-}
-
-.modal-button:hover {
-  background-color: #0056b3;
-}
-
-.modal-button:active {
-  background-color: #004085;
-}
-
-/* Transition animations */
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.pfd-tracking-test {
-  background: #1a1a1a;
-  min-height: 100vh;
-  padding: 20px;
-  color: white;
-}
-
-.indicators {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 60px;
-}
-
-.indicator-group {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  background: #2c3e50;
-  padding: 20px;
-  border-radius: 8px;
-}
-
-.indicator-wrapper {
-  position: relative;
-  padding: 10px;
-  background: #34495e;
-  border-radius: 4px;
-}
-
-</style>
