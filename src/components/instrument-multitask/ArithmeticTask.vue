@@ -4,8 +4,10 @@
       ?</p>
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
-        <button class="btn-answer" :class="{ 'can-press': canPressAnswer }" @click="handleAnswer(index)"
-          @touchstart="handleAnswer(index)">
+        <button class="btn-answer" :class="{
+          'can-press': canPressAnswer,
+          'answered': !canAnswer
+        }" @click="handleAnswer(index)" @touchstart="handleAnswer(index)">
           {{ isActive ? choice : '?' }}
         </button>
       </div>
@@ -78,6 +80,61 @@ export default {
     },
   },
   methods: {
+    startQuestionCycle() {
+      this.isQuestionActive = true;
+      this.canAnswer = true;
+      this.generateProblem();
+
+      // Question display timer (15 seconds)
+      this.questionTimer = setTimeout(() => {
+        if (this.canAnswer) { // If no answer was given
+          this.handleNoAnswer();
+        }
+        this.isQuestionActive = false;
+
+        // Start 20 second interval before next question
+        this.intervalTimer = setTimeout(() => {
+          this.startQuestionCycle();
+        }, 20000);
+      }, 15000);
+    },
+
+    handleNoAnswer() {
+      this.result.wrong++;
+      this.result.answerTimes.push(Date.now());
+      this.result.problems.push(this.problem);
+    },
+
+    chooseAnswer(index) {
+      if (!this.canAnswer || !this.isQuestionActive) return;
+
+      this.canAnswer = false;
+      clearTimeout(this.questionTimer);
+
+      if (this.useSound) {
+        window.speechSynthesis.cancel();
+      }
+
+      this.result.answerTimes.push(Date.now());
+      if (this.problem.choices[index] === this.problem.correctAnswer) {
+        this.result.correct++;
+      } else {
+        this.result.wrong++;
+      }
+      this.result.problems.push(this.problem);
+    },
+
+    mounted() {
+      if ((this.useSound && this.allowSound) || (!this.useSound || !this.isActive)) {
+        this.startQuestionCycle();
+      }
+    },
+
+    beforeUnmount() {
+      clearTimeout(this.questionTimer);
+      clearTimeout(this.intervalTimer);
+      window.removeEventListener('keyup', this.handleKeyPress);
+    },
     handleKeyPress(event) {
       if (this.isPause || this.isTimesUp || !this.isActive || this.canPressAnswer) {
         return;
@@ -110,26 +167,6 @@ export default {
       }
     },
 
-    // Modify the existing chooseAnswer method
-    chooseAnswer(index) {
-      if (!this.problem) {
-        return;
-      }
-
-      // Stop the sound after answering question
-      if (this.useSound) {
-        window.speechSynthesis.cancel();
-      }
-
-      this.result.answerTimes.push(Date.now());
-      if (this.problem.choices[index] === this.problem.correctAnswer) {
-        this.result.correct++;
-      } else {
-        this.result.wrong++;
-      }
-      this.result.problems.push(this.problem);
-      this.generateProblem();
-    },
     getRandomNumber(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     },
@@ -237,7 +274,8 @@ export default {
 
 <style scoped>
 .problem-section {
-  margin-top: 20px; /* Reduced from 100px to move it higher */
+  margin-top: 20px;
+  /* Reduced from 100px to move it higher */
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
@@ -245,7 +283,8 @@ export default {
 }
 
 .problem {
-  font-size: 28px; /* Slightly increased for better visibility */
+  font-size: 28px;
+  /* Slightly increased for better visibility */
   margin-bottom: 20px;
   font-weight: bold;
 }
@@ -255,7 +294,8 @@ export default {
   grid-template-columns: repeat(2, 1fr);
   gap: 15px;
   width: 100%;
-  max-width: 400px; /* Limit maximum width for larger screens */
+  max-width: 400px;
+  /* Limit maximum width for larger screens */
 }
 
 .choice {
@@ -281,7 +321,8 @@ export default {
   color: white;
 }
 
-.btn-answer:hover, .btn-answer:active {
+.btn-answer:hover,
+.btn-answer:active {
   background-color: #45a049;
 }
 
@@ -303,6 +344,12 @@ export default {
   .btn-answer {
     padding: 12px 20px;
     font-size: 16px;
+  }
+
+  .btn-answer.answered {
+    background-color: #d0d0d0;
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 }
 </style>

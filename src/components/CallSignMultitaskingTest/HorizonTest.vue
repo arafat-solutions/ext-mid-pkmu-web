@@ -46,6 +46,7 @@ export default {
             handler(newVal) {
                 if (newVal && newVal.play === true) {
                     this.startAnimations();
+                    this.resetJoystickState();
                 } else {
                     this.stopAnimations();
                     console.log("MASUK ELSE");
@@ -68,9 +69,19 @@ export default {
         initializeTest() {
             this.initVisual();
             this.drawVisual();
+            
+            // Initialize gamepad handling immediately, don't wait for connection event
+            this.gamepadIndex = null;
+            this.isGamepadConnected = false;
+            this.reconnectionAttempts = 0;
+            this.maxReconnectionAttempts = 5;
+            this.reconnectionDelay = 1000;
+            this.lastGamepadCheck = 0;
 
             window.addEventListener('gamepadconnected', this.onGamepadConnected);
             window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+            
+            // Start checking for gamepad immediately
             this.checkGamepad();
         },
         initVisual() {
@@ -300,49 +311,119 @@ export default {
                 this.lastCorrectStartTime = null;
             }
         },
-        // for gamepad
         onGamepadConnected(event) {
             if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
                 return;
             }
+            console.log('Gamepad connected:', event.gamepad.id);
             this.gamepadIndex = event.gamepad.index;
+            this.isGamepadConnected = true;
+            this.reconnectionAttempts = 0;
             this.checkGamepad();
         },
+
         onGamepadDisconnected(event) {
-            console.log('disconnected', event)
             if (this.gamepadIndex === event.gamepad.index) {
+                console.log('Gamepad disconnected:', event.gamepad.id);
                 this.gamepadIndex = null;
+                this.isGamepadConnected = false;
+                this.attemptReconnection();
             }
         },
+
+        // New methods for handling gamepad connection
+        attemptReconnection() {
+            if (this.reconnectionAttempts >= this.maxReconnectionAttempts) {
+                console.warn('Max reconnection attempts reached');
+                return;
+            }
+
+            this.reconnectionAttempts++;
+            console.log(`Attempting to reconnect (attempt ${this.reconnectionAttempts}/${this.maxReconnectionAttempts})`);
+
+            setTimeout(() => {
+                this.scanForGamepad();
+            }, this.reconnectionDelay);
+        },
+
+        scanForGamepad() {
+            const gamepads = navigator.getGamepads();
+            for (let i = 0; i < gamepads.length; i++) {
+                const gamepad = gamepads[i];
+                if (gamepad && gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+                    console.log('Found gamepad during scan:', gamepad.id);
+                    this.gamepadIndex = gamepad.index;
+                    this.isGamepadConnected = true;
+                    this.reconnectionAttempts = 0;
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        validateGamepadConnection() {
+            if (!this.gamepadIndex) return false;
+
+            const gamepad = navigator.getGamepads()[this.gamepadIndex];
+            if (!gamepad || !gamepad.connected) {
+                console.log('Gamepad connection lost');
+                this.isGamepadConnected = false;
+                this.gamepadIndex = null;
+                this.attemptReconnection();
+                return false;
+            }
+            return true;
+        },
+
+        // Modified checkGamepad method with connection validation
         checkGamepad() {
-            if (this.gamepadIndex !== null) {
-                const gamepad = navigator.getGamepads()[this.gamepadIndex];
-                if (gamepad) {
+            // Scan for gamepads on every frame
+            const gamepads = navigator.getGamepads();
+            for (let i = 0; i < gamepads.length; i++) {
+                const gamepad = gamepads[i];
+                if (gamepad && gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+                    if (!this.isGamepadConnected) {
+                        console.log('Found gamepad:', gamepad.id);
+                        this.gamepadIndex = gamepad.index;
+                        this.isGamepadConnected = true;
+                    }
                     this.handleGamepadInput(gamepad);
                 }
             }
+
+            // Continue checking on next frame
             requestAnimationFrame(this.checkGamepad);
         },
+
         handleGamepadInput(gamepad) {
+            if (!gamepad || !gamepad.connected) return;
+
+            // Always process input whether in training or test mode
             const [leftStickX, leftStickY] = gamepad.axes;
-            if (!this.$refs.horizonCanvas) {
-                return;
-            }
+            if (!this.$refs.horizonCanvas) return;
+
             const canvasWidth = this.$refs.horizonCanvas.width;
             const canvasHeight = this.$refs.horizonCanvas.height;
+            const sensitivity = 5;
 
-            const sensitivity = 5;  // You can adjust this value to control how fast the focus line moves
-
+            // Update focus position based on joystick input
             this.config.focusX += leftStickX * sensitivity;
             this.config.focusY += leftStickY * sensitivity;
 
-            // Clamp the focusX and focusY to stay within the canvas bounds
+            // Clamp values to canvas boundaries
             this.config.focusX = Math.max(0, Math.min(this.config.focusX, canvasWidth));
             this.config.focusY = Math.max(0, Math.min(this.config.focusY, canvasHeight));
 
             this.drawVisual();
         },
 
+        resetJoystickState() {
+            this.isGamepadConnected = false;
+            this.gamepadIndex = null;
+            this.reconnectionAttempts = 0;
+            // Reinitialize gamepad detection
+            this.checkGamepad();
+        }
     },
 
 };
