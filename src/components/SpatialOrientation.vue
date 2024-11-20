@@ -751,12 +751,13 @@ export default {
   }
 
   .modal-content button {
-    background-color: #6200ee;
+    padding: 10px 20px;
+    background-color: #5e37a6;
     color: white;
-    padding: 10px;
-    border-radius: 10px;
     border: none;
+    border-radius: 15px;
     cursor: pointer;
+    font-size: 1em; 
   }
 
   .modal-content button:hover {
