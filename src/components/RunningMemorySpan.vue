@@ -258,12 +258,13 @@ export default {
     async submitResult() {
       try {
         this.isLoading = true;
-
+        // stop any audio
+        this.cleanUp();
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
           testSessionId: this.sessionId,
           userId: this.userId,
-          batteryTestConfigId: this.testId,
+          batteryTestId: this.testId,
           refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemorySpan')),
           result: this.result,
         }
