@@ -29,6 +29,9 @@
       <div v-if="isShowQuestion">
         <div class="question">
           <p class="text-question"> Urutkan dari angka terakhir </p>
+          <p v-if="showFeedback" :class="{ 'feedback-correct': lastAnswerCorrect, 'feedback-wrong': !lastAnswerCorrect }">
+            {{ lastAnswerCorrect ? 'Benar!' : 'Salah!' }}
+          </p>
         </div>
 
         <div class="calculator">
@@ -99,7 +102,9 @@ export default {
         avg_response_time: 0,
         response_times: 0,
         graph_data: [],
-      }
+      },
+      showFeedback: false,
+      lastAnswerCorrect: false,
     };
   },
   computed: {
@@ -151,8 +156,8 @@ export default {
       clearInterval(this.countdownNextQuestion);
 
       if ('speechSynthesis' in window) {
-				window.speechSynthesis.cancel()
-			}
+        window.speechSynthesis.cancel()
+      }
     },
     exit() {
       if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
@@ -338,6 +343,8 @@ export default {
       let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
 
       this.responseTime = Date.now();
+      this.lastAnswerCorrect = checkAnswer;
+      this.showFeedback = true;
 
       if (checkAnswer) {
         this.correctAnswer++;
@@ -354,11 +361,17 @@ export default {
         });
       }
 
-      this.responseDurations.push(this.responseTime - this.responseQuestion)
+      this.responseDurations.push(this.responseTime - this.responseQuestion);
+      this.expression = '';
+      this.answer = [];
 
-      this.clearExpression();
-      this.generateAudio();
-      this.isShowQuestion = false;
+      // Clear feedback after delay
+      setTimeout(() => {
+        this.showFeedback = false;
+        this.clearExpression();
+        this.generateAudio();
+        this.isShowQuestion = false;
+      }, 1000);
     },
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
@@ -374,8 +387,8 @@ export default {
       this.answer.push(parseInt(value));
     },
     clearExpression() {
-      this.expression = '';
-      this.answer = [];
+      this.expression = this.expression.slice(0, -1);
+      this.answer.pop();
     },
     startPlayback() {
       if ('speechSynthesis' in window) {
@@ -428,129 +441,160 @@ export default {
 </script>
 
 <style scoped>
-  .main-view {
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 60px auto;
+.main-view {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 60px auto;
+}
+
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.modal-content button {
+  background-color: #6200ee;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-content button:hover {
+  background-color: #5e37a6;
+}
+
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0349D0;
+  padding: 1.5rem 5rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.loading-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  border-top: 8px solid #ffffff;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  .modal-overlay {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
+
+  100% {
+    transform: rotate(360deg);
   }
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-  }
-  .modal-content button {
-    background-color: #6200ee;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-  }
-  .modal-content button:hover {
-    background-color: #5e37a6;
-  }
-  .timer-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0349D0;
-    padding: 1.5rem 5rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
-  .loading-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  .spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3);
-    border-top: 8px solid #ffffff;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-  .text {
-    color: #ffffff;
-    margin-top: 20px;
-    font-size: 1.2em;
-  }
-  .input-simulation-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .question {
-    margin: 30px;
-  }
-  .text-question {
-    font-weight: bolder;
-  }
-  .calculator {
-    max-width: 300px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #f2f2f2;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    font-size: 18px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-  .buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-gap: 10px;
-  }
-  .digit-number {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #505250;
-    color: white;
-  }
+}
+
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
+
+.input-simulation-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.question {
+  margin: 30px;
+}
+
+.text-question {
+  font-weight: bolder;
+}
+
+.calculator {
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f2f2f2;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 10px;
+}
+
+.digit-number {
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #505250;
+  color: white;
+}
+
+.feedback-correct {
+  color: #4CAF50;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.2em;
+}
+
+.feedback-wrong {
+  color: #f44336;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.2em;
+}
 </style>
