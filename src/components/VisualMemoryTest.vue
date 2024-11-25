@@ -5,6 +5,7 @@
             <p>Waktu:</p>
             <p>{{ formatTime(testTime) }}</p>
         </div>
+        <p>Ronde: {{ roundShown }}</p>
         <input v-if="input.input1.visible" :style="input.input1.style" v-model="input.input1.userInput" ref="input1">
         <input v-if="input.input2.visible" :style="input.input2.style" v-model="input.input2.userInput" ref="input2">
         <div v-if="loading" class="loading-container">
@@ -80,6 +81,8 @@ export default {
             tesInterval: null,
             refreshCount: 0,
             questionBank: [],
+            roundShown: 1,
+            noAnswerTimer: null,
         };
     },
     async mounted() {
@@ -121,6 +124,9 @@ export default {
             this.initConfig()
             this.initVisual();
             this.drawVisual();
+
+            // Start memory countdown from round 1
+            this.memoryTime = this.configBe.questionInterval;
             this.countDownMemoryTime();
             this.countDownTestTime();
         },
@@ -150,6 +156,75 @@ export default {
             this.canvasHeight = this.canvasDimensions.height;
             this.updateCanvasRect();
         },
+        handleMemorizationRound() {
+            // Just show pairs for 10 seconds
+            setTimeout(() => {
+                // Add current pairs to question bank
+                this.addCurrentPairsToQuestionBank();
+
+                // Increment round and setup next round
+                this.roundShown++;
+                this.createRandomQuestion();
+                this.initializeTest();
+            }, 10000);
+        },
+        handleQuestionRound() {
+            this.countDownMemoryTime();
+            this.countDownTestTime();
+
+            // Set timer for no answer
+            this.noAnswerTimer = setTimeout(() => {
+                if (this.canAnswer) {
+                    this.handleNoAnswer();
+                }
+            }, 10000);
+        },
+        handleNoAnswer() {
+            this.result.unansweredQuestion++;
+            this.roundShown++;
+            // this.createNextRound();
+        },
+        addCurrentPairsToQuestionBank() {
+            this.innerConfig.forEach(pair => {
+                if (!this.isPairInQuestionBank(pair)) {
+                    this.questionBank.push(this.normalizePair(pair));
+                }
+            });
+        },
+        isPairInQuestionBank(pair) {
+            return this.questionBank.some(bankPair =>
+                this.arePairsEqual(this.normalizePair(pair), bankPair)
+            );
+        },
+        arePairsEqual(pair1, pair2) {
+            // Check number equality
+            if (pair1.number.text !== pair2.number.text) return false;
+
+            // Check partner equality
+            const partner1 = pair1.partner;
+            const partner2 = pair2.partner;
+
+            if (partner1.type !== partner2.type) return false;
+
+            if (partner1.type === 'text') {
+                return partner1.text === partner2.text;
+            } else if (partner1.type === 'shape') {
+                return partner1.shapeName === partner2.shapeName &&
+                    partner1.color === partner2.color;
+            }
+
+            return false;
+        },
+        normalizePair(pair) {
+            // Create a normalized copy of the pair without position information
+            return {
+                number: { type: pair.number.type, text: pair.number.text },
+                partner: pair.partner.type === 'shape' ?
+                    { type: 'shape', shapeName: pair.partner.shapeName, color: pair.partner.color } :
+                    { type: 'text', text: pair.partner.text }
+            };
+        },
+
         drawVisual() {
             this.clearCanvas();
             this.drawVerticalLines();
@@ -206,91 +281,99 @@ export default {
             ctx.textBaseline = "middle";
 
             this.innerConfig.forEach((item, i) => {
-                let pos1
-                let pos2
+                let numberPos, partnerPos;
 
-                Object.keys(item).forEach((val) => {
-                    if (val === 'number') {
-                        const toDraw = item[val]
+                // Get the top and bottom positions for this column
+                const topPos = positions[i];
+                const bottomPos = positions[i + 4];
 
-                        if (toDraw.position === "Top") {
-                            pos1 = positions[i]
-                        } else {
-                            pos1 = positions[i + 4]
-                        }
+                // Use the position defined in the item configuration
+                if (item.number.position === "Top") {
+                    numberPos = topPos;
+                    partnerPos = bottomPos;
+                } else {
+                    numberPos = bottomPos;
+                    partnerPos = topPos;
+                }
 
-                        if (toDraw.type === 'number') {
-                            this.drawText({ ctx, text: toDraw.text, x: pos1.x, y: pos1.y, bold: false });
-                        } else {
-                            this.drawQuestionMark({ ctx, x: pos1.x, y: pos1.y });
-                        }
-                    } else if (val === 'partner') {
-                        const toDraw = item[val]
-                        if (toDraw.position === "Top") {
-                            pos2 = positions[i]
-                        } else {
-                            pos2 = positions[i + 4]
-                        }
+                // Draw number
+                if (item.number.type === 'number') {
+                    this.drawText({
+                        ctx,
+                        text: item.number.text,
+                        x: numberPos.x,
+                        y: numberPos.y,
+                        bold: false
+                    });
+                } else if (item.number.type === 'shape' && item.number.shapeName === 'questionMark') {
+                    this.drawQuestionMark({
+                        ctx,
+                        x: numberPos.x,
+                        y: numberPos.y
+                    });
+                }
 
-                        if (toDraw.type === 'text') {
-                            this.drawText({ ctx, text: toDraw.text, x: pos2.x, y: pos2.y, bold: true });
-                        } else if (toDraw.type === 'shape') {
-                            switch (toDraw.shapeName) {
-                                case 'rectangle':
-                                    this.drawRectangle({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'questionMark':
-                                    this.drawQuestionMark({ ctx, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'circle':
-                                    this.drawCircle({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'triangle':
-                                    this.drawTriangle({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'arrow':
-                                    this.drawArrow({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'octagon':
-                                    this.drawOctagon({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'star':
-                                    this.drawStar({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'parallelogram':
-                                    this.drawParallelogram({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'leftArrow':
-                                    this.drawLeftArrow({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'hexagon':
-                                    this.drawHexagon({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'chevronLeft':
-                                    this.drawChevronLeft({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'plane':
-                                    this.drawPlane({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'returnArrow':
-                                    this.drawReturnArrow({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'heart':
-                                    this.drawHeart({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 's':
-                                    this.drawS({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 'l':
-                                    this.drawL({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                                case 't':
-                                    this.drawT({ ctx, shape: toDraw, x: pos2.x, y: pos2.y });
-                                    break;
-                            }
-                        }
+                // Draw partner
+                if (item.partner.type === 'text') {
+                    this.drawText({
+                        ctx,
+                        text: item.partner.text,
+                        x: partnerPos.x,
+                        y: partnerPos.y,
+                        bold: true
+                    });
+                } else if (item.partner.type === 'shape') {
+                    switch (item.partner.shapeName) {
+                        case 'rectangle':
+                            this.drawRectangle({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'circle':
+                            this.drawCircle({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'triangle':
+                            this.drawTriangle({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'arrow':
+                            this.drawArrow({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'octagon':
+                            this.drawOctagon({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'star':
+                            this.drawStar({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'parallelogram':
+                            this.drawParallelogram({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'leftArrow':
+                            this.drawLeftArrow({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'hexagon':
+                            this.drawHexagon({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'chevronLeft':
+                            this.drawChevronLeft({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'plane':
+                            this.drawPlane({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'returnArrow':
+                            this.drawReturnArrow({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'heart':
+                            this.drawHeart({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 's':
+                            this.drawS({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 'l':
+                            this.drawL({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
+                        case 't':
+                            this.drawT({ ctx, shape: item.partner, x: partnerPos.x, y: partnerPos.y });
+                            break;
                     }
-                })
+                }
             });
         },
         drawText({ ctx, text, x, y, bold = false }) {
@@ -637,22 +720,48 @@ export default {
             this.timerInterval = setInterval(() => {
                 if (this.memoryTime > 0) {
                     this.memoryTime--;
-                    this.drawVisual()
+                    this.drawVisual();
                 } else {
                     clearInterval(this.timerInterval);
 
-                    while (this.questionMarkPositions.length < 2) {
-                        const randomIndex = Math.floor(Math.random() * 4);
-                        if (this.innerConfig[randomIndex].number.type === 'number') {
-                            this.innerConfig[randomIndex].number = { type: 'shape', shapeName: 'questionMark', position: this.innerConfig[randomIndex].number.position }
-                            this.questionMarkPositions.push(randomIndex);
-                        }
+                    if (this.roundShown < 3) {
+                        // Memorization phase (rounds 1-2)
+                        this.addCurrentPairsToQuestionBank();
+                        this.roundShown++;
+                        this.createRandomQuestion();
+                        // Reset memory time for next round
+                        this.memoryTime = this.configBe.questionInterval;
+                        this.countDownMemoryTime();
+                    } else {
+                        // Question phase (round 3+)
+                        this.setupQuestionPhase();
                     }
-                    this.questionMarkPositions = this.questionMarkPositions.sort((a, b) => a - b)
-                    this.canAnswer = true
-                    this.drawVisual()
                 }
             }, 1000);
+        },
+        setupQuestionPhase() {
+            // Set up question marks for bank pairs
+            while (this.questionMarkPositions.length < 2) {
+                const randomIndex = Math.floor(Math.random() * 4);
+                if (this.innerConfig[randomIndex].number.type === 'number') {
+                    this.innerConfig[randomIndex].number = {
+                        type: 'shape',
+                        shapeName: 'questionMark',
+                        position: this.innerConfig[randomIndex].number.position
+                    };
+                    this.questionMarkPositions.push(randomIndex);
+                }
+            }
+            this.questionMarkPositions = this.questionMarkPositions.sort((a, b) => a - b);
+            this.canAnswer = true;
+            this.drawVisual();
+
+            // Set timer for no answer
+            this.noAnswerTimer = setTimeout(() => {
+                if (this.canAnswer) {
+                    this.handleNoAnswer();
+                }
+            }, 10000);
         },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -660,113 +769,233 @@ export default {
             return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
         },
         handleGlobalKeydown(event) {
-            if (this.memoryTime === 0 && this.canAnswer) {
+            // Only process if:
+            // 1. We're in round 3 or above (questioning phase)
+            // 2. Memory time is finished
+            // 3. User can answer
+            if (this.roundShown >= 3 && this.memoryTime === 0 && this.canAnswer) {
                 if (event.key === 'Enter') {
-                    const input1 = this.input.input1
-                    const input2 = this.input.input2
+                    const input1 = this.input.input1;
+                    const input2 = this.input.input2;
 
+                    // Handle the first Enter press - show first input
                     if (this.renderInput === 0) {
-                        this.renderInput = 1
-
+                        this.renderInput = 1;
                         this.drawInput({ input: this.input.input1, inputType: 'input1' });
-
                         this.$nextTick(() => {
                             if (this.$refs.input1) {
                                 this.$refs.input1.focus();
                             }
                         });
-                    } else if (this.renderInput === 1) {
-                        this.renderInput = 2
-
+                    }
+                    // Handle the second Enter press - show second input
+                    else if (this.renderInput === 1) {
+                        this.renderInput = 2;
                         this.drawInput({ input: this.input.input2, inputType: 'input2' });
-
                         this.$nextTick(() => {
                             if (this.$refs.input2) {
                                 this.$refs.input2.focus();
                             }
                         });
-
-                    } else if (this.renderInput === 2) {
+                    }
+                    // Handle the third Enter press - process answers
+                    else if (this.renderInput === 2) {
+                        // Clear the no-answer timer since user has submitted
+                        clearTimeout(this.noAnswerTimer);
 
                         let resultQuestion1 = false;
-                        let resultQuestion2 = false
+                        let resultQuestion2 = false;
 
-                        // check if the answer is empty
+                        // Check if answers are empty
                         if (input1.userInput === '' && input2.userInput === '') {
-                            this.result.unansweredQuestion += 1
+                            this.result.unansweredQuestion += 1;
                         }
 
-                        // check if answer is correct
+                        // Check first question's answer
                         if (this.questions[this.questionMarkPositions[0]].number.type === 'number') {
                             if (Number(input1.userInput) === this.questions[this.questionMarkPositions[0]].number.text) {
-                                resultQuestion1 = true
+                                resultQuestion1 = true;
                             }
                         }
 
+                        // Check second question's answer
                         if (this.questions[this.questionMarkPositions[1]].number.type === 'number') {
                             if (Number(input2.userInput) === this.questions[this.questionMarkPositions[1]].number.text) {
-                                resultQuestion2 = true
+                                resultQuestion2 = true;
                             }
                         }
 
+                        // If both answers correct, increment score
                         if (resultQuestion1 && resultQuestion2) {
-                            this.result.correctAnswer += 1
+                            this.result.correctAnswer += 1;
                         }
 
-                        this.renderInput = 0
-                        input1.visible = false
-                        input2.visible = false
-                        input1.userInput = ''
-                        input2.userInput = ''
-                        resultQuestion1 = false
-                        resultQuestion2 = false
-                        this.questionMarkPositions = []
+                        // Reset input states
+                        this.renderInput = 0;
+                        input1.visible = false;
+                        input2.visible = false;
+                        input1.userInput = '';
+                        input2.userInput = '';
+                        resultQuestion1 = false;
+                        resultQuestion2 = false;
+                        this.questionMarkPositions = [];
 
+                        // Increment round counter
+                        this.roundShown++;
+
+                        // If test time remaining, setup next question
                         if (this.testTime > 0) {
-                            this.result.noOfQuestionDisplayed += 1
-                            this.createRandomQuestion()
-                            this.canAnswer = false
-                            this.memoryTime = this.configBe.questionInterval
-                            this.drawVisual()
-                            this.countDownMemoryTime()
+                            // Increment question counter
+                            this.result.noOfQuestionDisplayed += 1;
+
+                            // Add new pairs to question bank (only non-bank pairs)
+                            this.addCurrentPairsToQuestionBank();
+
+                            // Create next question
+                            this.createRandomQuestion();
+
+                            // Reset for next round
+                            this.canAnswer = false;
+                            this.memoryTime = this.configBe.questionInterval;
+
+                            // Draw new question
+                            this.drawVisual();
+
+                            // Start memory countdown
+                            this.countDownMemoryTime();
+
+                            // Set new no-answer timer
+                            this.noAnswerTimer = setTimeout(() => {
+                                if (this.canAnswer) {
+                                    this.handleNoAnswer();
+                                }
+                            }, 10000);
                         }
-
                     }
-
                 }
             }
         },
         generateUniquePair() {
-            // Generate number using existing function
-            const number = this.generateRandomNumbers();
+            let attempts = 0;
+            const maxAttempts = 10;
 
-            // Generate partner (either text or shape) using existing functions
-            let partner;
-            if (Math.random() < 0.5) {
-                partner = this.generateRandomLetters();
-            } else {
-                partner = this.getRandomShape();
+            while (attempts < maxAttempts) {
+                try {
+                    // Generate number
+                    const number = this.generateRandomNumbers();
+                    if (!number || !number.text) continue;
+
+                    // Generate partner
+                    let partner;
+                    if (Math.random() < 0.5) {
+                        partner = this.generateRandomLetters();
+                        if (!partner || !partner.text) continue;
+                    } else {
+                        partner = this.getRandomShape();
+                        if (!partner || !partner.shapeName) continue;
+                    }
+
+                    // Set positions
+                    const isNumberTop = Math.random() < 0.5;
+                    number.position = isNumberTop ? 'Top' : 'Bottom';
+                    partner.position = isNumberTop ? 'Bottom' : 'Top';
+
+                    const pair = { number, partner };
+                    if (this.isValidPair(pair)) {
+                        return pair;
+                    }
+                } catch (error) {
+                    console.error('Error generating pair:', error);
+                }
+                attempts++;
             }
 
-            if (Math.random() < 0.5) {
-                number.position = 'Top'
-                partner.position = "Bottom"
-            } else {
-                number.position = 'Bottom'
-                partner.position = "Top"
-            }
-
-            return { number, partner };
+            // Fallback default pair if generation fails
+            return {
+                number: { type: 'number', text: 10, position: 'Top' },
+                partner: { type: 'text', text: '1A', position: 'Bottom' }
+            };
         },
         createRandomQuestion() {
-            const arrQuestion = []
+            if (this.roundShown < 3) {
+                // For rounds 1-2, create 4 new random pairs
+                const arrQuestion = [];
+                for (let i = 0; i < 4; i++) {
+                    let pair;
+                    do {
+                        pair = this.generateUniquePair();
+                    } while (this.isPairInQuestionBank(pair) || !this.isValidPair(pair));
+                    arrQuestion.push(pair);
+                }
+                this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
+                this.questions = JSON.parse(JSON.stringify(arrQuestion));
+            } else {
+                // For rounds 3+, create 2 new pairs + 2 from question bank
+                const arrQuestion = [];
 
-            for (let i = 0; i < 4; i++) {
-                arrQuestion.push(this.generateUniquePair());
+                // Get 2 random pairs from question bank
+                const bankPairs = this.getRandomPairsFromBank(2);
+                // Ensure bank pairs have position information
+                const processedBankPairs = bankPairs.map(pair => ({
+                    ...pair,
+                    number: { ...pair.number, position: Math.random() < 0.5 ? 'Top' : 'Bottom' },
+                    partner: { ...pair.partner, position: pair.number.position === 'Top' ? 'Bottom' : 'Top' }
+                }));
+                arrQuestion.push(...processedBankPairs);
+
+                // Create 2 new unique pairs
+                for (let i = 0; i < 2; i++) {
+                    let pair;
+                    do {
+                        pair = this.generateUniquePair();
+                    } while (this.isPairInQuestionBank(pair) || !this.isValidPair(pair));
+                    arrQuestion.push(pair);
+                }
+
+                // Shuffle the array
+                this.shuffle(arrQuestion);
+
+                this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
+                this.questions = JSON.parse(JSON.stringify(arrQuestion));
+
+                // For rounds 3+, convert bank pairs to question marks
+                this.questionMarkPositions = [];
+                arrQuestion.forEach((pair, index) => {
+                    if (bankPairs.some(bankPair => this.arePairsEqual(this.normalizePair(pair), bankPair))) {
+                        this.innerConfig[index].number = {
+                            type: 'shape',
+                            shapeName: 'questionMark',
+                            position: pair.number.position
+                        };
+                        this.questionMarkPositions.push(index);
+                    }
+                });
+            }
+        },
+        isValidPair(pair) {
+            if (!pair || !pair.number || !pair.partner) return false;
+            if (!pair.number.type || !pair.number.position) return false;
+            if (!pair.partner.type || !pair.partner.position) return false;
+
+            // Specific validation for partner types
+            if (pair.partner.type === 'text') {
+                if (!pair.partner.text) return false;
+            } else if (pair.partner.type === 'shape') {
+                if (!pair.partner.shapeName || !pair.partner.color) return false;
             }
 
-            this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
-            this.questions = JSON.parse(JSON.stringify(arrQuestion));
+            return true;
+        },
+        getRandomPairsFromBank(count) {
+            const shuffledBank = [...this.questionBank].sort(() => Math.random() - 0.5);
+            return shuffledBank.slice(0, count);
+        },
+
+        shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
         },
         generateRandomLetters() {
             const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
