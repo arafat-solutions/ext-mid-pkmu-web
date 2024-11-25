@@ -103,7 +103,7 @@ import { removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
 import { getConfigs } from '@/utils/configs';
 
 const TRAINING_SEQUENCE = ['horizon', 'callsign', 'color_tank', 'circle_test'];
-const TRAINING_TIME = 5; // 1 minute for each training
+const TRAINING_TIME = 60; // 1 minute for each training
 
 const TRAINING_INSTRUCTIONS = {
     horizon: {

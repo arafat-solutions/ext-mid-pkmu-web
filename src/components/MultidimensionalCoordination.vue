@@ -61,7 +61,7 @@ const CONFIG = {
   PLANE_ROTATION_SPEED: 0.03,
   MAX_PLANE_ROTATION: Math.PI / 4,
   ALIGNMENT_THRESHOLD: 0.5,
-  TRAINING_DURATION: 30 * 1000, // 30 seconds for training
+  TRAINING_DURATION: 100 * 1000, // 30 seconds for training
 };
 
 export default {
