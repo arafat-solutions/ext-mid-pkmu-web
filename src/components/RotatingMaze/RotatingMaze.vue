@@ -55,7 +55,7 @@
 
         <div class="timerMaze">
             <p>{{ isTraining ? 'Training' : 'Test' }} Progress: </p>
-            <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : config.numberOfMaze }}</p>
+            <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : testMazes }}</p>
         </div>
     </div>
 </template>
@@ -101,6 +101,7 @@ export default {
         const showTrainingStartModal = ref(true);
         const showTestStartModal = ref(false);
         const trainingMazes = 3;  // Number of training mazes
+        const testMazes = ref(0);
         const config = ref({
             numberOfMaze: 10,
             rotationFrequency: 0,
@@ -108,7 +109,7 @@ export default {
             difficulty: '',
             userId: '',
             sessionId: '',
-            testId: ''
+            testId: '',
         })
         const quizMetrics = ref({
             correctTurn: 0,
@@ -240,13 +241,6 @@ export default {
             placeToCell(startPos.value[0], startPos.value[1]).classList.add("start");
             placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("target");
         }
-
-        // const changeDifficulty = (newDifficulty) => {
-        //     config.value.difficulty = newDifficulty;
-        //     // loadingGenerating.value = true
-        //     generateGrid();
-        //     mazeGenerator();
-        // }
 
         const clear = () => {
             for (let i = 0; i < timeouts.value.length; i++) {
@@ -609,12 +603,12 @@ export default {
 
             if (!nextConfig) return false;
 
-            const { rotation_frequency, size, duration, difficulty_level } = nextConfig;
+            const { rotation_frequency, size, number_of_question, difficulty_level } = nextConfig;
 
             completedMazes.value = 0
 
             config.value = {
-                numberOfMaze: Number(duration) ?? 10,
+                numberOfMaze: Number(number_of_question) ?? 10,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency] ??
                     (difficulty_level === 'Sulit' ? 2000 : 4000),
                 size: size ?? "medium",
@@ -803,6 +797,29 @@ export default {
             startRotation();
         }
 
+        const sumNumberOfQuestions = (data) => {
+            // Input validation
+            if (!Array.isArray(data)) {
+                throw new Error('Input must be an array');
+            }
+
+            // Use reduce to sum up the number_of_question values
+            const result = data.reduce((total, item) => {
+                const questionCount = parseInt(item.number_of_question);
+
+                // Validate that the parsed value is a number
+                if (isNaN(questionCount)) {
+                    throw new Error('Invalid number_of_question value found');
+                }
+
+                return total + questionCount;
+            }, 0);
+
+            console.log(result, "<<<<< reuslt")
+
+            return result
+        };
+
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
@@ -819,6 +836,9 @@ export default {
                 medium: 4000,
                 hard: 2000
             }
+
+            testMazes.value = sumNumberOfQuestions(configRotatingMaze.configs)
+
 
             config.value = {
                 numberOfMaze: Number(number_of_question) ?? 10,
@@ -917,6 +937,7 @@ export default {
             startTraining,
             startActualTest,
             trainingMazes,
+            testMazes
         };
     }
 };
