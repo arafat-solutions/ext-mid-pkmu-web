@@ -210,7 +210,8 @@ export default {
           throw new Error('Failed Submit Training');
         }
 
-        localStorage.setItem('pmaTrainingCompleted', 'true');
+        // remove local storage related to training
+        localStorage.removeItem('pmaTrainingCompleted');
         removeTestByNameAndUpdateLocalStorage('PMA Training');
         window.location.href = '/module';
       } catch (error) {
