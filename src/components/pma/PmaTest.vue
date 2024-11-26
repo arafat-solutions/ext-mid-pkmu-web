@@ -141,10 +141,10 @@ export default {
       console.log(testData.configs, 'configs')
       // training time is 1minute
       if (!isActualTest.value){
-      remainingTime.value = 60;
+      remainingTime.value = 5;
       } else {
         // sum duration of all configs array
-        remainingTime.value = testData.configs.reduce((acc, curr) => acc + Number(curr.duration), 0);
+        remainingTime.value = testData.configs.reduce((acc, curr) => acc + Number(curr.duration), 0) * 60; 
       }
       clearInterval(timer);
       
