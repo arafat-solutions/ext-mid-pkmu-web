@@ -4,9 +4,9 @@
         <Modal v-if="showTrainingStartModal" @close="startTraining">
             <h2>Welcome to the Maze Game Training</h2>
             <p>
-                In this training session, you'll practice navigating through mazes.
-                Use the arrow keys to move. The goal is to reach the target as quickly as possible.
-                This session will help you get familiar with the controls and difficulty.
+                Dalam sesi pelatihan ini, Anda akan berlatih menavigasi melalui labirin.
+                Gunakan tombol panah untuk bergerak. Tujuannya adalah mencapai target secepat mungkin.
+                Sesi ini akan membantu Anda terbiasa dengan kontrol dan tingkat kesulitan.
             </p>
             <button @click="startTraining" class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2">Start
                 Training</button>
@@ -16,9 +16,9 @@
         <Modal v-if="showTestStartModal" @close="startActualTest">
             <h2>Ready for the Actual Test?</h2>
             <p>
-                Great job on completing the training!
-                You're now ready to start the actual test.
-                Remember, your performance in this test will be recorded.
+                Kerja bagus menyelesaikan pelatihan!
+                Anda sekarang siap untuk memulai tes sebenarnya.
+                Ingat, kinerja Anda dalam tes ini akan dicatat.
             </p>
             <button @click="startActualTest" class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2">Start
                 Test</button>
@@ -812,7 +812,7 @@ export default {
                 showTestStartModal.value = true;
             }
             const configMudah = configRotatingMaze.configs.find((c) => c.difficulty_level === "Mudah")
-            const { rotation_frequency, size, duration, difficulty_level } = configMudah
+            const { rotation_frequency, size, number_of_question, difficulty_level } = configMudah
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,
@@ -821,7 +821,7 @@ export default {
             }
 
             config.value = {
-                numberOfMaze: Number(duration) ?? 10,
+                numberOfMaze: Number(number_of_question) ?? 10,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency] ?? 4000,
                 size: size ?? "medium",
                 difficulty: difficulty_level ?? "Mudah",
