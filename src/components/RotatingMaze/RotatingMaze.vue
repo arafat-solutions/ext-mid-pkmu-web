@@ -605,8 +605,6 @@ export default {
 
             const { rotation_frequency, size, number_of_question, difficulty_level } = nextConfig;
 
-            completedMazes.value = 0
-
             config.value = {
                 numberOfMaze: Number(number_of_question) ?? 10,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency] ??
