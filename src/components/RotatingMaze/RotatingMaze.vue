@@ -815,8 +815,6 @@ export default {
                 return total + questionCount;
             }, 0);
 
-            console.log(result, "<<<<< reuslt")
-
             return result
         };
 
