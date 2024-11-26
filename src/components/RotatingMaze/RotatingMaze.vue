@@ -54,7 +54,7 @@
         </div>
 
         <div class="timerMaze">
-            <p>{{ isTraining ? 'Training' : 'Test' }} Progress: {{ config.difficulty }}</p>
+            <p>{{ isTraining ? 'Training' : 'Test' }} Progress: </p>
             <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : config.numberOfMaze }}</p>
         </div>
     </div>
@@ -125,7 +125,6 @@ export default {
         const mazeStartTime = ref(0)
 
         const setGridSizeByDifficulty = () => {
-            console.log('config.value.difficulty', config.value.difficulty)
             let baseSize = 15;
             switch (config.value.difficulty) {
                 case 'Mudah':
@@ -695,7 +694,6 @@ export default {
 
             // Check if player reached the target
             if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
-                console.log("Congratulations! You've reached the target!");
                 const completeTime = Date.now() - mazeStartTime.value;
 
                 if (!isTraining.value) {
