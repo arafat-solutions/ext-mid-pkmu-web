@@ -605,6 +605,8 @@ export default {
 
             const { rotation_frequency, size, number_of_question, difficulty_level } = nextConfig;
 
+            completedMazes.value = 0
+
             config.value = {
                 numberOfMaze: Number(number_of_question) ?? 10,
                 rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency] ??
@@ -712,7 +714,7 @@ export default {
                 if (isTraining.value && completedMazes.value >= trainingMazes) {
                     completeTrainingTestAndUpdateLocalStorage('Rotating Maze')
                     showTestStartModal.value = true;
-                } else if (!isTraining.value && completedMazes.value >= config.value.numberOfMaze && config.value.difficulty === "Sulit") {
+                } else if (!isTraining.value && completedMazes.value == testMazes.value) {
                     await submitResult();
                 } else {
                     stopRotation();
