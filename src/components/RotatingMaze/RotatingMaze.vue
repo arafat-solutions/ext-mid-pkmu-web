@@ -4,22 +4,24 @@
         <Modal v-if="showTrainingStartModal" @close="startTraining">
             <h2>Welcome to the Maze Game Training</h2>
             <p>
-                In this training session, you'll practice navigating through mazes.
-                Use the arrow keys to move. The goal is to reach the target as quickly as possible.
-                This session will help you get familiar with the controls and difficulty.
+                Dalam sesi pelatihan ini, Anda akan berlatih menavigasi melalui labirin.
+                Gunakan tombol panah untuk bergerak. Tujuannya adalah mencapai target secepat mungkin.
+                Sesi ini akan membantu Anda terbiasa dengan kontrol dan tingkat kesulitan.
             </p>
-            <button @click="startTraining">Start Training</button>
+            <button @click="startTraining" class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2">Start
+                Training</button>
         </Modal>
 
         <!-- Actual Test Start Modal -->
         <Modal v-if="showTestStartModal" @close="startActualTest">
             <h2>Ready for the Actual Test?</h2>
             <p>
-                Great job on completing the training!
-                You're now ready to start the actual test.
-                Remember, your performance in this test will be recorded.
+                Kerja bagus menyelesaikan pelatihan!
+                Anda sekarang siap untuk memulai tes sebenarnya.
+                Ingat, kinerja Anda dalam tes ini akan dicatat.
             </p>
-            <button @click="startActualTest">Start Test</button>
+            <button @click="startActualTest" class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2">Start
+                Test</button>
         </Modal>
 
         <!-- Existing game content -->
@@ -52,8 +54,8 @@
         </div>
 
         <div class="timerMaze">
-            <p>{{ isTraining ? 'Training' : 'Test' }} Progress:</p>
-            <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : config.numberOfMaze }}</p>
+            <p>{{ isTraining ? 'Training' : 'Test' }} Progress: </p>
+            <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : testMazes }}</p>
         </div>
     </div>
 </template>
@@ -99,6 +101,7 @@ export default {
         const showTrainingStartModal = ref(true);
         const showTestStartModal = ref(false);
         const trainingMazes = 3;  // Number of training mazes
+        const testMazes = ref(0);
         const config = ref({
             numberOfMaze: 10,
             rotationFrequency: 0,
@@ -106,7 +109,7 @@ export default {
             difficulty: '',
             userId: '',
             sessionId: '',
-            testId: ''
+            testId: '',
         })
         const quizMetrics = ref({
             correctTurn: 0,
@@ -123,7 +126,6 @@ export default {
         const mazeStartTime = ref(0)
 
         const setGridSizeByDifficulty = () => {
-            console.log('config.value.difficulty', config.value.difficulty)
             let baseSize = 15;
             switch (config.value.difficulty) {
                 case 'Mudah':
@@ -149,7 +151,6 @@ export default {
 
             cellSize.value = Math.floor(mazeHeight.value / maxGridSize) - 1;
         }
-
 
         const clearGrid = () => {
             for (let i = 0; i < gridSizeX.value; i++) {
@@ -239,13 +240,6 @@ export default {
 
             placeToCell(startPos.value[0], startPos.value[1]).classList.add("start");
             placeToCell(targetPos.value[0], targetPos.value[1]).classList.add("target");
-        }
-
-        const changeDifficulty = (newDifficulty) => {
-            config.value.difficulty = newDifficulty;
-            // loadingGenerating.value = true
-            generateGrid();
-            mazeGenerator();
         }
 
         const clear = () => {
@@ -588,7 +582,49 @@ export default {
             };
         };
 
+        const updateConfigForNewDifficulty = (currentDifficulty) => {
+            const ROTATION_FREQUENCY_VALUE = {
+                easy: 6000,
+                medium: 4000,
+                hard: 2000
+            };
+
+            const DIFFICULTY_PROGRESSION = {
+                'Mudah': 'Sedang',
+                'Sedang': 'Sulit'
+            };
+
+            const nextDifficulty = DIFFICULTY_PROGRESSION[currentDifficulty];
+            if (!nextDifficulty) return false;
+
+            const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+            const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test');
+            const nextConfig = configRotatingMaze.configs.find((c) => c.difficulty_level === nextDifficulty);
+
+            if (!nextConfig) return false;
+
+            const { rotation_frequency, size, number_of_question, difficulty_level } = nextConfig;
+
+            completedMazes.value = 0
+
+            config.value = {
+                numberOfMaze: Number(number_of_question) ?? 10,
+                rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency] ??
+                    (difficulty_level === 'Sulit' ? 2000 : 4000),
+                size: size ?? "medium",
+                difficulty: difficulty_level ?? nextDifficulty,
+                userId: scheduleData.userId,
+                sessionId: scheduleData.sessionId,
+                testId: configRotatingMaze.id
+            };
+
+            return true;
+        };
+
         const movePlayer = async (direction) => {
+            // prevent user move when generating maze
+            if (loadingGenerating.value) return
+
             const [x, y] = startPos.value;
             let newX = x;
             let newY = y;
@@ -652,7 +688,6 @@ export default {
 
             // Check if player reached the target
             if (newX === targetPos.value[0] && newY === targetPos.value[1]) {
-                console.log("Congratulations! You've reached the target!");
                 const completeTime = Date.now() - mazeStartTime.value;
 
                 if (!isTraining.value) {
@@ -679,11 +714,17 @@ export default {
                 if (isTraining.value && completedMazes.value >= trainingMazes) {
                     completeTrainingTestAndUpdateLocalStorage('Rotating Maze')
                     showTestStartModal.value = true;
-                } else if (!isTraining.value && completedMazes.value >= config.value.numberOfMaze) {
+                } else if (!isTraining.value && completedMazes.value >= config.value.numberOfMaze && config.value.difficulty === "Sulit") {
                     await submitResult();
                 } else {
                     stopRotation();
                     loadingGenerating.value = true;
+
+                    // change the config
+                    if (config.value.numberOfMaze === completedMazes.value) {
+                        updateConfigForNewDifficulty(config.value.difficulty);
+                    }
+
                     await generateGrid();
                     await mazeGenerator();
                     restartRotation();
@@ -756,14 +797,37 @@ export default {
             startRotation();
         }
 
+        const sumNumberOfQuestions = (data) => {
+            // Input validation
+            if (!Array.isArray(data)) {
+                throw new Error('Input must be an array');
+            }
+
+            // Use reduce to sum up the number_of_question values
+            const result = data.reduce((total, item) => {
+                const questionCount = parseInt(item.number_of_question);
+
+                // Validate that the parsed value is a number
+                if (isNaN(questionCount)) {
+                    throw new Error('Invalid number_of_question value found');
+                }
+
+                return total + questionCount;
+            }, 0);
+
+            return result
+        };
+
         const initConfig = () => {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configRotatingMaze = scheduleData.tests.find((t) => t.testUrl === 'rotating-maze-test')
+
             if (configRotatingMaze.trainingCompleted) {
                 showTrainingStartModal.value = false;
                 showTestStartModal.value = true;
             }
-            const { rotation_frequency, size, number_of_question } = configRotatingMaze.configs[0]
+            const configMudah = configRotatingMaze.configs.find((c) => c.difficulty_level === "Mudah")
+            const { rotation_frequency, size, number_of_question, difficulty_level } = configMudah
 
             const ROTATION_FREQUENCY_VALUE = {
                 easy: 6000,
@@ -771,16 +835,18 @@ export default {
                 hard: 2000
             }
 
+            testMazes.value = sumNumberOfQuestions(configRotatingMaze.configs)
+
+
             config.value = {
-                numberOfMaze: number_of_question ?? 10,
-                rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency],
-                size,
-                difficulty: configRotatingMaze.difficulty,
+                numberOfMaze: Number(number_of_question) ?? 10,
+                rotationFrequency: ROTATION_FREQUENCY_VALUE[rotation_frequency] ?? 4000,
+                size: size ?? "medium",
+                difficulty: difficulty_level ?? "Mudah",
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
                 testId: configRotatingMaze.id
             }
-            console.log('config.value', config.value)
         }
 
         const submitResult = async () => {
@@ -861,7 +927,6 @@ export default {
             clear,
             mazeGenerator,
             greedyBestFirst,
-            changeDifficulty,
             formatTime,
             completedMazes,
             isTraining,
@@ -870,6 +935,7 @@ export default {
             startTraining,
             startActualTest,
             trainingMazes,
+            testMazes
         };
     }
 };
