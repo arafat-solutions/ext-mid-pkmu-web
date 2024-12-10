@@ -6,8 +6,15 @@
 			</div>
 			<ul class="options">
 				<li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item">
-					<button class="option-button" :class="{ 'clickable': isCanChooseAudio }"
-						@click="handleOptionClick(option.key)" :disabled="!isCanChooseAudio">
+					<button 
+						class="option-button" 
+						:class="{
+							'clickable': isCanChooseAudio,
+							'selected': selectedAnswer === option.key
+						}"
+						@click="handleOptionClick(option.key)" 
+						:disabled="!isCanChooseAudio"
+					>
 						<span class="option-answer">{{ option.key }}</span>
 						<span class="option-value">{{ option.value }}</span>
 					</button>
@@ -20,6 +27,14 @@
 <script>
 export default {
 	name: 'ArithmeticsView',
+	props: {
+		isTimesUp: Boolean,
+		difficulty: String,
+		duration: Number,
+		isPause: Boolean,
+		isActive: Boolean,
+		useSound: Boolean,
+	},
 	data() {
 		return {
 			isCanChooseAudio: false,
@@ -39,16 +54,9 @@ export default {
 			questionTimer: null,
 			QUESTION_DURATION: 20000, // 20 seconds in milliseconds
 			hasAnswered: false,
-			currentUtterance: null, // Track current speech utterance
+			currentUtterance: null,
+			selectedAnswer: null,
 		};
-	},
-	props: {
-		isTimesUp: Boolean,
-		difficulty: String,
-		duration: Number,
-		isPause: Boolean,
-		isActive: Boolean,
-		useSound: Boolean,
 	},
 	async mounted() {
 		if (this.useSound && this.isActive) {
@@ -71,12 +79,10 @@ export default {
 				responseTime: this.averageResponseTime(),
 			});
 		},
-		
 		isPause(newValue) {
 			if (newValue) {
 				this.cleanupQuestion();
 			} else if (this.isActive && !this.isTimesUp) {
-				// Small delay before starting new question when unpaused
 				setTimeout(() => {
 					this.generateQuestion();
 				}, 500);
@@ -100,17 +106,15 @@ export default {
 			this.isCanChooseAudio = false;
 		},
 		stop() {
-			// Cancel any ongoing speech
 			if (this.currentUtterance) {
 				window.speechSynthesis.cancel();
 				this.currentUtterance = null;
 			}
 		},
-
 		handleOptionClick(key) {
+			this.selectedAnswer = key;
 			this.pressAnswerAudio(key);
 		},
-
 		generateNumbers() {
 			let num1, num2;
 			if (this.difficulty === 'hard') {
@@ -147,7 +151,6 @@ export default {
 				default: return '';
 			}
 		},
-
 		startQuestionTimer() {
 			if (this.questionTimer) {
 				clearTimeout(this.questionTimer);
@@ -160,22 +163,18 @@ export default {
 				this.moveToNextQuestion();
 			}, this.QUESTION_DURATION);
 		},
-
 		moveToNextQuestion() {
 			this.cleanupQuestion();
 			if (!this.isTimesUp && !this.isPause && this.isActive) {
-				// Add delay before next question
 				setTimeout(() => {
 					this.generateQuestion();
 				}, 500);
 			}
 		},
-
 		generateQuestion() {
-			// Ensure any previous speech is stopped
 			this.stop();
-
 			this.hasAnswered = false;
+			this.selectedAnswer = null;
 			this.startQuestionTimer();
 
 			let [num1, num2] = this.generateNumbers();
@@ -209,27 +208,22 @@ export default {
 				}
 			});
 
-			// Delay speech start slightly to ensure clean audio
 			setTimeout(() => {
 				this.startPlayback();
 			}, 100);
 		},
-
 		startPlayback() {
 			this.isCanChooseAudio = false;
 
 			if ('speechSynthesis' in window) {
-				// Cancel any existing speech
 				this.stop();
 
-				// Create new utterance
 				this.currentUtterance = new SpeechSynthesisUtterance(this.currentQuestion);
 				this.currentUtterance.rate = 1;
 				this.currentUtterance.pitch = 1;
 				this.currentUtterance.volume = 1;
 				this.currentUtterance.lang = 'id-ID';
 
-				// Set up event handlers
 				this.currentUtterance.onend = () => {
 					if (!this.isTimesUp && !this.isPause && this.isActive) {
 						this.isCanChooseAudio = true;
@@ -243,7 +237,6 @@ export default {
 					this.currentUtterance = null;
 				};
 
-				// Start speech
 				this.responseQuestion = Date.now();
 				window.speechSynthesis.speak(this.currentUtterance);
 			} else {
@@ -251,11 +244,9 @@ export default {
 				this.isCanChooseAudio = true;
 			}
 		},
-
 		calculateResponseTime() {
 			return this.responseDurations.push(this.responseTime - this.responseQuestion);
 		},
-
 		pressAnswerAudio(key) {
 			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio || this.hasAnswered) {
 				return;
@@ -280,19 +271,21 @@ export default {
 
 			this.isCanChooseAudio = false;
 		},
-
 		handleKeyPress(event) {
 			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio || this.hasAnswered) {
 				return;
 			}
 
 			if (event.key >= '1' && event.key <= '4') {
-				this.pressAnswerAudio(parseInt(event.key));
+				const key = parseInt(event.key);
+				this.selectedAnswer = key;
+				this.pressAnswerAudio(key);
 			}
 		}
 	}
 };
 </script>
+
 <style scoped>
 .arithmetic {
 	display: flex;
@@ -346,7 +339,25 @@ export default {
 
 .option-button:disabled {
 	cursor: default;
-	opacity: 0.7;
+	/* Remove opacity change on disabled state */
+}
+
+.option-button.selected {
+	background-color: #4CAF50;
+	border-color: #45a049;
+	color: white;
+}
+
+.option-button.selected:disabled {
+	/* Maintain the green color even when disabled */
+	background-color: #4CAF50;
+	border-color: #45a049;
+	color: white;
+	opacity: 1;
+}
+
+.option-button.selected .option-answer {
+	background-color: #45a049;
 }
 
 .option-answer {
@@ -356,6 +367,7 @@ export default {
 	border-radius: 5px;
 	font-size: 18px;
 	margin-bottom: 10px;
+	transition: background-color 0.3s ease;
 }
 
 .option-value {
@@ -365,6 +377,11 @@ export default {
 
 .clickable:not(:disabled):hover {
 	background-color: #e0e0e0;
+	transform: scale(1.05);
+}
+
+.clickable.selected:not(:disabled):hover {
+	background-color: #45a049;
 	transform: scale(1.05);
 }
 </style>

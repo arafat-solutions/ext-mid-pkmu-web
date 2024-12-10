@@ -23,36 +23,17 @@
     </div>
 
     <div class="horizon-tank">
-      <ColorTank
-        ref="colorTankTaskRef"
-        :isTimesUp="isTimesUp"
-        :speed="config.color_tank.speed"
-        :coloredLowerTank="config.color_tank.colored_lower_tank"
-        :isNegativeScore="config.color_tank.negative_score"
-        :isPause="isPauseColorTank"
-        :isActive="config.color_tank.is_active"
-        @getResult="colorTankResult"
-      />
+      <ColorTank ref="colorTankTaskRef" :isTimesUp="isTimesUp" :speed="config.color_tank.speed"
+        :coloredLowerTank="config.color_tank.colored_lower_tank" :isNegativeScore="config.color_tank.negative_score"
+        :isPause="isPauseColorTank" :isActive="config.color_tank.is_active" @getResult="colorTankResult" />
 
       <div class="horizon-section">
-        <Horizon
-          :isTimesUp="isTimesUp"
-          :speed="config.horizon.speed"
-          :isPause="isPauseHorizon"
-          :isActive="config.horizon.is_active"
-          @getResult="horizonResult"
-        />
+        <Horizon :isTimesUp="isTimesUp" :speed="config.horizon.speed" :isPause="isPauseHorizon"
+          :isActive="config.horizon.is_active" @getResult="horizonResult" class="no-pointer-events" />
 
-        <Arithmetics
-          ref="arithmeticTaskRef"
-          :isTimesUp="isTimesUp"
-          :difficulty="config.arithmetics.difficulty"
-          :duration="config.duration"
-          :isPause="isPauseArithmetics"
-          :isActive="config.arithmetics.is_active"
-          :useSound="config.arithmetics.sound"
-          @getResult="arithmeticResult"
-        />
+        <Arithmetics ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetics.difficulty"
+          :duration="config.duration" :isPause="isPauseArithmetics" :isActive="config.arithmetics.is_active"
+          :useSound="config.arithmetics.sound" @getResult="arithmeticResult" />
       </div>
     </div>
 
@@ -80,7 +61,7 @@ export default {
       currentTrainingTask: null,
       instructionModalContent: '',
 
-      trainingTasks: ['colorTank', 'horizon', 'arithmetic', 'combined'],
+      trainingTasks: ['arithmetic', 'combined'],
 
       isPauseArithmetics: false,
       isPauseColorTank: false,
@@ -99,7 +80,7 @@ export default {
       isConfigLoaded: false,
       testId: null,
       config: {
-        duration : null,
+        duration: null,
         subtask: {
           arithmetics: null,
           color_tank: null,
@@ -150,7 +131,7 @@ export default {
   },
   computed: {
     isTimesUp() {
-      return this.config.duration  < 1;
+      return this.config.duration < 1;
     },
     formattedTime() {
       const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
@@ -166,10 +147,10 @@ export default {
         if (config) {
           // @TODO: Config Flow
           this.configs = config.tests.find(test => test.testUrl === 'color-multitask-test').configs;
-          this.trainingCompleted =  config.tests.find(test => test.testUrl === 'color-multitask-test').trainingCompleted ?? false; //default false
+          this.trainingCompleted = config.tests.find(test => test.testUrl === 'color-multitask-test').trainingCompleted ?? false; //default false
 
           this.minuteTest = 0;
-          for (const i in this.configs){
+          for (const i in this.configs) {
             this.minuteTest += parseInt(this.configs[i].duration)
           }
 
@@ -356,7 +337,7 @@ export default {
         },
       },
 
-      this.config.duration = this.minuteTest * 60
+        this.config.duration = this.minuteTest * 60
 
       this.isPauseArithmetics = false;
       this.isPauseColorTank = false;
@@ -445,121 +426,145 @@ export default {
 </script>
 
 <style scoped>
-  .main-view {
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 60px auto;
+.main-view {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 60px auto;
+}
+
+.instruction-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.instruction-modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+  max-width: 80%;
+}
+
+.instruction-modal-content h2 {
+  margin-top: 0;
+}
+
+.instruction-modal-content button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.instruction-modal-content button:hover {
+  background-color: #0056b3;
+}
+
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0349D0;
+  padding: 1.5rem 5rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+.horizon-tank {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  height: 92vh;
+  margin-left: 40px;
+  margin-right: 40px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
 
-  .instruction-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+  100% {
+    transform: rotate(360deg);
   }
+}
 
-  .instruction-modal-content {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    text-align: center;
-    max-width: 80%;
-  }
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
 
-  .instruction-modal-content h2 {
-    margin-top: 0;
-  }
+.horizon-section {
+  position: relative;
+}
 
-  .instruction-modal-content button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
+.no-pointer-events {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
 
-  .instruction-modal-content button:hover {
-    background-color: #0056b3;
-  }
+/* Add styles for answer highlighting */
+:deep(.answer-button) {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
 
-  .timer-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0349D0;
-    padding: 1.5rem 5rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
-
-  .loading-container {
-    /* Add your loading indicator styles here */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    /* Black background with 80% opacity */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    /* Ensure it is above other content */
-  }
-
-  .spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3);
-    /* Light border */
-    border-top: 8px solid #ffffff;
-    /* White border for the spinning part */
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-  }
-
-  .horizon-tank {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-around;
-		align-items: center;
-		height: 92vh;
-		margin-left: 40px;
-		margin-right: 40px;
-	}
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  .text {
-    color: #ffffff;
-    margin-top: 20px;
-    font-size: 1.2em;
-  }
-
-  .horizon-section {
-    position: relative;
-  }
+:deep(.answer-button.selected) {
+  background-color: #4CAF50;
+  color: white;
+  border-color: #45a049;
+}
 </style>

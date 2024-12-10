@@ -1,8 +1,8 @@
 <template>
   <canvas ref="horizonCanvas"
-    @mousemove="handleMouseMove"
     :width="horizonWidth"
     :height="horizonHeight"
+    class="no-pointer-events"
   >
   </canvas>
 </template>
@@ -287,12 +287,6 @@ export default {
       if (this.speed === 'very_fast') {
         return 2000;
       }
-    },
-    handleMouseMove(event) {
-      const canvasRect = this.$refs.horizonCanvas.getBoundingClientRect();
-      this.config.focusX = Math.max(0, Math.min(event.clientX - canvasRect.left, this.$refs.horizonCanvas.width));
-      this.config.focusY = Math.max(0, Math.min(event.clientY - canvasRect.top, this.$refs.horizonCanvas.height));
-      this.drawVisual();
     },
     updateGreenTime(isGreen) {
       if (isGreen && !this.greenLineStartTime) {
