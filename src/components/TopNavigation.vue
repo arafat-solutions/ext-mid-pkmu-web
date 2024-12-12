@@ -31,7 +31,6 @@
         </div>
       </div>
     </div>
-    <button class="start-test-button">Mulai Test</button>
   </div>
 </template>
 

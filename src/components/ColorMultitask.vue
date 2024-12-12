@@ -61,7 +61,7 @@ export default {
       currentTrainingTask: null,
       instructionModalContent: '',
 
-      trainingTasks: ['arithmetic', 'combined'],
+      trainingTasks:['colorTank', 'horizon', 'arithmetic', 'combined'],
 
       isPauseArithmetics: false,
       isPauseColorTank: false,
