@@ -48,11 +48,15 @@ const rectangleInterval = ref(null);
 const soundInterval = ref(null)
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const isSoundSame = ref(false)
+const PROXIMITY_THRESHOLD = 50; // Distance threshold for showing "Keep Going!"
+const isCloseToTarget = ref(false);
+
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
-    aim: { x: 0, y: 0, size: 20 },
+    aim: { x: 0, y: 0, size: 40 }, // Made aim size 2x the circle's diameter (2 * 2 * radius)
     rectangles: []
 });
+
 const refreshCount = ref(0)
 const userInputs = ref([])
 const isTraining = ref(true);
@@ -284,11 +288,13 @@ function draw() {
         gameObjects.value.rectangles.forEach(rect => ctx.value.fillRect(rect.x, rect.y, 30, 30));
     }
 
+    // Draw white circle (target)
     ctx.value.beginPath();
     ctx.value.arc(gameObjects.value.circle.x, gameObjects.value.circle.y, gameObjects.value.circle.radius, 0, Math.PI * 2);
     ctx.value.fillStyle = 'white';
     ctx.value.fill();
 
+    // Draw yellow crosshair (aim)
     const { aim } = gameObjects.value;
     ctx.value.beginPath();
     ctx.value.arc(aim.x, aim.y, aim.size / 2, 0, Math.PI * 2);
@@ -300,6 +306,31 @@ function draw() {
     ctx.value.moveTo(aim.x, aim.y - aim.size / 2);
     ctx.value.lineTo(aim.x, aim.y + aim.size / 2);
     ctx.value.stroke();
+
+    // Draw "Keep Going!" text if close to target
+    if (isCloseToTarget.value) {
+        ctx.value.font = '20px Arial';
+        ctx.value.fillStyle = 'green';
+        ctx.value.textAlign = 'center';
+        ctx.value.fillText('Keep Going!', canvasWidth.value / 2, 50);
+    }
+}
+
+function checkAimCollision(timestamp) {
+    const currentTimeInSeconds = timestamp / 1000;
+    const { circle, aim } = gameObjects.value;
+    const distance = Math.sqrt(
+        Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
+    );
+
+    // Update proximity status
+    isCloseToTarget.value = distance <= PROXIMITY_THRESHOLD;
+
+    if (distance <= circle.radius + aim.size / 2) {
+        const elapsedTime = currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
+        metrics.value.tracking_task.correctTime += elapsedTime;
+    }
+    metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
 }
 
 function handleMouseMove(event) {
@@ -452,19 +483,6 @@ function handleKeydown(event) {
     }
 }
 
-function checkAimCollision(timestamp) {
-    const currentTimeInSeconds = timestamp / 1000;
-    const { circle, aim } = gameObjects.value;
-    const distance = Math.sqrt(
-        Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
-    );
-
-    if (distance <= circle.radius + aim.size / 2) {
-        const elapsedTime = currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
-        metrics.value.tracking_task.correctTime += elapsedTime;
-    }
-    metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
-}
 
 function initRectangleInterval() {
     if (rectangleInterval.value) {
