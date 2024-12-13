@@ -6,18 +6,21 @@
 			</div>
 			<ul class="options">
 				<li v-for="(option, index) in optionAnswerAudios" :key="index" class="option-item">
-					<button 
-						class="option-button" 
-						:class="{
+					<div class="option-wrapper">
+						<button class="option-button" :class="{
 							'clickable': isCanChooseAudio,
-							'selected': selectedAnswer === option.key
-						}"
-						@click="handleOptionClick(option.key)" 
-						:disabled="!isCanChooseAudio"
-					>
-						<span class="option-answer">{{ option.key }}</span>
-						<span class="option-value">{{ option.value }}</span>
-					</button>
+							'selected': selectedAnswer === option.key,
+							'correct': hasAnswered && option.value === audio,
+							'incorrect': hasAnswered && selectedAnswer === option.key && option.value !== audio
+						}" @click="handleOptionClick(option.key)" :disabled="!isCanChooseAudio">
+							<span class="option-answer">{{ option.key }}</span>
+							<span class="option-value">{{ option.value }}</span>
+						</button>
+						<div v-if="hasAnswered && selectedAnswer === option.key" class="result-text"
+							:class="{ 'correct-text': option.value === audio, 'incorrect-text': option.value !== audio }">
+							{{ option.value === audio ? 'Benar' : 'Salah' }}
+						</div>
+					</div>
 				</li>
 			</ul>
 		</div>
@@ -56,11 +59,19 @@ export default {
 			hasAnswered: false,
 			currentUtterance: null,
 			selectedAnswer: null,
+			playAttempts: 0,
+			MAX_PLAY_ATTEMPTS: 3,
+			isPlaying: false,
 		};
+	},
+	computed: {
+		canPlayAudio() {
+			return this.playAttempts < this.MAX_PLAY_ATTEMPTS && !this.hasAnswered;
+		},
 	},
 	async mounted() {
 		if (this.useSound && this.isActive) {
-			this.generateQuestion();
+			await this.generateQuestion();
 		}
 	},
 	created() {
@@ -71,25 +82,42 @@ export default {
 		this.cleanupQuestion();
 	},
 	watch: {
-		isTimesUp() {
-			this.cleanupQuestion();
-			this.$emit('getResult', {
-				correctAnswer: this.correctAnswer,
-				totalQuestion: this.totalQuestion,
-				responseTime: this.averageResponseTime(),
-			});
+		isTimesUp: {
+			handler(newValue) {
+				if (newValue) {
+					this.cleanupQuestion();
+					this.$emit('getResult', {
+						correctAnswer: this.correctAnswer,
+						totalQuestion: this.totalQuestion,
+						responseTime: this.averageResponseTime(),
+					});
+				}
+			},
+			immediate: true
 		},
 		isPause(newValue) {
 			if (newValue) {
 				this.cleanupQuestion();
 			} else if (this.isActive && !this.isTimesUp) {
-				setTimeout(() => {
-					this.generateQuestion();
+				setTimeout(async () => {
+					await this.generateQuestion();
 				}, 500);
 			}
+		},
+		difficulty: {
+			handler() {
+				this.resetGame();
+			},
+			immediate: true
 		}
 	},
 	methods: {
+		resetGame() {
+			this.correctAnswer = 0;
+			this.totalQuestion = 0;
+			this.responseDurations = [];
+			this.cleanupQuestion();
+		},
 		averageResponseTime() {
 			if (this.responseDurations.length > 0) {
 				const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
@@ -104,6 +132,8 @@ export default {
 				this.questionTimer = null;
 			}
 			this.isCanChooseAudio = false;
+			this.playAttempts = 0;
+			this.isPlaying = false;
 		},
 		stop() {
 			if (this.currentUtterance) {
@@ -118,14 +148,14 @@ export default {
 		generateNumbers() {
 			let num1, num2;
 			if (this.difficulty === 'hard') {
-				num1 = Math.floor(Math.random() * 90) + 10; // 10-99
+				num1 = Math.floor(Math.random() * 90) + 10;
 				num2 = Math.floor(Math.random() * 90) + 10;
 			} else if (this.difficulty === 'medium') {
-				num1 = Math.floor(Math.random() * 90) + 10; // 10-99
-				num2 = Math.floor(Math.random() * 9) + 1;   // 1-9
-			} else { // easy
-				num1 = Math.floor(Math.random() * 9) + 1;   // 1-9
-				num2 = Math.floor(Math.random() * 9) + 1;   // 1-9
+				num1 = Math.floor(Math.random() * 90) + 10;
+				num2 = Math.floor(Math.random() * 9) + 1;
+			} else {
+				num1 = Math.floor(Math.random() * 9) + 1;
+				num2 = Math.floor(Math.random() * 9) + 1;
 			}
 			return [num1, num2];
 		},
@@ -159,19 +189,19 @@ export default {
 			this.questionTimer = setTimeout(() => {
 				if (!this.hasAnswered) {
 					this.totalQuestion++;
+					this.moveToNextQuestion();
 				}
-				this.moveToNextQuestion();
 			}, this.QUESTION_DURATION);
 		},
-		moveToNextQuestion() {
+		async moveToNextQuestion() {
 			this.cleanupQuestion();
 			if (!this.isTimesUp && !this.isPause && this.isActive) {
-				setTimeout(() => {
-					this.generateQuestion();
-				}, 500);
+				setTimeout(async () => {
+					await this.generateQuestion();
+				}, 1000);
 			}
 		},
-		generateQuestion() {
+		async generateQuestion() {
 			this.stop();
 			this.hasAnswered = false;
 			this.selectedAnswer = null;
@@ -208,40 +238,54 @@ export default {
 				}
 			});
 
+			await this.$nextTick();
 			setTimeout(() => {
 				this.startPlayback();
 			}, 100);
 		},
-		startPlayback() {
+		async startPlayback() {
+			if (this.isPlaying) return;
 			this.isCanChooseAudio = false;
+			this.isPlaying = true;
 
-			if ('speechSynthesis' in window) {
-				this.stop();
+			try {
+				if ('speechSynthesis' in window) {
+					this.stop();
 
-				this.currentUtterance = new SpeechSynthesisUtterance(this.currentQuestion);
-				this.currentUtterance.rate = 1;
-				this.currentUtterance.pitch = 1;
-				this.currentUtterance.volume = 1;
-				this.currentUtterance.lang = 'id-ID';
+					this.currentUtterance = new SpeechSynthesisUtterance(this.currentQuestion);
+					this.currentUtterance.rate = 1;
+					this.currentUtterance.pitch = 1;
+					this.currentUtterance.volume = 1;
+					this.currentUtterance.lang = 'id-ID';
 
-				this.currentUtterance.onend = () => {
-					if (!this.isTimesUp && !this.isPause && this.isActive) {
+					this.currentUtterance.onend = () => {
+						if (!this.isTimesUp && !this.isPause && this.isActive) {
+							this.isCanChooseAudio = true;
+						}
+						this.currentUtterance = null;
+						this.isPlaying = false;
+						this.playAttempts++;
+					};
+
+					this.currentUtterance.onerror = (event) => {
+						console.error('Speech synthesis error:', event);
 						this.isCanChooseAudio = true;
-					}
-					this.currentUtterance = null;
-				};
+						this.currentUtterance = null;
+						this.isPlaying = false;
+						this.playAttempts++;
+					};
 
-				this.currentUtterance.onerror = (event) => {
-					console.error('Speech synthesis error:', event);
+					this.responseQuestion = Date.now();
+					window.speechSynthesis.speak(this.currentUtterance);
+				} else {
+					console.error('Text-to-speech not supported');
 					this.isCanChooseAudio = true;
-					this.currentUtterance = null;
-				};
-
-				this.responseQuestion = Date.now();
-				window.speechSynthesis.speak(this.currentUtterance);
-			} else {
-				console.error('Text-to-speech not supported');
+					this.isPlaying = false;
+				}
+			} catch (error) {
+				console.error('Error in startPlayback:', error);
 				this.isCanChooseAudio = true;
+				this.isPlaying = false;
 			}
 		},
 		calculateResponseTime() {
@@ -270,6 +314,11 @@ export default {
 			}
 
 			this.isCanChooseAudio = false;
+
+			// Move to next question after delay
+			setTimeout(() => {
+				this.moveToNextQuestion();
+			}, 2000);
 		},
 		handleKeyPress(event) {
 			if (this.isPause || this.isTimesUp || !this.isActive || !this.isCanChooseAudio || this.hasAnswered) {
@@ -280,6 +329,11 @@ export default {
 				const key = parseInt(event.key);
 				this.selectedAnswer = key;
 				this.pressAnswerAudio(key);
+			}
+		},
+		replayAudio() {
+			if (this.canPlayAudio && !this.isPlaying) {
+				this.startPlayback();
 			}
 		}
 	}
@@ -322,6 +376,13 @@ export default {
 	justify-content: center;
 }
 
+.option-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+}
+
 .option-button {
 	display: flex;
 	flex-direction: column;
@@ -335,11 +396,11 @@ export default {
 	transition: all 0.3s ease;
 	cursor: pointer;
 	padding: 10px;
+	margin-bottom: 10px;
 }
 
 .option-button:disabled {
 	cursor: default;
-	/* Remove opacity change on disabled state */
 }
 
 .option-button.selected {
@@ -348,11 +409,19 @@ export default {
 	color: white;
 }
 
-.option-button.selected:disabled {
-	/* Maintain the green color even when disabled */
+.option-button.correct {
 	background-color: #4CAF50;
 	border-color: #45a049;
 	color: white;
+}
+
+.option-button.incorrect {
+	background-color: #f44336;
+	border-color: #d32f2f;
+	color: white;
+}
+
+.option-button.selected:disabled {
 	opacity: 1;
 }
 
@@ -373,6 +442,23 @@ export default {
 .option-value {
 	font-size: 24px;
 	font-weight: bold;
+}
+
+.result-text {
+	font-size: 16px;
+	font-weight: bold;
+	margin-top: 5px;
+	padding: 5px 10px;
+	border-radius: 5px;
+	text-align: center;
+}
+
+.correct-text {
+	color: #4CAF50;
+}
+
+.incorrect-text {
+	color: #f44336;
 }
 
 .clickable:not(:disabled):hover {
