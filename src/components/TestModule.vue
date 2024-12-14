@@ -4,10 +4,6 @@
       <div class="w-2/3 bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
           <h1 class="text-2xl font-bold justify-center">{{ selectedTestTitle }}</h1>
-          <button
-            class="bg-transparent text-[#5C3ED6] border-2 border-[#5C3ED6] px-4 py-2 rounded-full text-sm hover:bg-[#5C3ED6] transition-colors">
-            Tonton Tutorial
-          </button>
         </div>
         <!-- inject html selectedTestDescription -->
         <div v-html="selectedTestDescription"></div>
