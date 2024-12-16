@@ -58,7 +58,7 @@ const userInputs = ref([])
 const isTraining = ref(true);
 const currentTrainingTask = ref('tracking');
 const trainingTasks = ['tracking', 'button', 'acoustic', 'combined'];
-const trainingDuration = 10; // 60 seconds for each training session
+const trainingDuration = 60; // 60 seconds for each training session
 
 const config = ref({
     speed: "normal",
