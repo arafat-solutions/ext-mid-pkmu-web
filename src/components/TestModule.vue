@@ -1,22 +1,22 @@
 <template>
-  <div class="flex-1 overflow-auto min-h-screen">
-    <div class="flex gap-8 px-4 py-4">
+  <div class="flex-1 overflow-auto">
+    <div class="flex gap-8 px-4">
       <!-- Left side - Slide viewer -->
       <div class="w-2/3">
-        <!-- Slide container with minimum height -->
-        <div class="relative min-h-[800px] flex flex-col">
-          <!-- Image container with flex-grow to take available space -->
-          <div class="flex-grow flex justify-center items-start mb-8">
+        <!-- Slide container -->
+        <div class="relative">
+          <!-- Image container without any padding or background -->
+          <div class="flex justify-center">
             <img 
               :src="`${slidesPath}/${currentSlide + 1}.png`" 
               alt="Slide" 
-              class="w-full h-auto"
+              class="w-full"
               @error="handleImageError"
             />
           </div>
           
-          <!-- Navigation Controls - positioned at bottom -->
-          <div class="flex justify-between items-center mt-auto px-4">
+          <!-- Navigation Controls -->
+          <div class="flex justify-between items-center mt-4 px-4">
             <button 
               @click="previousSlide" 
               :disabled="currentSlide === 0"
@@ -136,11 +136,6 @@ img {
   display: block;
   max-width: 100%;
   height: auto;
-}
-
-/* Add some space for the content */
-.flex-1 {
-  min-height: 100vh;
 }
 
 /* Disable button styles */
