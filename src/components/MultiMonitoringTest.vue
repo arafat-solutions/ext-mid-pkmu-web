@@ -96,7 +96,7 @@ const gameState = ref({
     direction: { x: 1, y: 1 },
     currentSpeed: 3,
     baseSpeed: 3,
-    rectanglesVisible: false,
+    rectanglesVisible: true,
     lastRectangleTime: 0,
     userAnswered: false,
     lastFrameTime: 0,
@@ -280,8 +280,10 @@ function draw() {
     ctx.value.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
 
     if (gameState.value.rectanglesVisible) {
-        ctx.value.fillStyle = '#1C97FF';
-        gameObjects.value.rectangles.forEach(rect => ctx.value.fillRect(rect.x, rect.y, 30, 30));
+        gameObjects.value.rectangles.forEach(rect => {
+            ctx.value.fillRect(rect.x, rect.y, 30, 30)
+            ctx.value.fillStyle = rect.color;
+        });
     }
 
     ctx.value.beginPath();
@@ -302,23 +304,10 @@ function draw() {
     ctx.value.stroke();
 }
 
-function handleMouseMove(event) {
-    const rect = canvas.value?.getBoundingClientRect();
-    gameObjects.value.aim.x = event.clientX - rect.left;
-    gameObjects.value.aim.y = event.clientY - rect.top;
-}
-
 function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
     const remainderSeconds = seconds % 60;
     return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
-}
-
-function generateRectangles() {
-    return Array.from({ length: 2 }, () => ({
-        x: Math.random() * (canvasWidth.value - 30),
-        y: Math.random() * (canvasHeight.value - 30)
-    }));
 }
 
 function updateCircleSpeed() {
@@ -326,25 +315,44 @@ function updateCircleSpeed() {
     gameState.value.currentSpeed = gameState.value.baseSpeed;
 }
 
-function toggleRectangles() {
-    gameState.value.rectanglesVisible = !gameState.value.rectanglesVisible;
+function createRectangles() {
+    gameObjects.value.rectangles.push({
+        x: Math.random() * (canvasWidth.value - 30),
+        y: Math.random() * (canvasHeight.value - 30),
+        color: '#1C97FF',
+        createdAt: Date.now()
+    });
 
-    if (!gameState.value.rectanglesVisible) {
-        gameObjects.value.rectangles = generateRectangles();
-        metrics.value.button_task.total_question++;
-    } else {
-        if (!gameState.value.userAnswered) {
-            userInputs.value.push({
-                type: 'missed',
-                responseTime: 5000,
-                timestamp: Date.now(),
+    // metrics.value.button_task.total_question++;
+    // if (!gameState.value.userAnswered) {
+    //     userInputs.value.push({
+    //         type: 'missed',
+    //         responseTime: 5000,
+    //         timestamp: Date.now(),
+    //     })
+    //     metrics.value.button_task.incorrect_answer++;
+    // }
+
+    setTimeout(createRectangles, 7000);
+}
+
+function changeColorRectangle() {
+    const currentTime = Date.now();
+
+    const redRectangles = gameObjects.value.rectangles.map((rect) => {
+        if (rect.color === '#1C97FF' && (currentTime - rect.createdAt) >= 12000) {
+            return ({
+                ...rect,
+                color: 'red'
             })
-            metrics.value.button_task.incorrect_answer++;
         }
-        gameState.value.userAnswered = false;
-    }
 
-    setTimeout(toggleRectangles, (gameState.value.rectanglesVisible ? config.value.rectangleVisibility.showDuration : config.value.rectangleVisibility.hideDuration) * 1000);
+        return rect
+    })
+
+    gameObjects.value.rectangles = redRectangles
+
+    setTimeout(changeColorRectangle, 1000)
 }
 
 function initConfig() {
@@ -355,7 +363,8 @@ function initConfig() {
 
     config.value = {
         ...config.value,
-        duration: duration * 60,
+        // duration: duration * 60,
+        duration: duration * 60 * 999999999,
         speed,
         speedChange: speed_change,
         directionChange: direction_change,
@@ -411,7 +420,6 @@ async function submitResult() {
     }
 }
 
-
 function playSound(frequency, duration) {
     const oscillator = audioContext.createOscillator();
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
@@ -452,6 +460,53 @@ function handleKeydown(event) {
     }
 }
 
+function handleMouseMove(event) {
+    const rect = canvas.value?.getBoundingClientRect();
+    gameObjects.value.aim.x = event.clientX - rect.left;
+    gameObjects.value.aim.y = event.clientY - rect.top;
+}
+
+function handleInteraction(event) {
+    const rect = canvas.value?.getBoundingClientRect();
+    let mouseX, mouseY;
+
+    if (event.type === 'click') {
+        mouseX = event.clientX - rect.left;
+        mouseY = event.clientY - rect.top;
+    } else if (event.type === 'touchstart') {
+        const touch = event.touches[0]; // Get the first touch point
+        mouseX = touch.clientX - rect.left;
+        mouseY = touch.clientY - rect.top;
+    }
+
+    if (gameState.value.rectanglesVisible) {
+        const rectangleIndex = gameObjects.value.rectangles.findIndex(rectangle =>
+            mouseX >= rectangle.x &&
+            mouseX <= rectangle.x + 30 &&
+            mouseY >= rectangle.y &&
+            mouseY <= rectangle.y + 30
+        );
+
+        const currentTime = Date.now();
+
+        if (rectangleIndex !== -1) {
+            // If rectangle is blue and clicked
+            const rectangle = gameObjects.value.rectangles[rectangleIndex]
+            if (rectangle.color === '#1C97FF' && (currentTime - rectangle.createdAt) <= 5000) {
+                metrics.value.button_task.correct_answer++;
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: 5000,
+                    timestamp: Date.now(),
+                });
+
+                // Remove the specific clicked rectangle
+                gameObjects.value.rectangles.splice(rectangleIndex, 1);
+            }
+        }
+    }
+}
+
 function checkAimCollision(timestamp) {
     const currentTimeInSeconds = timestamp / 1000;
     const { circle, aim } = gameObjects.value;
@@ -470,7 +525,8 @@ function initRectangleInterval() {
     if (rectangleInterval.value) {
         clearInterval(rectangleInterval.value);
     }
-    toggleRectangles();
+    createRectangles();
+    changeColorRectangle()
 }
 
 function gameLoop(timestamp) {
@@ -630,10 +686,11 @@ onMounted(() => {
 
         initConfig();
 
-        gameObjects.value.rectangles = generateRectangles();
         updateCircleSpeed();
         metrics.value.tracking_task.lastCheckTime = performance.now() / 1000;
 
+        canvas.value.addEventListener('click', handleInteraction);
+        canvas.value.addEventListener('touchstart', handleInteraction);
         canvas.value.addEventListener('mousemove', handleMouseMove);
         canvas.value.addEventListener('mouseenter', () => canvas.value.style.cursor = 'none');
         canvas.value.addEventListener('mouseleave', () => canvas.value.style.cursor = 'default');
@@ -659,6 +716,8 @@ onMounted(() => {
 
 onUnmounted(() => {
     if (canvas.value) {
+        canvas.value.removeEventListener('click', handleInteraction);
+        canvas.value.removeEventListener('touchstart', handleInteraction);
         canvas.value.removeEventListener('mousemove', handleMouseMove);
         canvas.value.removeEventListener('mouseenter', () => { });
         canvas.value.removeEventListener('mouseleave', () => { });
