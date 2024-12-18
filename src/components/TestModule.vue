@@ -1,54 +1,50 @@
 <template>
-  <div class="flex-1 p-8 overflow-auto">
-    <div class="flex gap-8">
-      <div class="w-2/3 bg-white rounded-lg shadow-md p-6">
-        <div class="flex justify-between items-center mb-4">
-          <!-- <h1 class="text-2xl font-bold justify-center">{{ selectedTestTitle }}</h1> -->
-        </div>
-        
-        <!-- PPTX Viewer -->
-        <div class="mb-6 relative">
-          <div class="aspect-[16/9] bg-gray-100 rounded-lg p-8">
+  <div class="flex-1 overflow-auto min-h-screen">
+    <div class="flex gap-8 px-4 py-4">
+      <!-- Left side - Slide viewer -->
+      <div class="w-2/3">
+        <!-- Slide container with minimum height -->
+        <div class="relative min-h-[800px] flex flex-col">
+          <!-- Image container with flex-grow to take available space -->
+          <div class="flex-grow flex justify-center items-start mb-8">
             <img 
               :src="`${slidesPath}/${currentSlide + 1}.png`" 
               alt="Slide" 
-              class="w-full h-full object-contain"
+              class="w-full h-auto"
               @error="handleImageError"
             />
           </div>
           
-          <!-- Navigation Controls -->
-          <div class="flex justify-between mt-4">
+          <!-- Navigation Controls - positioned at bottom -->
+          <div class="flex justify-between items-center mt-auto px-4">
             <button 
               @click="previousSlide" 
               :disabled="currentSlide === 0"
-              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full">
+              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
               Sebelumnya
             </button>
-            <span class="flex items-center">{{ currentSlide + 1 }}</span>
+            <span class="text-lg">{{ currentSlide + 1 }}</span>
             <button 
               @click="nextSlide" 
               :disabled="currentSlide === totalSlides - 1"
-              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full">
+              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
               Selanjutnya
             </button>
           </div>
         </div>
-
-        <!-- Additional instructions if needed -->
-        <!-- <div v-html="selectedTestDescription"></div> -->
       </div>
 
-      <div class="w-1/3 bg-white p-6 h-fit shadow-lg rounded-xl">
-        <div v-if="url">
+      <!-- Right side - Start Test Button -->
+      <div class="w-1/3">
+        <div v-if="url" class="sticky top-4">
           <router-link :to="url" class="block">
-            <div class="bg-[#ade5bd] px-4 py-4 rounded-xl border-2 border-[#4ae46e] mt-10">
+            <div class="bg-[#ade5bd] px-4 py-4 rounded-xl border-2 border-[#4ae46e]">
               <div class="flex items-center mb-4">
                 <span class="text-[#4ae46e] mr-2 text-2xl">🔆</span>
                 <h2 class="text-lg font-bold">Mulai Test</h2>
               </div>
               <p class="mb-4 text-[#207c43] font-extralight">Mulai Test Jika sudah siap.</p>
-              <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full w-64">
+              <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full text-center">
                 Start Test
               </div>
             </div>
@@ -69,9 +65,9 @@ export default {
       selectedTestTitle: 'Ujian anda telah selesai',
       selectedTestDescription: 'Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan',
       url: '',
-      slidesPath: `/instructions_slides/`,
+      slidesPath: '/instructions_slides',
       currentSlide: 0,
-      totalSlides: 10, // Set this to your actual number of slides
+      totalSlides: 10,
     };
   },
   created() {
@@ -103,15 +99,11 @@ export default {
       this.selectedTestTitle = `Instruksi Test ${shortenedTestName}`;
       this.selectedTestDescription = test.description;
       this.url = test.testUrl;
-      this.slidesPath = `/instructions_slides/${test.name}/`;
+      this.slidesPath = `/instructions_slides/${test.name}`;
       this.totalSlides = this.scanInstructionsSlides(this.slidesPath);
-      
     },
     scanInstructionsSlides(slidesPath) {
-      // scan dir slidespath
-      // return number of slides
       const slides = require.context(slidesPath, false, /\.(png|jpe?g|svg)$/);
-      console.log('Slides:', slides ); // not working
       return slides.keys().length;
     },
     nextSlide() {
@@ -126,14 +118,33 @@ export default {
     },
     handleImageError() {
       console.error(`Failed to load slide ${this.currentSlide + 1}`);
-      // You could implement fallback behavior here
     }
   }
 };
 </script>
 
 <style scoped>
-.aspect-\[16\/9\] {
-  aspect-ratio: 16/9;
+/* Reset any default margins/padding */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure images don't have any default spacing */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Add some space for the content */
+.flex-1 {
+  min-height: 100vh;
+}
+
+/* Disable button styles */
+button:disabled {
+  cursor: not-allowed;
 }
 </style>
