@@ -11,6 +11,14 @@
                 <p>Waktu: {{ formatTime(config.duration) }}</p>
             </div>
         </div>
+
+        <!-- acoustic message -->
+        <div v-if="acousticMessage" class="absolute bottom-10 w-full flex justify-center">
+            <div class="text-xl flex justify-center items-center space-x-2" :style="{ color: acousticMessageColor }">
+                <p>{{ acousticMessage }}</p>
+            </div>
+        </div>
+
         <div v-if="loading"
             class="w-screen h-screen bg-white absolute top-0 left-0 z-30 flex justify-center items-center flex-col">
             <div class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"></div>
@@ -50,7 +58,7 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const isSoundSame = ref(false)
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
-    aim: { x: 0, y: 0, size: 20 },
+    aim: { x: 0, y: 0, size: 30 },
     rectangles: []
 });
 const refreshCount = ref(0)
@@ -59,6 +67,8 @@ const isTraining = ref(true);
 const currentTrainingTask = ref('tracking');
 const trainingTasks = ['tracking', 'button', 'acoustic', 'combined'];
 const trainingDuration = 60; // 60 seconds for each training session
+const acousticMessage = ref("")
+const acousticMessageColor = ref('')
 
 const config = ref({
     speed: "normal",
@@ -141,8 +151,10 @@ function getModalMessage() {
 function handleConfirm() {
     isModalVisible.value = false;
     if (isTraining.value) {
+        // reset()
         startTrainingSession();
     } else {
+        // reset()
         startFullTest();
     }
 }
@@ -277,7 +289,6 @@ function changeDirection() {
 }
 
 function draw() {
-    console.log("asdasdasd")
     ctx.value.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
 
     if (gameState.value.rectanglesVisible) {
@@ -303,6 +314,16 @@ function draw() {
     ctx.value.moveTo(aim.x, aim.y - aim.size / 2);
     ctx.value.lineTo(aim.x, aim.y + aim.size / 2);
     ctx.value.stroke();
+}
+
+function drawText({ text, color }) {
+    acousticMessage.value = text
+    acousticMessageColor.value = color
+
+    setTimeout(() => {
+        acousticMessage.value = ""
+        acousticMessageColor.value = ""
+    }, 4000)
 }
 
 function formatTime(seconds) {
@@ -341,7 +362,6 @@ function changeColorRectangle() {
     const currentTime = Date.now();
 
     const redRectangles = gameObjects.value.rectangles.map((rect) => {
-        console.log(rect, "<<< rect")
         if (rect.color === '#1C97FF' && (currentTime - rect.createdAt) >= 12000) {
             return ({
                 ...rect,
@@ -448,6 +468,7 @@ function handleKeydown(event) {
                     responseTime: 5000,
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Respons benar", color: 'green' })
             } else {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
@@ -455,6 +476,7 @@ function handleKeydown(event) {
                     responseTime: 5000,
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Response salah. Bukan pada urutan audio yang benar", color: 'red' })
             }
             isSoundSame.value = false;
             gameState.value.acousticAnswerAllowed = false;
@@ -505,6 +527,7 @@ function handleInteraction(event) {
                 // Remove the specific clicked rectangle
                 gameObjects.value.rectangles.splice(rectangleIndex, 1);
             }
+            console.log(rectangle, "<<< rectangle")
         }
     }
 }
@@ -595,6 +618,7 @@ function playRandomSounds() {
                     responseTime: 5000, // if missed, set response time to 1000ms
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Urutan suara terlewat tiga detik yang lalu", color: 'red' })
             } else {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
@@ -602,6 +626,7 @@ function playRandomSounds() {
                     responseTime: 5000, // if missed, set response time to 1000ms
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Respons benar", color: 'green' })
             }
         }
 
@@ -682,6 +707,25 @@ function handleBeforeUnload() {
     localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
 }
 
+function reset() {
+    gameObjects.value.rectangles = []
+
+    if (testInterval.value) {
+        clearInterval(testInterval.value);
+    }
+    if (rectangleInterval.value) {
+        clearInterval(rectangleInterval.value);
+    }
+    if (soundInterval.value) {
+        clearInterval(soundInterval.value);
+        soundInterval.value = null;
+    }
+    if (audioContext) {
+        if (audioContext.state !== 'closed')
+            audioContext.close();
+    }
+}
+
 onMounted(() => {
     if (canvas.value) {
         ctx.value = canvas.value.getContext('2d');
@@ -729,20 +773,7 @@ onUnmounted(() => {
         window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     }
-    if (testInterval.value) {
-        clearInterval(testInterval.value);
-    }
-    if (rectangleInterval.value) {
-        clearInterval(rectangleInterval.value);
-    }
-    if (soundInterval.value) {
-        clearInterval(soundInterval.value);
-        soundInterval.value = null;
-    }
-    if (audioContext) {
-        if (audioContext.state !== 'closed')
-            audioContext.close();
-    }
+    reset()
 });
 
 watch(() => config.value.speed, updateCircleSpeed);
