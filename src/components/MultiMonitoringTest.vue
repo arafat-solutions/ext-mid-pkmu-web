@@ -132,7 +132,7 @@ function getModalMessage() {
             case 'tracking':
                 return 'Arahkan crosshair kuning pada lingkaran putih yang bergerak.';
             case 'button':
-                return 'Tekan SPACE ketika Anda melihat kotak biru muncul.';
+                return 'Tekan kotak biru pada layar ketika muncul.';
             case 'acoustic':
                 return 'Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.';
             case 'combined':
