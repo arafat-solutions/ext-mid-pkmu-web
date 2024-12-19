@@ -11,7 +11,7 @@
       <form @submit.prevent="adminLogin">
         <div class="mb-4">
           <label for="adminEmail" class="block text-gray-700 text-sm font-medium mb-2 text-left">Email</label>
-          <input type="email" id="adminEmail" v-model="adminEmail" 
+          <input type="email" id="adminEmail" v-model="adminEmail"
                  class="w-full px-3 py-2 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
                  placeholder="Masukkan Email" required />
         </div>
@@ -26,6 +26,7 @@
           <span v-if="loading" class="spinner"></span>
           <span v-else>Login</span>
         </button>
+        <p v-if="error" class="text-red-500 text-xs mt-2">{{error}}</p>
       </form>
     </div>
   </div>
@@ -38,7 +39,8 @@ export default {
       showModal: false,
       adminEmail: '',
       adminPassword: '',
-      loading: false
+      loading: false,
+      error: null
     };
   },
   methods: {
@@ -66,6 +68,8 @@ export default {
         });
 
         if (!response.ok) {
+          const data = await response.json();
+          this.error = data?.message.toString()
           throw new Error('Login failed');
         }
 
@@ -75,7 +79,7 @@ export default {
         this.$router.push('/config');
       } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        // alert('Login failed. Please try again.');
       } finally {
         this.loading = false;
       }

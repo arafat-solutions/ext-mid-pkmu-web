@@ -11,6 +11,14 @@
                 <p>Waktu: {{ formatTime(config.duration) }}</p>
             </div>
         </div>
+
+        <!-- acoustic message -->
+        <div v-if="acousticMessage" class="absolute bottom-10 w-full flex justify-center">
+            <div class="text-xl flex justify-center items-center space-x-2" :style="{ color: acousticMessageColor }">
+                <p>{{ acousticMessage }}</p>
+            </div>
+        </div>
+
         <div v-if="loading"
             class="w-screen h-screen bg-white absolute top-0 left-0 z-30 flex justify-center items-center flex-col">
             <div class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"></div>
@@ -48,21 +56,19 @@ const rectangleInterval = ref(null);
 const soundInterval = ref(null)
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const isSoundSame = ref(false)
-const PROXIMITY_THRESHOLD = 50; // Distance threshold for showing "Keep Going!"
-const isCloseToTarget = ref(false);
-
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
-    aim: { x: 0, y: 0, size: 40 }, // Made aim size 2x the circle's diameter (2 * 2 * radius)
+    aim: { x: 0, y: 0, size: 30 },
     rectangles: []
 });
-
 const refreshCount = ref(0)
 const userInputs = ref([])
 const isTraining = ref(true);
 const currentTrainingTask = ref('tracking');
 const trainingTasks = ['tracking', 'button', 'acoustic', 'combined'];
-const trainingDuration = 10; // 60 seconds for each training session
+const trainingDuration = 60; // 60 seconds for each training session
+const acousticMessage = ref("")
+const acousticMessageColor = ref('')
 
 const config = ref({
     speed: "normal",
@@ -100,7 +106,7 @@ const gameState = ref({
     direction: { x: 1, y: 1 },
     currentSpeed: 3,
     baseSpeed: 3,
-    rectanglesVisible: false,
+    rectanglesVisible: true,
     lastRectangleTime: 0,
     userAnswered: false,
     lastFrameTime: 0,
@@ -145,8 +151,10 @@ function getModalMessage() {
 function handleConfirm() {
     isModalVisible.value = false;
     if (isTraining.value) {
+        // reset()
         startTrainingSession();
     } else {
+        // reset()
         startFullTest();
     }
 }
@@ -284,17 +292,17 @@ function draw() {
     ctx.value.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
 
     if (gameState.value.rectanglesVisible) {
-        ctx.value.fillStyle = '#1C97FF';
-        gameObjects.value.rectangles.forEach(rect => ctx.value.fillRect(rect.x, rect.y, 30, 30));
+        gameObjects.value.rectangles.forEach(rect => {
+            ctx.value.fillRect(rect.x, rect.y, 30, 30)
+            ctx.value.fillStyle = rect.color;
+        });
     }
 
-    // Draw white circle (target)
     ctx.value.beginPath();
     ctx.value.arc(gameObjects.value.circle.x, gameObjects.value.circle.y, gameObjects.value.circle.radius, 0, Math.PI * 2);
     ctx.value.fillStyle = 'white';
     ctx.value.fill();
 
-    // Draw yellow crosshair (aim)
     const { aim } = gameObjects.value;
     ctx.value.beginPath();
     ctx.value.arc(aim.x, aim.y, aim.size / 2, 0, Math.PI * 2);
@@ -306,37 +314,16 @@ function draw() {
     ctx.value.moveTo(aim.x, aim.y - aim.size / 2);
     ctx.value.lineTo(aim.x, aim.y + aim.size / 2);
     ctx.value.stroke();
-
-    // Draw "Keep Going!" text if close to target
-    if (isCloseToTarget.value) {
-        ctx.value.font = '20px Arial';
-        ctx.value.fillStyle = 'green';
-        ctx.value.textAlign = 'center';
-        ctx.value.fillText('Keep Going!', canvasWidth.value / 2, 50);
-    }
 }
 
-function checkAimCollision(timestamp) {
-    const currentTimeInSeconds = timestamp / 1000;
-    const { circle, aim } = gameObjects.value;
-    const distance = Math.sqrt(
-        Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
-    );
+function drawText({ text, color }) {
+    acousticMessage.value = text
+    acousticMessageColor.value = color
 
-    // Update proximity status
-    isCloseToTarget.value = distance <= PROXIMITY_THRESHOLD;
-
-    if (distance <= circle.radius + aim.size / 2) {
-        const elapsedTime = currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
-        metrics.value.tracking_task.correctTime += elapsedTime;
-    }
-    metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
-}
-
-function handleMouseMove(event) {
-    const rect = canvas.value?.getBoundingClientRect();
-    gameObjects.value.aim.x = event.clientX - rect.left;
-    gameObjects.value.aim.y = event.clientY - rect.top;
+    setTimeout(() => {
+        acousticMessage.value = ""
+        acousticMessageColor.value = ""
+    }, 4000)
 }
 
 function formatTime(seconds) {
@@ -345,37 +332,49 @@ function formatTime(seconds) {
     return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
 }
 
-function generateRectangles() {
-    return Array.from({ length: 2 }, () => ({
-        x: Math.random() * (canvasWidth.value - 30),
-        y: Math.random() * (canvasHeight.value - 30)
-    }));
-}
-
 function updateCircleSpeed() {
     gameState.value.baseSpeed = speedMap[config.value.speed] || speedMap.normal;
     gameState.value.currentSpeed = gameState.value.baseSpeed;
 }
 
-function toggleRectangles() {
-    gameState.value.rectanglesVisible = !gameState.value.rectanglesVisible;
+function createRectangles() {
+    gameObjects.value.rectangles.push({
+        x: Math.random() * (canvasWidth.value - 30),
+        y: Math.random() * (canvasHeight.value - 30),
+        color: '#1C97FF',
+        createdAt: Date.now()
+    });
 
-    if (!gameState.value.rectanglesVisible) {
-        gameObjects.value.rectangles = generateRectangles();
-        metrics.value.button_task.total_question++;
-    } else {
-        if (!gameState.value.userAnswered) {
-            userInputs.value.push({
-                type: 'missed',
-                responseTime: 5000,
-                timestamp: Date.now(),
+    // metrics.value.button_task.total_question++;
+    // if (!gameState.value.userAnswered) {
+    //     userInputs.value.push({
+    //         type: 'missed',
+    //         responseTime: 5000,
+    //         timestamp: Date.now(),
+    //     })
+    //     metrics.value.button_task.incorrect_answer++;
+    // }
+
+    setTimeout(createRectangles, 7000);
+}
+
+function changeColorRectangle() {
+    const currentTime = Date.now();
+
+    const redRectangles = gameObjects.value.rectangles.map((rect) => {
+        if (rect.color === '#1C97FF' && (currentTime - rect.createdAt) >= 12000) {
+            return ({
+                ...rect,
+                color: 'red'
             })
-            metrics.value.button_task.incorrect_answer++;
         }
-        gameState.value.userAnswered = false;
-    }
 
-    setTimeout(toggleRectangles, (gameState.value.rectanglesVisible ? config.value.rectangleVisibility.showDuration : config.value.rectangleVisibility.hideDuration) * 1000);
+        return rect
+    })
+
+    gameObjects.value.rectangles = redRectangles
+
+    setTimeout(changeColorRectangle, 1000)
 }
 
 function initConfig() {
@@ -386,7 +385,8 @@ function initConfig() {
 
     config.value = {
         ...config.value,
-        duration: duration * 60,
+        // duration: duration * 60,
+        duration: duration * 60 * 999999999,
         speed,
         speedChange: speed_change,
         directionChange: direction_change,
@@ -442,7 +442,6 @@ async function submitResult() {
     }
 }
 
-
 function playSound(frequency, duration) {
     const oscillator = audioContext.createOscillator();
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
@@ -469,6 +468,7 @@ function handleKeydown(event) {
                     responseTime: 5000,
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Respons benar", color: 'green' })
             } else {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
@@ -476,6 +476,7 @@ function handleKeydown(event) {
                     responseTime: 5000,
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Response salah. Bukan pada urutan audio yang benar", color: 'red' })
             }
             isSoundSame.value = false;
             gameState.value.acousticAnswerAllowed = false;
@@ -483,12 +484,74 @@ function handleKeydown(event) {
     }
 }
 
+function handleMouseMove(event) {
+    const rect = canvas.value?.getBoundingClientRect();
+    gameObjects.value.aim.x = event.clientX - rect.left;
+    gameObjects.value.aim.y = event.clientY - rect.top;
+}
+
+function handleInteraction(event) {
+    const rect = canvas.value?.getBoundingClientRect();
+    let mouseX, mouseY;
+
+    if (event.type === 'click') {
+        mouseX = event.clientX - rect.left;
+        mouseY = event.clientY - rect.top;
+    } else if (event.type === 'touchstart') {
+        const touch = event.touches[0]; // Get the first touch point
+        mouseX = touch.clientX - rect.left;
+        mouseY = touch.clientY - rect.top;
+    }
+
+    if (gameState.value.rectanglesVisible) {
+        const rectangleIndex = gameObjects.value.rectangles.findIndex(rectangle =>
+            mouseX >= rectangle.x &&
+            mouseX <= rectangle.x + 30 &&
+            mouseY >= rectangle.y &&
+            mouseY <= rectangle.y + 30
+        );
+
+        const currentTime = Date.now();
+
+        if (rectangleIndex !== -1) {
+            // If rectangle is blue and clicked
+            const rectangle = gameObjects.value.rectangles[rectangleIndex]
+            if (rectangle.color === '#1C97FF' && (currentTime - rectangle.createdAt) <= 5000) {
+                metrics.value.button_task.correct_answer++;
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: 5000,
+                    timestamp: Date.now(),
+                });
+
+                // Remove the specific clicked rectangle
+                gameObjects.value.rectangles.splice(rectangleIndex, 1);
+            }
+            console.log(rectangle, "<<< rectangle")
+        }
+    }
+}
+
+function checkAimCollision(timestamp) {
+    const currentTimeInSeconds = timestamp / 1000;
+    const { circle, aim } = gameObjects.value;
+    const distance = Math.sqrt(
+        Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
+    );
+
+    if (distance <= circle.radius + aim.size / 2) {
+        const elapsedTime = currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
+        metrics.value.tracking_task.correctTime += elapsedTime;
+    }
+    metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
+}
 
 function initRectangleInterval() {
     if (rectangleInterval.value) {
         clearInterval(rectangleInterval.value);
     }
-    toggleRectangles();
+    createRectangles();
+    changeColorRectangle()
 }
 
 function gameLoop(timestamp) {
@@ -555,6 +618,7 @@ function playRandomSounds() {
                     responseTime: 5000, // if missed, set response time to 1000ms
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Urutan suara terlewat tiga detik yang lalu", color: 'red' })
             } else {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
@@ -562,6 +626,7 @@ function playRandomSounds() {
                     responseTime: 5000, // if missed, set response time to 1000ms
                     timestamp: Date.now(),
                 })
+                drawText({ text: "Respons benar", color: 'green' })
             }
         }
 
@@ -642,16 +707,36 @@ function handleBeforeUnload() {
     localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
 }
 
+function reset() {
+    gameObjects.value.rectangles = []
+
+    if (testInterval.value) {
+        clearInterval(testInterval.value);
+    }
+    if (rectangleInterval.value) {
+        clearInterval(rectangleInterval.value);
+    }
+    if (soundInterval.value) {
+        clearInterval(soundInterval.value);
+        soundInterval.value = null;
+    }
+    if (audioContext) {
+        if (audioContext.state !== 'closed')
+            audioContext.close();
+    }
+}
+
 onMounted(() => {
     if (canvas.value) {
         ctx.value = canvas.value.getContext('2d');
 
         initConfig();
 
-        gameObjects.value.rectangles = generateRectangles();
         updateCircleSpeed();
         metrics.value.tracking_task.lastCheckTime = performance.now() / 1000;
 
+        canvas.value.addEventListener('click', handleInteraction);
+        canvas.value.addEventListener('touchstart', handleInteraction);
         canvas.value.addEventListener('mousemove', handleMouseMove);
         canvas.value.addEventListener('mouseenter', () => canvas.value.style.cursor = 'none');
         canvas.value.addEventListener('mouseleave', () => canvas.value.style.cursor = 'default');
@@ -677,6 +762,8 @@ onMounted(() => {
 
 onUnmounted(() => {
     if (canvas.value) {
+        canvas.value.removeEventListener('click', handleInteraction);
+        canvas.value.removeEventListener('touchstart', handleInteraction);
         canvas.value.removeEventListener('mousemove', handleMouseMove);
         canvas.value.removeEventListener('mouseenter', () => { });
         canvas.value.removeEventListener('mouseleave', () => { });
@@ -686,20 +773,7 @@ onUnmounted(() => {
         window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     }
-    if (testInterval.value) {
-        clearInterval(testInterval.value);
-    }
-    if (rectangleInterval.value) {
-        clearInterval(rectangleInterval.value);
-    }
-    if (soundInterval.value) {
-        clearInterval(soundInterval.value);
-        soundInterval.value = null;
-    }
-    if (audioContext) {
-        if (audioContext.state !== 'closed')
-            audioContext.close();
-    }
+    reset()
 });
 
 watch(() => config.value.speed, updateCircleSpeed);
