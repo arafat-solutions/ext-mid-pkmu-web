@@ -445,8 +445,7 @@ function initConfig() {
 
     config.value = {
         ...config.value,
-        // duration: duration * 60,
-        duration: duration * 60 * 999999999,
+        duration: duration * 60,
         speed,
         speedChange: speed_change,
         directionChange: direction_change,
