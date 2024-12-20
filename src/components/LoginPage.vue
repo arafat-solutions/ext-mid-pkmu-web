@@ -27,6 +27,7 @@
             <span v-if="loading" class="spinner"></span>
             <span v-else>Login</span>
           </button>
+          <p v-if="error" class="text-red-500 text-xs mt-2">{{error}}</p>
         </form>
       </div>
     </div>
@@ -51,7 +52,8 @@ export default {
     return {
       nrp: '',
       code: '',
-      loading: false
+      loading: false,
+      error: null
     };
   },
   methods: {
@@ -74,11 +76,13 @@ export default {
             code: this.code
           })
         });
-        
+
         if (!res.ok) {
+          const data = await res.json();
+          this.error = data?.message;
           throw new Error('Login failed');
         }
-        
+
         const data = await res.json();
 
         data.tests.map(test => {
@@ -95,7 +99,7 @@ export default {
         this.$router.push('/module');
       } catch (error) {
         console.error(error);
-        alert('Login gagal. Silakan coba lagi.');
+        // alert('Login gagal. Silakan coba lagi.');
       } finally {
         this.loading = false;
       }
