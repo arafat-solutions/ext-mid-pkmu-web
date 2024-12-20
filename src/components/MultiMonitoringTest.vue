@@ -164,14 +164,14 @@ function getModalTitle() {
 function getModalMessage() {
     if (isTraining.value) {
         switch (currentTrainingTask.value) {
-            case "tracking":
-                return "Arahkan crosshair kuning pada lingkaran putih yang bergerak.";
-            case "button":
-                return "Tekan SPACE ketika Anda melihat kotak biru muncul.";
-            case "acoustic":
-                return "Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.";
-            case "combined":
-                return "Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.";
+            case 'tracking':
+                return 'Arahkan crosshair kuning pada lingkaran putih yang bergerak.';
+            case 'button':
+                return 'Tekan kotak biru pada layar ketika muncul.';
+            case 'acoustic':
+                return 'Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.';
+            case 'combined':
+                return 'Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.';
         }
     }
     return "Apakah Anda siap untuk memulai tes?";
