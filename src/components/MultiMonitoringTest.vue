@@ -12,10 +12,33 @@
             </div>
         </div>
 
+        <!-- target message -->
+        <div v-if="targetMessage" class="absolute bottom-10 w-full flex justify-center">
+            <div class="text-xl flex justify-center items-center space-x-2" style="color: green;">
+                <p class="flex items-center">
+                    <span class="mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                            <path fill="currentColor"
+                                d="M11 5.07A7.005 7.005 0 0 0 5.07 11H7v2H5.07A7 7 0 0 0 11 18.93V17h2v1.93A7 7 0 0 0 18.93 13H17v-2h1.93A7 7 0 0 0 13 5.07V7h-2zM3.055 11A9.004 9.004 0 0 1 11 3.055V1h2v2.055A9.004 9.004 0 0 1 20.945 11H23v2h-2.055A9.004 9.004 0 0 1 13 20.945V23h-2v-2.055A9.004 9.004 0 0 1 3.055 13H1v-2zM15 12a3 3 0 1 1-6 0a3 3 0 0 1 6 0" />
+                        </svg>
+                    </span>
+                    {{ targetMessage }}
+                </p>
+            </div>
+        </div>
+
         <!-- acoustic message -->
-        <div v-if="acousticMessage" class="absolute bottom-10 w-full flex justify-center">
+        <div v-if="acousticMessage" class="absolute bottom-3 w-full flex justify-center">
             <div class="text-xl flex justify-center items-center space-x-2" :style="{ color: acousticMessageColor }">
-                <p>{{ acousticMessage }}</p>
+                <p class="flex items-center">
+                    <span class="mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                            <path fill="currentColor"
+                                d="M5 7h2v10H5zm-4 3h2v4H1zm8-8h2v18H9zm4 2h2v18h-2zm4 3h2v10h-2zm4 3h2v4h-2z" />
+                        </svg>
+                    </span>
+                    {{ acousticMessage }}
+                </p>
             </div>
         </div>
 
@@ -39,41 +62,45 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useRouter } from 'vue-router'
-import ModalConfirmSound from './common/ModalConfirmSound.vue'
-import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import ModalConfirmSound from "./common/ModalConfirmSound.vue";
+import {
+    completeTrainingTestAndUpdateLocalStorage,
+    removeTestByNameAndUpdateLocalStorage,
+} from "@/utils/index";
 
-const loading = ref(false)
-const canvasWidth = ref(700)
-const canvasHeight = ref(500)
-const router = useRouter()
-const isModalVisible = ref(true)
+const loading = ref(false);
+const canvasWidth = ref(700);
+const canvasHeight = ref(500);
+const router = useRouter();
+const isModalVisible = ref(true);
 const canvas = ref(null);
 const ctx = ref(null);
 const testInterval = ref(null);
 const rectangleInterval = ref(null);
-const soundInterval = ref(null)
+const soundInterval = ref(null);
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const isSoundSame = ref(false)
+const isSoundSame = ref(false);
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
     aim: { x: 0, y: 0, size: 30 },
-    rectangles: []
+    rectangles: [],
 });
-const refreshCount = ref(0)
-const userInputs = ref([])
+const refreshCount = ref(0);
+const userInputs = ref([]);
 const isTraining = ref(true);
-const currentTrainingTask = ref('tracking');
-const trainingTasks = ['tracking', 'button', 'acoustic', 'combined'];
+const currentTrainingTask = ref("tracking");
+const trainingTasks = ["tracking", "button", "acoustic", "combined"];
 const trainingDuration = 60; // 60 seconds for each training session
-const acousticMessage = ref("")
-const acousticMessageColor = ref('')
+const acousticMessage = ref("");
+const acousticMessageColor = ref("");
+const targetMessage = ref("");
 
 const config = ref({
     speed: "normal",
-    speedChange: '',
-    directionChange: '',
+    speedChange: "",
+    directionChange: "",
     duration: 0,
     rectangleVisibility: {
         showDuration: 5,
@@ -88,19 +115,19 @@ const config = ref({
 const metrics = ref({
     tracking_task: {
         correctTime: 0,
-        lastCheckTime: 0
+        lastCheckTime: 0,
     },
     acoustic_task: {
         correct_answer: 0,
         total_question: 0,
-        incorrect_answer: 0
+        incorrect_answer: 0,
     },
     button_task: {
         correct_answer: 0,
         total_question: 0,
-        incorrect_answer: 0
-    }
-})
+        incorrect_answer: 0,
+    },
+});
 
 const gameState = ref({
     direction: { x: 1, y: 1 },
@@ -112,7 +139,7 @@ const gameState = ref({
     lastFrameTime: 0,
     acousticAnswerAllowed: false,
     lastAcousticPlayTime: 0,
-    lastPlayedFrequency: 0
+    lastPlayedFrequency: 0,
 });
 
 const speedMap = {
@@ -120,32 +147,34 @@ const speedMap = {
     slow: 1.2,
     medium: 1.6,
     fast: 2,
-    very_fast: 2.5
+    very_fast: 2.5,
 };
 
-const gamepadIndex = ref(null)
+const gamepadIndex = ref(null);
 
 function getModalTitle() {
     if (isTraining.value) {
-        return `Mulai Latihan ${currentTrainingTask.value.charAt(0).toUpperCase() + currentTrainingTask.value.slice(1)} `;
+        return `Mulai Latihan ${currentTrainingTask.value.charAt(0).toUpperCase() +
+            currentTrainingTask.value.slice(1)
+            } `;
     }
-    return 'Start Test';
+    return "Start Test";
 }
 
 function getModalMessage() {
     if (isTraining.value) {
         switch (currentTrainingTask.value) {
-            case 'tracking':
-                return 'Arahkan crosshair kuning pada lingkaran putih yang bergerak.';
-            case 'button':
-                return 'Tekan SPACE ketika Anda melihat kotak biru muncul.';
-            case 'acoustic':
-                return 'Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.';
-            case 'combined':
-                return 'Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.';
+            case "tracking":
+                return "Arahkan crosshair kuning pada lingkaran putih yang bergerak.";
+            case "button":
+                return "Tekan SPACE ketika Anda melihat kotak biru muncul.";
+            case "acoustic":
+                return "Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.";
+            case "combined":
+                return "Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.";
         }
     }
-    return 'Apakah Anda siap untuk memulai tes?';
+    return "Apakah Anda siap untuk memulai tes?";
 }
 
 function handleConfirm() {
@@ -163,14 +192,23 @@ function startTrainingSession() {
     config.value.duration = trainingDuration;
     countDownTestTime();
 
-    if (currentTrainingTask.value === 'tracking' || currentTrainingTask.value === 'combined') {
+    if (
+        currentTrainingTask.value === "tracking" ||
+        currentTrainingTask.value === "combined"
+    ) {
         gameState.value.lastFrameTime = performance.now();
         requestAnimationFrame(gameLoop);
     }
-    if (currentTrainingTask.value === 'button' || currentTrainingTask.value === 'combined') {
+    if (
+        currentTrainingTask.value === "button" ||
+        currentTrainingTask.value === "combined"
+    ) {
         initRectangleInterval();
     }
-    if (currentTrainingTask.value === 'acoustic' || currentTrainingTask.value === 'combined') {
+    if (
+        currentTrainingTask.value === "acoustic" ||
+        currentTrainingTask.value === "combined"
+    ) {
         playRandomSounds();
     }
 }
@@ -200,7 +238,7 @@ function countDownTestTime() {
                 await submitResult();
             }
         }
-    }, 1000)
+    }, 1000);
 }
 
 function endTrainingSession() {
@@ -223,7 +261,7 @@ function endTrainingSession() {
     metrics.value.button_task.incorrect_answer = 0;
     userInputs.value = [];
 
-    completeTrainingTestAndUpdateLocalStorage('Multi Monitoring Test');
+    completeTrainingTestAndUpdateLocalStorage("Multi Monitoring Test");
 }
 
 function moveCircle(deltaTime) {
@@ -241,11 +279,17 @@ function moveCircle(deltaTime) {
     // Check for actual canvas edge collisions and bounce
     if (newX - circle.radius < 0 || newX + circle.radius > canvasWidth.value) {
         direction.x *= -1;
-        newX = Math.max(circle.radius, Math.min(canvasWidth.value - circle.radius, newX));
+        newX = Math.max(
+            circle.radius,
+            Math.min(canvasWidth.value - circle.radius, newX)
+        );
     }
     if (newY - circle.radius < 0 || newY + circle.radius > canvasHeight.value) {
         direction.y *= -1;
-        newY = Math.max(circle.radius, Math.min(canvasHeight.value - circle.radius, newY));
+        newY = Math.max(
+            circle.radius,
+            Math.min(canvasHeight.value - circle.radius, newY)
+        );
     }
 
     circle.x = newX;
@@ -255,8 +299,15 @@ function moveCircle(deltaTime) {
 function changeSpeed() {
     const changeRates = { none: 0, slow: 0.01, normal: 0.05, sudden: 0.2 };
     const rate = changeRates[config.value.speedChange];
-    const randomChange = (Math.random() - 0.5) * 2 * rate * gameState.value.baseSpeed;
-    gameState.value.currentSpeed = Math.max(0.5, Math.min(gameState.value.baseSpeed * 2, gameState.value.currentSpeed + randomChange));
+    const randomChange =
+        (Math.random() - 0.5) * 2 * rate * gameState.value.baseSpeed;
+    gameState.value.currentSpeed = Math.max(
+        0.5,
+        Math.min(
+            gameState.value.baseSpeed * 2,
+            gameState.value.currentSpeed + randomChange
+        )
+    );
 }
 
 function changeDirection() {
@@ -292,21 +343,27 @@ function draw() {
     ctx.value.clearRect(0, 0, canvasWidth.value, canvasHeight.value);
 
     if (gameState.value.rectanglesVisible) {
-        gameObjects.value.rectangles.forEach(rect => {
-            ctx.value.fillRect(rect.x, rect.y, 30, 30)
+        gameObjects.value.rectangles.forEach((rect) => {
             ctx.value.fillStyle = rect.color;
+            ctx.value.fillRect(rect.x, rect.y, 30, 30);
         });
     }
 
     ctx.value.beginPath();
-    ctx.value.arc(gameObjects.value.circle.x, gameObjects.value.circle.y, gameObjects.value.circle.radius, 0, Math.PI * 2);
-    ctx.value.fillStyle = 'white';
+    ctx.value.arc(
+        gameObjects.value.circle.x,
+        gameObjects.value.circle.y,
+        gameObjects.value.circle.radius,
+        0,
+        Math.PI * 2
+    );
+    ctx.value.fillStyle = "white";
     ctx.value.fill();
 
     const { aim } = gameObjects.value;
     ctx.value.beginPath();
     ctx.value.arc(aim.x, aim.y, aim.size / 2, 0, Math.PI * 2);
-    ctx.value.strokeStyle = 'yellow';
+    ctx.value.strokeStyle = "yellow";
     ctx.value.lineWidth = 2;
     ctx.value.stroke();
     ctx.value.moveTo(aim.x - aim.size / 2, aim.y);
@@ -317,19 +374,19 @@ function draw() {
 }
 
 function drawText({ text, color }) {
-    acousticMessage.value = text
-    acousticMessageColor.value = color
+    acousticMessage.value = text;
+    acousticMessageColor.value = color;
 
     setTimeout(() => {
-        acousticMessage.value = ""
-        acousticMessageColor.value = ""
-    }, 4000)
+        acousticMessage.value = "";
+        acousticMessageColor.value = "";
+    }, 4000);
 }
 
 function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
     const remainderSeconds = seconds % 60;
-    return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+    return `${minutes}:${remainderSeconds < 10 ? "0" : ""}${remainderSeconds}`;
 }
 
 function updateCircleSpeed() {
@@ -341,8 +398,8 @@ function createRectangles() {
     gameObjects.value.rectangles.push({
         x: Math.random() * (canvasWidth.value - 30),
         y: Math.random() * (canvasHeight.value - 30),
-        color: '#1C97FF',
-        createdAt: Date.now()
+        color: "#1C97FF",
+        createdAt: Date.now(),
     });
 
     // metrics.value.button_task.total_question++;
@@ -362,26 +419,29 @@ function changeColorRectangle() {
     const currentTime = Date.now();
 
     const redRectangles = gameObjects.value.rectangles.map((rect) => {
-        if (rect.color === '#1C97FF' && (currentTime - rect.createdAt) >= 12000) {
-            return ({
+        if (rect.color === "#1C97FF" && currentTime - rect.createdAt >= 5000) {
+            return {
                 ...rect,
-                color: 'red'
-            })
+                color: "red",
+            };
         }
 
-        return rect
-    })
+        return rect;
+    });
 
-    gameObjects.value.rectangles = redRectangles
+    gameObjects.value.rectangles = redRectangles;
 
-    setTimeout(changeColorRectangle, 1000)
+    setTimeout(changeColorRectangle, 1000);
 }
 
 function initConfig() {
-    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-    const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
+    const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+    const configMultiMonitoring = scheduleData.tests.find(
+        (t) => t.testUrl === "multi-monitoring-test"
+    );
     // @TODO: Config Flow
-    const { duration, speed, speed_change, direction_change } = configMultiMonitoring.configs[0]
+    const { duration, speed, speed_change, direction_change } =
+        configMultiMonitoring.configs[0];
 
     config.value = {
         ...config.value,
@@ -393,7 +453,7 @@ function initConfig() {
         userId: scheduleData.userId,
         sessionId: scheduleData.sessionId,
         testId: configMultiMonitoring.id, // change to battery test id instead of config id.
-    }
+    };
 }
 
 async function submitResult() {
@@ -410,21 +470,21 @@ async function submitResult() {
             ...metrics.value,
             graph_data: userInputs.value,
             tracking_task: {
-                correctTime: Number(metrics.value.tracking_task.correctTime.toFixed(2))
-            }
-        }
+                correctTime: Number(metrics.value.tracking_task.correctTime.toFixed(2)),
+            },
+        };
         const payload = {
             testSessionId: config.value.sessionId,
             userId: config.value.userId,
             batteryTestId: config.value.testId,
             result,
-            refreshCount: refreshCount.value
-        }
+            refreshCount: refreshCount.value,
+        };
 
         const response = await fetch(`${API_URL}/api/submission`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
         });
@@ -432,11 +492,11 @@ async function submitResult() {
         if (!response.ok) {
             throw new Error(`Error: ${response.statusText}`);
         }
-        removeTestByNameAndUpdateLocalStorage('Multi Monitoring Test')
-        localStorage.removeItem('refreshCountMultiMonitoring')
-        router.push('/module');
+        removeTestByNameAndUpdateLocalStorage("Multi Monitoring Test");
+        localStorage.removeItem("refreshCountMultiMonitoring");
+        router.push("/module");
     } catch (error) {
-        console.log(error, "<< error")
+        console.log(error, "<< error");
     } finally {
         loading.value = false; // Set loading to false when the submission is complete
     }
@@ -451,32 +511,39 @@ function playSound(frequency, duration) {
 }
 
 function handleKeydown(event) {
-    if (event.code === 'Space' && gameState.value.rectanglesVisible && !gameState.value.userAnswered) {
+    if (
+        event.code === "Space" &&
+        gameState.value.rectanglesVisible &&
+        !gameState.value.userAnswered
+    ) {
         metrics.value.button_task.correct_answer++;
         userInputs.value.push({
-            type: 'correct',
+            type: "correct",
             responseTime: 5000,
             timestamp: Date.now(),
-        })
+        });
         gameState.value.userAnswered = true;
-    } else if (event.code === 'Enter') {
+    } else if (event.code === "Enter") {
         if (gameState.value.acousticAnswerAllowed) {
             if (isSoundSame.value) {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
-                    type: 'correct',
+                    type: "correct",
                     responseTime: 5000,
                     timestamp: Date.now(),
-                })
-                drawText({ text: "Respons benar", color: 'green' })
+                });
+                drawText({ text: "Respons benar", color: "green" });
             } else {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
-                    type: 'wrong',
+                    type: "wrong",
                     responseTime: 5000,
                     timestamp: Date.now(),
-                })
-                drawText({ text: "Response salah. Bukan pada urutan audio yang benar", color: 'red' })
+                });
+                drawText({
+                    text: "Response salah. Bukan pada urutan audio yang benar",
+                    color: "red",
+                });
             }
             isSoundSame.value = false;
             gameState.value.acousticAnswerAllowed = false;
@@ -484,42 +551,46 @@ function handleKeydown(event) {
     }
 }
 
-function handleMouseMove(event) {
-    const rect = canvas.value?.getBoundingClientRect();
-    gameObjects.value.aim.x = event.clientX - rect.left;
-    gameObjects.value.aim.y = event.clientY - rect.top;
-}
+// function handleMouseMove(event) {
+//     const rect = canvas.value?.getBoundingClientRect();
+//     gameObjects.value.aim.x = event.clientX - rect.left;
+//     gameObjects.value.aim.y = event.clientY - rect.top;
+// }
 
 function handleInteraction(event) {
     const rect = canvas.value?.getBoundingClientRect();
     let mouseX, mouseY;
 
-    if (event.type === 'click') {
+    if (event.type === "click") {
         mouseX = event.clientX - rect.left;
         mouseY = event.clientY - rect.top;
-    } else if (event.type === 'touchstart') {
+    } else if (event.type === "touchstart") {
         const touch = event.touches[0]; // Get the first touch point
         mouseX = touch.clientX - rect.left;
         mouseY = touch.clientY - rect.top;
     }
 
     if (gameState.value.rectanglesVisible) {
-        const rectangleIndex = gameObjects.value.rectangles.findIndex(rectangle =>
-            mouseX >= rectangle.x &&
-            mouseX <= rectangle.x + 30 &&
-            mouseY >= rectangle.y &&
-            mouseY <= rectangle.y + 30
+        const rectangleIndex = gameObjects.value.rectangles.findIndex(
+            (rectangle) =>
+                mouseX >= rectangle.x &&
+                mouseX <= rectangle.x + 30 &&
+                mouseY >= rectangle.y &&
+                mouseY <= rectangle.y + 30
         );
 
         const currentTime = Date.now();
 
         if (rectangleIndex !== -1) {
             // If rectangle is blue and clicked
-            const rectangle = gameObjects.value.rectangles[rectangleIndex]
-            if (rectangle.color === '#1C97FF' && (currentTime - rectangle.createdAt) <= 5000) {
+            const rectangle = gameObjects.value.rectangles[rectangleIndex];
+            if (
+                rectangle.color === "#1C97FF" &&
+                currentTime - rectangle.createdAt <= 5000
+            ) {
                 metrics.value.button_task.correct_answer++;
                 userInputs.value.push({
-                    type: 'correct',
+                    type: "correct",
                     responseTime: 5000,
                     timestamp: Date.now(),
                 });
@@ -527,7 +598,7 @@ function handleInteraction(event) {
                 // Remove the specific clicked rectangle
                 gameObjects.value.rectangles.splice(rectangleIndex, 1);
             }
-            console.log(rectangle, "<<< rectangle")
+            console.log(rectangle, "<<< rectangle");
         }
     }
 }
@@ -540,8 +611,12 @@ function checkAimCollision(timestamp) {
     );
 
     if (distance <= circle.radius + aim.size / 2) {
-        const elapsedTime = currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
+        const elapsedTime =
+            currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
         metrics.value.tracking_task.correctTime += elapsedTime;
+        targetMessage.value = "Pertahankan objek putih tetap berada di objek kuning selama mungkin.."
+    } else {
+        targetMessage.value = ""
     }
     metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
 }
@@ -551,7 +626,7 @@ function initRectangleInterval() {
         clearInterval(rectangleInterval.value);
     }
     createRectangles();
-    changeColorRectangle()
+    changeColorRectangle();
 }
 
 function gameLoop(timestamp) {
@@ -569,13 +644,14 @@ function playRandomSounds() {
         { frequency: 200, duration: 0.2 },
         { frequency: 200, duration: 0.5 },
         { frequency: 1000, duration: 0.2 },
-        { frequency: 1000, duration: 0.5 }
+        { frequency: 1000, duration: 0.5 },
     ];
 
     function getRandomSoundOption() {
         let selectedOption;
         do {
-            selectedOption = soundOptions[Math.floor(Math.random() * soundOptions.length)];
+            selectedOption =
+                soundOptions[Math.floor(Math.random() * soundOptions.length)];
         } while (selectedOption.frequency === gameState.value.lastPlayedFrequency);
         gameState.value.lastPlayedFrequency = selectedOption.frequency;
         return selectedOption;
@@ -614,19 +690,22 @@ function playRandomSounds() {
             if (isSoundSame.value) {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
-                    type: 'wrong',
+                    type: "wrong",
                     responseTime: 5000, // if missed, set response time to 1000ms
                     timestamp: Date.now(),
-                })
-                drawText({ text: "Urutan suara terlewat tiga detik yang lalu", color: 'red' })
+                });
+                drawText({
+                    text: "Urutan suara terlewat tiga detik yang lalu",
+                    color: "red",
+                });
             } else {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
-                    type: 'correct',
+                    type: "correct",
                     responseTime: 5000, // if missed, set response time to 1000ms
                     timestamp: Date.now(),
-                })
-                drawText({ text: "Respons benar", color: 'green' })
+                });
+                drawText({ text: "Respons benar", color: "green" });
             }
         }
 
@@ -650,13 +729,13 @@ function playRandomSounds() {
 }
 
 function handleCancel() {
-    router.replace('/module')
+    router.replace("/module");
 }
 
 // for gamepad
 function onGamepadConnected(event) {
-    console.log('connected', event)
-    if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+    console.log("connected", event);
+    if (event.gamepad.id !== "T.16000M (Vendor: 044f Product: b10a)") {
         return;
     }
     gamepadIndex.value = event.gamepad.index;
@@ -664,8 +743,8 @@ function onGamepadConnected(event) {
 }
 
 function onGamepadDisconnected(event) {
-    console.log('disconnected', event)
-    if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+    console.log("disconnected", event);
+    if (event.gamepad.id !== "T.16000M (Vendor: 044f Product: b10a)") {
         return;
     }
     if (gamepadIndex.value === event.gamepad.index) {
@@ -692,23 +771,32 @@ function handleGamepadInput(gamepad) {
     const canvasWidth = canvasRect.width;
     const canvasHeight = canvasRect.height;
 
-    const sensitivity = 5;  // You can adjust this value to control how fast the aim moves
+    const sensitivity = 5; // You can adjust this value to control how fast the aim moves
 
     gameObjects.value.aim.x += leftStickX * sensitivity;
     gameObjects.value.aim.y += leftStickY * sensitivity;
 
     // Clamp the aim position to stay within the canvas bounds
-    gameObjects.value.aim.x = Math.max(0, Math.min(gameObjects.value.aim.x, canvasWidth));
-    gameObjects.value.aim.y = Math.max(0, Math.min(gameObjects.value.aim.y, canvasHeight));
+    gameObjects.value.aim.x = Math.max(
+        0,
+        Math.min(gameObjects.value.aim.x, canvasWidth)
+    );
+    gameObjects.value.aim.y = Math.max(
+        0,
+        Math.min(gameObjects.value.aim.y, canvasHeight)
+    );
 }
 
 function handleBeforeUnload() {
     // Save the current refresh count to localStorage before the page unloads
-    localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
+    localStorage.setItem(
+        "refreshCountMultiMonitoring",
+        refreshCount.value.toString()
+    );
 }
 
 function reset() {
-    gameObjects.value.rectangles = []
+    gameObjects.value.rectangles = [];
 
     if (testInterval.value) {
         clearInterval(testInterval.value);
@@ -721,39 +809,50 @@ function reset() {
         soundInterval.value = null;
     }
     if (audioContext) {
-        if (audioContext.state !== 'closed')
-            audioContext.close();
+        if (audioContext.state !== "closed") audioContext.close();
     }
 }
 
 onMounted(() => {
     if (canvas.value) {
-        ctx.value = canvas.value.getContext('2d');
+        ctx.value = canvas.value.getContext("2d");
 
         initConfig();
 
         updateCircleSpeed();
         metrics.value.tracking_task.lastCheckTime = performance.now() / 1000;
 
-        canvas.value.addEventListener('click', handleInteraction);
-        canvas.value.addEventListener('touchstart', handleInteraction);
-        canvas.value.addEventListener('mousemove', handleMouseMove);
-        canvas.value.addEventListener('mouseenter', () => canvas.value.style.cursor = 'none');
-        canvas.value.addEventListener('mouseleave', () => canvas.value.style.cursor = 'default');
-        window.addEventListener('keydown', handleKeydown);
+        canvas.value.addEventListener("click", handleInteraction);
+        canvas.value.addEventListener("touchstart", handleInteraction);
+        // canvas.value.addEventListener("mousemove", handleMouseMove);
+        canvas.value.addEventListener(
+            "mouseenter",
+            () => (canvas.value.style.cursor = "none")
+        );
+        canvas.value.addEventListener(
+            "mouseleave",
+            () => (canvas.value.style.cursor = "default")
+        );
+        window.addEventListener("keydown", handleKeydown);
 
-        window.addEventListener('gamepadconnected', onGamepadConnected);
-        window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
+        window.addEventListener("gamepadconnected", onGamepadConnected);
+        window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
         checkGamepad();
 
-        refreshCount.value = parseInt(localStorage.getItem('refreshCountMultiMonitoring') || '0');
+        refreshCount.value = parseInt(
+            localStorage.getItem("refreshCountMultiMonitoring") || "0"
+        );
         refreshCount.value++;
-        localStorage.setItem('refreshCountMultiMonitoring', refreshCount.value.toString());
-        window.addEventListener('beforeunload', handleBeforeUnload);
+        localStorage.setItem(
+            "refreshCountMultiMonitoring",
+            refreshCount.value.toString()
+        );
+        window.addEventListener("beforeunload", handleBeforeUnload);
 
-
-        const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
-        const configMultiMonitoring = scheduleData.tests.find((t) => t.testUrl === 'multi-monitoring-test')
+        const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+        const configMultiMonitoring = scheduleData.tests.find(
+            (t) => t.testUrl === "multi-monitoring-test"
+        );
         isTraining.value = configMultiMonitoring.trainingCompleted ? false : true;
         // Start with the first training session
         isModalVisible.value = true;
@@ -762,18 +861,18 @@ onMounted(() => {
 
 onUnmounted(() => {
     if (canvas.value) {
-        canvas.value.removeEventListener('click', handleInteraction);
-        canvas.value.removeEventListener('touchstart', handleInteraction);
-        canvas.value.removeEventListener('mousemove', handleMouseMove);
-        canvas.value.removeEventListener('mouseenter', () => { });
-        canvas.value.removeEventListener('mouseleave', () => { });
-        window.removeEventListener('keydown', handleKeydown);
+        canvas.value.removeEventListener("click", handleInteraction);
+        canvas.value.removeEventListener("touchstart", handleInteraction);
+        // canvas.value.removeEventListener("mousemove", handleMouseMove);
+        canvas.value.removeEventListener("mouseenter", () => { });
+        canvas.value.removeEventListener("mouseleave", () => { });
+        window.removeEventListener("keydown", handleKeydown);
 
-        window.removeEventListener('gamepadconnected', onGamepadConnected);
-        window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
-        window.removeEventListener('beforeunload', handleBeforeUnload);
+        window.removeEventListener("gamepadconnected", onGamepadConnected);
+        window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
+        window.removeEventListener("beforeunload", handleBeforeUnload);
     }
-    reset()
+    reset();
 });
 
 watch(() => config.value.speed, updateCircleSpeed);
