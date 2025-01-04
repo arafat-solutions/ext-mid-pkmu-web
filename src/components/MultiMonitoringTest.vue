@@ -514,11 +514,13 @@ function handleKeydown(event) {
         gameState.value.userAnswered = true;
     } else if (event.code === "Enter") {
         if (gameState.value.acousticAnswerAllowed) {
+            const responseTime = Date.now() - gameState.value.lastSoundPlayedTime;
+
             if (isSoundSame.value) {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
                     type: "correct",
-                    responseTime: 5000,
+                    responseTime: Math.min(responseTime, 5000),
                     timestamp: Date.now(),
                 });
                 drawText({ text: "Respons benar", color: "green" });
@@ -526,7 +528,7 @@ function handleKeydown(event) {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
                     type: "wrong",
-                    responseTime: 5000,
+                    responseTime: Math.min(responseTime, 5000),
                     timestamp: Date.now(),
                 });
                 drawText({
@@ -660,6 +662,14 @@ function playRandomSounds() {
 
                 setTimeout(() => {
                     playSound(frequency, duration);
+
+                    // Set the timestamp after the last sound
+                    if (i === 2) {
+                        gameState.value.lastSoundPlayedTime = Date.now();
+                        setTimeout(() => {
+                            gameState.value.acousticAnswerAllowed = true;
+                        }, 500); // Give a small buffer after the last sound
+                    }
                 }, i * (duration * 1000 + 1000));
             }
         } else {
@@ -671,6 +681,14 @@ function playRandomSounds() {
             for (let i = 0; i < 3; i++) {
                 setTimeout(() => {
                     playSound(frequency, duration);
+
+                    // Set the timestamp after the last sound
+                    if (i === 2) {
+                        gameState.value.lastSoundPlayedTime = Date.now();
+                        setTimeout(() => {
+                            gameState.value.acousticAnswerAllowed = true;
+                        }, 500); // Give a small buffer after the last sound
+                    }
                 }, i * (duration * 1000 + 1000));
             }
         }
