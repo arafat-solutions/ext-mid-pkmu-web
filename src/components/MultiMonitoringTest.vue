@@ -51,7 +51,7 @@
             <p>correctTime: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
             <p>Button:</p>
             <p>correct: {{ metrics.button_task.correct_answer }}</p>
-            <p>wrong: {{ metrics.button_task.incorrect_answer }}</p>
+            <!-- <p>wrong: {{ metrics.button_task.incorrect_answer }}</p> -->
             <p>total: {{ metrics.button_task.total_question }}</p>
             <p>Acoustic:</p>
             <p>correct: {{ metrics.acoustic_task.correct_answer }}</p>
@@ -84,7 +84,7 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const isSoundSame = ref(false);
 const gameObjects = ref({
     circle: { x: 250, y: 150, radius: 10 },
-    aim: { x: 0, y: 0, size: 30 },
+    aim: { x: 0, y: 0, size: 30, color: 'red' },
     rectangles: [],
 });
 const refreshCount = ref(0);
@@ -125,7 +125,7 @@ const metrics = ref({
     button_task: {
         correct_answer: 0,
         total_question: 0,
-        incorrect_answer: 0,
+        // incorrect_answer: 0,
     },
 });
 
@@ -258,7 +258,7 @@ function endTrainingSession() {
     metrics.value.acoustic_task.incorrect_answer = 0;
     metrics.value.button_task.correct_answer = 0;
     metrics.value.button_task.total_question = 0;
-    metrics.value.button_task.incorrect_answer = 0;
+    // metrics.value.button_task.incorrect_answer = 0;
     userInputs.value = [];
 
     completeTrainingTestAndUpdateLocalStorage("Multi Monitoring Test");
@@ -363,7 +363,7 @@ function draw() {
     const { aim } = gameObjects.value;
     ctx.value.beginPath();
     ctx.value.arc(aim.x, aim.y, aim.size / 2, 0, Math.PI * 2);
-    ctx.value.strokeStyle = "yellow";
+    ctx.value.strokeStyle = aim.color;
     ctx.value.lineWidth = 2;
     ctx.value.stroke();
     ctx.value.moveTo(aim.x - aim.size / 2, aim.y);
@@ -401,16 +401,6 @@ function createRectangles() {
         color: "#1C97FF",
         createdAt: Date.now(),
     });
-
-    // metrics.value.button_task.total_question++;
-    // if (!gameState.value.userAnswered) {
-    //     userInputs.value.push({
-    //         type: 'missed',
-    //         responseTime: 5000,
-    //         timestamp: Date.now(),
-    //     })
-    //     metrics.value.button_task.incorrect_answer++;
-    // }
 
     setTimeout(createRectangles, 7000);
 }
@@ -550,11 +540,11 @@ function handleKeydown(event) {
     }
 }
 
-// function handleMouseMove(event) {
-//     const rect = canvas.value?.getBoundingClientRect();
-//     gameObjects.value.aim.x = event.clientX - rect.left;
-//     gameObjects.value.aim.y = event.clientY - rect.top;
-// }
+function handleMouseMove(event) {
+    const rect = canvas.value?.getBoundingClientRect();
+    gameObjects.value.aim.x = event.clientX - rect.left;
+    gameObjects.value.aim.y = event.clientY - rect.top;
+}
 
 function handleInteraction(event) {
     const rect = canvas.value?.getBoundingClientRect();
@@ -590,14 +580,13 @@ function handleInteraction(event) {
                 metrics.value.button_task.correct_answer++;
                 userInputs.value.push({
                     type: "correct",
-                    responseTime: 5000,
+                    responseTime: currentTime - rectangle.createdAt,
                     timestamp: Date.now(),
                 });
 
-                // Remove the specific clicked rectangle
-                gameObjects.value.rectangles.splice(rectangleIndex, 1);
             }
-            console.log(rectangle, "<<< rectangle");
+            // Remove the specific clicked rectangle
+            gameObjects.value.rectangles.splice(rectangleIndex, 1);
         }
     }
 }
@@ -613,8 +602,10 @@ function checkAimCollision(timestamp) {
         const elapsedTime =
             currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
         metrics.value.tracking_task.correctTime += elapsedTime;
+        aim.color = 'yellow'
         targetMessage.value = "Pertahankan objek putih tetap berada di objek kuning selama mungkin.."
     } else {
+        aim.color = 'red'
         targetMessage.value = ""
     }
     metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
@@ -690,7 +681,7 @@ function playRandomSounds() {
                 metrics.value.acoustic_task.incorrect_answer++;
                 userInputs.value.push({
                     type: "wrong",
-                    responseTime: 5000, // if missed, set response time to 1000ms
+                    responseTime: 5000, // if missed, set response time to 5000ms
                     timestamp: Date.now(),
                 });
                 drawText({
@@ -701,7 +692,7 @@ function playRandomSounds() {
                 metrics.value.acoustic_task.correct_answer++;
                 userInputs.value.push({
                     type: "correct",
-                    responseTime: 5000, // if missed, set response time to 1000ms
+                    responseTime: 5000, // if missed, set response time to 5000ms
                     timestamp: Date.now(),
                 });
                 drawText({ text: "Respons benar", color: "green" });
@@ -823,7 +814,7 @@ onMounted(() => {
 
         canvas.value.addEventListener("click", handleInteraction);
         canvas.value.addEventListener("touchstart", handleInteraction);
-        // canvas.value.addEventListener("mousemove", handleMouseMove);
+        canvas.value.addEventListener("mousemove", handleMouseMove);
         canvas.value.addEventListener(
             "mouseenter",
             () => (canvas.value.style.cursor = "none")
@@ -862,7 +853,7 @@ onUnmounted(() => {
     if (canvas.value) {
         canvas.value.removeEventListener("click", handleInteraction);
         canvas.value.removeEventListener("touchstart", handleInteraction);
-        // canvas.value.removeEventListener("mousemove", handleMouseMove);
+        canvas.value.removeEventListener("mousemove", handleMouseMove);
         canvas.value.removeEventListener("mouseenter", () => { });
         canvas.value.removeEventListener("mouseleave", () => { });
         window.removeEventListener("keydown", handleKeydown);
