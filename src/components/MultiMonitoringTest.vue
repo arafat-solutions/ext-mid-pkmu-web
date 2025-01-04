@@ -542,11 +542,11 @@ function handleKeydown(event) {
     }
 }
 
-function handleMouseMove(event) {
-    const rect = canvas.value?.getBoundingClientRect();
-    gameObjects.value.aim.x = event.clientX - rect.left;
-    gameObjects.value.aim.y = event.clientY - rect.top;
-}
+// function handleMouseMove(event) {
+//     const rect = canvas.value?.getBoundingClientRect();
+//     gameObjects.value.aim.x = event.clientX - rect.left;
+//     gameObjects.value.aim.y = event.clientY - rect.top;
+// }
 
 function handleInteraction(event) {
     const rect = canvas.value?.getBoundingClientRect();
@@ -832,7 +832,7 @@ onMounted(() => {
 
         canvas.value.addEventListener("click", handleInteraction);
         canvas.value.addEventListener("touchstart", handleInteraction);
-        canvas.value.addEventListener("mousemove", handleMouseMove);
+        // canvas.value.addEventListener("mousemove", handleMouseMove);
         canvas.value.addEventListener(
             "mouseenter",
             () => (canvas.value.style.cursor = "none")
@@ -871,7 +871,7 @@ onUnmounted(() => {
     if (canvas.value) {
         canvas.value.removeEventListener("click", handleInteraction);
         canvas.value.removeEventListener("touchstart", handleInteraction);
-        canvas.value.removeEventListener("mousemove", handleMouseMove);
+        // canvas.value.removeEventListener("mousemove", handleMouseMove);
         canvas.value.removeEventListener("mouseenter", () => { });
         canvas.value.removeEventListener("mouseleave", () => { });
         window.removeEventListener("keydown", handleKeydown);
