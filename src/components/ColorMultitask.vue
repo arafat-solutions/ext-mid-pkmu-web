@@ -5,7 +5,7 @@
 
       <p v-if="!trainingCompleted">{{ instructionModalContent }}</p>
       <p v-else>
-        Apakah Anda Yakin <br>akan memulai ujian Multitasking with Color?
+        Apakah Anda Yakin <br>akan memulai tes Multitasking with Color?
       </p>
 
       <button @click="startTrainingTask">{{ trainingCompleted ? 'Start Test' : 'Start Task' }}</button>

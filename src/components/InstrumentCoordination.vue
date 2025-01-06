@@ -7,8 +7,8 @@
             Apakah Anda Yakin <br>akan memulai test Instrument Coordination?
           </strong>
         </p>
-        <button @click="exit" style="margin-right: 20px;">Batal</button>
         <button @click="startTest">Ya</button>
+        <button @click="exit" style="margin-right: 20px;">Batal</button>
       </div>
     </div>
     <div v-if="timeLeft > 0 && isShowModal === false" :class="isTrial ? 'timer-container-trial' : 'timer-container'">

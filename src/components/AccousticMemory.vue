@@ -2,16 +2,16 @@
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Accoustic Memory?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
       <button @click="startTest()">Ya</button>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
     </div>
   </div>
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Accoustic Memory?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
       <button @click="startTest()">Ya</button>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
     </div>
   </div>
 
@@ -50,7 +50,7 @@
       </div>
     </div>
     <div class="wrong-text" v-if="wrong">{{ wrong }} answer{{ wrong > 1 ? 's' : '' }} wrong</div>
-    <button class="btn-continue" v-show="canContinue" @click="continueTask">Continue</button>
+    <button class="btn-continue" v-show="canContinue" @click="continueTask">Lanjutkan</button>
   </div>
   <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner"></div>
