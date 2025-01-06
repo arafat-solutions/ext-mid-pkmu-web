@@ -10,7 +10,7 @@
             <p class="instructions">{{ instructions }}</p>
             <div class="button-group">
                 <button @click="confirm" class="confirm-btn">{{ confirmButtonText }}</button>
-                <button @click="cancel" class="cancel-btn">Cancel</button>
+                <button @click="cancel" class="cancel-btn">BATAL</button>
             </div>
         </div>
     </div>
@@ -38,7 +38,7 @@ export default {
         },
         confirmButtonText: {
             type: String,
-            default: 'Confirm'
+            default: 'YA'
         }
     },
     methods: {
