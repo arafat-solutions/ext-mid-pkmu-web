@@ -48,14 +48,13 @@
             <p class="mt-12 text-2xl">Your result is submitting...</p>
         </div>
         <div class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2">
-            <p>correctTime: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
+            <p>Waktu Benar: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
             <p>Button:</p>
-            <p>correct: {{ metrics.button_task.correct_answer }}</p>
-            <!-- <p>wrong: {{ metrics.button_task.incorrect_answer }}</p> -->
+            <p>Benar: {{ metrics.button_task.correct_answer }}</p>
             <p>total: {{ metrics.button_task.total_question }}</p>
             <p>Acoustic:</p>
-            <p>correct: {{ metrics.acoustic_task.correct_answer }}</p>
-            <p>wrong: {{ metrics.acoustic_task.incorrect_answer }}</p>
+            <p>Benar: {{ metrics.acoustic_task.correct_answer }}</p>
+            <p>Salah: {{ metrics.acoustic_task.incorrect_answer }}</p>
             <p>total: {{ metrics.acoustic_task.total_question }}</p>
         </div>
     </div>
@@ -499,48 +498,24 @@ function playSound(frequency, duration) {
     oscillator.stop(audioContext.currentTime + duration);
 }
 
-function handleKeydown(event) {
-    if (
-        event.code === "Space" &&
-        gameState.value.rectanglesVisible &&
-        !gameState.value.userAnswered
-    ) {
-        metrics.value.button_task.correct_answer++;
-        userInputs.value.push({
-            type: "correct",
-            responseTime: 5000,
-            timestamp: Date.now(),
-        });
-        gameState.value.userAnswered = true;
-    } else if (event.code === "Enter") {
-        if (gameState.value.acousticAnswerAllowed) {
-            const responseTime = Date.now() - gameState.value.lastSoundPlayedTime;
-
-            if (isSoundSame.value) {
-                metrics.value.acoustic_task.correct_answer++;
-                userInputs.value.push({
-                    type: "correct",
-                    responseTime: Math.min(responseTime, 5000),
-                    timestamp: Date.now(),
-                });
-                drawText({ text: "Respons benar", color: "green" });
-            } else {
-                metrics.value.acoustic_task.incorrect_answer++;
-                userInputs.value.push({
-                    type: "wrong",
-                    responseTime: Math.min(responseTime, 5000),
-                    timestamp: Date.now(),
-                });
-                drawText({
-                    text: "Response salah. Bukan pada urutan audio yang benar",
-                    color: "red",
-                });
-            }
-            isSoundSame.value = false;
-            gameState.value.acousticAnswerAllowed = false;
-        }
-    }
-}
+// function handleKeydown(event) {
+//     if (event.code === "Enter") {
+//         if (gameState.value.acousticAnswerAllowed) {
+//             if (isSoundSame.value) {
+//                 metrics.value.acoustic_task.correct_answer++;
+//                 drawText({ text: "Respons benar", color: "green" });
+//             } else {
+//                 metrics.value.acoustic_task.incorrect_answer++;
+//                 drawText({
+//                     text: "Response salah. Bukan pada urutan audio yang benar",
+//                     color: "red",
+//                 });
+//             }
+//             isSoundSame.value = false;
+//             gameState.value.acousticAnswerAllowed = false;
+//         }
+//     }
+// }
 
 // function handleMouseMove(event) {
 //     const rect = canvas.value?.getBoundingClientRect();
@@ -586,8 +561,13 @@ function handleInteraction(event) {
                     timestamp: Date.now(),
                 });
 
+            } else {
+                userInputs.value.push({
+                    type: "wrong",
+                    responseTime: currentTime - rectangle.createdAt,
+                    timestamp: Date.now(),
+                });
             }
-            // Remove the specific clicked rectangle
             gameObjects.value.rectangles.splice(rectangleIndex, 1);
         }
     }
@@ -600,7 +580,7 @@ function checkAimCollision(timestamp) {
         Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
     );
 
-    if (distance <= circle.radius + aim.size / 2) {
+    if (distance <= circle.radius + aim.size) {
         const elapsedTime =
             currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
         metrics.value.tracking_task.correctTime += elapsedTime;
@@ -697,22 +677,12 @@ function playRandomSounds() {
         if (gameState.value.acousticAnswerAllowed) {
             if (isSoundSame.value) {
                 metrics.value.acoustic_task.incorrect_answer++;
-                userInputs.value.push({
-                    type: "wrong",
-                    responseTime: 5000, // if missed, set response time to 5000ms
-                    timestamp: Date.now(),
-                });
                 drawText({
                     text: "Urutan suara terlewat tiga detik yang lalu",
                     color: "red",
                 });
             } else {
                 metrics.value.acoustic_task.correct_answer++;
-                userInputs.value.push({
-                    type: "correct",
-                    responseTime: 5000, // if missed, set response time to 5000ms
-                    timestamp: Date.now(),
-                });
                 drawText({ text: "Respons benar", color: "green" });
             }
         }
@@ -765,9 +735,28 @@ function checkGamepad() {
         const gamepad = navigator.getGamepads()[gamepadIndex.value];
         if (gamepad) {
             handleGamepadInput(gamepad);
+            handleGamepadPress(gamepad)
         }
     }
     requestAnimationFrame(checkGamepad);
+}
+
+function handleGamepadPress(gamepad) {
+    const triggerPressed = gamepad.buttons[0].pressed;
+    if (triggerPressed && gameState.value.acousticAnswerAllowed) {
+        if (isSoundSame.value) {
+            metrics.value.acoustic_task.correct_answer++;
+            drawText({ text: "Respons benar", color: "green" });
+        } else {
+            metrics.value.acoustic_task.incorrect_answer++;
+            drawText({
+                text: "Response salah. Bukan pada urutan audio yang benar",
+                color: "red",
+            });
+        }
+        isSoundSame.value = false;
+        gameState.value.acousticAnswerAllowed = false;
+    }
 }
 
 function handleGamepadInput(gamepad) {
@@ -841,7 +830,7 @@ onMounted(() => {
             "mouseleave",
             () => (canvas.value.style.cursor = "default")
         );
-        window.addEventListener("keydown", handleKeydown);
+        // window.addEventListener("keydown", handleKeydown);
 
         window.addEventListener("gamepadconnected", onGamepadConnected);
         window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
@@ -874,7 +863,7 @@ onUnmounted(() => {
         // canvas.value.removeEventListener("mousemove", handleMouseMove);
         canvas.value.removeEventListener("mouseenter", () => { });
         canvas.value.removeEventListener("mouseleave", () => { });
-        window.removeEventListener("keydown", handleKeydown);
+        // window.removeEventListener("keydown", handleKeydown);
 
         window.removeEventListener("gamepadconnected", onGamepadConnected);
         window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
