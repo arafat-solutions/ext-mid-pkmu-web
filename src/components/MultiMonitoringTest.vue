@@ -51,7 +51,6 @@
             <p>Waktu Benar: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
             <p>Button:</p>
             <p>Benar: {{ metrics.button_task.correct_answer }}</p>
-            <p>total: {{ metrics.button_task.total_question }}</p>
             <p>Acoustic:</p>
             <p>Benar: {{ metrics.acoustic_task.correct_answer }}</p>
             <p>Salah: {{ metrics.acoustic_task.incorrect_answer }}</p>
@@ -95,6 +94,8 @@ const trainingDuration = 60; // 60 seconds for each training session
 const acousticMessage = ref("");
 const acousticMessageColor = ref("");
 const targetMessage = ref("");
+const timeoutCreateRectangle = ref(undefined)
+const isTimeoutCreateRectangleRunning = ref(true)
 
 const config = ref({
     speed: "normal",
@@ -111,7 +112,7 @@ const config = ref({
     testId: "",
 });
 
-const metrics = ref({
+const DEFAULT_METRICS = {
     tracking_task: {
         correctTime: 0,
         lastCheckTime: 0,
@@ -124,9 +125,10 @@ const metrics = ref({
     button_task: {
         correct_answer: 0,
         total_question: 0,
-        // incorrect_answer: 0,
     },
-});
+}
+
+const metrics = ref(DEFAULT_METRICS);
 
 const gameState = ref({
     direction: { x: 1, y: 1 },
@@ -179,10 +181,10 @@ function getModalMessage() {
 function handleConfirm() {
     isModalVisible.value = false;
     if (isTraining.value) {
-        // reset()
+        reset()
         startTrainingSession();
     } else {
-        // reset()
+        reset()
         startFullTest();
     }
 }
@@ -394,6 +396,8 @@ function updateCircleSpeed() {
 }
 
 function createRectangles() {
+    if (!isTimeoutCreateRectangleRunning.value) return
+
     gameObjects.value.rectangles.push({
         x: Math.random() * (canvasWidth.value - 30),
         y: Math.random() * (canvasHeight.value - 30),
@@ -401,7 +405,19 @@ function createRectangles() {
         createdAt: Date.now(),
     });
 
-    setTimeout(createRectangles, 7000);
+    timeoutCreateRectangle.value = setTimeout(createRectangles, 7000);
+}
+
+function startCreateRectangle() {
+    if (!isTimeoutCreateRectangleRunning.value) {
+        isTimeoutCreateRectangleRunning.value = true
+        createRectangles()
+    }
+}
+
+function stopCreateRectangle() {
+    isTimeoutCreateRectangleRunning.value = false
+    clearTimeout(timeoutCreateRectangle)
 }
 
 function changeColorRectangle() {
@@ -498,30 +514,30 @@ function playSound(frequency, duration) {
     oscillator.stop(audioContext.currentTime + duration);
 }
 
-// function handleKeydown(event) {
-//     if (event.code === "Enter") {
-//         if (gameState.value.acousticAnswerAllowed) {
-//             if (isSoundSame.value) {
-//                 metrics.value.acoustic_task.correct_answer++;
-//                 drawText({ text: "Respons benar", color: "green" });
-//             } else {
-//                 metrics.value.acoustic_task.incorrect_answer++;
-//                 drawText({
-//                     text: "Response salah. Bukan pada urutan audio yang benar",
-//                     color: "red",
-//                 });
-//             }
-//             isSoundSame.value = false;
-//             gameState.value.acousticAnswerAllowed = false;
-//         }
-//     }
-// }
+function handleKeydown(event) {
+    if (event.code === "Enter") {
+        if (gameState.value.acousticAnswerAllowed) {
+            if (isSoundSame.value) {
+                metrics.value.acoustic_task.correct_answer++;
+                drawText({ text: "Respons benar", color: "green" });
+            } else {
+                metrics.value.acoustic_task.incorrect_answer++;
+                drawText({
+                    text: "Response salah. Bukan pada urutan audio yang benar",
+                    color: "red",
+                });
+            }
+            isSoundSame.value = false;
+            gameState.value.acousticAnswerAllowed = false;
+        }
+    }
+}
 
-// function handleMouseMove(event) {
-//     const rect = canvas.value?.getBoundingClientRect();
-//     gameObjects.value.aim.x = event.clientX - rect.left;
-//     gameObjects.value.aim.y = event.clientY - rect.top;
-// }
+function handleMouseMove(event) {
+    const rect = canvas.value?.getBoundingClientRect();
+    gameObjects.value.aim.x = event.clientX - rect.left;
+    gameObjects.value.aim.y = event.clientY - rect.top;
+}
 
 function handleInteraction(event) {
     const rect = canvas.value?.getBoundingClientRect();
@@ -597,7 +613,7 @@ function initRectangleInterval() {
     if (rectangleInterval.value) {
         clearInterval(rectangleInterval.value);
     }
-    createRectangles();
+    startCreateRectangle()
     changeColorRectangle();
 }
 
@@ -794,6 +810,9 @@ function handleBeforeUnload() {
 
 function reset() {
     gameObjects.value.rectangles = [];
+    userInputs.value = [];
+    metrics.value = DEFAULT_METRICS
+    stopCreateRectangle()
 
     if (testInterval.value) {
         clearInterval(testInterval.value);
@@ -805,9 +824,9 @@ function reset() {
         clearInterval(soundInterval.value);
         soundInterval.value = null;
     }
-    if (audioContext) {
-        if (audioContext.state !== "closed") audioContext.close();
-    }
+    // if (audioContext) {
+    //     if (audioContext.state !== "closed") audioContext.close();
+    // }
 }
 
 onMounted(() => {
@@ -821,7 +840,8 @@ onMounted(() => {
 
         canvas.value.addEventListener("click", handleInteraction);
         canvas.value.addEventListener("touchstart", handleInteraction);
-        // canvas.value.addEventListener("mousemove", handleMouseMove);
+        canvas.value.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("keydown", handleKeydown);
         canvas.value.addEventListener(
             "mouseenter",
             () => (canvas.value.style.cursor = "none")
@@ -830,7 +850,6 @@ onMounted(() => {
             "mouseleave",
             () => (canvas.value.style.cursor = "default")
         );
-        // window.addEventListener("keydown", handleKeydown);
 
         window.addEventListener("gamepadconnected", onGamepadConnected);
         window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
@@ -860,16 +879,19 @@ onUnmounted(() => {
     if (canvas.value) {
         canvas.value.removeEventListener("click", handleInteraction);
         canvas.value.removeEventListener("touchstart", handleInteraction);
-        // canvas.value.removeEventListener("mousemove", handleMouseMove);
+        canvas.value.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("keydown", handleKeydown);
         canvas.value.removeEventListener("mouseenter", () => { });
         canvas.value.removeEventListener("mouseleave", () => { });
-        // window.removeEventListener("keydown", handleKeydown);
 
         window.removeEventListener("gamepadconnected", onGamepadConnected);
         window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
         window.removeEventListener("beforeunload", handleBeforeUnload);
     }
     reset();
+    if (audioContext) {
+        if (audioContext.state !== "closed") audioContext.close();
+    }
 });
 
 watch(() => config.value.speed, updateCircleSpeed);
