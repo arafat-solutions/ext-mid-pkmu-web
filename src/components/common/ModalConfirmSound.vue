@@ -9,8 +9,8 @@
             <p class="message">{{ message }}</p>
             <p class="instructions">{{ instructions }}</p>
             <div class="button-group">
-                <button @click="cancel" class="cancel-btn">Cancel</button>
                 <button @click="confirm" class="confirm-btn">{{ confirmButtonText }}</button>
+                <button @click="cancel" class="cancel-btn">Cancel</button>
             </div>
         </div>
     </div>

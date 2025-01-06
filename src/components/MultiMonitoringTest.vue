@@ -165,11 +165,11 @@ function getModalMessage() {
     if (isTraining.value) {
         switch (currentTrainingTask.value) {
             case 'tracking':
-                return 'Arahkan crosshair kuning pada lingkaran putih yang bergerak.';
+                return 'Setelah ini Anda akan melakukan latihan. Ingat, tugas Anda adalah menempatkan objeck kuning selalu di dalam area object putih menggunakan joystick!';
             case 'button':
-                return 'Tekan kotak biru pada layar ketika muncul.';
+                return 'Anda diharuskan menekan tombol OBJEK BIRU usnh tertampil pada layar touchscreen untuk menghilangkan object tersebut';
             case 'acoustic':
-                return 'Tekan ENTER jika Anda mendengar suara yang sama tiga kali berturut-turut.';
+                return 'Anda diharuskan menekan tombol trigger pada joystick apabila ada SUARA yang identik secara 3x berturut-turut';
             case 'combined':
                 return 'Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.';
         }
