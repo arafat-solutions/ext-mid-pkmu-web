@@ -109,7 +109,11 @@ export default {
       this.selectedTestDescription = test.description;
       this.url = test.testUrl;
       this.slidesPath = `/instructions_slides/${test.name}`;
-      this.totalSlides = this.scanInstructionsSlides(this.slidesPath);
+      let totalSlides = 8
+      if (test.name == "Multi Monitoring Test") {
+        totalSlides = 3
+      }
+      this.totalSlides = totalSlides;
     },
     handleTestCompleted() {
       this.selectedTestTitle = 'Ujian anda telah selesai';
