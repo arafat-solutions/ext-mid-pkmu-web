@@ -78,7 +78,12 @@ export default {
             },
             timerInterval: null,
             tesInterval: null,
-            refreshCount: 0
+            refreshCount: 0,
+            questionMarkTimer: null,
+            questionMarkStartTime: null,
+            questionMarkDuration: 10, // 10 seconds for question mark display
+            isQuestionMarkActive: false,
+            userInputs: []
         };
     },
     async mounted() {
@@ -105,6 +110,8 @@ export default {
         clearInterval(this.tesInterval)
         clearInterval(this.timerInterval)
 
+        this.clearQuestionMarkTimer();
+
         this.$refs.visualCanvas.removeEventListener('click', this.handleTouchOrClick);
         this.$refs.visualCanvas.removeEventListener('touchstart', this.handleTouchOrClick);
         // Remove the beforeunload event listener
@@ -122,17 +129,18 @@ export default {
             this.drawVisual();
             this.countDownMemoryTime();
             this.countDownTestTime();
+            this.userInputs = []
         },
         initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             // @TODO: Config Flow
-            const config = scheduleData.tests.find((t) => t.name === 'Visual Memory Test').configs[0]
-            const { id, display, duration, interval } = config
+            const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test')
+            const { display, duration, interval } = test.configs[0]
 
             this.configBe = {
                 duration: duration * 60,
                 questionInterval: interval,
-                testId: id,
+                testId: test.id,
                 sessionId: scheduleData.sessionId,
                 userId: scheduleData.userId,
                 display: {
@@ -141,7 +149,7 @@ export default {
                 },
             }
 
-            this.testTime = duration * 60
+            this.testTime = duration * 10
             this.memoryTime = interval
         },
         updateCanvasDimensions() {
@@ -595,6 +603,7 @@ export default {
             }, 1000)
         },
         countDownMemoryTime() {
+            this.clearQuestionMarkTimer();
             this.timerInterval = setInterval(() => {
                 if (this.memoryTime > 0) {
                     this.memoryTime--;
@@ -611,9 +620,60 @@ export default {
                     }
                     this.questionMarkPositions = this.questionMarkPositions.sort((a, b) => a - b)
                     this.canAnswer = true
+                    this.isQuestionMarkActive = true;
+                    this.questionMarkStartTime = Date.now();
+                    this.startQuestionMarkTimer();
                     this.drawVisual()
                 }
             }, 1000);
+        },
+        startQuestionMarkTimer() {
+            this.clearQuestionMarkTimer();
+
+            if (this.testTime > 0) {
+                this.questionMarkTimer = setTimeout(() => {
+                    if (this.isQuestionMarkActive) {
+                        this.autoProcessQuestion();
+                    }
+                }, this.questionMarkDuration * 1000);
+            }
+        },
+        clearQuestionMarkTimer() {
+            if (this.questionMarkTimer) {
+                clearTimeout(this.questionMarkTimer);
+                this.questionMarkTimer = null;
+            }
+        },
+        autoProcessQuestion() {
+            this.userInputs.push({
+                type: "wrong",
+                responseTime: this.questionMarkDuration * 1000,
+                timestamp: Date.now(),
+            });
+
+            // Reset question mark related states
+            this.isQuestionMarkActive = false;
+            this.renderInput = 0;
+            this.input.input1.visible = false;
+            this.input.input2.visible = false;
+            this.input.input1.userInput = '';
+            this.input.input2.userInput = '';
+
+            // Count as unanswered
+            this.result.unansweredQuestion += 1;
+
+            // Clear positions and move to next question
+            this.questionMarkPositions = [];
+            this.questionMarkStartTime = null;
+
+            if (this.testTime > 0) {
+                this.result.noOfQuestionDisplayed += 1;
+                this.createRandomQuestion();
+                this.canAnswer = false;
+                this.memoryTime = this.configBe.questionInterval;
+                this.drawVisual();
+                this.countDownMemoryTime();
+            }
         },
         formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -623,8 +683,11 @@ export default {
         handleGlobalKeydown(event) {
             if (this.memoryTime === 0 && this.canAnswer) {
                 if (event.key === 'Enter') {
+                    this.clearQuestionMarkTimer();
+
                     const input1 = this.input.input1
                     const input2 = this.input.input2
+                    const responseTime = Date.now() - this.questionMarkStartTime;
 
                     if (this.renderInput === 0) {
                         this.renderInput = 1
@@ -680,6 +743,17 @@ export default {
 
                         if (resultQuestion1 && resultQuestion2) {
                             this.result.correctAnswer += 1
+                            this.userInputs.push({
+                                type: "correct",
+                                responseTime,
+                                timestamp: Date.now(),
+                            });
+                        } else {
+                            this.userInputs.push({
+                                type: "wrong",
+                                responseTime,
+                                timestamp: Date.now(),
+                            });
                         }
 
                         this.renderInput = 0
@@ -830,9 +904,9 @@ export default {
                 const payload = {
                     testSessionId: this.configBe.sessionId,
                     userId: this.configBe.userId,
-                    batteryTestConfigId: this.configBe.testId,
-                    result: this.result,
-                    refreshCount: this.refreshCount
+                    batteryTestId: this.configBe.testId,
+                    result: { ...this.result, graph_data: this.userInputs },
+                    refreshCount: this.refreshCount,
                 }
                 const response = await fetch(`${API_URL}/api/submission`, {
                     method: 'POST',
@@ -880,15 +954,27 @@ export default {
             }
         },
         processAnswers() {
+            if (this.questionMarkTimer) {
+                clearTimeout(this.questionMarkTimer);
+            }
+            this.isQuestionMarkActive = false;
+
             const input1 = this.input.input1;
             const input2 = this.input.input2;
+            const responseTime = Date.now() - this.questionMarkStartTime;
 
             let resultQuestion1 = false;
             let resultQuestion2 = false;
 
+
             // Check if the answer is empty
             if (input1.userInput === '' && input2.userInput === '') {
                 this.result.unansweredQuestion += 1;
+                this.userInputs.push({
+                    type: "wrong",
+                    responseTime,
+                    timestamp: Date.now(),
+                });
             }
 
             // Check if answers are correct
@@ -914,6 +1000,17 @@ export default {
 
             if (resultQuestion1 && resultQuestion2) {
                 this.result.correctAnswer += 1;
+                this.userInputs.push({
+                    type: "correct",
+                    responseTime,
+                    timestamp: Date.now(),
+                });
+            } else {
+                this.userInputs.push({
+                    type: "wrong",
+                    responseTime: responseTime,
+                    timestamp: Date.now(),
+                });
             }
 
             this.renderInput = 0;
@@ -922,6 +1019,7 @@ export default {
             input1.userInput = '';
             input2.userInput = '';
             this.questionMarkPositions = [];
+            this.questionMarkStartTime = null;
 
             if (this.testTime > 0) {
                 this.result.noOfQuestionDisplayed += 1;
@@ -954,7 +1052,7 @@ export default {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    width: 100vw;
+    /* width: 100vw; */
     position: relative;
 }
 

@@ -73,6 +73,7 @@ export default {
         y: 0
       },
       isPaused: false,
+      isCollision: false,
       obstacleSpeed: 2,
       obstacleDensity: 'medium',
       controlPerspective: 'cockpit_crew',
@@ -237,13 +238,16 @@ export default {
       img.onload = () => {
         const animate = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          this.updatePlanePosition();
+
           ctx.save();
           ctx.translate(this.plane.x, this.plane.y);
           ctx.rotate((this.plane.angle * Math.PI) / 180);
           ctx.drawImage(img, -30, -30, 60, 60);
           ctx.restore();
           this.drawObstacles(ctx);
-          this.updatePlanePosition();
+
           this.checkCollision();
           requestAnimationFrame(animate);
         };
@@ -312,7 +316,7 @@ export default {
         .attr('font-size', '16px')
         .attr('font-weight', 'bold');
 
-        const updateGauge = (value) => {
+      const updateGauge = (value) => {
         const angle = this.valueToAngle(value);
         needle.attr('transform', `rotate(${angle}, ${centerX}, ${centerY})`);
         valueText.text(Math.round(value));
@@ -402,7 +406,7 @@ export default {
         }
       }
     },
-    
+
     handleInstrumentKey(key) {
       this.handleInstrumentClick(key);
     },
@@ -414,6 +418,9 @@ export default {
         top: this.plane.y - 30,
         bottom: this.plane.y + 30,
       };
+
+      let currentCollision = false;
+
       for (const obstacle of this.obstacles) {
         const obstacleRect = {
           left: obstacle.x,
@@ -427,16 +434,25 @@ export default {
           planeRect.top < obstacleRect.bottom &&
           planeRect.bottom > obstacleRect.top
         ) {
-          if (currentTime - this.lastCollisionTime > 2000) {
+          currentCollision = true;
+
+          if (!this.isCollision && currentTime - this.lastCollisionTime > 2000) {
             this.collisionCount++;
             this.lastCollisionTime = currentTime;
           }
-          return;
+          break;
         }
+      }
+
+      this.isCollision = currentCollision;
+
+      if (!this.isCollision) {
+        this.moveObstacles();
       }
     },
     moveObstacles() {
-      if (this.isPaused) return;
+      if (this.isPaused || this.isCollision) return;
+
       for (const obstacle of this.obstacles) {
         obstacle.y -= this.obstacleSpeed;
         if (obstacle.y < -20) {

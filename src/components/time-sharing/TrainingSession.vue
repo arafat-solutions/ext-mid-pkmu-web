@@ -4,18 +4,21 @@
             <div class="modal-content">
                 <h2>{{ currentTask.charAt(0).toUpperCase() + currentTask.slice(1) }} Training</h2>
                 <p>{{ getInstructions() }}</p>
-                <button @click="startTraining" class="start-button">Start Training</button>
+                <div class="flex space-x-4 items-center justify-end">
+                    <button @click="startTraining" class="button start-button">Ya</button>
+                    <button @click="handleCancel" class="button cancel-button">Batal</button>
+                </div>
             </div>
         </div>
         <div v-else-if="showEndModal" class="modal">
             <div class="modal-content">
                 <h2>Training Complete</h2>
                 <p>You have completed the training session. Are you ready to start the actual test?</p>
-                <button @click="startActualTest" class="start-button">Start Test</button>
+                <button @click="startActualTest" class="button start-button">Start Test</button>
             </div>
         </div>
         <div v-else>
-            <div class="timer">Time remaining: {{ formatTime(remainingTime) }}</div>
+            <!-- <div class="timer">Time remaining: {{ formatTime(remainingTime) }}</div> -->
             <component :is="getComponentForTask(currentTask)" :config="getConfigForTask(currentTask)"
                 :isTrainingMode="true" @test-finished="handleTrainingFinished" @switch-task="handleSwitchTask">
             </component>
@@ -61,13 +64,13 @@ export default {
         getInstructions() {
             switch (this.currentTask) {
                 case 'navigation':
-                    return 'Practice controlling the plane to avoid obstacles. Use A and D keys or the joystick to move left and right.';
+                    return 'Latihlah mengendalikan pesawat untuk menghindari rintangan. Gunakan tombol A dan D atau joystick untuk bergerak ke kiri dan kanan.';
                 case 'math':
-                    return 'Solve math problems as quickly and accurately as possible.';
+                    return 'Selesaikan soal matematika dengan cepat dan akurat.';
                 case 'instrument':
-                    return 'Monitor the instruments and click or press the corresponding key when a gauge enters the red zone.';
+                    return 'Pantau instrumen dan klik atau tekan tombol yang sesuai saat jarum penunjuk masuk ke zona merah.';
                 case 'combined':
-                    return 'Practice all subtasks together. Switch between tasks using the spacebar.';
+                    return 'Latih semua sub-tugas secara bersamaan. Beralih antara tugas dengan menggunakan tombol spasi.';
                 default:
                     return '';
             }
@@ -75,6 +78,10 @@ export default {
         startTraining() {
             this.showModal = false;
             this.startTimer();
+        },
+        handleCancel() {
+            this.showModal = false;
+            this.$router.replace('/module')
         },
         startTimer() {
             this.timerInterval = setInterval(() => {
@@ -187,8 +194,7 @@ export default {
     line-height: 1.5;
 }
 
-.start-button {
-    background-color: #4CAF50;
+.button {
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -198,8 +204,20 @@ export default {
     transition: background-color 0.3s ease;
 }
 
+.start-button {
+    background-color: #4CAF50;
+}
+
 .start-button:hover {
     background-color: #45a049;
+}
+
+.cancel-button {
+    background-color: #af4c4c;
+}
+
+.cancel-button:hover {
+    background-color: #af4c4c;
 }
 
 .timer {

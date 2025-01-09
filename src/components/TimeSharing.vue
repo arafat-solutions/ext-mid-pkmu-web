@@ -2,13 +2,8 @@
   <div>
     <training-session v-if="isTraining" @training-completed="startExam" />
     <keep-alive v-else>
-      <component
-        :is="currentComponent"
-        @switch-task="switchTask"
-        @question-result="handleQuestionResult"
-        :config="config"
-        @test-finished="handleSubmitTest"
-      />
+      <component :is="currentComponent" @switch-task="switchTask" @question-result="handleQuestionResult"
+        :config="config" @test-finished="handleSubmitTest" />
     </keep-alive>
   </div>
 </template>
@@ -32,7 +27,7 @@ export default {
       indexConfig: 0,
       indexTrainingConfig: 0,
       config: {
-        id:'',
+        id: '',
         arithmetics: { frequency: "medium", complexity: "medium", output: "sound" },
         difficultyLevel: "Mudah",
         duration: "2",
@@ -58,8 +53,8 @@ export default {
         return;
       }
       this.configs = configData.configs;
-      this.config = this.configs[0]; 
-      this.testId = configData.testId; 
+      this.config = this.configs[0];
+      this.testId = configData.testId;
       this.trainingConfigs = configData.trainingConfigs;
       this.moduleId = configData.moduleId;
       this.sessionId = configData.sessionId;
@@ -79,7 +74,6 @@ export default {
     },
     setConfig(config) {
       this.$nextTick(() => {
-        console.log('Current config:', config);
         this.config = config;
       });
     },
@@ -93,8 +87,6 @@ export default {
         responseTime: result.responseTime, // if missed, set response time to 1000ms
         timestamp: Date.now(),
       });
-      console.log('Question result:', result);
-      // You can process or store the results as needed
     },
     async handleSubmitTest(results) {
       const payload = {
@@ -108,6 +100,7 @@ export default {
           ...results,
         },
       }
+
       try {
         if (this.isTrial) {
           this.$router.push('/module');
