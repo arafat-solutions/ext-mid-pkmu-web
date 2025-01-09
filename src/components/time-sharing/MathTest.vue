@@ -118,9 +118,7 @@ export default {
             break;
         }
       } while (correctAnswer.value < 0 || correctAnswer.value % 1 !== 0);
-      console.log(num1, operation, num2, correctAnswer.value, operationSpoken);
       const question = `${num1} ${operationSpoken} ${num2}`;
-      console.log('Generated question:', question);
       currentQuestion.value = question;
 
       if (config.output === 'sound' || config.output === 'sound_and_visual') {
@@ -138,7 +136,6 @@ export default {
     };
 
     const speakQuestion = (question) => {
-      console.log('Speaking question:', question);
       const utterance = new SpeechSynthesisUtterance(question);
       utterance.lang = 'id-ID';
       speechSynthesis.speak(utterance);
@@ -191,7 +188,7 @@ export default {
       }
     });
 
-    // ... (keep the rest of the existing setup code)
+
 
     return {
       userInput,
@@ -199,7 +196,7 @@ export default {
       showQuestion,
       appendNumber,
       clearInput,
-      submitAnswer
+      submitAnswer,
     };
   }
 };
@@ -210,6 +207,8 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* background-color: red; */
+  padding-top: 3rem
 }
 
 .instructions,
