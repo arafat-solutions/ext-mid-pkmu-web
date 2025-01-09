@@ -95,9 +95,9 @@ export default {
         userId: this.userId,
         batteryTestId: this.testId,
         result: {
+          ...results,
           mathTestResults: this.mathTestResults,
           graph_data: this.userInputsMathTest,
-          ...results,
         },
       }
 
