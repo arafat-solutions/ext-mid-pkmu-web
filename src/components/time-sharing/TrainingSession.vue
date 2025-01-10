@@ -12,8 +12,8 @@
         </div>
         <div v-else-if="showEndModal" class="modal">
             <div class="modal-content">
-                <h2>Training Complete</h2>
-                <p>You have completed the training session. Are you ready to start the actual test?</p>
+                <h2>Latihan Selesai</h2>
+                <p>Anda telah menyelesaikan sesi pelatihan. Apakah Anda siap untuk memulai tes yang sebenarnya?</p>
                 <button @click="startActualTest" class="button start-button">Start Test</button>
             </div>
         </div>
@@ -64,7 +64,7 @@ export default {
         getInstructions() {
             switch (this.currentTask) {
                 case 'navigation':
-                    return 'Latihlah mengendalikan pesawat untuk menghindari rintangan. Gunakan tombol A dan D atau joystick untuk bergerak ke kiri dan kanan.';
+                    return 'Latihlah mengendalikan pesawat untuk menghindari rintangan. Gunakan tombol A dan D untuk bergerak ke kiri dan kanan.';
                 case 'math':
                     return 'Selesaikan soal matematika dengan cepat dan akurat.';
                 case 'instrument':
