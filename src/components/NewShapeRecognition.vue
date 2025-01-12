@@ -1,30 +1,77 @@
 <template>
     <div>
         <!-- Training Confirmation Modal -->
+        <!-- Training Confirmation Modal -->
         <modal v-if="showTrainingModal" @close="startTraining">
-            <h2>Training Session</h2>
-            <p>Kamu akan melihat bentuk di tengah layar. Pilih bentuk yang sesuai dari opsi yang ada di bawah.</p>
-            <h3>Basic Instructions:</h3>
-            <ul>
-                <li>Cermati bentuk yang ada di layar</li>
-                <li>Pilih opsi yang sesuai dengan object yang muncul pada opsi yang tersedia</li>
-                <li>jawab dengan cepat dan tepat.</li>
-            </ul>
-            <button @click="startTraining">Mulai Latihan</button>
+            <div class="p-6 max-w-2xl w-full mx-auto bg-white rounded-lg">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Training Session</h2>
+
+                <div class="mb-6">
+                    <p class="text-lg text-gray-700 mb-4">
+                        Kamu akan melihat bentuk di tengah layar. Pilih bentuk yang sesuai dari opsi yang ada di bawah.
+                    </p>
+
+                    <h3 class="text-xl font-semibold mb-3 text-gray-800">Basic Instructions:</h3>
+                    <ul class="space-y-2 list-disc pl-6 text-gray-700">
+                        <li class="mb-2">
+                            <strong>Langkah 1:</strong> Cermati bentuk yang ada di layar
+                        </li>
+                        <li class="mb-2">
+                            <strong>Langkah 2:</strong> Pilih opsi yang sesuai dengan object yang muncul pada opsi yang
+                            tersedia
+                        </li>
+                        <li class="mb-2">
+                            <strong>Langkah 3:</strong> Jawab dengan cepat dan tepat
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex justify-between items-center mt-8 border-t pt-4">
+                    <button @click="startTraining"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        Ya
+                    </button>
+                    <button @click="() => showTrainingModal = false"
+                        class="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                        Batal
+                    </button>
+                </div>
+            </div>
         </modal>
 
         <!-- Test Confirmation Modal -->
         <modal v-if="showTestModal" @close="startTest">
-            <h2>Mulai Ujian</h2>
-            <p>
-                Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai ujian. Ujian ini akan berlangsung selama
-                {{ currentConfig.timePerQuestion }} detik per soal.
-            </p>
-            <p>
-                Performa kamu akan diukur berdasarkan jumlah jawaban benar, salah, dan tidak terjawab, serta rata-rata
-                waktu respon.
-            </p>
-            <button @click="startTest">Start Ujian</button>
+            <div class="p-6 max-w-2xl w-full mx-auto bg-white rounded-lg">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Mulai Ujian</h2>
+
+                <div class="space-y-4 mb-6">
+                    <p class="text-lg text-gray-700">
+                        Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai ujian.
+                        <span class="font-semibold">
+                            Ujian ini akan berlangsung selama {{ currentConfig.timePerQuestion }} detik per soal.
+                        </span>
+                    </p>
+
+                    <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+                        <p class="text-gray-700">
+                            Performa kamu akan diukur berdasarkan:
+                        </p>
+                        <ul class="mt-2 space-y-1 list-disc pl-6 text-gray-600">
+                            <li>Jumlah jawaban benar</li>
+                            <li>Jumlah jawaban salah</li>
+                            <li>Jumlah soal tidak terjawab</li>
+                            <li>Rata-rata waktu respon</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mt-6">
+                    <button @click="startTest"
+                        class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+                        Mulai Ujian
+                    </button>
+                </div>
+            </div>
         </modal>
 
         <!-- Main game component -->
@@ -32,13 +79,22 @@
             class="w-full h-full max-w-[1200px] mx-auto relative flex flex-col items-center justify-center max-h-[1000px]">
             <canvas id="shapeCanvas" ref="shapeCanvas" width="500" height="300"
                 class="border-[1px] border-black mt-[8%] mx-auto"></canvas>
+
             <div class="w-[80%] flex items-center justify-between mx-auto mt-[40px]">
-                <div class="flex flex-col items-center justify-center" v-for="(shape, index) in shapes.slice(0, 5)"
-                    :key="index" @click="checkAnswer(index)">
+                <div class="button-container" v-for="(shape, index) in shapes.slice(0, 5)" :key="index">
                     <canvas :ref="el => buttonCanvases[index] = el" width="200" height="100"></canvas>
-                    <button
-                        class="cursor-pointer mt-[10px] h-[30px] w-[60px] bg-gray-200 border border-gray-300 rounded-sm">
+                    <button @click="checkAnswer(index)" class="answer-button" :class="{
+                        'correct': feedbackState?.show && (
+                            (feedbackState.selectedIndex === index && feedbackState.isCorrect) ||
+                            (feedbackState.correctIndex === index && !feedbackState.isCorrect)
+                        ),
+                        'incorrect': feedbackState?.show && feedbackState.selectedIndex === index && !feedbackState.isCorrect
+                    }">
                         {{ ['A', 'B', 'C', 'D', 'E'][index] }}
+                        <div v-if="feedbackState?.show" class="button-highlight" :class="{
+                            'correct': feedbackState.correctIndex === index,
+                            'incorrect': feedbackState.selectedIndex === index && !feedbackState.isCorrect
+                        }"></div>
                     </button>
                 </div>
             </div>
@@ -50,7 +106,7 @@
         </div>
 
         <div class="timer" v-if="gameState !== 'idle'">
-            <p>Question: {{ currentQuestion }} / {{ currentConfig.numberOfQuestion }}</p>
+            <p>Question: {{ currentQuestion }} / {{ totalQuestion }}</p>
             <p>Time left: {{ questionCountdown }}s</p>
         </div>
     </div>
@@ -94,6 +150,8 @@ export default {
             timePerQuestion: 0,
             numberOfQuestion: 0
         });
+
+        const totalQuestion = ref(0)
 
         const config = ref({
             size: '',
@@ -182,15 +240,72 @@ export default {
             }
         }
 
-        function settingDifficultyLayer(size) {
-            switch (size) {
-                case 'very_small': return 0.2;
-                case 'small': return 0.4;
-                case 'normal': return 0.6;
-                case 'large': return 0.8;
-                case 'very_large': return 0.9;
-                default: return 0.9;
+        const feedbackState = ref({
+            show: false,
+            isCorrect: false,
+            selectedIndex: null,
+            correctIndex: null
+        });
+
+        function checkAnswer(index) {
+            if (feedbackState.value.show) return; // Prevent multiple answers
+
+            const currentTime = Date.now();
+            if (!startTime.value) {
+                startTime.value = currentTime;
             }
+            const elapsedTime = (currentTime - startTime.value) / 1000;
+            totalResponseTime.value += elapsedTime;
+            responseCount.value++;
+            quizMetrics.value.avgResponseTime = totalResponseTime.value / responseCount.value;
+
+            startTime.value = currentTime;
+
+            // Show feedback
+            feedbackState.value = {
+                show: true,
+                isCorrect: index === correctShapeIndex.value,
+                selectedIndex: index,
+                correctIndex: correctShapeIndex.value
+            };
+
+            if (index === correctShapeIndex.value) {
+                userInputs.value.push({
+                    type: 'correct',
+                    responseTime: elapsedTime * 1000,
+                    timestamp: currentTime
+                });
+                quizMetrics.value.correctAnswer++;
+            } else {
+                quizMetrics.value.wrongAnswer++;
+                userInputs.value.push({
+                    type: 'wrong',
+                    responseTime: elapsedTime * 1000,
+                    timestamp: currentTime
+                });
+            }
+
+            // Wait for the question timer before moving to next question
+            const remainingTime = questionCountdown.value * 1000;
+            setTimeout(() => {
+                feedbackState.value.show = false;
+                if (currentQuestion.value < currentConfig.value.numberOfQuestion) {
+                    currentQuestion.value++;
+                    drawQuestions();
+                } else {
+                    if (gameState.value === 'training') {
+                        endTraining();
+                    } else {
+                        if (currentConfigIndex.value === 2) {
+                            submitResult();
+                        } else {
+                            currentConfigIndex.value++;
+                            initConfig();
+                            drawQuestions();
+                        }
+                    }
+                }
+            }, remainingTime);
         }
 
         function drawRandomizedShapes(ctx, randomAngle) {
@@ -217,102 +332,64 @@ export default {
             drawRandomLayer(ctx)
         }
 
-        function drawVerticalLineLayer(ctx, canvasWidth, canvasHeight) {
-            const margin = 20; // Margin between lines
-            const maxLength = canvasHeight * 0.8; // Maximum line length
-            const minLength = canvasHeight * 0.2; // Minimum line length
-
-            ctx.save(); // Save the current context state
-
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = STROKE_WIDTH
-            ctx.globalAlpha = 1; // Set the opacity of the lines
-
-            for (let x = 0; x < canvasWidth; x += margin) {
-                if (Math.random() > settingDifficultyLayer(config.value.size)) {
-                    const startY = Math.random() * (canvasHeight - maxLength);
-                    const length = minLength + Math.random() * (maxLength - minLength);
-
-                    ctx.beginPath();
-                    ctx.moveTo(x, startY);
-                    ctx.lineTo(x, startY + length);
-                    ctx.stroke();
-                }
+        function settingDifficultyLayer(size) {
+            switch (size) {
+                case 'very_small': return 0.2;
+                case 'small': return 0.4;
+                case 'normal': return 0.6;
+                case 'large': return 0.8;
+                case 'very_large': return 0.9;
+                default: return 0.9;
             }
-
-            ctx.restore(); // Restore the previous context state
         }
 
-        function drawHorizontalLineLayer(ctx, canvasWidth, canvasHeight) {
-            const margin = 20; // Margin between lines
-            const maxLength = canvasWidth * 0.8; // Maximum line length
-            const minLength = canvasWidth * 0.2; // Minimum line length
-
-            ctx.save(); // Save the current context state
-
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = STROKE_WIDTH
-            ctx.globalAlpha = 1; // Set the opacity of the lines
-
-            for (let y = 0; y < canvasHeight; y += margin) {
-                if (Math.random() > settingDifficultyLayer(config.value.size)) {
-                    const startX = Math.random() * (canvasWidth - maxLength);
-                    const length = minLength + Math.random() * (maxLength - minLength);
-
-                    ctx.beginPath();
-                    ctx.moveTo(startX, y);
-                    ctx.lineTo(startX + length, y);
-                    ctx.stroke();
-                }
-            }
-
-            ctx.restore();
-        }
-
-        function drawDiagonalRightLineLayer(ctx, canvasWidth, canvasHeight) {
-            const margin = 20; // Margin between lines
-
+        function drawGeometricPattern(ctx, canvasWidth, canvasHeight, size) {
             ctx.save();
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = STROKE_WIDTH
-            ctx.globalAlpha = 1;
+            ctx.lineWidth = STROKE_WIDTH;
 
-            for (let i = 0; i < canvasWidth + canvasHeight; i += margin) {
-                if (Math.random() > settingDifficultyLayer(config.value.size)) {
+            // Adjust grid size based on difficulty
+            const difficultyFactor = settingDifficultyLayer(size);
+            const baseGridSize = 40;
+            const gridSize = Math.floor(baseGridSize * (1 + (1 - difficultyFactor)));
+
+            // Draw primary grid with adjusted density
+            const lineSpacing = gridSize * difficultyFactor;
+
+            // Draw vertical lines
+            for (let x = 0; x <= canvasWidth; x += lineSpacing) {
+                if (Math.random() > (1 - difficultyFactor)) {
                     ctx.beginPath();
-                    if (i < canvasHeight) {
-                        ctx.moveTo(0, i);
-                        ctx.lineTo(Math.min(canvasWidth, i), 0);
-                    } else {
-                        ctx.moveTo(i - canvasHeight, canvasHeight);
-                        ctx.lineTo(canvasWidth, i - canvasWidth);
-                    }
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvasHeight);
                     ctx.stroke();
                 }
             }
 
-            ctx.restore();
-        }
-
-        function drawDiagonalLeftLineLayer(ctx, canvasWidth, canvasHeight) {
-            const margin = 20; // Margin between lines
-
-            ctx.save();
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = STROKE_WIDTH
-            ctx.globalAlpha = 1;
-
-            for (let i = 0; i < canvasWidth + canvasHeight; i += margin) {
-                if (Math.random() > settingDifficultyLayer(config.value.size)) {
+            // Draw horizontal lines
+            for (let y = 0; y <= canvasHeight; y += lineSpacing) {
+                if (Math.random() > (1 - difficultyFactor)) {
                     ctx.beginPath();
-                    if (i < canvasHeight) {
-                        ctx.moveTo(canvasWidth, i);
-                        ctx.lineTo(Math.max(0, canvasWidth - i), 0);
-                    } else {
-                        ctx.moveTo(canvasWidth - (i - canvasHeight), canvasHeight);
-                        ctx.lineTo(0, i - canvasWidth);
-                    }
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvasWidth, y);
                     ctx.stroke();
+                }
+            }
+
+            // Add diagonal lines with adjusted density
+            for (let x = 0; x < canvasWidth; x += lineSpacing) {
+                for (let y = 0; y < canvasHeight; y += lineSpacing) {
+                    if (Math.random() > (1 - difficultyFactor)) {
+                        ctx.beginPath();
+                        if (Math.random() > 0.5) {
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x + lineSpacing, y + lineSpacing);
+                        } else {
+                            ctx.moveTo(x + lineSpacing, y);
+                            ctx.lineTo(x, y + lineSpacing);
+                        }
+                        ctx.stroke();
+                    }
                 }
             }
 
@@ -323,21 +400,9 @@ export default {
             const canvasWidth = shapeCanvas.value.width;
             const canvasHeight = shapeCanvas.value.height;
 
-            ctx.save(); // Save the current context state
-
-            // Draw vertical lines
-            drawVerticalLineLayer(ctx, canvasWidth, canvasHeight);
-
-            // Draw horizontal lines
-            drawHorizontalLineLayer(ctx, canvasWidth, canvasHeight);
-
-            // Draw diagonal right lines
-            drawDiagonalRightLineLayer(ctx, canvasWidth, canvasHeight);
-
-            // Draw diagonal left lines
-            drawDiagonalLeftLineLayer(ctx, canvasWidth, canvasHeight);
-
-            ctx.restore(); // Restore the previous context state
+            ctx.save();
+            drawGeometricPattern(ctx, canvasWidth, canvasHeight, config.value.size);
+            ctx.restore();
         }
 
         function generateTriangle(ctx) {
@@ -608,7 +673,8 @@ export default {
         function initConfig() {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             const configShapeRecognition = scheduleData.tests.find((t) => t.testUrl === "shape-recognition-test")
-
+            totalQuestion.value = configShapeRecognition.configs.map((c) => c.duration ?? 10).reduce((a, b) => Number(a) + Number(b), 0)
+            console.log('totalQuestion:', totalQuestion.value)
             config.value = {
                 userId: scheduleData.userId,
                 sessionId: scheduleData.sessionId,
@@ -616,12 +682,12 @@ export default {
                 size: configShapeRecognition.configs[currentConfigIndex.value].size,
                 variation: configShapeRecognition.configs[currentConfigIndex.value].variation,
                 timePerQuestion: configShapeRecognition.configs[currentConfigIndex.value].time_per_question,
-                numberOfQuestion: configShapeRecognition.configs[currentConfigIndex.value].number_of_question ?? 10
+                numberOfQuestion: configShapeRecognition.configs[currentConfigIndex.value].duration ?? 10
             }
 
             currentConfig.value = {
                 ...configShapeRecognition.configs[currentConfigIndex.value],
-                numberOfQuestion: configShapeRecognition.configs[currentConfigIndex.value].number_of_question ?? 10,
+                numberOfQuestion: configShapeRecognition.configs[currentConfigIndex.value].duration ?? 10,
                 timePerQuestion: configShapeRecognition.configs[currentConfigIndex.value].time_per_question
             };
             console.log('currentConfig:', currentConfig.value, config.value)
@@ -711,7 +777,9 @@ export default {
             showTrainingModal.value = false;
             gameState.value = 'training';
             initConfig();
-            drawQuestions();
+            nextTick(() => {
+                drawQuestions();
+            });
         }
 
         function endTraining() {
@@ -725,7 +793,9 @@ export default {
             showTestModal.value = false;
             gameState.value = 'test';
             initConfig();
-            drawQuestions();
+            nextTick(() => {
+                drawQuestions();
+            });
         }
 
         function resetGameState() {
@@ -737,52 +807,6 @@ export default {
                 avgResponseTime: 0
             };
             userInputs.value = [];
-        }
-
-        function checkAnswer(index) {
-            const currentTime = Date.now();
-            if (!startTime.value) {
-                startTime.value = currentTime;
-            }
-            const elapsedTime = (currentTime - startTime.value) / 1000;
-            totalResponseTime.value += elapsedTime;
-            responseCount.value++;
-            quizMetrics.value.avgResponseTime = totalResponseTime.value / responseCount.value;
-
-            startTime.value = currentTime;
-
-            if (index === correctShapeIndex.value) {
-                userInputs.value.push({
-                    type: 'correct',
-                    responseTime: elapsedTime * 1000,
-                    timestamp: currentTime
-                })
-                quizMetrics.value.correctAnswer++
-            } else {
-                quizMetrics.value.wrongAnswer++
-                userInputs.value.push({
-                    type: 'wrong',
-                    responseTime: elapsedTime * 1000,
-                    timestamp: currentTime
-                })
-            }
-
-            if (currentQuestion.value < currentConfig.value.numberOfQuestion) {
-                currentQuestion.value++;
-                drawQuestions();
-            } else {
-                if (gameState.value === 'training') {
-                    endTraining();
-                } else {
-                    if (currentConfigIndex.value === 2) {
-                        submitResult();
-                    } else {
-                        currentConfigIndex.value++;
-                        initConfig();
-                        drawQuestions();
-                    }
-                }
-            }
         }
 
         onMounted(() => {
@@ -828,7 +852,9 @@ export default {
             showTestModal,
             startTraining,
             startTest,
-            currentConfig
+            currentConfig,
+            feedbackState,
+            totalQuestion
         };
     }
 }
@@ -885,6 +911,56 @@ export default {
 .timer :nth-child(2) {
     font-size: 24px;
     margin-top: 4px
+}
+
+.button-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.answer-button {
+    position: relative;
+    cursor: pointer;
+    margin-top: 10px;
+    height: 30px;
+    width: 60px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.answer-button.correct {
+    background-color: #4CAF50;
+    border-color: #45a049;
+    color: white;
+}
+
+.answer-button.incorrect {
+    background-color: #f44336;
+    border-color: #da190b;
+    color: white;
+}
+
+.button-highlight {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+.button-highlight.correct {
+    border-color: #4CAF50;
+}
+
+.button-highlight.incorrect {
+    border-color: #f44336;
 }
 
 @keyframes spin {
