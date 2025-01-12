@@ -1,17 +1,34 @@
 <template>
+  <div v-if="isRuleModalVisible" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="text-xl font-bold mb-4">Instruksi Aturan Baru</h2>
+      <div class="mb-4">
+        <p class="mb-2"><strong>Untuk blok merah:</strong> {{ currentRules.red }}</p>
+        <p class="mb-2"><strong>Untuk blok hijau:</strong> {{ currentRules.green }}</p>
+        <p class="mb-2"><strong>Untuk blok biru:</strong> {{ currentRules.blue }}</p>
+      </div>
+      <button @click="acknowledgeRules" class="bg-blue-500 text-white px-4 py-2 rounded">
+        Mengerti
+      </button>
+    </div>
+  </div>
+
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Signal Processing?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="startTest()">Ya</button>
+      <h2 class="text-xl font-bold mb-4">Konfirmasi Pelatihan</h2>
+      <p class="mb-4 text-center"><strong>Apakah Anda yakin akan memulai pelatihan Signal Processing?</strong></p>
+      <div class="flex justify-center space-x-4">
+      <button @click="startTest()" class="bg-green-500 text-white px-4 py-2 rounded">Ya</button>
+      <button @click="exit()" class="bg-red-500 text-white px-4 py-2 rounded">Batal</button>
+      </div>
     </div>
   </div>
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Signal Processing?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
       <button @click="startTest()">Ya</button>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
     </div>
   </div>
 
@@ -40,6 +57,35 @@ import { getConfigs } from '@/utils/configs';
 export default {
   data() {
     return {
+      // rule set
+      isRuleModalVisible: false,
+      currentRules: {
+        red: '',
+        green: '',
+        blue: ''
+      },
+      ruleOptions: {
+        red: [
+          'Klik blok yang menyala',
+          'Klik blok yang sejajar vertikal',
+          'Klik blok yang sejajar horizontal'
+        ],
+        green: [
+          'Klik blok yang menyala',
+          'Klik blok yang sejajar vertikal',
+          'Klik blok yang sejajar horizontal'
+        ],
+        blue: [
+          'Klik blok yang menyala',
+          'Klik blok yang sejajar vertikal',
+          'Klik blok yang sejajar horizontal'
+        ]
+      },
+      currentRuleSet: {
+        red: 0,
+        green: 0,
+        blue: 0
+      },
       isModalTrainingVisible: false,
       isModalVisible: false,
       indexConfig: 0,
@@ -162,6 +208,144 @@ export default {
     }
   },
   methods: {
+    generateNewRules() {
+      const colors = ['red', 'green', 'blue'];
+      colors.forEach(color => {
+        const randomIndex = Math.floor(Math.random() * this.ruleOptions[color].length);
+        this.currentRuleSet[color] = randomIndex;
+        this.currentRules[color] = this.ruleOptions[color][randomIndex];
+      });
+      this.isRuleModalVisible = true;
+    },
+
+    acknowledgeRules() {
+      this.isRuleModalVisible = false;
+      // Continue with the test
+    },
+
+    setConfig(config) {
+      this.level = config.difficulty;
+      this.displayDuration = config.display_duration;
+      this.duration = config.duration * 60;
+      this.isConfigLoaded = true;
+      
+      // Generate new rules when config changes
+      this.generateNewRules();
+    },
+
+    checkAnswer(n) {
+      if (this.clickedAnswer) {
+        return;
+      }
+
+      const now = Date.now();
+      const responseTime = now - this.startTimeAnswer?.getTime();
+      
+      this.clickedAnswer = true;
+      let isCorrect = false;
+
+      // Check answer based on current rules
+      switch (this.currentQuestion.color) {
+        case 'red':
+          isCorrect = this.checkRedAnswer(n);
+          break;
+        case 'green':
+          isCorrect = this.checkGreenAnswer(n);
+          break;
+        case 'blue':
+          isCorrect = this.checkBlueAnswer(n);
+          break;
+      }
+
+      if (isCorrect) {
+        this.result.correct++;
+        this.userInputs.push({
+          type: 'correct',
+          responseTime: responseTime,
+          timestamp: Date.now(),
+        });
+      } else {
+        this.result.wrong++;
+        this.userInputs.push({
+          type: 'wrong',
+          responseTime: responseTime,
+          timestamp: Date.now(),
+        });
+        this.isWrongAnswer = true;
+      }
+
+      if (this.startTimeAnswer) {
+        const endTime = new Date();
+        const differenceInMilliseconds = endTime.getTime() - this.startTimeAnswer.getTime();
+        this.result.answerTimes.push(differenceInMilliseconds);
+        this.startTimeAnswer = null;
+      }
+    },
+
+    // New helper methods for checking answers based on rules
+    checkRedAnswer(n) {
+      const ruleIndex = this.currentRuleSet.red;
+      switch (ruleIndex) {
+        case 0: // Click lit block
+          return this.currentQuestion.position === n;
+        case 1: // Click vertical
+          return this.getVerticalPosition(this.currentQuestion.position) === n;
+        case 2: // Click horizontal
+          return this.getHorizontalPosition(this.currentQuestion.position) === n;
+        default:
+          return false;
+      }
+    },
+
+    checkGreenAnswer(n) {
+      const ruleIndex = this.currentRuleSet.green;
+      switch (ruleIndex) {
+        case 0: // Click lit block
+          return this.currentQuestion.position === n;
+        case 1: // Click vertical
+          return this.getVerticalPosition(this.currentQuestion.position) === n;
+        case 2: // Click horizontal
+          return this.getHorizontalPosition(this.currentQuestion.position) === n;
+        default:
+          return false;
+      }
+    },
+
+    checkBlueAnswer(n) {
+      const ruleIndex = this.currentRuleSet.blue;
+      switch (ruleIndex) {
+        case 0: // Click lit block
+          return this.currentQuestion.position === n;
+        case 1: // Click vertical
+          return this.getVerticalPosition(this.currentQuestion.position) === n;
+        case 2: // Click horizontal
+          return this.getHorizontalPosition(this.currentQuestion.position) === n;
+        default:
+          return false;
+      }
+    },
+
+    // Helper methods for position calculations
+    getVerticalPosition(position) {
+      const verticalMap = {
+        1: 3, // Top left to bottom left
+        2: 4, // Top right to bottom right
+        3: 1, // Bottom left to top left
+        4: 2  // Bottom right to top right
+      };
+      return verticalMap[position];
+    },
+
+    getHorizontalPosition(position) {
+      const horizontalMap = {
+        1: 2, // Top left to top right
+        2: 1, // Top right to top left
+        3: 4, // Bottom left to bottom right
+        4: 3  // Bottom right to bottom left
+      };
+      return horizontalMap[position];
+    },
+
     startTest() {
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0])
@@ -216,14 +400,6 @@ export default {
       } else {
         this.isModalVisible = true;
       }
-    },
-    setConfig(config) {
-      this.level = config.difficulty;
-      this.displayDuration = config.display_duration;
-
-      this.duration = config.duration * 60;
-
-      this.isConfigLoaded = true;
     },
     startCountdown() {
       this.intervalCountdownId = setInterval(() => {
@@ -323,53 +499,7 @@ export default {
 
       this.questions = questions;
     },
-    checkAnswer(n) {
-      if (this.clickedAnswer) {
-        return;
-      }
 
-      const now = Date.now();
-      const responseTime = now - this.startTimeAnswer?.getTime();
-      // calculate diff answer
-      if (this.startTimeAnswer) {
-        const endTime = new Date(); // End time after operation
-        const differenceInMilliseconds = endTime.getTime() - this.startTimeAnswer.getTime();
-        this.result.answerTimes.push(differenceInMilliseconds);
-        this.startTimeAnswer = null;
-      }
-
-      this.clickedAnswer = true;
-      if (this.currentQuestion.color === 'red' && this.currentQuestion.position === n) {
-        this.result.correct++;
-        this.userInputs.push({
-          type: 'correct',
-          responseTime:responseTime,
-          timestamp: Date.now(),
-        })
-      } else if (this.currentQuestion.color === 'green' && this.greenCorrectAnswer[this.currentQuestion.position] === n) {
-        this.userInputs.push({
-          type: 'correct',
-          responseTime:responseTime,
-          timestamp: Date.now(),
-        })
-        this.result.correct++;
-      } else if (this.currentQuestion.color === 'blue' && this.blueCorrectAnswer[this.currentQuestion.position] === n) {
-        this.result.correct++;
-        this.userInputs.push({
-          type: 'correct',
-          responseTime:responseTime,
-          timestamp: Date.now(),
-        })
-      } else {
-        this.result.wrong++;
-        this.userInputs.push({
-          type: 'wrong',
-          responseTime:responseTime,
-          timestamp: Date.now(),
-        })
-        this.isWrongAnswer = true;
-      }
-    },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
       const totalQuestion = this.currentIndexQuestion + 1;
