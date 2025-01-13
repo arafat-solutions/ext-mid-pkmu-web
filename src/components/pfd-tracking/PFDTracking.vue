@@ -7,15 +7,16 @@
           <div class="modal-content">
             <h2 class="modal-title">PFD Tracking Test</h2>
             <div class="modal-body">
-              <p>In this test, you will need to:</p>
+              <p>Dala ujian ini, anda perlu:</p>
               <ul class="modal-list">
-                <li>Control aircraft indicators using the joystick and throttle</li>
-                <li>Keep indicators within target ranges</li>
+                <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
+                <li>Menjaga indikator dalam rentang target</li>
               </ul>
-              <p class="modal-footer-text">Click OK when you are ready to begin.</p>
+              <p class="modal-footer-text">Klik Ya saat anda siap untuk memulai.</p>
             </div>
             <div class="modal-footer">
-              <button class="modal-button" @click="handleStartExam">OK</button>
+              <button class="modal-button mr-4 bg-green-500" @click="handleStartExam">YA</button>
+              <button class="modal-button bg-red-500" @click="handleCancel">BATAL</button>
             </div>
           </div>
         </div>
@@ -275,8 +276,15 @@
   margin-top: 20px;
 }
 
+.start-button {
+  background-color: green;
+}
+
+.cancel-button {
+  background-color: red;
+}
+
 .modal-button {
-  background-color: #3498db;
   color: white;
   border: none;
   padding: 10px 30px;
@@ -326,6 +334,8 @@ import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import LinearGauge from './LinearGauge.vue';
+
+const router = useRouter()
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
@@ -1023,6 +1033,10 @@ const handleStartExam = () => {
   startExam();
   initAudioContext();
 };
+
+const handleCancel = () => {
+  router.replace("/module");
+}
 
 // Lifecycle hooks
 onMounted(() => {
