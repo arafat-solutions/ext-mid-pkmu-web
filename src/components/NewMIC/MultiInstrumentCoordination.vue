@@ -6,16 +6,18 @@
                     <div class="modal-content">
                         <h2 class="modal-title">Monitoring & Instrument Coordination Test</h2>
                         <div class="modal-body">
-                            <p>In this test, you will need to:</p>
+                            <p>Dalam uji ini, Anda perlu:</p>
                             <ul class="modal-list">
-                                <li>Control aircraft indicators using the joystick and throttle</li>
-                                <li>Keep indicators within target ranges</li>
-                                <li>Listen for number sequences and identify if they are all odd or even</li>
+                                <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
+                                <li>Menjaga indikator dalam rentang target</li>
+                                <li>Mendengarkan urutan angka dan mengidentifikasi apakah semuanya ganjil atau genap
+                                </li>
                             </ul>
-                            <p class="modal-footer-text">Click OK when you are ready to begin.</p>
+                            <p class="modal-footer-text">Klik OK saat Anda siap untuk memulai.</p>
                         </div>
                         <div class="modal-footer">
-                            <button class="modal-button" @click="handleStartExam">OK</button>
+                            <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">OK</button>
+                            <button class="modal-button bg-red-500" @click="handleCancel">Batal</button>
                         </div>
                     </div>
                 </div>
@@ -81,6 +83,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Altimeter, Airspeed, Heading } from 'vue-flight-indicators';
 import { useRouter } from 'vue-router';
 
+const router = useRouter()
+
 // Constants for movement speed
 const MOVEMENT_SPEED = {
     HEADING: 0.2,
@@ -136,8 +140,6 @@ const harmonic2 = ref(null);
 const currentAcceleration = ref(0);
 const targetSpeed = ref(MOVEMENT_SPEED.MIN_AIRSPEED);
 
-
-
 // Audio test state
 const displayedNumbers = ref([]);
 const audioResponses = ref([]);
@@ -155,6 +157,7 @@ const config = ref({
     totalDuration: 0
 });
 const lastRecordedTime = ref(Date.now());
+const userInputs = ref([]);
 
 // Computed properties
 const isAirspeedOutOfTarget = computed(() => {
@@ -328,48 +331,48 @@ const updateSounds = () => {
 
     // Ensure minimum thrust for idle
     const effectiveThrust = Math.max(MOVEMENT_SPEED.ENGINE_IDLE_THRUST, thrustLevel.value);
-    
+
     // Calculate base frequency with idle minimum
     const baseFreq = 30 + (Math.pow(effectiveThrust / 100, 0.7) * 30);
-    
+
     // Calculate RPM factor based on actual airspeed rather than thrust
     const rpmFactor = Math.pow(
-        (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) / 
-        (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED), 
+        (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
+        (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
         0.8
     );
 
     // Add altitude effect to sound (higher altitude = thinner air = higher pitch)
     const altitudePitchEffect = (altitude.value / 10000) * 5; // 5Hz variation across full altitude range
-    
+
     // Add vertical speed effect (diving increases pitch, climbing decreases)
     const verticalSpeedEffect = (verticalSpeed.value / MOVEMENT_SPEED.ALTITUDE) * 3; // 3Hz variation for max climb/dive rate
 
     if (baseOscillator.value) {
         // Base engine sound - mostly affected by thrust
         baseOscillator.value.frequency.setTargetAtTime(
-            baseFreq + altitudePitchEffect, 
-            audioContext.value.currentTime, 
+            baseFreq + altitudePitchEffect,
+            audioContext.value.currentTime,
             0.1
         );
-        
+
         // Propeller sound - more affected by actual airspeed
         propellerOscillator.value.frequency.setTargetAtTime(
-            70 + (rpmFactor * 50) + altitudePitchEffect + verticalSpeedEffect, 
-            audioContext.value.currentTime, 
+            70 + (rpmFactor * 50) + altitudePitchEffect + verticalSpeedEffect,
+            audioContext.value.currentTime,
             0.1
         );
-        
+
         // Harmonics - blend of thrust and airspeed effects
         harmonic1.value.frequency.setTargetAtTime(
             baseFreq * 3 + (rpmFactor * 20) + altitudePitchEffect,
-            audioContext.value.currentTime, 
+            audioContext.value.currentTime,
             0.1
         );
-        
+
         harmonic2.value.frequency.setTargetAtTime(
             baseFreq * 4 + (rpmFactor * 25) + altitudePitchEffect,
-            audioContext.value.currentTime, 
+            audioContext.value.currentTime,
             0.1
         );
     }
@@ -471,6 +474,13 @@ const handleAudioResponse = (response) => {
         configIndex: currentConfigIndex.value
     });
 
+    // graph data
+    userInputs.value.push({
+        type: isCorrect ? "correct" : "wrong",
+        responseTime,
+        timestamp: Date.now(),
+    });
+
     canRespond.value = false;
     displayedNumbers.value = [];
 
@@ -532,24 +542,24 @@ const updatePlanePosition = () => {
     // Calculate vertical speed effects
     const altitudeEffect = verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
     const clampedAltitudeEffect = Math.max(
-        -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, 
+        -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
         Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
     );
 
     // Calculate target speed based on thrust
-    targetSpeed.value = MOVEMENT_SPEED.MIN_AIRSPEED + 
+    targetSpeed.value = MOVEMENT_SPEED.MIN_AIRSPEED +
         ((MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) * (thrustLevel.value / 100));
 
     // Calculate acceleration more realistically
     const speedDifference = targetSpeed.value - airspeed.value;
-    const accelerationRate = speedDifference > 0 ? 
-        MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor : 
+    const accelerationRate = speedDifference > 0 ?
+        MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor :
         MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
 
     // Update acceleration with momentum
     currentAcceleration.value += speedDifference * accelerationRate;
     currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;  // Maintain momentum
-    
+
     // Apply drag
     currentAcceleration.value -= dragForce;
 
@@ -600,7 +610,8 @@ const updateScore = () => {
 
 const moveToNextConfig = () => {
     const nextIndex = currentConfigIndex.value + 1;
-    if (nextIndex < config.value.configs.length) {
+    console.log(nextIndex, config.value.configs.length, "<< nextIndex")
+    if (nextIndex <= config.value.configs.length) {
         currentConfigIndex.value = nextIndex;
         // Reset targets for new config
         const newConfig = config.value.configs[nextIndex];
@@ -664,12 +675,13 @@ const updateTime = () => {
     if (!examRunning.value) return;
 
     timeRemaining.value -= 1 / 60;
+
     if (timeRemaining.value <= 0) {
         const currentConfig = config.value.configs[currentConfigIndex.value];
         const configDuration = currentConfig?.duration * 60;
 
         // Check if we've completed the current config's duration
-        if (Math.abs(timeRemaining.value) >= configDuration) {
+        if (Math.abs(timeRemaining.value) <= configDuration) {
             moveToNextConfig();
             // Reset timeRemaining for next config if there is one
             if (currentConfigIndex.value < config.value.configs.length) {
@@ -842,6 +854,7 @@ const sendPerformanceData = async () => {
                     airspeed: perf.airspeedData,
                     altitude: perf.altitudeData,
                 })),
+                graph_data: userInputs.value,
                 timeOnTargetAirspeed: timeOnTargetAirspeed.value,
                 timeOnTargetHeading: timeOnTargetHeading.value,
                 timeOnTargetAltitude: timeOnTargetAltitude.value,
@@ -892,6 +905,10 @@ const handleStartExam = () => {
     startExam();
     initAudioContext();
 };
+
+const handleCancel = () => {
+    router.replace("/module");
+}
 
 // Lifecycle hooks
 onMounted(() => {
@@ -944,6 +961,7 @@ onUnmounted(() => {
     align-items: center;
     position: relative;
     padding-top: 60px;
+    background-color: #080808;
     /* Make room for the timer */
 }
 
@@ -987,6 +1005,7 @@ onUnmounted(() => {
     text-align: center;
     margin-top: 10px;
     font-weight: bold;
+    color: white;
 }
 
 .direction-indicator {
@@ -1042,7 +1061,7 @@ onUnmounted(() => {
 
 .thruster-indicator {
     position: absolute;
-    left: -40px;
+    left: -60px;
     top: 0;
     height: 200px;
     width: 30px;
@@ -1072,6 +1091,7 @@ onUnmounted(() => {
     margin-top: 5px;
     font-size: 12px;
     white-space: nowrap;
+    color: white;
 }
 
 /* Audio test styles */
@@ -1184,7 +1204,6 @@ onUnmounted(() => {
 }
 
 .modal-button {
-    background-color: #007bff;
     color: white;
     border: none;
     padding: 8px 24px;
@@ -1192,14 +1211,6 @@ onUnmounted(() => {
     cursor: pointer;
     font-weight: bold;
     transition: background-color 0.2s;
-}
-
-.modal-button:hover {
-    background-color: #0056b3;
-}
-
-.modal-button:active {
-    background-color: #004085;
 }
 
 /* Transition animations */
