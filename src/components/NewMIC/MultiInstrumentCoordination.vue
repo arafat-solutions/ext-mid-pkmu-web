@@ -756,7 +756,7 @@ const updateTime = () => {
 const updateTargets = () => {
     const currentConfig = config.value.configs[currentConfigIndex.value];
 
-    if (Math.random() < 0.005) {
+    if (Math.random() < 0.1) {
         updateIndicator('airspeed', currentConfig?.airspeed);
         updateIndicator('heading', currentConfig?.compass);
         updateIndicator('altitude', currentConfig?.altimeter);
@@ -764,69 +764,99 @@ const updateTargets = () => {
 };
 
 const updateIndicator = (indicator, mode) => {
-    if (mode === 'inactive' || mode === 'keep_indicator') return;
-
+    if (mode === 'inactive' || mode === 'keep_indicator') {
+        console.log(`${indicator} is inactive or set to keep_indicator`);
+        return;
+    }
     const currentTime = Date.now();
-    if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) return;
+    if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) {
+        console.log(`${indicator} update skipped due to interval`);
+        return;
+    }
 
     lastUpdateTime.value = currentTime;
 
     if (mode === 'adjust_for_consistent_updates') {
-        let currentValue, currentTarget, minValue, maxValue;
+        let currentTarget, minValue, maxValue;
 
         switch (indicator) {
             case 'airspeed':
-                currentValue = airspeed.value;
                 currentTarget = airspeedTarget.value;
                 minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
                 maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
                 break;
             case 'heading':
-                currentValue = heading.value;
                 currentTarget = headingTarget.value;
                 minValue = 0;
                 maxValue = 360;
                 break;
             case 'altitude':
-                currentValue = altitude.value;
                 currentTarget = altitudeTarget.value;
                 minValue = 1000;
                 maxValue = 9000;
                 break;
         }
-        console.log(currentValue)
 
-        // Calculate new target
-        let newTarget;
+        console.log(`Updating ${indicator} target from ${currentTarget}`);
+
+        // Calculate maximum change (20% of current target value)
+        const maxChange = currentTarget * 0.2;
+
+        // Randomize the magnitude of the change (between 10% and 20% of current value)
+        const changeMagnitude = maxChange * (0.5 + Math.random() * 0.5);
+
+        // Randomize the direction of the change
         const changeDirection = Math.random() > 0.5 ? 1 : -1;
 
-        if (indicator === 'heading') {
-            // Special handling for heading to handle 0-360 wrap
-            newTarget = (currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE) + 360) % 360;
-        } else {
-            newTarget = currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE);
+        // Calculate new target
+        let newTarget = currentTarget + changeDirection * changeMagnitude;
 
-            // Bounce back if we hit limits
-            if (newTarget > maxValue) {
-                newTarget = maxValue - MOVEMENT_SPEED.TARGET_CHANGE_RATE;
-            } else if (newTarget < minValue) {
-                newTarget = minValue + MOVEMENT_SPEED.TARGET_CHANGE_RATE;
-            }
-        }
+        // Ensure the new target stays within bounds
+        newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
+
+        console.log(`New ${indicator} target: ${newTarget}`);
 
         // Update the target
         switch (indicator) {
             case 'airspeed':
                 airspeedTarget.value = newTarget;
                 airspeedChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
+
+                // Adjust altitude inversely
+                if (config.value.configs[currentConfigIndex.value]?.altimeter !== 'inactive') {
+                    const altitudeChange = -changeMagnitude * 0.5; // Adjust altitude by half the speed change
+                    altitudeTarget.value = Math.max(
+                        1000,
+                        Math.min(
+                            9000,
+                            altitudeTarget.value + altitudeChange
+                        )
+                    );
+                    altitudeChangeDirection.value = altitudeChange > 0 ? 'up' : 'down';
+                }
                 break;
+
             case 'heading':
                 headingTarget.value = newTarget;
                 headingChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
                 break;
+
             case 'altitude':
                 altitudeTarget.value = newTarget;
                 altitudeChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
+
+                // Adjust speed inversely
+                if (config.value.configs[currentConfigIndex.value]?.airspeed !== 'inactive') {
+                    const airspeedChange = -changeMagnitude * 0.5; // Adjust speed by half the altitude change
+                    airspeedTarget.value = Math.max(
+                        MOVEMENT_SPEED.MIN_AIRSPEED,
+                        Math.min(
+                            MOVEMENT_SPEED.MAX_AIRSPEED,
+                            airspeedTarget.value + airspeedChange
+                        )
+                    );
+                    airspeedChangeDirection.value = airspeedChange > 0 ? 'up' : 'down';
+                }
                 break;
         }
     }
@@ -881,6 +911,12 @@ const initConfig = async () => {
     const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
     const configMIC = scheduleData.tests.find((t) => t.testUrl === "monitoring-instrument-coordination-test");
     console.log(configMIC, 'config')
+
+    if (!configMIC || !configMIC.configs) {
+        console.error('Invalid configuration data');
+        return;
+    }
+
     // Store all configs and calculate total duration
     config.value = {
         configs: configMIC.configs,
