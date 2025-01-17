@@ -24,6 +24,19 @@
             </div>
         </Transition>
         <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
+        <div class="control-mode-toggle">
+            <button @click="toggleControlMode">
+                {{ controlMode === 'joystick' ? 'Switch to Manual Control' : 'Switch to Joystick Control' }}
+            </button>
+        </div>
+        <div class="manual-control-instructions" v-if="controlMode === 'manual'">
+            <p>Manual Controls:</p>
+            <ul>
+                <li>Arrow Keys: Control heading and altitude</li>
+                <li>W: Increase thrust</li>
+                <li>S: Decrease thrust</li>
+            </ul>
+        </div>
         <div class="indicators place-items-center">
             <div class="indicator-wrapper col-span-3" :class="{ 'blink': isHeadingOutOfTarget }">
                 <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
@@ -109,6 +122,17 @@ const MOVEMENT_SPEED = {
     THRUST_MULTIPLIER: 4,    // New: how much momentum is retained (close to 1)
 };
 
+//  manual input
+const controlMode = ref('joystick');
+const manualInput = ref({
+    up: false,    // Increase altitude
+    down: false,  // Decrease altitude
+    left: false,  // Decrease heading
+    right: false, // Increase heading
+    thrustUp: false, // Increase thrust
+    thrustDown: false, // Decrease thrust
+});
+
 // State
 const mode = ref('moving');
 const examRunning = ref(false);
@@ -186,6 +210,10 @@ const isAltitudeOutOfTarget = computed(() => {
 const verticalSpeed = computed(() => {
     return altitude.value - lastAltitude.value;
 });
+
+const toggleControlMode = () => {
+    controlMode.value = controlMode.value === 'joystick' ? 'manual' : 'joystick';
+};
 
 // Utility functions
 const formatTime = (time) => {
@@ -518,22 +546,52 @@ const updatePlanePosition = () => {
     lastAltitude.value = altitude.value;
 
     // Handle joystick controls...
-    if (gamepad.value) {
-        const stick = navigator.getGamepads()[gamepad.value.index];
-        if (stick) {
-            const headingChange = stick.axes[0] * MOVEMENT_SPEED.HEADING;
-            heading.value = (heading.value + headingChange + 360) % 360;
+    if (controlMode.value === 'joystick') {
+        if (gamepad.value) {
+            const stick = navigator.getGamepads()[gamepad.value.index];
+            if (stick) {
+                const headingChange = stick.axes[0] * MOVEMENT_SPEED.HEADING;
+                heading.value = (heading.value + headingChange + 360) % 360;
 
-            const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
-            altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
+                const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
+                altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
+            }
         }
-    }
 
-    // Update thrust...
-    if (thruster.value) {
-        const throttle = navigator.getGamepads()[thruster.value.index];
-        if (throttle) {
-            thrustLevel.value = (1 - throttle.axes[2]) * 100;
+        if (thruster.value) {
+            const throttle = navigator.getGamepads()[thruster.value.index];
+            if (throttle) {
+                thrustLevel.value = (1 - throttle.axes[2]) * 100;
+            }
+        }
+    } else if (controlMode.value === 'manual') {
+        // this is the manual input to test without joystick
+        let headingChange = 0;
+        let altitudeChange = 0;
+
+        if (manualInput.value.left) {
+            headingChange = -MOVEMENT_SPEED.HEADING; // Turn left
+        }
+        if (manualInput.value.right) {
+            headingChange = MOVEMENT_SPEED.HEADING; // Turn right
+        }
+        if (manualInput.value.up) {
+            altitudeChange = MOVEMENT_SPEED.ALTITUDE; // Increase altitude
+        }
+        if (manualInput.value.down) {
+            altitudeChange = -MOVEMENT_SPEED.ALTITUDE; // Decrease altitude
+        }
+
+        // Apply changes to heading and altitude
+        heading.value = (heading.value + headingChange + 360) % 360;
+        altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
+
+        // Update thrust based on manual input
+        if (manualInput.value.thrustUp) {
+            thrustLevel.value = Math.min(100, thrustLevel.value + MOVEMENT_SPEED.THRUST_RESPONSE); // Increase thrust
+        }
+        if (manualInput.value.thrustDown) {
+            thrustLevel.value = Math.max(0, thrustLevel.value - MOVEMENT_SPEED.THRUST_RESPONSE); // Decrease thrust
         }
     }
 
@@ -914,6 +972,56 @@ const handleCancel = () => {
     router.replace("/module");
 }
 
+const handleKeyDown = (event) => {
+    if (controlMode.value === 'manual') {
+        switch (event.key) {
+            case 'ArrowUp':
+                manualInput.value.up = true;
+                break;
+            case 'ArrowDown':
+                manualInput.value.down = true;
+                break;
+            case 'ArrowLeft':
+                manualInput.value.left = true;
+                break;
+            case 'ArrowRight':
+                manualInput.value.right = true;
+                break;
+            case 'w':
+                manualInput.value.thrustUp = true;
+                break;
+            case 's':
+                manualInput.value.thrustDown = true;
+                break;
+        }
+    }
+};
+
+const handleKeyUp = (event) => {
+    if (controlMode.value === 'manual') {
+        switch (event.key) {
+            case 'ArrowUp':
+                manualInput.value.up = false;
+                break;
+            case 'ArrowDown':
+                manualInput.value.down = false;
+                break;
+            case 'ArrowLeft':
+                manualInput.value.left = false;
+                break;
+            case 'ArrowRight':
+                manualInput.value.right = false;
+                break;
+            case 'w': // Stop increasing thrust
+                manualInput.value.thrustUp = false;
+                break;
+            case 's': // Stop decreasing thrust
+                manualInput.value.thrustDown = false;
+                break;
+        }
+    }
+};
+
 // Lifecycle hooks
 onMounted(() => {
     initConfig();
@@ -921,6 +1029,8 @@ onMounted(() => {
     window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
     checkGamepadConnection();
     updateLoop();
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 });
 
 const cleanupSounds = () => {
@@ -949,6 +1059,8 @@ const cleanupSounds = () => {
 onUnmounted(() => {
     window.removeEventListener('gamepadconnected', onGamepadConnected);
     window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
+    window.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('keyup', handleKeyUp);
     cancelAudioSequence();
 
     if (audioContext.value) {
@@ -1226,5 +1338,48 @@ onUnmounted(() => {
 .modal-enter-from,
 .modal-leave-to {
     opacity: 0;
+}
+
+.control-mode-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.control-mode-toggle button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.control-mode-toggle button:hover {
+    background-color: #0056b3;
+}
+
+.manual-control-instructions {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.manual-control-instructions ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.manual-control-instructions li {
+    margin: 5px 0;
 }
 </style>
