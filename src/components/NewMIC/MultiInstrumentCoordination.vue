@@ -24,8 +24,15 @@
             </div>
         </Transition>
         <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
-        <div class="indicators">
-            <div class="indicator-wrapper" :class="{ 'blink': isAirspeedOutOfTarget }">
+        <div class="indicators place-items-center">
+            <div class="indicator-wrapper col-span-3" :class="{ 'blink': isHeadingOutOfTarget }">
+                <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
+                <div class="target-text">
+                    Target: {{ Math.round(headingTarget) }}°
+                    <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
+                </div>
+            </div>
+            <div class="indicator-wrapper col-span-1" :class="{ 'blink': isAirspeedOutOfTarget }">
                 <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
                 <div class="thruster-indicator">
                     <div class="thruster-bar">
@@ -39,14 +46,10 @@
                         :class="['direction-indicator', airspeedChangeDirection]"></span>
                 </div>
             </div>
-            <div class="indicator-wrapper" :class="{ 'blink': isHeadingOutOfTarget }">
-                <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
-                <div class="target-text">
-                    Target: {{ Math.round(headingTarget) }}°
-                    <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
-                </div>
+            <div class="indicator-wrapper col-span-1" :class="{ 'blink': isAltitudeOutOfTarget }">
+                <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
             </div>
-            <div class="indicator-wrapper" :class="{ 'blink': isAltitudeOutOfTarget }">
+            <div class="indicator-wrapper col-span-1" :class="{ 'blink': isAltitudeOutOfTarget }">
                 <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
                 <div class="target-text">
                     Target: {{ Math.round(altitudeTarget) }} ft
@@ -54,7 +57,7 @@
                         :class="['direction-indicator', altitudeChangeDirection]"></span>
                 </div>
             </div>
-            <clock-indicator :time="currentTime" />
+
         </div>
 
         <!-- Audio Test Controls -->
@@ -81,6 +84,7 @@
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Altimeter, Airspeed, Heading } from 'vue-flight-indicators';
+import AnalogClock from "./AnalogClock.vue";
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
@@ -111,7 +115,7 @@ const examRunning = ref(false);
 const airspeed = ref(100);
 const heading = ref(0);
 const altitude = ref(5000);
-const currentTime = ref(new Date());
+// const currentTime = ref(new Date());
 const airspeedTarget = ref(140);
 const headingTarget = ref(150);
 const altitudeTarget = ref(8000);
@@ -981,7 +985,7 @@ onUnmounted(() => {
 
 .indicators {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
