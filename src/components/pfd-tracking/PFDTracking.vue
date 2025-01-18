@@ -436,9 +436,6 @@ const altitude = ref(5000);
 const airspeedTarget = ref(140);
 const headingTarget = ref(150);
 const altitudeTarget = ref(8000);
-const airspeedChangeDirection = ref(null);
-const headingChangeDirection = ref(null);
-const altitudeChangeDirection = ref(null);
 const loading = ref(false);
 const timeOnTargetAirspeed = ref(0);
 const timeOnTargetHeading = ref(0);
@@ -450,8 +447,6 @@ const thruster = ref(null);
 const lastAltitude = ref(altitude.value);
 const thrustLevel = ref(0);
 const currentConfigIndex = ref(0);
-const lastUpdateTime = ref(Date.now());
-const targetUpdateInterval = ref(50); // Update every 50ms
 const audioContext = ref(null);
 const engineGain = ref(null);
 const baseOscillator = ref(null);
@@ -460,8 +455,11 @@ const harmonic1 = ref(null);
 const harmonic2 = ref(null);
 const currentAcceleration = ref(0);
 const targetSpeed = ref(MOVEMENT_SPEED.MIN_AIRSPEED);
-const UPDATE_INTERVAL = 2000; // Update every 2 seconds
+const UPDATE_INTERVAL = 4000; // Update every 2 seconds
 const lastTargetUpdate = ref(Date.now());
+const lastAirspeedUpdate = ref(Date.now());
+const lastHeadingUpdate = ref(Date.now());
+const lastAltitudeUpdate = ref(Date.now());
 
 // Audio test state
 const displayedNumbers = ref([]);
@@ -912,72 +910,119 @@ const updateTargets = () => {
 };
 
 const updateIndicator = (indicator, mode) => {
-  if (mode === 'inactive' || mode === 'keep_indicator') return;
+  if (mode === 'inactive' || mode === 'keep_indicator') {
+    console.log(`${indicator} is inactive or set to keep_indicator. Skipping update.`);
+    return;
+  }
+
   const currentTime = Date.now();
-  if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) return;
+  let lastUpdateTime;
 
-  lastUpdateTime.value = currentTime;
+  // Determine which lastUpdateTime to use
+  switch (indicator) {
+    case 'airspeed':
+      lastUpdateTime = lastAirspeedUpdate.value;
+      break;
+    case 'heading':
+      lastUpdateTime = lastHeadingUpdate.value;
+      break;
+    case 'altitude':
+      lastUpdateTime = lastAltitudeUpdate.value;
+      break;
+    default:
+      return;
+  }
 
-  let currentValue, currentTarget, minValue, maxValue;
+  // Check if it's time to update the target
+  if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
+    console.log(`Skipping ${indicator} update: too soon since last update.`);
+    return;
+  }
+
+  // Update the lastUpdateTime for this indicator
+  switch (indicator) {
+    case 'airspeed':
+      lastAirspeedUpdate.value = currentTime;
+      break;
+    case 'heading':
+      lastHeadingUpdate.value = currentTime;
+      break;
+    case 'altitude':
+      lastAltitudeUpdate.value = currentTime;
+      break;
+  }
+
+  let currentTarget, minValue, maxValue;
 
   switch (indicator) {
     case 'airspeed':
-      currentValue = airspeed.value;
       currentTarget = airspeedTarget.value;
       minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
       maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
       break;
     case 'heading':
-      currentValue = heading.value;
       currentTarget = headingTarget.value;
       minValue = 0;
       maxValue = 360;
       break;
     case 'altitude':
-      currentValue = altitude.value;
       currentTarget = altitudeTarget.value;
       minValue = 1000;
       maxValue = 9000;
       break;
+    default:
+      return;
   }
-  console.log(currentValue, 'currentValue')
-  // Calculate new target
-  let newTarget;
-  const changeDirection = Math.random() > 0.5 ? 1 : -1;
+
+  console.log(`Updating ${indicator} target. Current target: ${currentTarget}`);
+
+  // Calculate the maximum change amount
+  let maxChange;
 
   if (indicator === 'heading') {
-    // Special handling for heading to handle 0-360 wrap
-    newTarget = (currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE) + 360) % 360;
+    // Use a larger percentage (e.g., 30%) or a fixed value for heading
+    maxChange = currentTarget * 0.3; // 30% of current value
+    // Alternatively, use a fixed value for heading changes
+    // maxChange = 30; // Fixed change of 30 degrees
   } else {
-    newTarget = currentTarget + (changeDirection * MOVEMENT_SPEED.TARGET_CHANGE_RATE);
-
-    // Bounce back if we hit limits
-    if (newTarget > maxValue) {
-      newTarget = maxValue - MOVEMENT_SPEED.TARGET_CHANGE_RATE;
-    } else if (newTarget < minValue) {
-      newTarget = minValue + MOVEMENT_SPEED.TARGET_CHANGE_RATE;
-    }
+    // Use 20% for airspeed and altitude
+    maxChange = currentTarget * 0.2;
   }
 
-  console.log('updating target', newTarget)
+  // Ensure a minimum change for heading when currentTarget is 0
+  if (indicator === 'heading' && currentTarget === 0) {
+    maxChange = 30; // Minimum change of 30 degrees
+  }
+
+  // Generate a random change within the range of -maxChange to +maxChange
+  const changeAmount = (Math.random() * 2 - 1) * maxChange; // Random value between -maxChange and +maxChange
+
+  // Calculate the new target value
+  let newTarget = currentTarget + changeAmount;
+
+  // Handle wrapping for heading (0-360 degrees)
+  if (indicator === 'heading') {
+    newTarget = (newTarget + 360) % 360; // Wrap around at 0 and 360
+  } else {
+    // Clamp newTarget within min and max values
+    newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
+  }
+
+  console.log(`New ${indicator} target: ${newTarget}`);
+
   // Update the target
   switch (indicator) {
     case 'airspeed':
       airspeedTarget.value = newTarget;
-      airspeedChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
       break;
     case 'heading':
       headingTarget.value = newTarget;
-      headingChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
       break;
     case 'altitude':
       altitudeTarget.value = newTarget;
-      altitudeChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
       break;
   }
-  console.log(newTarget, 'updated target')
 };
-
 
 const startExam = () => {
   examRunning.value = true;
