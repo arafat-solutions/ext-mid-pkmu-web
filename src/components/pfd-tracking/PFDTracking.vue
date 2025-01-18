@@ -25,6 +25,22 @@
 
     <!-- Timer -->
     <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
+    <!-- Control Mode Toggle -->
+    <div class="control-mode-toggle">
+      <button @click="toggleControlMode">
+        {{ controlMode === 'joystick' ? 'Switch to Manual Control' : 'Switch to Joystick Control' }}
+      </button>
+    </div>
+
+    <!-- Manual Control Instructions -->
+    <div class="manual-control-instructions" v-if="controlMode === 'manual'">
+      <p>Manual Controls:</p>
+      <ul>
+        <li>Arrow Keys: Control heading and altitude</li>
+        <li>W: Increase thrust</li>
+        <li>S: Decrease thrust</li>
+      </ul>
+    </div>
 
     <!-- Main Indicators -->
     <div class="indicators-container">
@@ -327,6 +343,58 @@
 .modal-leave-to {
   opacity: 0;
 }
+
+/* Control Mode Toggle */
+.control-mode-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.control-mode-toggle button {
+  padding: 10px 20px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.control-mode-toggle button:hover {
+  background-color: #0056b3;
+}
+
+/* Manual Control Instructions */
+.manual-control-instructions {
+  position: fixed;
+  bottom: 70px;
+  /* Position above the toggle button */
+  right: 20px;
+  background-color: rgba(44, 62, 80, 0.9);
+  /* Semi-transparent background */
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.manual-control-instructions p {
+  margin: 0 0 10px 0;
+  font-weight: bold;
+}
+
+.manual-control-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.manual-control-instructions li {
+  margin-bottom: 5px;
+}
 </style>
 
 <script setup>
@@ -358,6 +426,7 @@ const MOVEMENT_SPEED = {
 };
 
 // State
+const controlMode = ref('joystick');
 const mode = ref('moving');
 const examRunning = ref(false);
 const airspeed = ref(100);
@@ -431,6 +500,10 @@ const isAltitudeOutOfTarget = computed(() => {
 const verticalSpeed = computed(() => {
   return altitude.value - lastAltitude.value;
 });
+
+const toggleControlMode = () => {
+  controlMode.value = controlMode.value === 'joystick' ? 'manual' : 'joystick';
+};
 
 // Utility functions
 const formatTime = (time) => {
@@ -1038,11 +1111,49 @@ const handleCancel = () => {
   router.replace("/module");
 }
 
+const adjustHeading = (amount) => {
+  heading.value = (heading.value + amount + 360) % 360;
+};
+
+const adjustAltitude = (amount) => {
+  altitude.value = Math.max(0, Math.min(10000, altitude.value + amount));
+};
+
+const adjustThrust = (amount) => {
+  thrustLevel.value = Math.max(0, Math.min(100, thrustLevel.value + amount));
+};
+
+const handleKeyDown = (event) => {
+  if (controlMode.value === 'manual') {
+    switch (event.key) {
+      case 'ArrowLeft':
+        adjustHeading(-10); // Adjust heading left
+        break;
+      case 'ArrowRight':
+        adjustHeading(10); // Adjust heading right
+        break;
+      case 'ArrowUp':
+        adjustAltitude(100); // Increase altitude
+        break;
+      case 'ArrowDown':
+        adjustAltitude(-100); // Decrease altitude
+        break;
+      case 'w':
+        adjustThrust(10); // Increase thrust
+        break;
+      case 's':
+        adjustThrust(-10); // Decrease thrust
+        break;
+    }
+  }
+};
+
 // Lifecycle hooks
 onMounted(() => {
   initConfig();
   window.addEventListener('gamepadconnected', onGamepadConnected);
   window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
+  window.addEventListener('keydown', handleKeyDown);
   checkGamepadConnection();
   updateLoop();
 });
@@ -1073,6 +1184,7 @@ const cleanupSounds = () => {
 onUnmounted(() => {
   window.removeEventListener('gamepadconnected', onGamepadConnected);
   window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
+  window.removeEventListener('keydown', handleKeyDown);
 
   if (audioContext.value) {
     audioContext.value.close();
