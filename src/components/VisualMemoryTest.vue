@@ -1,6 +1,10 @@
 <template>
     <div class="visual-container relative">
-        <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
+        <div>
+            <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
+            <p v-if="answerIsRight === true" class="text-green-500 text-3xl mt-16">Benar!</p>
+            <p v-if="answerIsRight === false" class="text-red-500 text-3xl mt-16">Salah!</p>
+        </div>
         <div class="timer">
             <p>Waktu:</p>
             <p>{{ formatTime(testTime) }}</p>
@@ -83,7 +87,8 @@ export default {
             questionMarkStartTime: null,
             questionMarkDuration: 10, // 10 seconds for question mark display
             isQuestionMarkActive: false,
-            userInputs: []
+            userInputs: [],
+            answerIsRight: null
         };
     },
     async mounted() {
@@ -118,6 +123,10 @@ export default {
         window.removeEventListener('beforeunload', this.handleBeforeUnload);
     },
     methods: {
+        setAnswerIsRight(value) {
+            this.answerIsRight = value
+            setTimeout(() => { this.answerIsRight = null }, 4000)
+        },
         initVisual() {
             const canvas = this.$refs.visualCanvas;
             this.ctx = canvas.getContext("2d");
@@ -748,12 +757,14 @@ export default {
                                 responseTime,
                                 timestamp: Date.now(),
                             });
+                            this.setAnswerIsRight(true)
                         } else {
                             this.userInputs.push({
                                 type: "wrong",
                                 responseTime,
                                 timestamp: Date.now(),
                             });
+                            this.setAnswerIsRight(false)
                         }
 
                         this.renderInput = 0
@@ -1005,12 +1016,14 @@ export default {
                     responseTime,
                     timestamp: Date.now(),
                 });
+                this.setAnswerIsRight(true)
             } else {
                 this.userInputs.push({
                     type: "wrong",
                     responseTime: responseTime,
                     timestamp: Date.now(),
                 });
+                this.setAnswerIsRight(false)
             }
 
             this.renderInput = 0;
@@ -1054,6 +1067,7 @@ export default {
     height: 100vh;
     /* width: 100vw; */
     position: relative;
+    flex-direction: column;
 }
 
 canvas {

@@ -46,11 +46,11 @@
     <div class="indicators-container">
       <div class="indicators-row">
         <!-- Speed Indicator -->
-        <div class="indicator-group" :class="{ 'blink': isAirspeedOutOfTarget }">
+        <div class="indicator-group overflow-hidden" :class="{ 'blink': isAirspeedOutOfTarget }">
           <div class="indicator-label">SPEED</div>
           <div class="indicator vertical">
             <LinearGauge label="Airspeed" :value="airspeed" :target="airspeedTarget" :min="MOVEMENT_SPEED.MIN_AIRSPEED"
-              :max="MOVEMENT_SPEED.MAX_AIRSPEED" :isVertical="true" />
+              :max="MOVEMENT_SPEED.MAX_AIRSPEED" :isVertical="true" :step="5" />
             <!-- Thrust Control -->
             <div class="thruster-indicator">
               <div class="thruster-bar">
@@ -62,7 +62,7 @@
         </div>
 
         <!-- Heading Indicator -->
-        <div class="indicator-group" :class="{ 'blink': isHeadingOutOfTarget }">
+        <div class="indicator-group overflow-hidden" :class="{ 'blink': isHeadingOutOfTarget }">
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
             <LinearGauge label="compass" :value="heading" :target="headingTarget" :min="0" :max="360"
@@ -71,11 +71,14 @@
         </div>
 
         <!-- Altitude Indicator -->
-        <div class="indicator-group" :class="{ 'blink': isAltitudeOutOfTarget }">
+        <div class="indicator-group overflow-hidden" :class="{ 'blink': isAltitudeOutOfTarget }">
           <div class="indicator-label">ALTITUDE</div>
           <div class="indicator vertical">
             <LinearGauge label="altitude" :value="altitude" :target="altitudeTarget" :min="0" :max="10000"
               :isVertical="true" :step="500" />
+
+            <div class="thruster-indicator hidden">
+            </div>
           </div>
         </div>
       </div>
@@ -88,314 +91,6 @@
   </div>
 </template>
 
-<style scoped>
-.tracking-test {
-  background: #1a1a1a;
-  min-height: 100vh;
-  padding: 20px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.countdown-timer {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #007bff;
-  color: white;
-  padding: 10px 20px;
-  font-size: 24px;
-  font-weight: bold;
-  border-radius: 0 0 10px 10px;
-  z-index: 1000;
-}
-
-.indicators-container {
-  margin-top: 80px;
-  width: 100%;
-  max-width: 1200px;
-  padding: 20px;
-}
-
-.indicators-row {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  gap: 40px;
-}
-
-.indicator-group {
-  background: #2c3e50;
-  padding: 20px;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-}
-
-.indicator-label {
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #fff;
-}
-
-.indicator {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.indicator.vertical {
-  flex-direction: row;
-}
-
-.indicator.horizontal {
-  flex-direction: column;
-}
-
-.thruster-indicator {
-  width: 30px;
-  height: 300px;
-  margin-left: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.thruster-bar {
-  height: 100%;
-  width: 100%;
-  background: #34495e;
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
-}
-
-.thruster-fill {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background: #ff6b6b;
-  transition: height 0.2s ease;
-}
-
-.thruster-value {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #fff;
-}
-
-.audio-test {
-  margin-top: 40px;
-  padding: 20px;
-  background: #2c3e50;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.number-display {
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
-.response-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-
-.btn-red,
-.btn-green {
-  padding: 12px 30px;
-  font-size: 16px;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.btn-red {
-  background-color: #e74c3c;
-}
-
-.btn-green {
-  background-color: #2ecc71;
-}
-
-.btn-red:hover,
-.btn-green:hover {
-  transform: scale(1.05);
-}
-
-.btn-red:disabled,
-.btn-green:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.score-display {
-  margin-top: 20px;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background-color: #2c3e50;
-  border-radius: 8px;
-  padding: 30px;
-  max-width: 500px;
-  width: 90%;
-}
-
-.modal-title {
-  font-size: 24px;
-  color: #fff;
-  margin-bottom: 20px;
-}
-
-.modal-body {
-  color: #ecf0f1;
-}
-
-.modal-list {
-  list-style-type: disc;
-  margin-left: 20px;
-  margin-bottom: 20px;
-}
-
-.modal-list li {
-  margin-bottom: 10px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.start-button {
-  background-color: green;
-}
-
-.cancel-button {
-  background-color: red;
-}
-
-.modal-button {
-  color: white;
-  border: none;
-  padding: 10px 30px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.2s;
-}
-
-.modal-button:hover {
-  background-color: #2980b9;
-}
-
-/* Blink animation for out-of-target indicators */
-@keyframes blink {
-  0% {
-    background-color: #2c3e50;
-  }
-
-  50% {
-    background-color: rgba(231, 76, 60, 0.3);
-  }
-
-  100% {
-    background-color: #2c3e50;
-  }
-}
-
-.blink {
-  animation: blink 1s infinite;
-}
-
-/* Transition animations */
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-/* Control Mode Toggle */
-.control-mode-toggle {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
-.control-mode-toggle button {
-  padding: 10px 20px;
-  font-size: 14px;
-  border: none;
-  border-radius: 4px;
-  background-color: #007bff;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.control-mode-toggle button:hover {
-  background-color: #0056b3;
-}
-
-/* Manual Control Instructions */
-.manual-control-instructions {
-  position: fixed;
-  bottom: 70px;
-  /* Position above the toggle button */
-  right: 20px;
-  background-color: rgba(44, 62, 80, 0.9);
-  /* Semi-transparent background */
-  padding: 15px;
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  z-index: 1000;
-}
-
-.manual-control-instructions p {
-  margin: 0 0 10px 0;
-  font-weight: bold;
-}
-
-.manual-control-instructions ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.manual-control-instructions li {
-  margin-bottom: 5px;
-}
-</style>
 
 <script setup>
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
@@ -1237,3 +932,312 @@ onUnmounted(() => {
 });
 
 </script>
+
+<style scoped>
+.tracking-test {
+  background: #1a1a1a;
+  min-height: 100vh;
+  padding: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.countdown-timer {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 0 0 10px 10px;
+  z-index: 1000;
+}
+
+.indicators-container {
+  margin-top: 80px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 20px;
+}
+
+.indicators-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 40px;
+}
+
+.indicator-group {
+  background: #2c3e50;
+  padding: 44px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.indicator-label {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.indicator.vertical {
+  flex-direction: row;
+}
+
+.indicator.horizontal {
+  flex-direction: column;
+}
+
+.thruster-indicator {
+  width: 30px;
+  height: 300px;
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.thruster-bar {
+  height: 100%;
+  width: 100%;
+  background: #34495e;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.thruster-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: #ff6b6b;
+  transition: height 0.2s ease;
+}
+
+.thruster-value {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #fff;
+}
+
+.audio-test {
+  margin-top: 40px;
+  padding: 20px;
+  background: #2c3e50;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.number-display {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.response-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btn-red,
+.btn-green {
+  padding: 12px 30px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.btn-red {
+  background-color: #e74c3c;
+}
+
+.btn-green {
+  background-color: #2ecc71;
+}
+
+.btn-red:hover,
+.btn-green:hover {
+  transform: scale(1.05);
+}
+
+.btn-red:disabled,
+.btn-green:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.score-display {
+  margin-top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background-color: #2c3e50;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.modal-title {
+  font-size: 24px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.modal-body {
+  color: #ecf0f1;
+}
+
+.modal-list {
+  list-style-type: disc;
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.modal-list li {
+  margin-bottom: 10px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.start-button {
+  background-color: green;
+}
+
+.cancel-button {
+  background-color: red;
+}
+
+.modal-button {
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.modal-button:hover {
+  background-color: #2980b9;
+}
+
+/* Blink animation for out-of-target indicators */
+@keyframes blink {
+  0% {
+    background-color: #2c3e50;
+  }
+
+  50% {
+    background-color: rgba(231, 76, 60, 0.3);
+  }
+
+  100% {
+    background-color: #2c3e50;
+  }
+}
+
+.blink {
+  animation: blink 1s infinite;
+}
+
+/* Transition animations */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+/* Control Mode Toggle */
+.control-mode-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.control-mode-toggle button {
+  padding: 10px 20px;
+  font-size: 14px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.control-mode-toggle button:hover {
+  background-color: #0056b3;
+}
+
+/* Manual Control Instructions */
+.manual-control-instructions {
+  position: fixed;
+  bottom: 70px;
+  /* Position above the toggle button */
+  right: 20px;
+  background-color: rgba(44, 62, 80, 0.9);
+  /* Semi-transparent background */
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.manual-control-instructions p {
+  margin: 0 0 10px 0;
+  font-weight: bold;
+}
+
+.manual-control-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.manual-control-instructions li {
+  margin-bottom: 5px;
+}
+</style>
