@@ -35,22 +35,26 @@
       <div class="right-content" style="width: 45%;">
         <div class="question" style="padding-left: 30px">
           <p v-if="question === 'left'">
-            How many Left Turns in the line?
+            Berapa banyak belokan kiri pada garis tersebut?
           </p>
 
           <p v-if="question === 'right'">
-            How many Right Turns in the line?
+            Berapa banyak belokan ke kanan pada garis tersebut?
           </p>
 
           <div class="answer-container" v-if="isShowAnswerBox">
             <div class="buttons">
-              <button v-for="(x, index) in optionAnswers" :key="index" class="digit-number"
-                :class="{ 'selected': selectedAnswer === x }" @click="pressAnswer(x)">
+              <button v-for="(x, index) in optionAnswers" :key="index" class="digit-number" :class="{
+                'correct': selectedAnswer && ((selectedAnswer === x && x === answer) || (selectedAnswer !== x && x === answer)),
+                'wrong': selectedAnswer && selectedAnswer === x && x !== answer
+              }" @click="pressAnswer(x)">
                 {{ x }}
               </button>
             </div>
           </div>
         </div>
+        <p v-if="answerIsRight === true" class="text-green-500 text-2xl">Benar!</p>
+        <p v-else-if="answerIsRight === false" class="text-red-500 text-2xl">Salah!</p>
       </div>
     </div>
   </div>
@@ -110,7 +114,8 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      questionDuration: 2000,
+      questionDuration: 8000,
+      answerIsRight: null
     };
   },
   mounted() {
@@ -299,8 +304,8 @@ export default {
         this.endGame();
       } else {
         if (this.isTrainingCompleted) {
-            this.setConfig(this.configs[this.indexConfig])
-          }
+          this.setConfig(this.configs[this.indexConfig])
+        }
         setTimeout(() => {
           this.generateCoordinat();
           this.selectedAnswer = null;
@@ -309,6 +314,7 @@ export default {
 
       this.config.current_question++
       this.totalQuestionConfig++
+      this.answerIsRight = null
 
       if (
         this.isTrainingCompleted &&
@@ -696,12 +702,14 @@ export default {
           responseTime: this.responseTime - this.questionStartTime,
           timestamp: Date.now(),
         });
+        this.answerIsRight = true
       } else {
         this.userInputs.push({
           type: 'wrong',
           responseTime: this.responseTime - this.questionStartTime,
           timestamp: Date.now(),
         });
+        this.answerIsRight = false
       }
 
       this.responseDurations.push(this.responseTime - this.questionStartTime);
@@ -721,184 +729,190 @@ export default {
 </script>
 
 <style scoped>
-  .main-view {
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 60px auto;
+.main-view {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 60px auto;
+}
+
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+.modal-content button {
+  padding: 10px 20px;
+  background-color: #5e37a6;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.modal-content button:hover {
+  background-color: #5e37a6;
+}
+
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0349D0;
+  padding: 1.5rem 5rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
 
-  .modal-overlay {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
+  100% {
+    transform: rotate(360deg);
   }
+}
 
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-  }
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
 
-  .modal-content button {
-    padding: 10px 20px;
-    background-color: #5e37a6;
-    color: white;
-    border: none;
-    border-radius: 15px;
-    cursor: pointer;
-    font-size: 1em; 
-  }
+.center {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
 
-  .modal-content button:hover {
-    background-color: #5e37a6;
-  }
+.line-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-  .timer-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0349D0;
-    padding: 1.5rem 5rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
+.line-turns {
+  padding: 10px;
+  position: relative;
+  margin-bottom: 10px;
+  margin-top: 10px;
+}
 
-  .loading-container {
-    /* Add your loading indicator styles here */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    /* Black background with 80% opacity */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    /* Ensure it is above other content */
-  }
+canvas {
+  border: 1px solid #000;
+  background-color: white;
+}
 
-  .spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3);
-    /* Light border */
-    border-top: 8px solid #ffffff;
-    /* White border for the spinning part */
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-  }
+.question {
+  padding: 30px;
+  font-size: 1em;
+  font-weight: bold;
+}
 
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
+.answer-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px
+}
 
-    100% {
-      transform: rotate(360deg);
-    }
-  }
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 10px;
+}
 
-  .text {
-    color: #ffffff;
-    margin-top: 20px;
-    font-size: 1.2em;
-  }
+.digit-number {
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #505250;
+  color: white;
+}
 
-  .center {
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-  }
+.next {
+  background-color: #0349D0;
+}
 
-  .line-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+.digit-number {
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #505250;
+  color: white;
+  transition: background-color 0.3s ease;
+}
 
-  .line-turns {
-    padding: 10px;
-    position: relative;
-    margin-bottom: 10px;
-    margin-top: 10px;
-  }
+.digit-number.correct {
+  background-color: #4CAF50;
+  /* Green color for selected button */
+}
 
-  canvas {
-    border: 1px solid #000;
-    background-color: white;
-  }
+.digit-number.wrong {
+  background-color: #e62f2f;
+  /* Green color for selected button */
+}
 
-  .question {
-    padding: 30px;
-    font-size: 1em;
-    font-weight: bold;
-  }
+.digit-number.next {
+  background-color: #0349D0;
+}
 
-  .answer-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .buttons {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 10px;
-  }
-
-  .digit-number {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #505250;
-    color: white;
-  }
-
-  .next {
-    background-color: #0349D0;
-  }
-
-  .digit-number {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #505250;
-    color: white;
-    transition: background-color 0.3s ease;
-  }
-
-  .digit-number.selected {
-    background-color: #4CAF50;
-    /* Green color for selected button */
-  }
-
-  .digit-number.next {
-    background-color: #0349D0;
-  }
-
-  .digit-number.next:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-  }
+.digit-number.next:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
 </style>

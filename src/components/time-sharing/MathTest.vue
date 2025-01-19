@@ -10,6 +10,8 @@
       <button @click="clearInput" :disabled="!showQuestion">Clear</button>
       <button @click="submitAnswer" :disabled="!showQuestion">Submit</button>
     </div>
+    <p v-if="answerIsRight === true" class="text-green-500 text-2xl">Benar!</p>
+    <p v-else-if="answerIsRight === false" class="text-red-500 text-2xl">Salah!</p>
   </div>
 </template>
 
@@ -41,6 +43,7 @@ export default {
       complexity: props.config.arithmetics.complexity, // medium
       output: props.config.arithmetics.output, // auditory_and_visual
     };
+    const answerIsRight = ref(null)
 
     const getIntervalTime = () => {
       switch (config.frequency) {
@@ -118,6 +121,7 @@ export default {
             break;
         }
       } while (correctAnswer.value < 0 || correctAnswer.value % 1 !== 0);
+
       const question = `${num1} ${operationSpoken} ${num2}`;
       currentQuestion.value = question;
 
@@ -159,6 +163,7 @@ export default {
         isCorrect: userAnswer === correctAnswer.value,
         responseTime
       };
+      setAnswerIsRight(userAnswer)
       questionTimeShown.value = null;
       emit('question-result', result);
       userInput.value = '';
@@ -169,6 +174,11 @@ export default {
         generateQuestion();
       }, getIntervalTime());
     };
+
+    const setAnswerIsRight = (userAnswer) => {
+      answerIsRight.value = userAnswer === correctAnswer.value
+      setTimeout(() => { answerIsRight.value = null }, 4000)
+    }
 
     const handleKeydown = (event) => {
       if (event.key === ' ' && !props.isTrainingMode) {
@@ -188,8 +198,6 @@ export default {
       }
     });
 
-
-
     return {
       userInput,
       currentQuestion,
@@ -197,6 +205,7 @@ export default {
       appendNumber,
       clearInput,
       submitAnswer,
+      answerIsRight
     };
   }
 };
