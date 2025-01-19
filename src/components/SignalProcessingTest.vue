@@ -1,48 +1,43 @@
 <template>
-  <div v-if="isRuleModalVisible" class="modal-overlay">
-    <div class="modal-content">
-      <h2 class="text-xl font-bold mb-4">Instruksi Aturan Baru</h2>
-      <div class="mb-4">
-        <p class="mb-2"><strong>Untuk blok merah:</strong> {{ currentRules.red }}</p>
-        <p class="mb-2"><strong>Untuk blok hijau:</strong> {{ currentRules.green }}</p>
-        <p class="mb-2"><strong>Untuk blok biru:</strong> {{ currentRules.blue }}</p>
-      </div>
-      <button @click="acknowledgeRules" class="bg-blue-500 text-white px-4 py-2 rounded">
-        Mengerti
-      </button>
-    </div>
-  </div>
+  <div v-if="isModalVisible" class="modal-overlay">
+  <div class="modal-content">
+    <h2 class="text-xl font-bold mb-4">{{ isTrainingCompleted ? 'Konfirmasi Ujian' : 'Konfirmasi Pelatihan' }}</h2>
 
-  <div v-if="isModalTrainingVisible" class="modal-overlay">
-    <div class="modal-content">
-      <h2 class="text-xl font-bold mb-4">Konfirmasi Pelatihan</h2>
-      <p class="mb-4 text-center"><strong>Apakah Anda yakin akan memulai pelatihan Signal Processing?</strong></p>
-      <div class="flex justify-center space-x-4">
+    <div class="mb-4">
+      <p class="mb-2"><strong>Untuk blok merah:</strong> {{ ruleOptions[currentRuleSet.red] }}</p>
+      <p class="mb-2"><strong>Untuk blok hijau:</strong> {{ ruleOptions[currentRuleSet.green] }}</p>
+      <p class="mb-2"><strong>Untuk blok biru:</strong> {{ ruleOptions[currentRuleSet.blue] }}</p>
+    </div>
+
+    <p class="mb-4 text-center">
+      <strong>
+        Apakah Anda yakin akan memulai {{ isTrainingCompleted ? 'ujian' : 'pelatihan' }} Signal Processing?
+      </strong>
+    </p>
+
+    <div class="flex justify-center space-x-4">
       <button @click="startTest()" class="bg-green-500 text-white px-4 py-2 rounded">Ya</button>
       <button @click="exit()" class="bg-red-500 text-white px-4 py-2 rounded">Batal</button>
-      </div>
     </div>
   </div>
-
-  <div v-if="isModalVisible" class="modal-overlay">
-    <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Signal Processing?</strong></p>
-      <button @click="startTest()">Ya</button>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
-    </div>
-  </div>
+</div>
 
   <div v-if="timeLeft > 0" class="timer-container">
     Time: {{ formattedTime }}
   </div>
 
-  <div class="relative w-[1280px] m-auto" v-if="!isTimesUp">
-    <div class="flex items-center justify-center mt-[300px]">
+  <div class="relative flex justify-center items-center min-h-screen" v-if="!isTimesUp">
+    <div class="flex flex-col items-center justify-center">
       <div class="grid grid-cols-2 gap-4">
-        <div class="h-24 w-24 hover:cursor-pointer" :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'" v-for="i in 4" :key="i" @click="checkAnswer(i)"/>
+        <div class="h-24 w-24 hover:cursor-pointer"
+          :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'"
+          v-for="i in 4" :key="i" @click="checkAnswer(i)" />
+      </div>
+      <div class="font-bold text-lg text-center mt-5">
+        <span class="text-red-600" v-if="isWrongAnswer">Salah</span>
+        <span class="text-green-600" v-if="isCorrectAnswer">Benar</span>
       </div>
     </div>
-    <div class="text-red-600 font-bold text-lg text-center mt-5" v-if="isWrongAnswer">The wrong response</div>
   </div>
   <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner"></div>
@@ -57,30 +52,16 @@ import { getConfigs } from '@/utils/configs';
 export default {
   data() {
     return {
-      // rule set
-      isRuleModalVisible: false,
       currentRules: {
         red: '',
         green: '',
         blue: ''
       },
-      ruleOptions: {
-        red: [
-          'Klik blok yang menyala',
-          'Klik blok yang sejajar vertikal',
-          'Klik blok yang sejajar horizontal'
-        ],
-        green: [
-          'Klik blok yang menyala',
-          'Klik blok yang sejajar vertikal',
-          'Klik blok yang sejajar horizontal'
-        ],
-        blue: [
-          'Klik blok yang menyala',
-          'Klik blok yang sejajar vertikal',
-          'Klik blok yang sejajar horizontal'
-        ]
-      },
+      ruleOptions: [
+        'Klik blok yang menyala',
+        'Klik blok yang sejajar vertikal',
+        'Klik blok yang sejajar horizontal'
+      ],
       currentRuleSet: {
         red: 0,
         green: 0,
@@ -103,6 +84,7 @@ export default {
       batteryTestConfigId: null,
       clickedAnswer: false,
       isWrongAnswer: false,
+      isCorrectAnswer: false,
       colors: ['red', 'green', 'blue'],
       positions: [1, 2, 3, 4],
       level: null, //very_easy, easy, medium, difficult, very_difficult
@@ -208,30 +190,58 @@ export default {
     }
   },
   methods: {
-    generateNewRules() {
+    generateUniqueRules() {
       const colors = ['red', 'green', 'blue'];
-      colors.forEach(color => {
-        const randomIndex = Math.floor(Math.random() * this.ruleOptions[color].length);
+      const usedRuleIndices = new Set();
+
+      // Shuffle colors to randomize rule assignment
+      const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+      shuffledColors.forEach(color => {
+        let randomIndex;
+        do {
+          randomIndex = Math.floor(Math.random() * this.ruleOptions.length);
+        } while (usedRuleIndices.has(randomIndex));
+
+        usedRuleIndices.add(randomIndex);
         this.currentRuleSet[color] = randomIndex;
-        this.currentRules[color] = this.ruleOptions[color][randomIndex];
+        this.currentRules[color] = this.ruleOptions[randomIndex];
       });
-      this.isRuleModalVisible = true;
+
+      this.isModalVisible = true;
+    },
+
+
+    startTest() {
+      if (!this.isTrainingCompleted) {
+        this.setConfig(this.configs[0]);
+        this.minuteTime = Number(this.duration);
+        this.timeLeft = this.minuteTime;
+      } else {
+        this.setConfig(this.configs[this.indexConfig]);
+        this.minuteTime = this.configs.reduce((acc, config) => acc + Number(config.duration), 0);
+        this.timeLeft = this.minuteTime * 60;
+      }
+
+      this.isModalVisible = false;
+
+      setTimeout(() => {
+        this.generateQuestions();
+        this.startChangeQuestion();
+      }, 500);
+
+      this.startCountdown();
     },
 
     acknowledgeRules() {
       this.isRuleModalVisible = false;
-      // Continue with the test
+
+      // Start the timer and questions after rules are acknowledged
+      this.startCountdown();
+      this.generateQuestions();
+      this.startChangeQuestion();
     },
 
-    setConfig(config) {
-      this.level = config.difficulty;
-      this.displayDuration = config.display_duration;
-      this.duration = config.duration * 60;
-      this.isConfigLoaded = true;
-      
-      // Generate new rules when config changes
-      this.generateNewRules();
-    },
 
     checkAnswer(n) {
       if (this.clickedAnswer) {
@@ -240,7 +250,7 @@ export default {
 
       const now = Date.now();
       const responseTime = now - this.startTimeAnswer?.getTime();
-      
+
       this.clickedAnswer = true;
       let isCorrect = false;
 
@@ -264,6 +274,7 @@ export default {
           responseTime: responseTime,
           timestamp: Date.now(),
         });
+        this.isCorrectAnswer = true;
       } else {
         this.result.wrong++;
         this.userInputs.push({
@@ -346,34 +357,6 @@ export default {
       return horizontalMap[position];
     },
 
-    startTest() {
-      if (!this.isTrainingCompleted) {
-        this.setConfig(this.configs[0])
-
-        this.minuteTime = Number(this.duration);
-        this.timeLeft = this.minuteTime;
-      } else {
-        this.setConfig(this.configs[this.indexConfig])
-
-        this.minuteTime = 0;
-        this.timeLeft = 0;
-        for (const i in this.configs) {
-          this.minuteTime += Number(this.configs[i].duration)
-        }
-
-        this.timeLeft = this.minuteTime * 60;
-      }
-
-      this.isModalTrainingVisible = false;
-      this.isModalVisible = false;
-
-      setTimeout(() => {
-        this.generateQuestions();
-        this.startChangeQuestion();
-      }, 500);
-
-      this.startCountdown();
-    },
     cleanUp() {
       clearInterval(this.intervalCountdownId);
       clearInterval(this.intervalQuestionId);
@@ -383,6 +366,7 @@ export default {
         this.$router.push('module');
       }
     },
+    // Modify initConfig() to not generate rules immediately
     initConfig() {
       const configData = getConfigs('signal-processing-test');
       if (!configData) {
@@ -391,14 +375,33 @@ export default {
       }
 
       this.configs = configData.configs;
-
-      //For Training
       this.isTrainingCompleted = configData.trainingCompleted;
 
+      // Only show the modal, don't generate rules yet
       if (!this.isTrainingCompleted) {
         this.isModalTrainingVisible = true;
       } else {
         this.isModalVisible = true;
+      }
+    },
+
+    // Modify setConfig() to not generate rules
+    setConfig(config) {
+      this.level = config.difficulty;
+      this.displayDuration = config.display_duration;
+      this.duration = config.duration * 60;
+      this.isConfigLoaded = true;
+
+      if (this.intervalCountdownId) {
+        clearInterval(this.intervalCountdownId);
+      }
+      if (this.intervalQuestionId) {
+        clearInterval(this.intervalQuestionId);
+      }
+
+      // Generate rules only once per config level
+      if (!this.currentRules.red && !this.currentRules.green && !this.currentRules.blue) {
+        this.generateUniqueRules();
       }
     },
     startCountdown() {
@@ -417,15 +420,19 @@ export default {
             }
           } else {
             if (this.isNextLevel) {
-              this.cleanUp();
-              this.isNextLevel = false
-              this.indexConfig++
-              this.setConfig(this.configs[this.indexConfig])
+              if (this.indexConfig === this.configs.length - 1) {
+                this.submitResult();
+              } else {
+                this.cleanUp();
+                this.isNextLevel = false
+                this.indexConfig++
+                this.setConfig(this.configs[this.indexConfig])
+                setTimeout(() => {
+                  this.startCountdown();
+                  this.startChangeQuestion();
+                }, 500);
+              }
 
-              setTimeout(() => {
-                this.startCountdown();
-                this.startChangeQuestion();
-              }, 500);
             }
           }
         }
@@ -440,6 +447,7 @@ export default {
       this.intervalQuestionId = setInterval(() => {
         this.startTimeAnswer = new Date();
         this.isWrongAnswer = false;
+        this.isCorrectAnswer = false;
         this.currentIndexQuestion++;
         this.clickedAnswer = false;
       }, (this.displayDuration * 1000));
@@ -550,80 +558,80 @@ export default {
 </script>
 
 <style scoped>
-  .modal-overlay {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
-  }
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
 
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-  }
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
 
-  .modal-content button {
-    background-color: #6200ee;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-  }
+.modal-content button {
+  background-color: #6200ee;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
 
-  .modal-content button:hover {
-    background-color: #5e37a6;
-  }
+.modal-content button:hover {
+  background-color: #5e37a6;
+}
 
-  .timer-container {
-    @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#0349D0] px-20 py-3 text-white font-bold rounded-bl-[15px] rounded-br-[15px];
-  }
+.timer-container {
+  @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#0349D0] px-20 py-3 text-white font-bold rounded-bl-[15px] rounded-br-[15px];
+}
 
-  .loading-container {
-    @apply absolute inset-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-[1000];
-  }
+.loading-container {
+  @apply absolute inset-0 w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center z-[1000];
+}
 
-  .loading-spinner {
+.loading-spinner {
     @apply border-[8px] border-solid border-[rgba(255,255,255,0.3)] border-t-white rounded-full w-[60px] h-[60px] animate-spin;
   }
 
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-
-    100% {
-      transform: rotate(360deg);
-    }
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
 
-  .loading-text {
-    @apply text-white mt-5 text-[1.2em];
+  100% {
+    transform: rotate(360deg);
   }
+}
 
-  .bg-gray-500 {
-    background-color: #6B7280;
-  }
+.loading-text {
+  @apply text-white mt-5 text-[1.2em];
+}
 
-  .bg-green-500 {
-    background-color: #22C55E;
-  }
+.bg-gray-500 {
+  background-color: #6B7280;
+}
 
-  .bg-blue-500 {
-    background-color: #3B82F6;
-  }
+.bg-green-500 {
+  background-color: #22C55E;
+}
 
-  .bg-red-500 {
-    background-color: #EF4444;
-  }
+.bg-blue-500 {
+  background-color: #3B82F6;
+}
+
+.bg-red-500 {
+  background-color: #EF4444;
+}
 </style>
