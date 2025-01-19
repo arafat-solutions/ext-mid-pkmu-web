@@ -1,9 +1,8 @@
-<!-- LinearGauge.vue -->
 <template>
-    <div class="gauge-container" :class="{ vertical: isVertical }">
-        <div class=" gauge-track" :style="trackStyle">
-            <!-- Repeat the scale three times for infinite scroll effect -->
-            <div v-for="offset in [-1, 0, 1]" :key="offset" class="scale-section" :style="getSectionStyle(offset)">
+    <div class="gauge-container" :class="{ vertical: isVertical }" :style="gaugeStyle">
+        <div class="gauge-track" :style="trackStyle">
+            <!-- Single scale section from min to max -->
+            <div class="scale-section">
                 <div class="scale-lines">
                     <div v-for="value in scaleValues" :key="value" class="scale-mark" :style="getScaleMarkStyle(value)">
                         <span class="scale-label">{{ formatLabel(value) }}</span>
@@ -12,15 +11,15 @@
             </div>
         </div>
         <div class="gauge-window">
-            <!-- Fixed center pointer -->
+            <!-- Fixed center pointer (red line) -->
             <div class="center-pointer"></div>
 
             <!-- Scrolling track -->
             <div class="gauge-track" :style="trackStyle">
-                <!-- Repeat the scale three times for infinite scroll effect -->
-                <div v-for="offset in [-1, 0, 1]" :key="offset" class="scale-section" :style="getSectionStyle(offset)">
+                <!-- Single scale section from min to max -->
+                <div class="scale-section">
                     <!-- Target marker -->
-                    <div class="target-marker" :style="getTargetStyle(offset)"></div>
+                    <div class="target-marker" :style="getTargetStyle"></div>
                 </div>
             </div>
         </div>
@@ -28,40 +27,45 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { defineProps } from 'vue';
+import { computed, defineProps } from 'vue';
 
 const props = defineProps({
     value: {
         type: Number,
-        required: true
+        required: true,
     },
     target: {
         type: Number,
-        required: true
+        required: true,
     },
     min: {
         type: Number,
-        required: true
+        required: true,
     },
     max: {
         type: Number,
-        required: true
+        required: true,
     },
     label: {
         type: String,
-        required: true
+        required: true,
     },
     isVertical: {
         type: Boolean,
-        default: true
+        default: true,
     },
     step: {
         type: Number,
-        default: 10
-    }
+        default: 10,
+    },
 });
 
+// Calculate the number of steps for consistent spacing
+const numSteps = computed(() => {
+    return Math.floor((props.max - props.min) / props.step) + 1;
+});
+
+// Generate scale values from min to max
 const scaleValues = computed(() => {
     const values = [];
     if (props.isVertical) {
@@ -69,27 +73,16 @@ const scaleValues = computed(() => {
             values.push(i);
         }
     } else {
+        // For horizontal, ensure labels are placed at 0, 90, 180, 270, 360
         values.push(0, 90, 180, 270, 360);
     }
     return values;
 });
 
-const formatLabel = (value) => {
-    if (!props.isVertical) {
-        switch (value) {
-            case 0: return 'N';
-            case 90: return 'E';
-            case 180: return 'S';
-            case 270: return 'W';
-            case 360: return 'N';
-            default: return value;
-        }
-    }
-    return value;
-};
-
+// Calculate the range (difference between max and min)
 const range = computed(() => props.max - props.min);
 
+// Normalize the value to ensure it stays within the range
 const normalizedValue = computed(() => {
     let normalized = props.value;
     while (normalized > props.max) normalized -= range.value;
@@ -97,33 +90,57 @@ const normalizedValue = computed(() => {
     return normalized;
 });
 
+// Calculate the track style for scrolling
 const trackStyle = computed(() => {
-    const percentage = ((normalizedValue.value - props.min) / range.value) * 100;
+    const percentage = ((normalizedValue.value - props.target) / range.value) * 100;
     return props.isVertical
-        ? { transform: `translateY(${percentage}%)` }
-        : { transform: `translateX(-${percentage}%)` };
+        ? { transform: `translateY(${percentage}%)` } // Adjust the transform to align the target with the center
+        : { transform: `translateX(${percentage}%)` }; // Adjust the transform to align the target with the center
 });
 
-const getSectionStyle = (offset) => {
-    const translation = offset * 100;
-    return props.isVertical
-        ? { transform: `translateY(${translation}%)` }
-        : { transform: `translateX(${translation}%)` };
-};
-
+// Calculate the style for each scale mark
 const getScaleMarkStyle = (value) => {
     const percentage = ((value - props.min) / range.value) * 100;
     return props.isVertical
-        ? { bottom: `${percentage}%` }
-        : { left: `${percentage}%` };
+        ? { bottom: `${percentage}%` } // Position labels from bottom to top
+        : { left: `${percentage}%` }; // Position labels from left to right
 };
 
-const getTargetStyle = () => {
+// Calculate the style for the target marker
+const getTargetStyle = computed(() => {
     const targetPercentage = ((props.target - props.min) / range.value) * 100;
     return props.isVertical
         ? { bottom: `${targetPercentage}%` }
         : { left: `${targetPercentage}%` };
+});
+
+// Format the label for display
+const formatLabel = (value) => {
+    if (!props.isVertical) {
+        switch (value) {
+            case 0:
+                return 'N';
+            case 90:
+                return 'E';
+            case 180:
+                return 'S';
+            case 270:
+                return 'W';
+            case 360:
+                return 'N';
+            default:
+                return value;
+        }
+    }
+    return value;
 };
+
+// CSS variables for consistent spacing
+const gaugeStyle = computed(() => {
+    return {
+        '--num-steps': numSteps.value,
+    };
+});
 </script>
 
 <style scoped>
@@ -150,8 +167,19 @@ const getTargetStyle = () => {
 .gauge-track {
     position: absolute;
     width: 100%;
-    height: 100%;
+    height: 200%;
+    /* Double height for vertical scroll */
     transition: transform 0.3s ease;
+}
+
+.gauge-container.vertical .gauge-track {
+    height: 200%;
+    /* Double height for vertical scroll */
+}
+
+.gauge-container.horizontal .gauge-track {
+    width: 200%;
+    /* Double width for horizontal scroll */
 }
 
 .scale-section {
