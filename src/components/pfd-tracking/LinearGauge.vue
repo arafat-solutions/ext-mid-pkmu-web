@@ -92,7 +92,7 @@ const normalizedValue = computed(() => {
 
 // Calculate the track style for scrolling
 const trackStyle = computed(() => {
-    const percentage = ((normalizedValue.value - props.target) / range.value) * 100;
+    const percentage = ((normalizedValue.value - props.target) / range.value) * 200;
     return props.isVertical
         ? { transform: `translateY(${percentage}%)` } // Adjust the transform to align the target with the center
         : { transform: `translateX(${percentage}%)` }; // Adjust the transform to align the target with the center
