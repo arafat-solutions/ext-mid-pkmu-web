@@ -516,15 +516,28 @@ const updateScore = () => {
 
 const moveToNextConfig = () => {
   const nextIndex = currentConfigIndex.value + 1;
+
   if (nextIndex < config.value.configs.length) {
     currentConfigIndex.value = nextIndex;
-    // Reset targets for new config
+
+    // // Log the new config index
+    // console.log('Moving to Config Index:', nextIndex);
+
+    // Reset targets for the new config
     airspeedTarget.value = airspeed.value;
     headingTarget.value = heading.value;
     altitudeTarget.value = altitude.value;
 
+    // Update timeRemaining for the new config
+    const remainingConfigs = config.value.configs.slice(nextIndex);
+    const remainingDuration = remainingConfigs.reduce((acc, cfg) => acc + Number(cfg.duration), 0);
+    timeRemaining.value = remainingDuration * 60; // Convert minutes to seconds
+
+    // // Log the remaining duration
+    // console.log('Remaining Duration (seconds):', timeRemaining.value);
   } else {
-    endExam();
+    console.log('No more configs. Ending exam...');
+    endExam(); // End the exam if there are no more configs
   }
 };
 
@@ -574,19 +587,36 @@ const updateLoop = () => {
 const updateTime = () => {
   if (!examRunning.value) return;
 
-  timeRemaining.value -= 1 / 60;
-  if (timeRemaining.value <= 0) {
-    const currentConfig = config.value.configs[currentConfigIndex.value];
-    const configDuration = currentConfig?.duration * 60;
+  // Log the current timeRemaining before decrementing
+  // console.log('Current timeRemaining:', timeRemaining.value);
 
-    // Check if we've completed the current config's duration
-    if (Math.abs(timeRemaining.value) >= configDuration) {
-      moveToNextConfig();
-      // Reset timeRemaining for next config if there is one
-      if (currentConfigIndex.value < config.value.configs.length) {
-        timeRemaining.value = config.value.configs[currentConfigIndex.value].duration * 60;
-      }
-    }
+  // Decrement timeRemaining by 1/60th of a second (assuming 60 FPS)
+  timeRemaining.value -= 1 / 60;
+
+  // Ensure timeRemaining doesn't go below zero
+  if (timeRemaining.value <= 0) {
+    timeRemaining.value = 0;
+    // console.log('Time is up! Ending exam...');
+    endExam(); // End the exam when time runs out
+    return;
+  }
+
+  // Check if the current config's duration has elapsed
+  const currentConfig = config.value.configs[currentConfigIndex.value];
+  const configDuration = currentConfig?.duration * 60; // Convert minutes to seconds
+
+  // Log the current config and its duration
+  // console.log('Current Config:', currentConfig);
+  // console.log('Config Duration (seconds):', configDuration);
+
+  // Calculate elapsed time for the current config
+  const elapsedTime = configDuration - timeRemaining.value;
+  // console.log('Elapsed Time (seconds):', elapsedTime);
+
+  // If elapsed time exceeds the current config's duration, move to the next config
+  if (elapsedTime >= configDuration) {
+    // console.log('Moving to next config...');
+    moveToNextConfig();
   }
 };
 
@@ -669,7 +699,7 @@ const updateIndicator = (indicator, mode) => {
       return;
   }
 
-  console.log(`Updating ${indicator} target. Current target: ${currentTarget}`);
+  // console.log(`Updating ${indicator} target. Current target: ${currentTarget}`);
 
   // Calculate the maximum change amount
   let maxChange;
@@ -703,7 +733,7 @@ const updateIndicator = (indicator, mode) => {
     newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
   }
 
-  console.log(`New ${indicator} target: ${newTarget}`);
+  // console.log(`New ${indicator} target: ${newTarget}`);
 
   // Update the target
   switch (indicator) {
@@ -724,9 +754,15 @@ const startExam = () => {
   score.value = 0;
   currentConfigIndex.value = 0;
 
-  // Initialize first config duration
+  // Log the configs and their durations
+  // console.log('Configurations:', config.value.configs);
+
+  // Calculate total duration of all configs
   const totalDur = config.value.configs.reduce((acc, cfg) => acc + Number(cfg.duration), 0);
-  timeRemaining.value = totalDur * 60;
+  // console.log('Total Duration (minutes):', totalDur);
+
+  timeRemaining.value = totalDur * 60; // Convert minutes to seconds
+  // console.log('Initial timeRemaining (seconds):', timeRemaining.value);
 
   // Reset performance tracking
   airspeed.value = 120;
@@ -752,8 +788,8 @@ const startExam = () => {
 // Modify endExam to cleanup sounds
 const endExam = () => {
   examRunning.value = false;
+  timeRemaining.value = 0; // Ensure timeRemaining is set to zero
   cleanupSounds();
-
   sendPerformanceData();
 };
 
