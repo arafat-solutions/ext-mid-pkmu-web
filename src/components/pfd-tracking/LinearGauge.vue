@@ -5,7 +5,7 @@
             <div class="scale-section">
                 <div class="scale-lines">
                     <div v-for="value in scaleValues" :key="value" class="scale-mark" :style="getScaleMarkStyle(value)">
-                        <span class="scale-label">{{ formatLabel(value) }}</span>
+                        <span class="scale-label" :style="getLabelColor(value)">{{ formatLabel(value) }}</span>
                     </div>
                 </div>
             </div>
@@ -135,6 +135,34 @@ const formatLabel = (value) => {
     return value;
 };
 
+// Calculate the color for each scale label based on its distance from the target
+const getLabelColor = (value) => {
+    const distance = Math.abs(value - props.target);
+    const maxDistance = range.value / 2; // Maximum distance for gradient calculation
+
+    // Calculate the gradient color
+    let color;
+    if (distance <= maxDistance) {
+        const ratio = distance / maxDistance;
+        if (ratio <= 0.5) {
+            // Transition from green to yellow
+            const green = 255;
+            const red = Math.round(255 * (ratio * 2));
+            color = `rgb(${red}, ${green}, 0)`;
+        } else {
+            // Transition from yellow to red
+            const green = Math.round(255 * (2 - ratio * 2));
+            const red = 255;
+            color = `rgb(${red}, ${green}, 0)`;
+        }
+    } else {
+        // Beyond the gradient range, use red
+        color = 'rgb(255, 0, 0)';
+    }
+
+    return { color };
+};
+
 // CSS variables for consistent spacing
 const gaugeStyle = computed(() => {
     return {
@@ -215,7 +243,6 @@ const gaugeStyle = computed(() => {
 
 .scale-label {
     position: absolute;
-    color: white;
     font-size: 12px;
     white-space: nowrap;
 }
