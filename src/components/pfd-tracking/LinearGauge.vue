@@ -1,23 +1,32 @@
 <!-- LinearGauge.vue -->
 <template>
     <div class="gauge-container" :class="{ vertical: isVertical }">
-      <div class="gauge-track">
-        <!-- Scale lines -->
-        <div class="scale-lines">
-          <div v-for="value in scaleValues" 
-               :key="value" 
-               class="scale-mark"
-               :style="getScaleMarkStyle(value)">
-            <span class="scale-label">{{ formatLabel(value) }}</span>
-          </div>
+        <div class=" gauge-track" :style="trackStyle">
+            <!-- Repeat the scale three times for infinite scroll effect -->
+            <div v-for="offset in [-1, 0, 1]" :key="offset" class="scale-section" :style="getSectionStyle(offset)">
+                <div class="scale-lines">
+                    <div v-for="value in scaleValues" :key="value" class="scale-mark" :style="getScaleMarkStyle(value)">
+                        <span class="scale-label">{{ formatLabel(value) }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!-- Target marker -->
-        <div class="target-marker" :style="targetStyle"></div>
-        <!-- Current value pointer -->
-        <div class="gauge-pointer" :style="pointerStyle"></div>
-      </div>
+        <div class="gauge-window">
+            <!-- Fixed center pointer -->
+            <div class="center-pointer"></div>
+
+            <!-- Scrolling track -->
+            <div class="gauge-track" :style="trackStyle">
+                <!-- Repeat the scale three times for infinite scroll effect -->
+                <div v-for="offset in [-1, 0, 1]" :key="offset" class="scale-section" :style="getSectionStyle(offset)">
+                    <!-- Target marker -->
+                    <div class="target-marker" :style="getTargetStyle(offset)"></div>
+                </div>
+            </div>
+        </div>
     </div>
-  </template>
+</template>
+
 <script setup>
 import { computed } from 'vue';
 import { defineProps } from 'vue';
@@ -52,65 +61,68 @@ const props = defineProps({
         default: 10
     }
 });
+
 const scaleValues = computed(() => {
-  const values = [];
-  if (props.isVertical) {
-    // Vertical gauges (speed and altitude) keep original logic
-    for (let i = props.min; i <= props.max; i += props.step) {
-      values.push(i);
+    const values = [];
+    if (props.isVertical) {
+        for (let i = props.min; i <= props.max; i += props.step) {
+            values.push(i);
+        }
+    } else {
+        values.push(0, 90, 180, 270, 360);
     }
-  } else {
-    // Horizontal gauge (heading) - show only major cardinal directions
-    // and intermediate points
-    values.push(0);    // N
-    values.push(90);   // E
-    values.push(180);  // S
-    values.push(270);  // W
-    values.push(360);  // N
-  }
-  return values;
+    return values;
 });
 
-// Add function to format heading labels
 const formatLabel = (value) => {
-  if (!props.isVertical) {
-    // For heading, show cardinal directions
-    switch (value) {
-      case 0: return 'N';
-      case 90: return 'E';
-      case 180: return 'S';
-      case 270: return 'W';
-      case 360: return 'N';
-      default: return value;
+    if (!props.isVertical) {
+        switch (value) {
+            case 0: return 'N';
+            case 90: return 'E';
+            case 180: return 'S';
+            case 270: return 'W';
+            case 360: return 'N';
+            default: return value;
+        }
     }
-  }
-  return value;
+    return value;
 };
 
-const calculatePosition = (value) => {
-    const percentage = ((value - props.min) / (props.max - props.min)) * 100;
-    return `${percentage}%`;
+const range = computed(() => props.max - props.min);
+
+const normalizedValue = computed(() => {
+    let normalized = props.value;
+    while (normalized > props.max) normalized -= range.value;
+    while (normalized < props.min) normalized += range.value;
+    return normalized;
+});
+
+const trackStyle = computed(() => {
+    const percentage = ((normalizedValue.value - props.min) / range.value) * 100;
+    return props.isVertical
+        ? { transform: `translateY(${percentage}%)` }
+        : { transform: `translateX(-${percentage}%)` };
+});
+
+const getSectionStyle = (offset) => {
+    const translation = offset * 100;
+    return props.isVertical
+        ? { transform: `translateY(${translation}%)` }
+        : { transform: `translateX(${translation}%)` };
 };
-
-const pointerStyle = computed(() => {
-    const pos = calculatePosition(props.value);
-    return props.isVertical
-        ? { bottom: pos }
-        : { left: pos };
-});
-
-const targetStyle = computed(() => {
-    const pos = calculatePosition(props.target);
-    return props.isVertical
-        ? { bottom: pos }
-        : { left: pos };
-});
 
 const getScaleMarkStyle = (value) => {
-    const pos = calculatePosition(value);
+    const percentage = ((value - props.min) / range.value) * 100;
     return props.isVertical
-        ? { bottom: pos }
-        : { left: pos };
+        ? { bottom: `${percentage}%` }
+        : { left: `${percentage}%` };
+};
+
+const getTargetStyle = () => {
+    const targetPercentage = ((props.target - props.min) / range.value) * 100;
+    return props.isVertical
+        ? { bottom: `${targetPercentage}%` }
+        : { left: `${targetPercentage}%` };
 };
 </script>
 
@@ -127,20 +139,33 @@ const getScaleMarkStyle = (value) => {
     height: 300px;
 }
 
-.gauge-track {
+.gauge-window {
     position: relative;
     width: 100%;
     height: 100%;
-    background: transparent;
+    overflow: hidden;
     border: 2px solid white;
+}
+
+.gauge-track {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+
+.scale-section {
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }
 
 .scale-lines {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
+    left: 0;
+    top: 0;
 }
 
 .scale-mark {
@@ -149,49 +174,54 @@ const getScaleMarkStyle = (value) => {
 }
 
 .vertical .scale-mark {
+    left: -10px;
     width: 10px;
     height: 2px;
-    left: -10px;
 }
 
 .horizontal .scale-mark {
+    top: -10px;
     width: 2px;
     height: 10px;
-    top: -10px;
 }
 
 .scale-label {
     position: absolute;
     color: white;
     font-size: 12px;
+    white-space: nowrap;
 }
 
 .vertical .scale-label {
-    right: 20px;
-    transform: translateY(50%);
+    left: -30px;
+    transform: translateY(-50%);
 }
 
 .horizontal .scale-label {
-    top: 20px;
+    bottom: -20px;
     transform: translateX(-50%);
 }
 
-.gauge-pointer {
+.center-pointer {
     position: absolute;
-    background: white;
-    z-index: 2;
+    background: red;
+    z-index: 3;
 }
 
-.vertical .gauge-pointer {
+.vertical .center-pointer {
+    left: 0;
+    top: 50%;
     width: 100%;
     height: 2px;
-    left: 0;
+    transform: translateY(-50%);
 }
 
-.horizontal .gauge-pointer {
+.horizontal .center-pointer {
+    left: 50%;
+    top: 0;
     width: 2px;
     height: 100%;
-    top: 0;
+    transform: translateX(-50%);
 }
 
 .target-marker {

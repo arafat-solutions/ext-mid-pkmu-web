@@ -46,7 +46,7 @@
     <div class="indicators-container">
       <div class="indicators-row">
         <!-- Speed Indicator -->
-        <div class="indicator-group" :class="{ 'blink': isAirspeedOutOfTarget }">
+        <div class="indicator-group overflow-hidden" :class="{ 'blink': isAirspeedOutOfTarget }">
           <div class="indicator-label">SPEED</div>
           <div class="indicator vertical">
             <LinearGauge label="Airspeed" :value="airspeed" :target="airspeedTarget" :min="MOVEMENT_SPEED.MIN_AIRSPEED"
@@ -62,7 +62,7 @@
         </div>
 
         <!-- Heading Indicator -->
-        <div class="indicator-group" :class="{ 'blink': isHeadingOutOfTarget }">
+        <div class="indicator-group overflow-hidden" :class="{ 'blink': isHeadingOutOfTarget }">
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
             <LinearGauge label="compass" :value="heading" :target="headingTarget" :min="0" :max="360"
@@ -71,11 +71,14 @@
         </div>
 
         <!-- Altitude Indicator -->
-        <div class="indicator-group" :class="{ 'blink': isAltitudeOutOfTarget }">
+        <div class="indicator-group overflow-hidden" :class="{ 'blink': isAltitudeOutOfTarget }">
           <div class="indicator-label">ALTITUDE</div>
           <div class="indicator vertical">
             <LinearGauge label="altitude" :value="altitude" :target="altitudeTarget" :min="0" :max="10000"
               :isVertical="true" :step="500" />
+
+            <div class="thruster-indicator hidden">
+            </div>
           </div>
         </div>
       </div>
@@ -129,7 +132,7 @@
 
 .indicator-group {
   background: #2c3e50;
-  padding: 20px;
+  padding: 44px;
   border-radius: 8px;
   transition: background-color 0.3s ease;
 }
