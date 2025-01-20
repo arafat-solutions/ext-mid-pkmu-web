@@ -2,16 +2,18 @@
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Spatial Orientation?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="startTest()">Ya</button>
+      <div class="button-container">
+        <button @click="startTest()">Ya</button>
+        <button @click="exit()">Batal</button>
+      </div>
     </div>
   </div>
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Spatial Orientation?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
       <button @click="startTest()">Ya</button>
+      <button @click="exit()" style="margin-right: 20px;">Batal</button>
     </div>
   </div>
 
@@ -114,7 +116,7 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      questionDuration: 8000,
+      questionDuration: 15000,
       answerIsRight: null
     };
   },
@@ -208,15 +210,16 @@ export default {
       }
     },
     setConfig(config) {
-      this.config.difficultyLevel = config.difficulty_level
-      this.config.full_image = config.full_image
-      this.config.left_turn = config.left_turn
-      this.config.right_turn = config.right_turn
-      this.config.speed_increasing = config.speed_increasing
-      this.config.speed = config.speed * 3000
+      console.log('Setting Config', config)
+      this.config.difficultyLevel = config?.difficulty_level
+      this.config.full_image = config?.full_image
+      this.config.left_turn = config?.left_turn
+      this.config.right_turn = config?.right_turn
+      this.config.speed_increasing = config?.speed_increasing
+      this.config.speed = config?.speed * 3000
       this.config.max_turns = 15
-      this.config.crash = config.crash
-      this.config.number_of_question = config.number_of_question
+      this.config.crash = config?.crash
+      this.config.number_of_question = config?.number_of_question
 
       this.config.subtask = config.subtask
       this.config.testId = config.id

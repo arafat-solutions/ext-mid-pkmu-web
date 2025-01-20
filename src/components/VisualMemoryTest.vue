@@ -144,10 +144,10 @@ export default {
             const scheduleData = JSON.parse(localStorage.getItem('scheduleData'))
             // @TODO: Config Flow
             const test = scheduleData.tests.find((t) => t.name === 'Visual Memory Test')
-            const { display, duration, interval } = test.configs[0]
+            const { display, number_of_question, interval } = test.configs[0]
 
             this.configBe = {
-                duration: duration * 60,
+                duration: number_of_question * 60,
                 questionInterval: interval,
                 testId: test.id,
                 sessionId: scheduleData.sessionId,
@@ -158,7 +158,7 @@ export default {
                 },
             }
 
-            this.testTime = duration * 10
+            this.testTime = number_of_question * 10
             this.memoryTime = interval
         },
         updateCanvasDimensions() {

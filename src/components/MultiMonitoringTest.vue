@@ -533,11 +533,11 @@ function handleKeydown(event) {
     }
 }
 
-function handleMouseMove(event) {
-    const rect = canvas.value?.getBoundingClientRect();
-    gameObjects.value.aim.x = event.clientX - rect.left;
-    gameObjects.value.aim.y = event.clientY - rect.top;
-}
+// function handleMouseMove(event) {
+//     const rect = canvas.value?.getBoundingClientRect();
+//     gameObjects.value.aim.x = event.clientX - rect.left;
+//     gameObjects.value.aim.y = event.clientY - rect.top;
+// }
 
 function handleInteraction(event) {
     const rect = canvas.value?.getBoundingClientRect();
@@ -594,7 +594,7 @@ function checkAimCollision(timestamp) {
     const { circle, aim } = gameObjects.value;
     const distance = Math.sqrt(
         Math.pow(circle.x - aim.x, 2) + Math.pow(circle.y - aim.y, 2)
-    );
+    ) * 1.5; // Increase the radius by 50%
 
     if (distance <= circle.radius + aim.size) {
         const elapsedTime =
@@ -840,7 +840,6 @@ onMounted(() => {
 
         canvas.value.addEventListener("click", handleInteraction);
         canvas.value.addEventListener("touchstart", handleInteraction);
-        canvas.value.addEventListener("mousemove", handleMouseMove);
         window.addEventListener("keydown", handleKeydown);
         canvas.value.addEventListener(
             "mouseenter",
@@ -879,7 +878,7 @@ onUnmounted(() => {
     if (canvas.value) {
         canvas.value.removeEventListener("click", handleInteraction);
         canvas.value.removeEventListener("touchstart", handleInteraction);
-        canvas.value.removeEventListener("mousemove", handleMouseMove);
+        // canvas.value.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("keydown", handleKeydown);
         canvas.value.removeEventListener("mouseenter", () => { });
         canvas.value.removeEventListener("mouseleave", () => { });
