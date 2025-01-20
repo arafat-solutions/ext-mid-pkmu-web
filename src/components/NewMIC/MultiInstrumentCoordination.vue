@@ -6,7 +6,7 @@
                     <div class="modal-content">
                         <h2 class="modal-title">Monitoring & Instrument Coordination Test</h2>
                         <div class="modal-body">
-                            <p>Dalam uji ini, Anda perlu:</p>
+                            <p>Dalam tes ini, Anda perlu:</p>
                             <ul class="modal-list">
                                 <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
                                 <li>Menjaga indikator dalam rentang target</li>
@@ -23,7 +23,7 @@
                 </div>
             </div>
         </Transition>
-        <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
+        <div class="countdown-timer">{{ formatTime(config.totalDuration) }}</div>
         <div class="control-mode-toggle">
             <button @click="toggleControlMode">
                 {{ controlMode === 'joystick' ? 'Switch to Manual Control' : 'Switch to Joystick Control' }}
@@ -226,8 +226,8 @@ const generateRandomNumber = () => Math.floor(Math.random() * 10);
 
 const speakNumber = (number) => {
     const utterance = new SpeechSynthesisUtterance(number.toString());
-    utterance.lang = 'en-US'; // Set language
-    utterance.volume = 1;     // Maximum volume
+    utterance.lang = 'id-ID'; // Set language
+    utterance.volume = 5;     // Maximum volume
     utterance.rate = 1;       // Normal speed
     utterance.pitch = 1;      // Normal pitch
 
@@ -241,120 +241,120 @@ const speakNumber = (number) => {
     console.log('Speaking number:', number);
 };
 
-const initSounds = () => {
-    try {
-        // Initialize Audio Context
-        audioContext.value = new (window.AudioContext || window.webkitAudioContext)();
+// const initSounds = () => {
+//     try {
+//         // Initialize Audio Context
+//         audioContext.value = new (window.AudioContext || window.webkitAudioContext)();
 
-        // Create main gain and compressor
-        const compressor = audioContext.value.createDynamicsCompressor();
-        compressor.connect(audioContext.value.destination);
+//         // Create main gain and compressor
+//         const compressor = audioContext.value.createDynamicsCompressor();
+//         compressor.connect(audioContext.value.destination);
 
-        engineGain.value = audioContext.value.createGain();
-        engineGain.value.connect(compressor);
-        engineGain.value.gain.setValueAtTime(0, audioContext.value.currentTime);
+//         engineGain.value = audioContext.value.createGain();
+//         engineGain.value.connect(compressor);
+//         engineGain.value.gain.setValueAtTime(0, audioContext.value.currentTime);
 
-        // Create noise generator
-        const noiseBuffer = audioContext.value.createBuffer(
-            1, audioContext.value.sampleRate * 2, audioContext.value.sampleRate
-        );
-        const noise = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < noiseBuffer.length; i++) {
-            noise[i] = Math.random() * 2 - 1;
-        }
+//         // Create noise generator
+//         const noiseBuffer = audioContext.value.createBuffer(
+//             1, audioContext.value.sampleRate * 2, audioContext.value.sampleRate
+//         );
+//         const noise = noiseBuffer.getChannelData(0);
+//         for (let i = 0; i < noiseBuffer.length; i++) {
+//             noise[i] = Math.random() * 2 - 1;
+//         }
 
-        const noiseNode = audioContext.value.createBufferSource();
-        noiseNode.buffer = noiseBuffer;
-        noiseNode.loop = true;
+//         const noiseNode = audioContext.value.createBufferSource();
+//         noiseNode.buffer = noiseBuffer;
+//         noiseNode.loop = true;
 
-        // Create filters
-        const noiseFilter = audioContext.value.createBiquadFilter();
-        noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.setValueAtTime(1000, audioContext.value.currentTime);
-        noiseFilter.Q.setValueAtTime(1, audioContext.value.currentTime);
+//         // Create filters
+//         const noiseFilter = audioContext.value.createBiquadFilter();
+//         noiseFilter.type = 'bandpass';
+//         noiseFilter.frequency.setValueAtTime(1000, audioContext.value.currentTime);
+//         noiseFilter.Q.setValueAtTime(1, audioContext.value.currentTime);
 
-        // Base engine sound (low frequency)
-        baseOscillator.value = audioContext.value.createOscillator();
-        baseOscillator.value.type = 'sawtooth';
-        baseOscillator.value.frequency.setValueAtTime(40, audioContext.value.currentTime);
+//         // Base engine sound (low frequency)
+//         baseOscillator.value = audioContext.value.createOscillator();
+//         baseOscillator.value.type = 'sawtooth';
+//         baseOscillator.value.frequency.setValueAtTime(40, audioContext.value.currentTime);
 
-        // Propeller sound with modulation
-        propellerOscillator.value = audioContext.value.createOscillator();
-        propellerOscillator.value.type = 'square';
-        propellerOscillator.value.frequency.setValueAtTime(80, audioContext.value.currentTime);
+//         // Propeller sound with modulation
+//         propellerOscillator.value = audioContext.value.createOscillator();
+//         propellerOscillator.value.type = 'square';
+//         propellerOscillator.value.frequency.setValueAtTime(80, audioContext.value.currentTime);
 
-        // LFO for propeller modulation
-        const lfo = audioContext.value.createOscillator();
-        const lfoGain = audioContext.value.createGain();
-        lfo.frequency.setValueAtTime(2, audioContext.value.currentTime);
-        lfoGain.gain.setValueAtTime(10, audioContext.value.currentTime);
-        lfo.connect(lfoGain);
-        lfoGain.connect(propellerOscillator.value.frequency);
+//         // LFO for propeller modulation
+//         const lfo = audioContext.value.createOscillator();
+//         const lfoGain = audioContext.value.createGain();
+//         lfo.frequency.setValueAtTime(2, audioContext.value.currentTime);
+//         lfoGain.gain.setValueAtTime(10, audioContext.value.currentTime);
+//         lfo.connect(lfoGain);
+//         lfoGain.connect(propellerOscillator.value.frequency);
 
-        // Harmonics
-        harmonic1.value = audioContext.value.createOscillator();
-        harmonic1.value.type = 'triangle';
-        harmonic1.value.frequency.setValueAtTime(160, audioContext.value.currentTime);
+//         // Harmonics
+//         harmonic1.value = audioContext.value.createOscillator();
+//         harmonic1.value.type = 'triangle';
+//         harmonic1.value.frequency.setValueAtTime(160, audioContext.value.currentTime);
 
-        harmonic2.value = audioContext.value.createOscillator();
-        harmonic2.value.type = 'triangle';
-        harmonic2.value.frequency.setValueAtTime(200, audioContext.value.currentTime);
+//         harmonic2.value = audioContext.value.createOscillator();
+//         harmonic2.value.type = 'triangle';
+//         harmonic2.value.frequency.setValueAtTime(200, audioContext.value.currentTime);
 
-        // Gain nodes for mixing
-        const baseGain = audioContext.value.createGain();
-        const propellerGain = audioContext.value.createGain();
-        const harmonic1Gain = audioContext.value.createGain();
-        const harmonic2Gain = audioContext.value.createGain();
-        const noiseGain = audioContext.value.createGain();
+//         // Gain nodes for mixing
+//         const baseGain = audioContext.value.createGain();
+//         const propellerGain = audioContext.value.createGain();
+//         const harmonic1Gain = audioContext.value.createGain();
+//         const harmonic2Gain = audioContext.value.createGain();
+//         const noiseGain = audioContext.value.createGain();
 
-        // Adjust mix levels
-        baseGain.gain.setValueAtTime(0.8, audioContext.value.currentTime);
-        propellerGain.gain.setValueAtTime(0.3, audioContext.value.currentTime);
-        harmonic1Gain.gain.setValueAtTime(0.1, audioContext.value.currentTime);
-        harmonic2Gain.gain.setValueAtTime(0.05, audioContext.value.currentTime);
-        noiseGain.gain.setValueAtTime(0.2, audioContext.value.currentTime);
+//         // Adjust mix levels
+//         baseGain.gain.setValueAtTime(0.8, audioContext.value.currentTime);
+//         propellerGain.gain.setValueAtTime(0.3, audioContext.value.currentTime);
+//         harmonic1Gain.gain.setValueAtTime(0.1, audioContext.value.currentTime);
+//         harmonic2Gain.gain.setValueAtTime(0.05, audioContext.value.currentTime);
+//         noiseGain.gain.setValueAtTime(0.2, audioContext.value.currentTime);
 
-        // Connect everything
-        baseOscillator.value.connect(baseGain);
-        propellerOscillator.value.connect(propellerGain);
-        harmonic1.value.connect(harmonic1Gain);
-        harmonic2.value.connect(harmonic2Gain);
-        noiseNode.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
+//         // Connect everything
+//         baseOscillator.value.connect(baseGain);
+//         propellerOscillator.value.connect(propellerGain);
+//         harmonic1.value.connect(harmonic1Gain);
+//         harmonic2.value.connect(harmonic2Gain);
+//         noiseNode.connect(noiseFilter);
+//         noiseFilter.connect(noiseGain);
 
-        baseGain.connect(engineGain.value);
-        propellerGain.connect(engineGain.value);
-        harmonic1Gain.connect(engineGain.value);
-        harmonic2Gain.connect(engineGain.value);
-        noiseGain.connect(engineGain.value);
+//         baseGain.connect(engineGain.value);
+//         propellerGain.connect(engineGain.value);
+//         harmonic1Gain.connect(engineGain.value);
+//         harmonic2Gain.connect(engineGain.value);
+//         noiseGain.connect(engineGain.value);
 
-        // Start all oscillators
-        baseOscillator.value.start();
-        propellerOscillator.value.start();
-        harmonic1.value.start();
-        harmonic2.value.start();
-        lfo.start();
-        noiseNode.start();
+//         // Start all oscillators
+//         baseOscillator.value.start();
+//         propellerOscillator.value.start();
+//         harmonic1.value.start();
+//         harmonic2.value.start();
+//         lfo.start();
+//         noiseNode.start();
 
-        // Add subtle random variations to create more organic sound
-        setInterval(() => {
-            const now = audioContext.value.currentTime;
-            const slight = Math.random() * 2 - 1;
-            baseOscillator.value.frequency.setValueAtTime(40 + slight, now);
-            propellerOscillator.value.frequency.setValueAtTime(80 + slight * 2, now);
-        }, 100);
+//         // Add subtle random variations to create more organic sound
+//         setInterval(() => {
+//             const now = audioContext.value.currentTime;
+//             const slight = Math.random() * 2 - 1;
+//             baseOscillator.value.frequency.setValueAtTime(40 + slight, now);
+//             propellerOscillator.value.frequency.setValueAtTime(80 + slight * 2, now);
+//         }, 100);
 
-    } catch (error) {
-        console.error('Audio system initialization failed:', error);
-    }
-};
+//     } catch (error) {
+//         console.error('Audio system initialization failed:', error);
+//     }
+// };
 
 // Add this method and call it on first user interaction
 const initAudioContext = () => {
     if (audioContext.value === null) {
-        initSounds();
+        // initSounds();
     } else if (audioContext.value.state === 'suspended') {
-        audioContext.value.resume();
+        // audioContext.value.resume();
     }
 };
 
@@ -428,10 +428,8 @@ const checkGamepadConnection = () => {
         if (gamepads[i]) {
             if (gamepads[i].id === 'T.16000M (Vendor: 044f Product: b10a)') {
                 gamepad.value = gamepads[i];
-                console.log("Reconnected to joystick:", gamepad.value);
             } else if (gamepads[i].id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
                 thruster.value = gamepads[i];
-                console.log("Reconnected to throttle:", thruster.value);
             }
         }
     }
@@ -673,18 +671,18 @@ const updateScore = () => {
 const moveToNextConfig = () => {
     const nextIndex = currentConfigIndex.value + 1;
     console.log(nextIndex, config.value.configs.length, "<< nextIndex")
+    if (config.value.totalDuration <= 0) {
+        endExam();
+        return;
+    }
     if (nextIndex <= config.value.configs.length) {
         currentConfigIndex.value = nextIndex;
         // Reset targets for new config
-        const newConfig = config.value.configs[nextIndex];
         airspeedTarget.value = airspeed.value;
         headingTarget.value = heading.value;
         altitudeTarget.value = altitude.value;
 
-        // Start new audio sequence if applicable
-        if (newConfig.listening_task === 'active') {
-            startAudioSequence();
-        }
+        startAudioSequence();
     } else {
         endExam();
     }
@@ -725,6 +723,7 @@ const updateLoop = () => {
         if (mode.value === 'moving') {
             updateTargets();
         }
+        config.value.totalDuration -= 1 / 60;
         updateScore();
         updateTime();
         updatePerformanceData();
@@ -756,7 +755,7 @@ const updateTime = () => {
 const updateTargets = () => {
     const currentConfig = config.value.configs[currentConfigIndex.value];
 
-    if (Math.random() < 0.1) {
+    if (Math.random() < 0.3) {
         updateIndicator('airspeed', currentConfig?.airspeed);
         updateIndicator('heading', currentConfig?.compass);
         updateIndicator('altitude', currentConfig?.altimeter);
@@ -764,10 +763,10 @@ const updateTargets = () => {
 };
 
 const updateIndicator = (indicator, mode) => {
-    if (mode === 'inactive' || mode === 'keep_indicator') {
-        console.log(`${indicator} is inactive or set to keep_indicator`);
-        return;
-    }
+    // if (mode === 'inactive' || mode === 'keep_indicator') {
+    //     console.log(`${indicator} is inactive or set to keep_indicator`);
+    //     return;
+    // }
     const currentTime = Date.now();
     if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) {
         console.log(`${indicator} update skipped due to interval`);
@@ -799,14 +798,15 @@ const updateIndicator = (indicator, mode) => {
 
         console.log(`Updating ${indicator} target from ${currentTarget}`);
 
-        // Calculate maximum change (20% of current target value)
-        const maxChange = currentTarget * 0.2;
+        // Calculate maximum change based on 5% of current value
+        const maxChange = currentTarget * 0.05;
 
         // Randomize the magnitude of the change (between 10% and 20% of current value)
         const changeMagnitude = maxChange * (0.5 + Math.random() * 0.5);
 
         // Randomize the direction of the change
-        const changeDirection = Math.random() > 0.5 ? 1 : -1;
+        // const changeDirection = Math.random() > 0.5 ? 1 : -1;
+        const changeDirection = 1;
 
         // Calculate new target
         let newTarget = currentTarget + changeDirection * changeMagnitude;
@@ -889,12 +889,9 @@ const startExam = () => {
     displayedNumbers.value = [];
 
     // Initialize sound system
-    initSounds();
+    // initSounds();
 
-    // Start audio sequence if enabled for first config
-    if (config.value.configs[0].listening_task === 'active') {
-        startAudioSequence();
-    }
+    startAudioSequence();
 };
 
 // Modify endExam to cleanup sounds
@@ -920,7 +917,7 @@ const initConfig = async () => {
     // Store all configs and calculate total duration
     config.value = {
         configs: configMIC.configs,
-        totalDuration: configMIC.configs.reduce((total, cfg) => total + Number(cfg.duration), 0),
+        totalDuration: configMIC.configs.reduce((total, cfg) => total + Number(cfg.duration), 0) * 60,
         sessionId: scheduleData.sessionId,
         userId: scheduleData.userId
     };
@@ -947,11 +944,11 @@ const sendPerformanceData = async () => {
             testSessionId: config.value.sessionId,
             userId: config.value.userId,
             result: {
-                multi_graph_data: performanceByConfig.map(perf => ({
-                    heading: perf.headingData,
-                    airspeed: perf.airspeedData,
-                    altitude: perf.altitudeData,
-                })),
+                // multi_graph_data: performanceByConfig.map(perf => ({
+                //     heading: perf.headingData,
+                //     airspeed: perf.airspeedData,
+                //     altitude: perf.altitudeData,
+                // })),
                 graph_data: userInputs.value,
                 timeOnTargetAirspeed: timeOnTargetAirspeed.value,
                 timeOnTargetHeading: timeOnTargetHeading.value,
@@ -999,7 +996,7 @@ const showStartModal = ref(true);
 // Add this method
 const handleStartExam = () => {
     showStartModal.value = false;
-    initSounds();
+    // initSounds();
     startExam();
     initAudioContext();
 };
