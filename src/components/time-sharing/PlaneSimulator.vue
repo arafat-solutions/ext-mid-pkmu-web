@@ -139,7 +139,7 @@ export default {
       //   window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
       // }
       window.addEventListener('keydown', this.handleKeydown);
-      this.checkGamepad();
+      // this.checkGamepad();
     },
     removeEventListeners() {
       // if (this.config.subtask.navigation) {
