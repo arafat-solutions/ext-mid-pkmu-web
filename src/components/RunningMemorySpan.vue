@@ -46,9 +46,9 @@
             <button class="digit-number" @click="appendToExpression('7')">7</button>
             <button class="digit-number" @click="appendToExpression('8')">8</button>
             <button class="digit-number" @click="appendToExpression('9')">9</button>
-            <button class="digit-number" @click="clearExpression()">Del</button>
+            <button class="digit-number" @click="clearExpression()">Hapus</button>
             <button class="digit-number" @click="appendToExpression('0')">0</button>
-            <button class="digit-number" @click="submitAnswer()">Send</button>
+            <button class="digit-number" @click="submitAnswer()">Kirim</button>
           </div>
         </div>
       </div>

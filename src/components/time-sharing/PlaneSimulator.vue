@@ -134,18 +134,18 @@ export default {
       this.startTimer();
     },
     setupEventListeners() {
-      if (this.config.subtask.navigation) {
-        window.addEventListener('gamepadconnected', this.onGamepadConnected);
-        window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-      }
+      // if (this.config.subtask.navigation) {
+      //   window.addEventListener('gamepadconnected', this.onGamepadConnected);
+      //   window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      // }
       window.addEventListener('keydown', this.handleKeydown);
       this.checkGamepad();
     },
     removeEventListeners() {
-      if (this.config.subtask.navigation) {
-        window.removeEventListener('gamepadconnected', this.onGamepadConnected);
-        window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-      }
+      // if (this.config.subtask.navigation) {
+      //   window.removeEventListener('gamepadconnected', this.onGamepadConnected);
+      //   window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      // }
       window.removeEventListener('keydown', this.handleKeydown);
     },
     pauseGame() {
@@ -208,27 +208,27 @@ export default {
 
       this.plane.x += (this.plane.targetX - this.plane.x) * ease;
     },
-    onGamepadConnected(event) {
-      if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
-        return;
-      }
-      this.gamepadIndex = event.gamepad.index;
-      this.checkGamepad();
-    },
-    onGamepadDisconnected(event) {
-      if (this.gamepadIndex === event.gamepad.index) {
-        this.gamepadIndex = null;
-      }
-    },
-    checkGamepad() {
-      if (this.gamepadIndex !== null) {
-        const gamepad = navigator.getGamepads()[this.gamepadIndex];
-        if (gamepad) {
-          this.handleGamepadInput(gamepad);
-        }
-      }
-      requestAnimationFrame(this.checkGamepad);
-    },
+    // onGamepadConnected(event) {
+    //   if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
+    //     return;
+    //   }
+    //   this.gamepadIndex = event.gamepad.index;
+    //   this.checkGamepad();
+    // },
+    // onGamepadDisconnected(event) {
+    //   if (this.gamepadIndex === event.gamepad.index) {
+    //     this.gamepadIndex = null;
+    //   }
+    // },
+    // checkGamepad() {
+    //   if (this.gamepadIndex !== null) {
+    //     const gamepad = navigator.getGamepads()[this.gamepadIndex];
+    //     if (gamepad) {
+    //       this.handleGamepadInput(gamepad);
+    //     }
+    //   }
+    //   requestAnimationFrame(this.checkGamepad);
+    // },
     animatePlane() {
       const canvas = this.$refs.simulationCanvas;
       if (!canvas) return;

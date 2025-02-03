@@ -58,25 +58,25 @@ export default {
       {
         type: 'circle',
         title: 'Circle Size Matching Training',
-        description: 'In this exercise, you will practice matching the size of the blue circle with the dotted reference circle. Use the throttle to adjust the circle size. Try to keep the circle blue (indicating correct size) for as long as possible. Duration: 30 seconds.',
+        description: 'Dalam latihan ini, Anda akan berlatih menyesuaikan ukuran lingkaran biru dengan lingkaran referensi putus-putus. Gunakan throttle untuk mengatur ukuran lingkaran. Usahakan untuk menjaga lingkaran tetap biru (menunjukkan ukuran yang tepat) selama mungkin. Durasi: 30 detik.',
         duration: 30
       },
       {
         type: 'dot',
         title: 'Dot Tracking Training',
-        description: 'Focus on keeping the dot within the circle boundary. Use the joystick to control the dot position. The dot will be green when inside the circle and red when outside. Try to keep it green as much as possible. Duration: 30 seconds.',
+        description: 'Dalam latihan ini, Anda akan berlatih mengendalikan titik agar tetap berada di dalam lingkaran. Gunakan joystick untuk mengontrol posisi titik. Titik akan berwarna hijau saat berada di dalam lingkaran dan merah saat di luar. Usahakan untuk menjaga titik tetap hijau selama mungkin. Durasi: 30 detik.',
         duration: 30
       },
       {
         type: 'pill',
         title: 'Pill Rotation Training',
-        description: 'Practice matching the pill\'s rotation with the target zones. Use the pedals to control rotation. The pill will be yellow when correctly aligned and red when misaligned. Duration: 30 seconds.',
+        description: 'Dalam latihan ini, Anda akan berlatih menyesuaikan rotasi pil dengan zona target. Gunakan pedal untuk mengontrol rotasi. Pil akan berwarna kuning saat sejajar dengan benar dan merah saat tidak sejajar. Durasi: 30 detik.',
         duration: 30
       },
       {
         type: 'combined',
         title: 'Combined Tracking Test',
-        description: 'Now you\'ll practice all three tasks simultaneously: matching the circle size, keeping the dot inside, and aligning the pill. This is your final practice before the actual test. Duration: 60 seconds.',
+        description: 'Sekarang Anda akan berlatih ketiga tugas secara bersamaan: menyesuaikan ukuran lingkaran, menjaga titik tetap di dalam, dan menyelaraskan pil. Ini adalah latihan terakhir Anda sebelum tes yang sebenarnya. Durasi: 60 detik.',
         duration: 60
       }
     ];

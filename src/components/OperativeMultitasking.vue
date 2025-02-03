@@ -59,7 +59,7 @@ export default {
       lastQuestionTime: 0,
       answerState: null, // null, 'correct', or 'incorrect'
       deviationThreshold: 20,
-      targetSpeed: 1,
+      targetSpeed: 0.7,
       lights: [
         { id: 1, state: 'off', timer: null },
         { id: 2, state: 'off', timer: null },

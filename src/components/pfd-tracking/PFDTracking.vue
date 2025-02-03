@@ -9,7 +9,7 @@
             <div class="modal-body">
               <p>Dala ujian ini, anda perlu:</p>
               <ul class="modal-list">
-                <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
+                <li>Mengendalikan indikator pesawat menggunakan joystick dan thruster</li>
                 <li>Menjaga indikator dalam rentang target</li>
               </ul>
               <p class="modal-footer-text">Klik Ya saat anda siap untuk memulai.</p>

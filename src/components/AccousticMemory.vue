@@ -88,7 +88,7 @@ export default {
       wrongRows: [],
       dashInterval: 2000, //in ms
       choicesInterval: 3000, //in ms
-      charInterval: 1000, //in ms
+      charInterval: 500, //in ms
       pauseIntervalID: null,
       checkboxValues: [],
       result: {

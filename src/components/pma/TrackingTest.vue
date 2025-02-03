@@ -4,14 +4,7 @@
         <div v-if="joystickConnected" class="joystick-status connected">Joystick Connected</div>
         <div v-if="thrusterConnected" class="joystick-status connected">Thruster Connected</div>
         <div v-else class="joystick-status disconnected">Joystick Disconnected</div>
-        <div class="score-display">
-            <div>Circle Time - Blue: {{ circle_correct_position.toFixed(1) }}s, Red: {{ circle_wrong_position.toFixed(1)
-                }}s</div>
-            <div>Dot Time - Green: {{ dot_correct_position.toFixed(1) }}s, Red: {{ dot_wrong_position.toFixed(1) }}s
-            </div>
-            <div>Pill Time - Green: {{ pill_correct_position.toFixed(1) }}s, Yellow: {{ pill_wrong_position.toFixed(1)
-                }}s</div>
-        </div>
+        
     </div>
 </template>
 
