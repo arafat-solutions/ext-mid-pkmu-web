@@ -6,39 +6,31 @@
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
-            <template v-if="selectedTestTitle !== 'Ujian anda telah selesai'">
+          <template v-if="selectedTestTitle !== 'Ujian anda telah selesai'">
             <div class="flex justify-center">
-              <img 
-              :src="`${slidesPath}/${currentSlide + 1}.png`" 
-              alt="Slide" 
-              class="w-full"
-              @error="handleImageError"
-              />
+              <img :src="`${slidesPath}/${currentSlide + 1}.png`" alt="Slide" class="w-full"
+                @error="handleImageError" />
             </div>
-            
+
             <!-- Navigation Controls -->
             <div class="flex justify-between items-center mt-4 px-4">
-              <button 
-              @click="previousSlide" 
-              :disabled="currentSlide === 0"
-              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
-              Sebelumnya
+              <button @click="previousSlide" :disabled="currentSlide === 0"
+                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
+                Sebelumnya
               </button>
               <span class="text-lg">{{ currentSlide + 1 }}</span>
-              <button 
-              @click="nextSlide" 
-              :disabled="currentSlide === totalSlides - 1"
-              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
-              Selanjutnya
+              <button @click="nextSlide" :disabled="currentSlide === totalSlides - 1"
+                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
+                Selanjutnya
               </button>
             </div>
-            </template>
-            <template v-else>
+          </template>
+          <template v-else>
             <div class="text-center py-8">
               <h2 class="text-xl font-bold mb-4">{{ selectedTestTitle }}</h2>
               <p class="text-gray-600">{{ selectedTestDescription }}</p>
             </div>
-            </template>
+          </template>
         </div>
       </div>
 
@@ -109,10 +101,16 @@ export default {
       this.selectedTestDescription = test.description;
       this.url = test.testUrl;
       this.slidesPath = `/instructions_slides/${test.name}`;
-      let totalSlides = 8
-      if (test.name == "Multi Monitoring Test") {
-        totalSlides = 3
-      }
+      let totalSlides = 3
+      if (test.name == "Multi Monitoring Test" || test.name == "Multitasking With Color") {
+        totalSlides = 6
+      } else if (test.name == "Multitasking Mix With Call Sign" || test.name == "Multitasking With Instrument") {
+        totalSlides = 7
+      } else if (test.name == "PMA Test") {
+        totalSlides = 9
+      } else if (test.name == 'Test For Operative Multitasking' || test.name == 'Time Sharing Test 2023') {
+        totalSlides= 6
+      } 
       this.totalSlides = totalSlides;
     },
     handleTestCompleted() {
