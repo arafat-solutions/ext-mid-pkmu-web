@@ -209,7 +209,7 @@ export default {
 
       const keys = [
         ['7', '8', '9', '4', '5', '6'],
-        ['1', '2', '3', '0', 'Clear', 'Enter']
+        ['1', '2', '3', '0', 'Hapus', 'Kirim']
       ];
 
       keys.forEach((row, rowIndex) => {
@@ -217,7 +217,7 @@ export default {
           const x = startX + colIndex * (keyWidth + 10) + 5;
           const y = startY + rowIndex * (keyHeight + 10);
 
-          ctx.fillStyle = key === 'Clear' || key === 'Enter' ? '#4a4a4a' : '#333';
+          ctx.fillStyle = key === 'Hapus' || key === 'Kirim' ? '#4a4a4a' : '#333';
           ctx.fillRect(x, y, keyWidth, keyHeight);
 
           ctx.fillStyle = 'white';
@@ -259,13 +259,13 @@ export default {
       if (row >= 0 && row < 2 && col >= 0 && col < 6) {
         const keys = [
           ['7', '8', '9', '4', '5', '6'],
-          ['1', '2', '3', '0', 'Clear', 'Enter']
+          ['1', '2', '3', '0', 'Hapus', 'Kirim']
         ];
         const key = keys[row][col];
 
-        if (key === 'Enter') {
+        if (key === 'Kirim') {
           this.submitAnswer();
-        } else if (key === 'Clear') {
+        } else if (key === 'Hapus') {
           this.clearAnswer();
         } else {
           this.addToAnswer(key);

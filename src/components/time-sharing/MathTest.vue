@@ -7,8 +7,8 @@
     <div class="virtual-keyboard">
       <button v-for="num in 10" :key="num" @click="appendNumber(num % 10)" :disabled="!showQuestion">{{ num % 10
         }}</button>
-      <button @click="clearInput" :disabled="!showQuestion">Clear</button>
-      <button @click="submitAnswer" :disabled="!showQuestion">Submit</button>
+      <button @click="clearInput" :disabled="!showQuestion">Hapus</button>
+      <button @click="submitAnswer" :disabled="!showQuestion">Kirim</button>
     </div>
     <p v-if="answerIsRight === true" class="text-green-500 text-2xl">Benar!</p>
     <p v-else-if="answerIsRight === false" class="text-red-500 text-2xl">Salah!</p>
