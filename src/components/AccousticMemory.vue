@@ -10,8 +10,8 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Accoustic Memory?</strong></p>
-      <button @click="startTest()">Ya</button>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <button @click="startTest()">Ya</button>
     </div>
   </div>
 

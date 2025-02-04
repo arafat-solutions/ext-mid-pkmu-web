@@ -12,13 +12,13 @@
         <form @submit.prevent="login">
           <div class="mb-4">
             <label for="nrp" class="block text-gray-700 text-sm font-medium mb-2 text-left">NRP</label>
-            <input type="nrp" id="nrp" v-model="nrp"
+            <input type="text" id="nrp" v-model="nrp" autocomplete="off"
               class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
               placeholder="Masukkan NRP" required />
           </div>
           <div class="mb-6">
             <label for="code" class="block text-gray-700 text-sm font-medium mb-2 text-left">Kode Akses</label>
-            <input type="text" id="code" v-model="code"
+            <input type="text" id="code" v-model="code" autocomplete="off"
               class="w-full px-3 py-2 border border-gray-300 rounded-full text-gray-700 focus:outline-none focus:border-[#6E4AE4]"
               placeholder="Masukkan Kode Akses" required />
           </div>
