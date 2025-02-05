@@ -6,30 +6,32 @@
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
-          <template v-if="selectedTestTitle !== 'Ujian anda telah selesai'">
+            <template v-if="selectedTestTitle !== 'Ujian anda telah selesai'">
             <div class="flex justify-center">
-              <img :src="`${slidesPath}/${currentSlide + 1}.png`" alt="Slide" class="w-full"
-                @error="handleImageError" />
+              <div class="w-full p-6 bg-white rounded-lg shadow">
+                <p class="text-3xl text-left" v-html="selectedTestDescription[currentSlide]">
+                </p>
+              </div>
             </div>
 
             <!-- Navigation Controls -->
             <div class="flex justify-between items-center mt-16 px-6">
               <button @click="previousSlide" :disabled="currentSlide === 0"
-                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
-                Sebelumnya
+              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
+              Sebelumnya
               </button>
-              <span class="text-xl">{{ currentSlide + 1 }}</span>
+              <span class="text-xl">{{ currentSlide + 1 }} / {{ totalSlides }}</span>
               <button @click="nextSlide" v-if="currentSlide !== totalSlides - 1"
-                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
-                Selanjutnya
+              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
+              Selanjutnya
               </button>
               <router-link :to="url" class="block" v-if="currentSlide === totalSlides - 1">
-                <div class="bg-[#f5d442] border-2 border-[#f5d442] text-[#000000] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
-                  Mulai Latihan Test
-                </div>
+              <div class="bg-[#f5d442] border-2 border-[#f5d442] text-[#000000] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
+                Mulai Latihan Test
+              </div>
               </router-link>
             </div>
-          </template>
+            </template>
           <template v-else>
             <div class="text-center py-10">
               <h2 class="text-2xl font-bold mb-5">{{ selectedTestTitle }}</h2>
@@ -54,7 +56,7 @@ export default {
       url: '',
       slidesPath: '/instructions_slides',
       currentSlide: 0,
-      totalSlides: 10,
+      totalSlides: 1,
     };
   },
   created() {
@@ -85,20 +87,12 @@ export default {
         .join('')
         .toUpperCase();
       this.selectedTestTitle = `Instruksi Test ${shortenedTestName}`;
-      this.selectedTestDescription = test.description;
       this.url = test.testUrl;
       this.slidesPath = `/instructions_slides/${test.name}`;
-      let totalSlides = 3
-      if (test.name == "Multi Monitoring Test" || test.name == "Multitasking With Color") {
-        totalSlides = 6
-      } else if (test.name == "Multitasking Mix With Call Sign" || test.name == "Multitasking With Instrument") {
-        totalSlides = 7
-      } else if (test.name == "PMA Test") {
-        totalSlides = 9
-      } else if (test.name == 'Test For Operative Multitasking' || test.name == 'Time Sharing Test 2023') {
-        totalSlides = 6
-      }
-      this.totalSlides = totalSlides;
+      
+      this.selectedTestDescription = test.description.split('</p><p><br></p><p><br></p>');
+      console.log('Total slides:', this.selectedTestDescription.length);
+      this.totalSlides = this.selectedTestDescription.length;
     },
     handleTestCompleted() {
       this.selectedTestTitle = 'Ujian anda telah selesai';
