@@ -39,7 +39,7 @@ export default {
   methods: {
     handleLoginSuccess() {
       console.log('Login successful');
-      this.$refs.screenShare?.initializeScreenShare();
+      // this.$refs.screenShare?.initializeScreenShare();
       return false;
     },
   }
