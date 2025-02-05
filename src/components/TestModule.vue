@@ -2,7 +2,7 @@
   <div class="flex-1 overflow-auto">
     <div class="flex justify-center px-4">
       <!-- Centered content -->
-      <div class="w-[110%]">
+      <div class="w-[125%]">
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
