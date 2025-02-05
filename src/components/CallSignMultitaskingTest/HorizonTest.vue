@@ -1,6 +1,6 @@
 <template>
     <div class="horizon-test">
-        <canvas ref="horizonCanvas" @mousemove="handleMouseEnter"></canvas>
+        <canvas ref="horizonCanvas"></canvas>
     </div>
 </template>
 

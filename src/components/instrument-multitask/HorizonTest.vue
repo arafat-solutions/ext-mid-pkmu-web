@@ -1,6 +1,5 @@
 <template>
   <canvas ref="horizonCanvas"
-    @mousemove="handleMouseMove"
     :width="horizonWidth"
     :height="horizonHeight"
   >
