@@ -24,7 +24,7 @@
                 Selanjutnya
               </button>
               <router-link :to="url" class="block" v-if="currentSlide === totalSlides - 1">
-                <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
+                <div class="bg-[#f5d442] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
                   Mulai Latihan Test
                 </div>
               </router-link>
