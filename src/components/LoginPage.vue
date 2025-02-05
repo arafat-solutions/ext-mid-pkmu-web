@@ -1,11 +1,6 @@
 <template>
   <div class="flex h-screen">
     <div class="w-7/12 bg-white flex items-center justify-center relative">
-      <div class="absolute top-4 right-4">
-        <button @click="openAdminLoginModal" class="text-[#6E4AE4] hover:text-[#5C3ED6] text-sm">
-          <i class="fas fa-cog mr-2"></i> Konfigurasi Device
-        </button>
-      </div>
       <div class="w-96 p-8 shadow-lg bg-white rounded-xl">
         <h2 class="text-2xl font-bold mb-2 text-left">Login</h2>
         <p class="text-gray-500 mb-6 text-left">Silakan login menggunakan NRP dan Kode Akses yang sudah dikirimkan.</p>
@@ -27,11 +22,17 @@
             <span v-if="loading" class="spinner"></span>
             <span v-else>Login</span>
           </button>
-          <p v-if="error" class="text-red-500 text-xs mt-2">{{error}}</p>
+          <p v-if="error" class="text-red-500 text-xs mt-2">{{ error }}</p>
         </form>
       </div>
     </div>
+
     <div class="w-5/12 bg-[#6E4AE4] flex flex-col items-center justify-center text-white relative">
+      <div class="absolute top-4 right-4">
+        <button @click="openAdminLoginModal" class="text-[#6E4AE4] hover:text-[#5C3ED6] text-sm">
+          <i class="fas fa-cog mr-2"></i> Konfigurasi Device
+        </button>
+      </div>
       <img src="@/assets/image.png" alt="Background" class="absolute inset-0 w-full h-full object-cover" />
     </div>
     <AdminLoginModal ref="adminLoginModal" />

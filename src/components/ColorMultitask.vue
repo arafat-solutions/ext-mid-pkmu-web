@@ -1,14 +1,23 @@
 <template>
   <div v-if="showInstructionModal" class="instruction-modal">
     <div class="instruction-modal-content">
-      <h2 v-if="!trainingCompleted">{{ currentTrainingTask ? 'Training: ' + currentTrainingTask : 'Instructions' }}</h2>
-
-      <p v-if="!trainingCompleted">{{ instructionModalContent }}</p>
-      <p v-else>
-        Apakah Anda Yakin <br>akan memulai tes Multitasking with Color?
-      </p>
-
-      <button @click="startTrainingTask">{{ trainingCompleted ? 'Start Test' : 'Start Task' }}</button>
+      <div v-if="!trainingCompleted">
+        <div v-html="instructionModalContent[currentSlide]"></div>
+        <div class="navigation-buttons">
+          <div style="display: flex; justify-content: space-between; width: 100%">
+            <button @click="prevSlide" :disabled="currentSlide == 0" class="nav-button">Sebelum</button>
+            <div>
+              <button v-if="currentSlide === instructionModalContent.length - 1" @click="startTrainingTask"
+                class="start-button">Mulai Latihan</button>
+              <button v-else @click="nextSlide" class="nav-button">Selanjutnya</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else>
+        <p>Anda Telah menyelesaikan semua pelatihan, setelah ini, anda akan memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi prima dan tanpa distraksi, test ini tidak dapat di pause.</p>
+        <button @click="startTrainingTask">Mulai Test</button>
+      </div>
     </div>
   </div>
 
@@ -18,26 +27,31 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container">
+    <div class="timer-container" v-if="trainingCompleted">
       Time: {{ formattedTime }}
     </div>
 
     <div class="horizon-tank">
       <ColorTank ref="colorTankTaskRef" :isTimesUp="isTimesUp" :speed="config.color_tank.speed"
         :coloredLowerTank="config.color_tank.colored_lower_tank" :isNegativeScore="config.color_tank.negative_score"
-        :isPause="isPauseColorTank" :isActive="config.color_tank.is_active" @getResult="colorTankResult" />
+        :isPause="isPauseColorTank" :isActive="config.color_tank.is_active" @getResult="colorTankResult"
+        v-if="currentTrainingTask === 'colorTank' || trainingCompleted || currentTrainingTask == 'combined'"  />
 
       <div class="horizon-section">
         <Horizon :isTimesUp="isTimesUp" :speed="config.horizon.speed" :isPause="isPauseHorizon"
-          :isActive="config.horizon.is_active" @getResult="horizonResult" class="no-pointer-events" />
+          :isActive="config.horizon.is_active" @getResult="horizonResult" class="no-pointer-events"
+          v-if="currentTrainingTask === 'horizon' || trainingCompleted || currentTrainingTask == 'combined'"  />
 
         <Arithmetics ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetics.difficulty"
           :duration="config.duration" :isPause="isPauseArithmetics" :isActive="config.arithmetics.is_active"
-          :useSound="config.arithmetics.sound" @getResult="arithmeticResult" />
+          :useSound="config.arithmetics.sound" @getResult="arithmeticResult"
+          v-if="currentTrainingTask === 'arithmetic' || trainingCompleted || currentTrainingTask == 'combined'" />
       </div>
     </div>
-
   </div>
+  <button v-if="!trainingCompleted && !showInstructionModal" @click="endTrainingTask" class="finish-button">
+    Selesai Latihan dan Lanjutkan ke Tes Berikutnya
+  </button>
 </template>
 
 <script>
@@ -61,7 +75,7 @@ export default {
       currentTrainingTask: null,
       instructionModalContent: '',
 
-      trainingTasks:['colorTank', 'horizon', 'arithmetic', 'combined'],
+      trainingTasks: ['colorTank', 'horizon', 'arithmetic', 'combined'],
 
       isPauseArithmetics: false,
       isPauseColorTank: false,
@@ -112,6 +126,7 @@ export default {
           final_score: null,
         },
       },
+      currentSlide: 0,
     };
   },
   async mounted() {
@@ -140,6 +155,12 @@ export default {
     },
   },
   methods: {
+    nextSlide() {
+      this.currentSlide++;
+    },
+    prevSlide() {
+      this.currentSlide--;
+    },
     initConfig() {
       try {
         let config = JSON.parse(localStorage.getItem('scheduleData'));
@@ -214,10 +235,22 @@ export default {
     },
     showTrainingInstructions() {
       const instructions = {
-        arithmetic: "Peserta harus mendengarkan angka-angka yang diberikan.",
-        colorTank: "Peserta harus merespons dengan mengisi tanki yang kosong dengan warna yang sesuai.",
-        horizon: "Peserta harus menjaga parameter penerbangan (seperti ketinggian dan arah) dalam batas yang ditentukan.",
-        combined: "Latihan gabungan dari tugas sebelumnya."
+        arithmetic: [
+          "<b>Arithmetic SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.",
+        ],
+        colorTank: [
+          `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah (ASDF) terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas (QWER). Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi Kembali dengan menekan tombol sebagai berikut:
+Apabila tangki air warna kuning susut (tangki S dan D) maka Anda harus menekan tombol Q S D atau Q D S, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol Q S D atau Q D S agar tangka bawah berwarna kuning terisi Kembali.`,
+          `Contoh lain.
+
+Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.`
+        ],
+        horizon: [
+          "<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal titik (intersection) tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.",
+        ],
+        combined: [
+          "<b>SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.",
+        ]
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
@@ -231,22 +264,26 @@ export default {
       } else {
         switch (this.currentTrainingTask) {
           case 'colorTank':
+            this.currentSlide = 0;
             this.startColorTankTraining();
             break;
           case 'arithmetic':
+            this.currentSlide = 0;
             this.startArithmeticTraining();
             break;
           case 'horizon':
+            this.currentSlide = 0;
             this.startHorizonTraining();
             break;
           case 'combined':
+            this.currentSlide = 0;
             this.startCombinedTraining();
             break;
         }
       }
     },
     startHorizonTraining() {
-      this.config.duration = 1 * 60
+      this.config.duration = 1 * 60000 // basically forever until the user ends it
 
       this.isPauseHorizon = false;
       this.isPauseColorTank = true;
@@ -259,7 +296,7 @@ export default {
       this.startCountdown();
     },
     startColorTankTraining() {
-      this.config.duration = 1 * 60
+      this.config.duration = 1 * 60000 // basically forever until the user ends it
 
       this.isPauseColorTank = false;
       this.isPauseHorizon = true;
@@ -274,7 +311,7 @@ export default {
       this.startCountdown();
     },
     startArithmeticTraining() {
-      this.config.duration = 1 * 60
+      this.config.duration = 1 * 60000 // basically forever until the user ends it
 
       this.isPauseArithmetics = false;
       this.isPauseColorTank = true;
@@ -289,7 +326,7 @@ export default {
       this.startCountdown();
     },
     startCombinedTraining() {
-      this.config.duration = 1 * 60
+      this.config.duration = 1 * 60000 // basically forever until the user ends it
 
       this.isPauseArithmetics = false;
       this.isPauseColorTank = false;
@@ -299,14 +336,20 @@ export default {
       this.config.color_tank.is_active = true;
       this.config.horizon.is_active = true;
 
-      this.$refs.colorTankTaskRef.initLowerTank();
-      this.$refs.colorTankTaskRef.initScore();
-      this.$refs.colorTankTaskRef.start();
-      this.$refs.arithmeticTaskRef.generateNumbers();
+
+      this.$refs.colorTankTaskRef?.initLowerTank();
+      this.$refs.colorTankTaskRef?.initScore();
+      this.$refs.colorTankTaskRef?.start();
+      this.$refs.arithmeticTaskRef?.generateNumbers();
 
       this.startCountdown();
     },
     endTrainingTask() {
+      // stop sound and reset the game
+      this.$refs.colorTankTaskRef.stop();
+      this.$refs.arithmeticTaskRef.reset();
+      this.$refs.horizonTaskRef.reset();
+      
       const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
       if (currentTaskIndex < this.trainingTasks.length - 1) {
         this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
@@ -435,11 +478,12 @@ export default {
 
 .instruction-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  background-color: white;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -567,4 +611,18 @@ export default {
   color: white;
   border-color: #45a049;
 }
+
+.finish-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 </style>

@@ -1,9 +1,9 @@
 
 <template>
   <div class="screen-share-container">
-    <div v-if="error" class="text-red-500 p-4 rounded-md bg-red-50 mb-4">
+    <!-- <div v-if="error" class="text-red-500 p-4 rounded-md bg-red-50 mb-4">
       {{ error }}
-    </div>
+    </div> -->
     <div v-if="isSharing" class="fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-md shadow-md">
       Screen Sharing Active
       <button @click="stopSharing" class="ml-2 bg-blue-600 px-2 py-1 rounded">Stop</button>
