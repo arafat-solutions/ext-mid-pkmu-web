@@ -90,7 +90,7 @@ export default {
       this.url = test.testUrl;
       this.slidesPath = `/instructions_slides/${test.name}`;
       
-      this.selectedTestDescription = test.description.split('</p><p><br></p><p><br></p>');
+      this.selectedTestDescription = test.description.split('=====');
       console.log('Total slides:', this.selectedTestDescription.length);
       this.totalSlides = this.selectedTestDescription.length;
     },
