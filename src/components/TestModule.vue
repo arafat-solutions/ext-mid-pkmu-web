@@ -1,8 +1,8 @@
 <template>
   <div class="flex-1 overflow-auto">
-    <div class="flex justify-center px-4">
+    <div class="flex justify-center px-6">
       <!-- Centered content -->
-      <div class="w-[125%]">
+      <div class="w-[135%]">
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
@@ -13,27 +13,27 @@
             </div>
 
             <!-- Navigation Controls -->
-            <div class="flex justify-between items-center mt-4 px-4">
+            <div class="flex justify-between items-center mt-6 px-6">
               <button @click="previousSlide" :disabled="currentSlide === 0"
-                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
+                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
                 Sebelumnya
               </button>
-              <span class="text-lg">{{ currentSlide + 1 }}</span>
+              <span class="text-xl">{{ currentSlide + 1 }}</span>
               <button @click="nextSlide" v-if="currentSlide !== totalSlides - 1"
-                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
+                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
                 Selanjutnya
               </button>
               <router-link :to="url" class="block" v-if="currentSlide === totalSlides - 1">
-                <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
+                <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
                   Mulai Latihan Test
                 </div>
               </router-link>
             </div>
           </template>
           <template v-else>
-            <div class="text-center py-8">
-              <h2 class="text-xl font-bold mb-4">{{ selectedTestTitle }}</h2>
-              <p class="text-gray-600">{{ selectedTestDescription }}</p>
+            <div class="text-center py-10">
+              <h2 class="text-2xl font-bold mb-5">{{ selectedTestTitle }}</h2>
+              <p class="text-gray-600 text-lg">{{ selectedTestDescription }}</p>
             </div>
           </template>
         </div>
