@@ -13,7 +13,7 @@
             </div>
 
             <!-- Navigation Controls -->
-            <div class="flex justify-between items-center mt-6 px-6">
+            <div class="flex justify-between items-center mt-16 px-6">
               <button @click="previousSlide" :disabled="currentSlide === 0"
                 class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
                 Sebelumnya
