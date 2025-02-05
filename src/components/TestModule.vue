@@ -2,7 +2,7 @@
   <div class="flex-1 overflow-auto">
     <div class="flex justify-center px-4">
       <!-- Centered content -->
-      <div class="w-[95%]">
+      <div class="w-[110%]">
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
@@ -25,7 +25,7 @@
               </button>
               <router-link :to="url" class="block" v-if="currentSlide === totalSlides - 1">
                 <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
-                  Mulai Test
+                  Mulai Latihan Test
                 </div>
               </router-link>
             </div>
