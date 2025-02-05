@@ -1,8 +1,8 @@
 <template>
   <div class="flex-1 overflow-auto">
-    <div class="flex gap-8 px-4">
-      <!-- Left side - Slide viewer -->
-      <div class="w-2/3">
+    <div class="flex justify-center px-4">
+      <!-- Centered content -->
+      <div class="w-4/5">
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
@@ -19,10 +19,15 @@
                 Sebelumnya
               </button>
               <span class="text-lg">{{ currentSlide + 1 }}</span>
-              <button @click="nextSlide" :disabled="currentSlide === totalSlides - 1"
+              <button @click="nextSlide" v-if="currentSlide !== totalSlides - 1"
                 class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
                 Selanjutnya
               </button>
+              <router-link :to="url" class="block" v-if="currentSlide === totalSlides - 1">
+                <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full disabled:opacity-50">
+                  Mulai Test
+                </div>
+              </router-link>
             </div>
           </template>
           <template v-else>
@@ -31,24 +36,6 @@
               <p class="text-gray-600">{{ selectedTestDescription }}</p>
             </div>
           </template>
-        </div>
-      </div>
-
-      <!-- Right side - Start Test Button -->
-      <div class="w-1/3">
-        <div v-if="url" class="sticky top-4">
-          <router-link :to="url" class="block">
-            <div class="bg-[#ade5bd] px-4 py-4 rounded-xl border-2 border-[#4ae46e]">
-              <div class="flex items-center mb-4">
-                <span class="text-[#4ae46e] mr-2 text-2xl">🔆</span>
-                <h2 class="text-lg font-bold">Mulai Test</h2>
-              </div>
-              <p class="mb-4 text-[#207c43] font-extralight">Mulai Test Jika sudah siap.</p>
-              <div class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-4 py-2 rounded-full text-center">
-                Start Test
-              </div>
-            </div>
-          </router-link>
         </div>
       </div>
     </div>
@@ -109,8 +96,8 @@ export default {
       } else if (test.name == "PMA Test") {
         totalSlides = 9
       } else if (test.name == 'Test For Operative Multitasking' || test.name == 'Time Sharing Test 2023') {
-        totalSlides= 6
-      } 
+        totalSlides = 6
+      }
       this.totalSlides = totalSlides;
     },
     handleTestCompleted() {
