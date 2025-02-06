@@ -15,7 +15,8 @@
         </div>
       </div>
       <div v-else>
-        <p>Anda Telah menyelesaikan semua pelatihan, setelah ini, anda akan memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi prima dan tanpa distraksi, test ini tidak dapat di pause.</p>
+        <p>Anda Telah menyelesaikan semua pelatihan, setelah ini, anda akan memulai test yang sesungguhnya. Pastikan
+          kondisi anda dalam kondisi prima dan tanpa distraksi, test ini tidak dapat di pause.</p>
         <button @click="startTrainingTask">Mulai Test</button>
       </div>
     </div>
@@ -27,7 +28,7 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container" v-if="trainingCompleted">
+    <div class="timer-container" v-if="showTimer">
       Time: {{ formattedTime }}
     </div>
 
@@ -35,12 +36,12 @@
       <ColorTank ref="colorTankTaskRef" :isTimesUp="isTimesUp" :speed="config.color_tank.speed"
         :coloredLowerTank="config.color_tank.colored_lower_tank" :isNegativeScore="config.color_tank.negative_score"
         :isPause="isPauseColorTank" :isActive="config.color_tank.is_active" @getResult="colorTankResult"
-        v-if="currentTrainingTask === 'colorTank' || trainingCompleted || currentTrainingTask == 'combined'"  />
+        v-if="currentTrainingTask === 'colorTank' || trainingCompleted || currentTrainingTask == 'combined'" />
 
       <div class="horizon-section">
         <Horizon :isTimesUp="isTimesUp" :speed="config.horizon.speed" :isPause="isPauseHorizon"
           :isActive="config.horizon.is_active" @getResult="horizonResult" class="no-pointer-events"
-          v-if="currentTrainingTask === 'horizon' || trainingCompleted || currentTrainingTask == 'combined'"  />
+          v-if="currentTrainingTask === 'horizon' || trainingCompleted || currentTrainingTask == 'combined'" />
 
         <Arithmetics ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetics.difficulty"
           :duration="config.duration" :isPause="isPauseArithmetics" :isActive="config.arithmetics.is_active"
@@ -71,6 +72,7 @@ export default {
   data() {
     return {
       trainingCompleted: false,
+      showTimer: false,
       showInstructionModal: false,
       currentTrainingTask: null,
       instructionModalContent: '',
@@ -236,17 +238,24 @@ export default {
     showTrainingInstructions() {
       const instructions = {
         arithmetic: [
-          "<b>Arithmetic SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.",
+          `<b>Arithmetic SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.
+            <br> <br> <b>Contoh Pertanyaan:</b> <br> 2 + 3 = ? <br> <br> <b>Jawaban:</b> 5 <br> <br> <b>Contoh Pertanyaan:</b> <br> 4 - 1 = ? <br> <br> <b>Jawaban:</b> 3
+            <img src="/devices/mwc_math.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         colorTank: [
           `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah (ASDF) terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas (QWER). Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi Kembali dengan menekan tombol sebagai berikut:
 Apabila tangki air warna kuning susut (tangki S dan D) maka Anda harus menekan tombol Q S D atau Q D S, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol Q S D atau Q D S agar tangka bawah berwarna kuning terisi Kembali.`,
           `Contoh lain.
 
-Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.`
+Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.
+            <img src="/devices/mwc_core.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         horizon: [
-          "<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal titik (intersection) tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.",
+          `<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal titik (intersection) tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.
+            <img src="/devices/joystick.png" alt="Joystick instruction" style="width: 200px; display: block; margin: 20px auto;"
+            <img src="/devices/horizon.png" alt="Joystick instruction" style="width: 200px; display: block; margin: 20px auto;">
+          `
+          ,
         ],
         combined: [
           "<b>SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.",
@@ -349,7 +358,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       // this.$refs.colorTankTaskRef.stop();
       // this.$refs.arithmeticTaskRef.reset();
       // this.$refs.horizonTaskRef.reset();
-      
+
       const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
       if (currentTaskIndex < this.trainingTasks.length - 1) {
         this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
@@ -366,6 +375,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       completeTrainingTestAndUpdateLocalStorage("Multitasking With Color");
     },
     startActualTest() {
+      this.showTimer = true;
       this.result = {
         arithmetics: {
           total_questions: null,
@@ -624,5 +634,4 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
   border-radius: 5px;
   cursor: pointer;
 }
-
 </style>

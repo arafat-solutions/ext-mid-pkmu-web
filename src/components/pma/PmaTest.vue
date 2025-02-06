@@ -18,40 +18,81 @@
     </div>
 
     <div v-if="!showModal" class="training-content">
-      <div class="timer" :style="{ backgroundColor: 'blue', color: 'white', padding: '10px', textAlign: 'center', borderRadius: '20px' }">
-        Sisa Waktu: {{ formatTime(remainingTime) }}
+      <!-- Tracking Joystick Instructions Modal -->
+      <div v-if="currentStep === 'tracking_joystick' && showModalJoystick" class="modal">
+        <div class="modal-content">
+          <h2>Instruksi Pelatihan Tracking Joystick</h2>
+          <p>Gunakan joystick untuk menggerakkan objek hijau ke posisi target</p>
+            <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
+          <button @click="startTrackingJoystick" class="start-btn">Mulai Pelatihan Joystick</button>
+        </div>
+      </div>
+
+      <!-- Tracking Thruster Instructions Modal -->
+      <div v-if="currentStep === 'tracking_thruster' && showModalThruster" class="modal">
+        <div class="modal-content">
+          <h2>Instruksi Pelatihan Tracking Thruster</h2>
+          <p>Gunakan thruster untuk mengatur kecepatan pergerakan objek</p>
+          <img :src="'devices/thruster.png'" class="center" alt="Joystick" />
+          <button @click="startTrackingThruster" class="start-btn">Mulai Pelatihan Thruster</button>
+        </div>
+      </div>
+
+      <!-- Combined Training Instructions Modal -->
+      <div v-if="currentStep === 'combined_training' && showModalCombined" class="modal">
+        <div class="modal-content">
+          <h2>Instruksi Pelatihan Gabungan</h2>
+          <p>Lakukan semua tugas pelatihan secara bersamaan</p>
+          <button @click="startCombinedTraining" class="start-btn">Mulai Pelatihan Gabungan</button>
+        </div>
       </div>
 
       <div class="test-content">
         <!-- Training Mode -->
         <template v-if="!isActualTest">
-          <div v-if="currentStep === 'tracking'" class="tracking-section">
-            <h3>Pelatihan Tracking</h3>
-            <p>Gunakan joystick dan thruster untuk menggerakkan objek hijau ke posisi target</p>
-            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" />
+          <div v-if="currentStep === 'tracking_joystick'" class="tracking-section">
+            <h3>Pelatihan Tracking Joystick</h3>
+            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'joystick'" />
+            <div class="next-button-container">
+              <button @click="nextStep" class="start-btn next-btn">Berikutnya</button>
+            </div>
           </div>
 
-          <div v-if="currentStep === 'questions'" class="questions-section">
-            <h3>Pelatihan Menjawab Pertanyaan</h3>
-            <p>Pilih jawaban yang benar dengan menyentuh opsi yang tersedia</p>
+          <div v-if="currentStep === 'tracking_thruster'" class="tracking-section">
+            <h3>Pelatihan Tracking Thruster</h3>
+            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'thruster'" />
+          </div>
+
+          <div v-if="currentStep === 'combined_training'" class="combined-training-section">
+            <h3>Pelatihan Gabungan</h3>
+            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'all'" />
             <div class="subtasks">
-              <StringMemorization v-if="currentSubtask === 'string'" :training-mode="true" @update-score="updateStringScore" />
-              <InformationOrdering v-if="currentSubtask === 'ordering'" :training-mode="true" @update-score="updateOrderingScore" />
-              <AudioInformation v-if="currentSubtask === 'audio'" :training-mode="true" @update-score="updateAudioScore" />
+              <StringMemorization v-if="currentSubtask === 'string'" :training-mode="true"
+                @update-score="updateStringScore" />
+              <AudioInformation v-if="currentSubtask === 'audio'" :training-mode="true"
+                @update-score="updateAudioScore" />
             </div>
+          </div>
+          <div class="next-button-container">
+            <button @click="nextStep" class="start-btn next-btn">Berikutnyass</button>
           </div>
         </template>
 
         <!-- Actual Test Mode -->
         <template v-else>
+          <div class="timer">
+            Sisa Waktu: {{ formatTime(remainingTime) }}
+          </div>
           <div class="subtasks">
-            <StringMemorization v-if="currentSubtask === 'string'" :key="'string'" :training-mode="false" @update-score="updateStringScore" />
-            <InformationOrdering v-if="currentSubtask === 'ordering'" :key="'ordering'" :training-mode="false" @update-score="updateOrderingScore" />
-            <AudioInformation v-if="currentSubtask === 'audio'" :key="'audio'" :training-mode="false" @update-score="updateAudioScore" />
+            <StringMemorization v-if="currentSubtask === 'string'" :key="'string'" :training-mode="false"
+              @update-score="updateStringScore" />
+            <AudioInformation v-if="currentSubtask === 'audio'" :key="'audio'" :training-mode="false"
+              @update-score="updateAudioScore" />
           </div>
 
           <div class="tracking-test">
-            <TrackingTest :key="'tracking'" :training-mode="false" @update-score="updateTrackingScore" />
+            <TrackingTest :key="'tracking'" :training-mode="false" :current-training="'all'"
+              @update-score="updateTrackingScore" />
           </div>
         </template>
       </div>
@@ -66,6 +107,10 @@
         </div>
       </div>
     </div>
+
+    <div class="next-button-container">
+      <button @click="nextStep" class="start-btn next-btn">Berikutnya x</button>
+    </div>
   </div>
 </template>
 
@@ -73,7 +118,6 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import TrackingTest from './TrackingTest.vue';
 import StringMemorization from './StringMemory.vue';
-import InformationOrdering from './InformationOrdering.vue';
 import AudioInformation from './AudioInformation.vue';
 import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
 import { getConfigs } from '@/utils/configs';
@@ -83,11 +127,13 @@ export default {
   components: {
     TrackingTest,
     StringMemorization,
-    InformationOrdering,
     AudioInformation
   },
   setup() {
     const showModal = ref(true);
+    const showModalJoystick = ref(false);
+    const showModalThruster = ref(false);
+    const showModalCombined = ref(false);
     const currentStep = ref('');
     const currentSubtask = ref('string');
     const remainingTime = ref(60);
@@ -108,7 +154,6 @@ export default {
         pill_wrong_position: 0
       },
       string: 0,
-      ordering: 0,
       audio: 0
     });
 
@@ -121,7 +166,7 @@ export default {
 
       const config = getConfigs('pma-test');
       if (config) {
-        testId.value = config.testId
+        testId.value = config.testId;
         moduleId.value = config.moduleId;
         sessionId.value = config.sessionId;
         userId.value = config.userId;
@@ -132,22 +177,32 @@ export default {
 
     const startTraining = () => {
       showModal.value = false;
-      currentStep.value = 'tracking';  // Start with tracking training
+      currentStep.value = 'tracking_joystick';
+      showModalJoystick.value = true;
       startTimer();
     };
 
+    const startTrackingJoystick = () => {
+      showModalJoystick.value = false;
+    };
+
+    const startTrackingThruster = () => {
+      showModalThruster.value = false;
+    };
+
+    const startCombinedTraining = () => {
+      showModalCombined.value = false;
+    };
+
     const startTimer = () => {
-      const testData = getConfigs('pma-test')
-      console.log(testData.configs, 'configs')
-      // training time is 1minute
-      if (!isActualTest.value){
-      remainingTime.value = 60;
+      const testData = getConfigs('pma-test');
+      if (!isActualTest.value) {
+        remainingTime.value = 60;
       } else {
-        // sum duration of all configs array
-        remainingTime.value = testData.configs.reduce((acc, curr) => acc + Number(curr.duration), 0) * 60; 
+        remainingTime.value = testData.configs.reduce((acc, curr) => acc + Number(curr.duration), 0) * 60;
       }
       clearInterval(timer);
-      
+
       timer = setInterval(() => {
         if (remainingTime.value > 0) {
           remainingTime.value--;
@@ -156,8 +211,13 @@ export default {
           if (isActualTest.value) {
             submit();
           } else {
-            if (currentStep.value === 'tracking') {
-              currentStep.value = 'questions';
+            if (currentStep.value === 'tracking_joystick') {
+              currentStep.value = 'tracking_thruster';
+              showModalThruster.value = true;
+              startTimer();
+            } else if (currentStep.value === 'tracking_thruster') {
+              currentStep.value = 'combined_training';
+              showModalCombined.value = true;
               startTimer();
             } else {
               trainingComplete.value = true;
@@ -168,6 +228,7 @@ export default {
     };
 
     const startActualTest = () => {
+      showModalCombined.value = false;
       trainingComplete.value = false;
       isActualTest.value = true;
       currentSubtask.value = 'string';
@@ -181,7 +242,6 @@ export default {
           pill_wrong_position: 0
         },
         string: 0,
-        ordering: 0,
         audio: 0
       };
       startTimer();
@@ -210,7 +270,6 @@ export default {
           throw new Error('Failed Submit Training');
         }
 
-        // remove local storage related to training
         localStorage.removeItem('pmaTrainingCompleted');
         removeTestByNameAndUpdateLocalStorage('PMA Training');
         window.location.href = '/module';
@@ -227,10 +286,6 @@ export default {
       scores.value.string = score;
     };
 
-    const updateOrderingScore = (score) => {
-      scores.value.ordering = score;
-    };
-
     const updateAudioScore = (score) => {
       scores.value.audio = score;
     };
@@ -241,24 +296,45 @@ export default {
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
+    const nextStep = () => {
+      clearInterval(timer);
+      if (currentStep.value === 'tracking_joystick') {
+        currentStep.value = 'tracking_thruster';
+        showModalThruster.value = true;
+        startTimer();
+      } else if (currentStep.value === 'tracking_thruster') {
+        currentStep.value = 'combined_training';
+        showModalCombined.value = true;
+        startTimer();
+      } else if (currentStep.value === 'combined_training') {
+        trainingComplete.value = true;
+      }
+    };
+
     onUnmounted(() => {
       clearInterval(timer);
     });
 
     return {
       showModal,
+      showModalJoystick,
+      showModalThruster,
+      showModalCombined,
       currentStep,
       currentSubtask,
       remainingTime,
       trainingComplete,
       isActualTest,
       startTraining,
+      startTrackingJoystick,
+      startTrackingThruster,
+      startCombinedTraining,
       startActualTest,
       formatTime,
       updateTrackingScore,
       updateStringScore,
-      updateOrderingScore,
-      updateAudioScore
+      updateAudioScore,
+      nextStep
     };
   }
 };
@@ -271,12 +347,12 @@ export default {
   align-items: center;
   padding: 20px;
   height: 100vh;
-  position: relative; /* Added for absolute positioning context */
+  position: relative;
 }
 
 .timer {
-  position: fixed; /* Changed to fixed */
-  top: 20px; /* Added top spacing */
+  position: fixed;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
   margin-bottom: 20px;
@@ -284,7 +360,12 @@ export default {
   font-weight: bold;
   width: 100%;
   max-width: 300px;
-  z-index: 100; /* Ensure timer stays on top */
+  z-index: 100;
+  background-color: blue;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  border-radius: 20px;
 }
 
 .test-content {
@@ -293,7 +374,7 @@ export default {
   width: 100%;
   align-items: center;
   margin-bottom: 20px;
-  padding-top: 80px; /* Added padding to account for fixed timer */
+  padding-top: 80px;
 }
 
 .subtasks {
@@ -354,48 +435,116 @@ export default {
   background-color: #45a049;
 }
 
-.training-container {
+.next-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.next-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.next-btn:hover {
+  background-color: #45a049;
+}
+
+.completion-modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.completion-modal .modal-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  height: 100vh;
-  position: relative;
 }
 
-.timer {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+.completion-modal .modal-content button {
+  margin-top: 1rem;
 }
 
-.test-content {
-  display: flex;
-  flex-direction: column;
+.tracking-section {
   width: 100%;
-  align-items: center;
-  margin-top: 20px; /* Reduced top margin */
-  padding-top: 20px; /* Reduced padding */
 }
 
-.tracking-section h3,
-.questions-section h3 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-}
-
-.tracking-section p,
-.questions-section p {
-  margin-bottom: 20px;
-}
-
-.subtasks {
+.combined-training-section {
   width: 100%;
-  margin-bottom: 20px;
-  margin-top: 30px;
 }
 
-.tracking-test {
-  width: 100%;
+h2 {
+  margin-bottom: 1rem;
+}
+
+h3 {
+  margin-bottom: 1rem;
+}
+
+ul {
+  margin-bottom: 1rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .training-container {
+    padding: 40px;
+  }
+
+  .timer {
+    top: 40px;
+    font-size: 1.5em;
+  }
+
+  .modal-content {
+    padding: 3rem;
+  }
+
+  .instruction-content {
+    margin: 2rem 0;
+  }
+
+  .button-group {
+    gap: 2rem;
+  }
+
+  .start-btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+  }
+
+  .next-btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+  }
+
+  .completion-modal .modal-content button {
+    margin-top: 2rem;
+  }
+
+  h2 {
+    margin-bottom: 2rem;
+  }
+
+  h3 {
+    margin-bottom: 2rem;
+  }
+
+  ul {
+    margin-bottom: 2rem;
+  }
+
+  li {
+    margin-bottom: 1rem;
+  }
 }
 </style>
