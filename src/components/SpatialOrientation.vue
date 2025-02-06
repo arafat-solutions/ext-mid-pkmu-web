@@ -2,7 +2,7 @@
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
       <p>
-        <strong>Apakah Anda Yakin <br />akan memulai latihan?</strong>
+        <strong>Apakah anda yakin akan memulai latihan?</strong>
       </p>
       <div class="button-container">
         <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
@@ -16,7 +16,7 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p>
-        <strong>Apakah Anda Yakin <br />akan memulai test?</strong>
+        <strong>Apakah anda yakin akan memulai test?</strong>
       </p>
       <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
         Batal
@@ -221,7 +221,7 @@ export default {
     exit() {
       if (
         confirm(
-          "Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang."
+          "Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.asdasd"
         )
       ) {
         this.$router.push("module");
