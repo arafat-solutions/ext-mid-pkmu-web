@@ -1,9 +1,5 @@
 <template>
-  <canvas ref="horizonCanvas"
-    :width="horizonWidth"
-    :height="horizonHeight"
-    class="no-pointer-events"
-  >
+  <canvas ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" class="no-pointer-events">
   </canvas>
 </template>
 
@@ -11,28 +7,28 @@
 export default {
   name: 'HorizonTest',
   props: {
-		isTimesUp: Boolean,
-		speed: String,
-		isPause: Boolean,
-		isActive: Boolean
-	},
+    isTimesUp: Boolean,
+    speed: String,
+    isPause: Boolean,
+    isActive: Boolean
+  },
   data() {
     return {
       horizonWidth: 450,
       horizonHeight: 350,
       greenLineStartTime: null,
-			greenLineDuration: 0,
+      greenLineDuration: 0,
       config: {
-          x: 10,
-          y: 5,
-          skyColor: '#87CEEB',
-          landColor: '#8B4513',
-          whiteBorderHeight: 5,
-          focusY: 300,
-          focusX: 100,
-          angle: 0,
-          horizonOffsetY: 0,
-          horizonOffsetX: 0
+        x: 10,
+        y: 5,
+        skyColor: '#87CEEB',
+        landColor: '#8B4513',
+        whiteBorderHeight: 5,
+        focusY: 300,
+        focusX: 100,
+        angle: 0,
+        horizonOffsetY: 0,
+        horizonOffsetX: 0
       },
       currentTilt: 0,
       currentShiftX: 0,
@@ -40,6 +36,10 @@ export default {
       intervalRandomTilt: null,
       intervalRandomShift: null,
       gamepadIndex: null,
+      gamepadCheckInterval: null,
+      lastGamepadState: null,
+      reconnectAttempts: 0,
+      maxReconnectAttempts: 5
     };
   },
   mounted() {
@@ -49,21 +49,22 @@ export default {
     this.stopAnimation();
     window.removeEventListener('gamepadconnected', this.onGamepadConnected);
     window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    clearInterval(this.gamepadCheckInterval);
   },
   watch: {
-		isTimesUp() {
-			this.$emit('getResult', {
-				correctTime: this.greenLineDuration,
-			});
-		},
-		isPause() {
-			if (this.isPause) {
+    isTimesUp() {
+      this.$emit('getResult', {
+        correctTime: this.greenLineDuration,
+      });
+    },
+    isPause() {
+      if (this.isPause) {
         this.stopAnimation();
-			} else {
-				this.startAnimation();
-			}
-		},
-	},
+      } else {
+        this.startAnimation();
+      }
+    },
+  },
   methods: {
     initHorizon() {
       this.initVisual();
@@ -74,8 +75,66 @@ export default {
 
       window.addEventListener('gamepadconnected', this.onGamepadConnected);
       window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      this.startGamepadCheck();
+    },
+
+    startGamepadCheck() {
+      this.gamepadCheckInterval = setInterval(() => {
+        this.checkForGamepad();
+      }, 1000);
+    },
+
+    checkForGamepad() {
+      const gamepads = navigator.getGamepads();
+      const joystick = Array.from(gamepads).find(gamepad =>
+        gamepad && gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)'
+      );
+
+      if (joystick) {
+        if (!this.gamepadIndex || this.gamepadIndex !== joystick.index) {
+          this.onGamepadConnected({ gamepad: joystick });
+        }
+        this.reconnectAttempts = 0;
+      } else if (this.gamepadIndex !== null) {
+        this.reconnectAttempts++;
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          console.warn('Gamepad disconnected, attempting to re-enumerate devices');
+          this.gamepadIndex = null;
+          this.reconnectAttempts = 0;
+        }
+      }
+    },
+
+    onGamepadConnected(event) {
+      if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') return;
+
+      this.gamepadIndex = event.gamepad.index;
+      this.lastGamepadState = event.gamepad;
+      this.reconnectAttempts = 0;
       this.checkGamepad();
     },
+
+    onGamepadDisconnected(event) {
+      if (this.gamepadIndex === event.gamepad.index) {
+        // Don't immediately null the index, allow for reconnection attempts
+        this.reconnectAttempts = 0;
+      }
+    },
+
+    checkGamepad() {
+      if (this.gamepadIndex === null) return;
+
+      const gamepad = navigator.getGamepads()[this.gamepadIndex];
+      if (gamepad) {
+        this.handleGamepadInput(gamepad);
+        this.lastGamepadState = gamepad;
+        requestAnimationFrame(this.checkGamepad);
+      } else if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        // Continue animation frame if still attempting reconnection
+        requestAnimationFrame(this.checkGamepad);
+      }
+    },
+
     initVisual() {
       const canvas = this.$refs.horizonCanvas;
       canvas.width = this.horizonWidth;
@@ -298,27 +357,6 @@ export default {
           this.greenLineStartTime = null;
         }
       }
-    },
-    onGamepadConnected(event) {
-      if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') {
-        return;
-      }
-      this.gamepadIndex = event.gamepad.index;
-      this.checkGamepad();
-    },
-    onGamepadDisconnected(event) {
-      if (this.gamepadIndex === event.gamepad.index) {
-        this.gamepadIndex = null;
-      }
-    },
-    checkGamepad() {
-      if (this.gamepadIndex !== null) {
-        const gamepad = navigator.getGamepads()[this.gamepadIndex];
-        if (gamepad) {
-          this.handleGamepadInput(gamepad);
-        }
-      }
-      requestAnimationFrame(this.checkGamepad);
     },
     handleGamepadInput(gamepad) {
       const [leftStickX, leftStickY] = gamepad.axes;
