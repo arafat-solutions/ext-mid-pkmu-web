@@ -346,9 +346,9 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
     },
     endTrainingTask() {
       // stop sound and reset the game
-      this.$refs.colorTankTaskRef.stop();
-      this.$refs.arithmeticTaskRef.reset();
-      this.$refs.horizonTaskRef.reset();
+      // this.$refs.colorTankTaskRef.stop();
+      // this.$refs.arithmeticTaskRef.reset();
+      // this.$refs.horizonTaskRef.reset();
       
       const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
       if (currentTaskIndex < this.trainingTasks.length - 1) {
