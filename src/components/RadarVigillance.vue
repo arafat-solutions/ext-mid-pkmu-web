@@ -1,16 +1,24 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Radar Vigillance?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <p>
+        <strong>Apakah anda yakin akan memulai latihan ?</strong>
+      </p>
+      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
+        Batal
+      </button>
       <button @click="startTest()">Ya</button>
     </div>
   </div>
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Radar Vigillance?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <p>
+        <strong>Apakah anda yakin akan memulai test ?</strong>
+      </p>
+      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
+        Batal
+      </button>
       <button @click="startTest()">Ya</button>
     </div>
   </div>
@@ -21,9 +29,7 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container">
-      Time: {{ formattedTime }}
-    </div>
+    <div class="timer-container">Time: {{ formattedTime }}</div>
 
     <div class="radar-container">
       <div class="row">
@@ -36,7 +42,9 @@
             <strong> {{ config.targetShape }} </strong>
             muncul di radar.
           </p>
-          <p class="feedback-text" :style="{ color: feedbackColor }">{{ feedbackText }}</p>
+          <p class="feedback-text" :style="{ color: feedbackColor }">
+            {{ feedbackText }}
+          </p>
         </div>
       </div>
     </div>
@@ -44,8 +52,11 @@
 </template>
 
 <script>
-import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import { getConfigs } from '@/utils/configs';
+import {
+  completeTrainingTestAndUpdateLocalStorage,
+  removeTestByNameAndUpdateLocalStorage,
+} from "@/utils/index";
+import { getConfigs } from "@/utils/configs";
 
 export default {
   data() {
@@ -77,10 +88,10 @@ export default {
       config: {},
       configs: [],
       indexConfig: 0,
-      moduleId: '',
-      sessionId: '',
-      userId: '',
-      testId: '',
+      moduleId: "",
+      sessionId: "",
+      userId: "",
+      testId: "",
 
       result: {
         total_all_shape_object: 0,
@@ -92,7 +103,7 @@ export default {
       },
       gamepad: null,
       gamepadPolling: null,
-      isTargetVisible: false,  // New property to track if target is currently visible
+      isTargetVisible: false, // New property to track if target is currently visible
       falsePositives: 0,
       triggerState: false,
       lastTriggerReleaseTime: 0,
@@ -109,42 +120,49 @@ export default {
   },
   computed: {
     formattedTime() {
-      const minutes = Math.floor(this.durationTest / 60).toString().padStart(2, '0');
-      const seconds = (this.durationTest % 60).toString().padStart(2, '0');
+      const minutes = Math.floor(this.durationTest / 60)
+        .toString()
+        .padStart(2, "0");
+      const seconds = (this.durationTest % 60).toString().padStart(2, "0");
       return `${minutes}:${seconds}`;
     },
   },
   mounted() {
     window.addEventListener("gamepadconnected", this.handleGamepadConnected);
-    window.addEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
+    window.addEventListener(
+      "gamepaddisconnected",
+      this.handleGamepadDisconnected
+    );
     this.checkForGamepads();
     this.startGamepadPolling();
 
-    let reloadCount = parseInt(localStorage.getItem('reloadCountRadarVigilance') || '0')
-    reloadCount++
-    localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
+    let reloadCount = parseInt(
+      localStorage.getItem("reloadCountRadarVigilance") || "0"
+    );
+    reloadCount++;
+    localStorage.setItem("reloadCountRadarVigilance", reloadCount.toString());
 
-    window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountRadarVigilance', reloadCount.toString())
-    })
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem("reloadCountRadarVigilance", reloadCount.toString());
+    });
 
     this.initConfig();
   },
   methods: {
     startTest() {
       if (!this.isTrainingCompleted) {
-        this.setConfig(this.configs[0])
+        this.setConfig(this.configs[0]);
 
-        this.durationTest = 2 * 60
+        this.durationTest = 2 * 60;
       } else {
-        this.setConfig(this.configs[this.indexConfig])
+        this.setConfig(this.configs[this.indexConfig]);
 
-        this.durationTest = 0
+        this.durationTest = 0;
         for (const i in this.configs) {
-          this.durationTest += this.configs[i].duration * 60
+          this.durationTest += this.configs[i].duration * 60;
         }
 
-        this.config.duration = this.configs[this.indexConfig].duration * 60
+        this.config.duration = this.configs[this.indexConfig].duration * 60;
       }
 
       this.isModalTrainingVisible = false;
@@ -161,13 +179,16 @@ export default {
       clearInterval(this.countdownInterval);
     },
     exit() {
-      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
-        this.$router.push('module');
+      if (
+        confirm(
+          "Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang."
+        )
+      ) {
+        this.$router.push("module");
       }
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
-
         if (this.durationTest > 0) {
           this.durationTest--;
         } else {
@@ -179,12 +200,12 @@ export default {
             completeTrainingTestAndUpdateLocalStorage("Radar Vigilance Test");
 
             //Start Exam After Training
-            this.isModalVisible = true
+            this.isModalVisible = true;
             this.totalAllShapeObject = 0;
             this.detectedObject = 0;
             this.userCorrectClickCount = 0;
             this.falsePositives = 0;
-            this.userInputs = []
+            this.userInputs = [];
           } else {
             setTimeout(() => {
               this.calculatedResult();
@@ -195,25 +216,26 @@ export default {
         //Check timer for next level exam
         if (this.isTrainingCompleted) {
           if (this.config.duration >= 0) {
-            this.config.duration--
+            this.config.duration--;
 
             if (this.config.duration === 0) {
-              this.isNextLevel = true
+              this.isNextLevel = true;
             }
           } else {
             if (this.isNextLevel) {
-              this.isNextLevel = false
-              this.indexConfig++
-              this.config.duration = this.configs[this.indexConfig].duration * 60
+              this.isNextLevel = false;
+              this.indexConfig++;
+              this.config.duration =
+                this.configs[this.indexConfig].duration * 60;
             }
           }
         }
       }, 1000);
     },
     initConfig() {
-      const configData = getConfigs('radar-vigilance-test');
+      const configData = getConfigs("radar-vigilance-test");
       if (!configData) {
-        this.$router.push('/module');
+        this.$router.push("/module");
         return;
       }
 
@@ -234,17 +256,17 @@ export default {
       }
     },
     setConfig(config) {
-      this.config.direction = config.direction
-      this.config.difficultyLevel = config.difficulty_level
-      this.config.shapeSize = config.shapeSize
-      this.config.frequency = config.frequency
+      this.config.direction = config.direction;
+      this.config.difficultyLevel = config.difficulty_level;
+      this.config.shapeSize = config.shapeSize;
+      this.config.frequency = config.frequency;
       this.config.shapes = this.setShapeConfig(config.shapes);
       this.config.targetShape = config.targetShape;
       this.config.speed = config.speed;
       this.config.density = config.density;
 
-      this.config.subtask = config.subtask
-      this.config.testId = config.id
+      this.config.subtask = config.subtask;
+      this.config.testId = config.id;
 
       this.isConfigLoaded = true;
     },
@@ -252,17 +274,18 @@ export default {
       this.result.total_all_shape_object = this.totalAllShapeObject;
       this.result.total_object = this.detectedObject;
       this.result.corrected_object = this.userCorrectClickCount;
-      this.result.missed_object = this.detectedObject - this.userCorrectClickCount;
+      this.result.missed_object =
+        this.detectedObject - this.userCorrectClickCount;
       this.result.false_positives = this.falsePositives;
 
       // get avg from array of userInputs[i].responseTime
-      this.result.avg_response_time = this.userInputs.reduce((acc, curr) => {
-        if (curr.responseTime) {
-          return acc + curr.responseTime;
-        }
-        return acc;
-      }, 0) / this.userInputs.length;
-
+      this.result.avg_response_time =
+        this.userInputs.reduce((acc, curr) => {
+          if (curr.responseTime) {
+            return acc + curr.responseTime;
+          }
+          return acc;
+        }, 0) / this.userInputs.length;
 
       // Include graph data in the result
       this.result.graph_data = this.userInputs;
@@ -278,37 +301,37 @@ export default {
           testSessionId: this.sessionId,
           userId: this.userId,
           batteryTestId: this.testId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountRadarVigilance')),
+          refreshCount: parseInt(
+            localStorage.getItem("reloadCountRadarVigilance")
+          ),
           result: this.result,
-        }
+        };
 
-        const res = await fetch(`${API_URL}/api/submission`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        )
+        const res = await fetch(`${API_URL}/api/submission`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
         if (!res.ok) {
-          throw new Error('Failed Submit Test');
+          throw new Error("Failed Submit Test");
         }
       } catch (error) {
         console.error(error), "error";
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Radar Vigilance Test');
-        localStorage.removeItem('reloadCountRadarVigilance');
-        localStorage.removeItem('index-config-radar-vigillance')
-        this.$router.push('/module');
+        removeTestByNameAndUpdateLocalStorage("Radar Vigilance Test");
+        localStorage.removeItem("reloadCountRadarVigilance");
+        localStorage.removeItem("index-config-radar-vigillance");
+        this.$router.push("/module");
       }
     },
     handleGamepadConnected(event) {
       console.log("A gamepad connected:", event.gamepad);
-      if (event.gamepad.id == 'T.16000M (Vendor: 044f Product: b10a)')
+      if (event.gamepad.id == "T.16000M (Vendor: 044f Product: b10a)")
         this.gamepad = event.gamepad;
     },
     handleGamepadDisconnected(event) {
@@ -341,7 +364,10 @@ export default {
 
           // Detect button press
           if (triggerPressed && !this.triggerState) {
-            if (currentTime - this.lastTriggerReleaseTime > this.minTimeBetweenPresses) {
+            if (
+              currentTime - this.lastTriggerReleaseTime >
+              this.minTimeBetweenPresses
+            ) {
               console.log("Trigger button pressed on gamepad:", gamepad);
               this.handleTriggerPress();
             }
@@ -368,7 +394,7 @@ export default {
             if (this.currentVisibleObjects.includes(obj)) {
               this.handleMissedTarget(obj);
             }
-          }, 2000);  // Adjust this value based on how long you want to give the user to respond
+          }, 2000); // Adjust this value based on how long you want to give the user to respond
         }
       }
     },
@@ -383,10 +409,10 @@ export default {
 
           // Add to userInputs for graph data
           this.userInputs.push({
-            type: 'missed',
+            type: "missed",
             responseTime: 1000,
             timestamp: Date.now(),
-            shapeType: obj.type
+            shapeType: obj.type,
           });
 
           console.log(`Missed target. Total missed: ${this.missedTargets}`); // Debugging line
@@ -400,7 +426,9 @@ export default {
     handleTriggerPress() {
       if (this.isCanClick) {
         const currentTime = Date.now();
-        const targetObject = this.currentVisibleObjects.find(obj => obj.type === this.config.targetShape);
+        const targetObject = this.currentVisibleObjects.find(
+          (obj) => obj.type === this.config.targetShape
+        );
 
         if (targetObject) {
           // Correct trigger press
@@ -411,10 +439,10 @@ export default {
           this.feedbackText = `Correct! ${responseTime} ms`;
           this.feedbackColor = "green";
           this.userInputs.push({
-            type: 'correct',
+            type: "correct",
             responseTime: responseTime,
             timestamp: currentTime,
-            shapeType: targetObject.type
+            shapeType: targetObject.type,
           });
           const index = this.currentVisibleObjects.indexOf(targetObject);
           if (index > -1) {
@@ -430,17 +458,20 @@ export default {
           let responseTime = null;
           let shapeType = null;
           if (this.currentVisibleObjects.length > 0) {
-            const lastVisibleObject = this.currentVisibleObjects[this.currentVisibleObjects.length - 1];
+            const lastVisibleObject =
+              this.currentVisibleObjects[this.currentVisibleObjects.length - 1];
             responseTime = currentTime - lastVisibleObject.appearanceTime;
             shapeType = lastVisibleObject.type;
           }
-          this.feedbackText = responseTime ? `Wrong input, ${responseTime} ms` : "Wrong input";
+          this.feedbackText = responseTime
+            ? `Wrong input, ${responseTime} ms`
+            : "Wrong input";
           this.feedbackColor = "red";
           this.userInputs.push({
-            type: 'incorrect',
+            type: "incorrect",
             responseTime: responseTime,
             timestamp: currentTime,
-            shapeType: shapeType
+            shapeType: shapeType,
           });
         }
         // Ensure feedback is always displayed
@@ -466,11 +497,12 @@ export default {
 
       const deltaTime = currentTime - this.lastUpdateTime;
 
-      if (deltaTime >= 16) { // Aim for 60 FPS (1000ms / 60 ≈ 16ms)
+      if (deltaTime >= 16) {
+        // Aim for 60 FPS (1000ms / 60 ≈ 16ms)
         this.drawRadar();
 
-        const speed = this.setSpeed() * deltaTime / 16; // Adjust speed based on time passed
-        if (this.config.direction === 'clockwise') {
+        const speed = (this.setSpeed() * deltaTime) / 16; // Adjust speed based on time passed
+        if (this.config.direction === "clockwise") {
           this.scannerAngle += speed;
         } else {
           this.scannerAngle -= speed;
@@ -509,7 +541,13 @@ export default {
       // Draw Scanner (wider angle)
       ctx.beginPath();
       ctx.moveTo(this.width / 2, this.height / 2);
-      ctx.arc(this.width / 2, this.height / 2, radius, this.scannerAngle, this.scannerAngle + Math.PI / 3);
+      ctx.arc(
+        this.width / 2,
+        this.height / 2,
+        radius,
+        this.scannerAngle,
+        this.scannerAngle + Math.PI / 3
+      );
       ctx.closePath();
       ctx.fillStyle = "rgba(0, 255, 0, 0.2)";
       ctx.fill();
@@ -517,7 +555,13 @@ export default {
       // Draw Grid
       for (let i = 1; i <= 4; i++) {
         ctx.beginPath();
-        ctx.arc(this.width / 2, this.height / 2, (radius / 4) * i, 0, 2 * Math.PI);
+        ctx.arc(
+          this.width / 2,
+          this.height / 2,
+          (radius / 4) * i,
+          0,
+          2 * Math.PI
+        );
         ctx.stroke();
       }
 
@@ -526,8 +570,14 @@ export default {
       this.currentVisibleObjects = []; // Reset visible objects
 
       for (let obj of this.objects) {
-        const distance = Math.hypot(obj.x - this.width / 2, obj.y - this.height / 2);
-        const angle = Math.atan2(obj.y - this.height / 2, obj.x - this.width / 2);
+        const distance = Math.hypot(
+          obj.x - this.width / 2,
+          obj.y - this.height / 2
+        );
+        const angle = Math.atan2(
+          obj.y - this.height / 2,
+          obj.x - this.width / 2
+        );
 
         // Draw objects within scanned area only
         if (this.isInScannedArea(angle, distance, radius)) {
@@ -541,10 +591,10 @@ export default {
           if (obj.type === "circle") {
             ctx.arc(obj.x, obj.y, this.setShapeSize(), 0, 2 * Math.PI);
           } else if (obj.type === "square") {
-            const size = this.setShapeSize('square');
+            const size = this.setShapeSize("square");
             ctx.rect(obj.x - size / 2, obj.y - size / 2, size, size);
           } else if (obj.type === "triangle") {
-            this.drawTriangle(ctx, obj.x, obj.y, this.setShapeSize('triangle'));
+            this.drawTriangle(ctx, obj.x, obj.y, this.setShapeSize("triangle"));
           }
 
           // Set Opacity Object (gradual fade-in)
@@ -565,11 +615,13 @@ export default {
       }
 
       // Update isTargetCurrentlyVisible based on currentVisibleObjects
-      this.isTargetCurrentlyVisible = this.currentVisibleObjects.some(obj => obj.type === this.config.targetShape);
+      this.isTargetCurrentlyVisible = this.currentVisibleObjects.some(
+        (obj) => obj.type === this.config.targetShape
+      );
     },
     updateVisibleObjects() {
       const radius = Math.min(this.width, this.height) / 2;
-      this.currentVisibleObjects = this.currentVisibleObjects.filter(obj =>
+      this.currentVisibleObjects = this.currentVisibleObjects.filter((obj) =>
         this.isInScannedArea(
           Math.atan2(obj.y - this.height / 2, obj.x - this.width / 2),
           Math.hypot(obj.x - this.width / 2, obj.y - this.height / 2),
@@ -586,28 +638,28 @@ export default {
       let result = [];
 
       if (shapes.circle) {
-        result.push('circle');
+        result.push("circle");
       }
       if (shapes.rectangle) {
-        result.push('rectangle');
+        result.push("rectangle");
       }
       if (shapes.square) {
-        result.push('square');
+        result.push("square");
       }
 
       return result;
     },
     setFrequency() {
       switch (this.config.frequency) {
-        case 'very_often':
-          return 50;  // Every 50ms
-        case 'often':
+        case "very_often":
+          return 50; // Every 50ms
+        case "often":
           return 100; // Every 100ms
-        case 'sometimes':
+        case "sometimes":
           return 200; // Every 200ms
-        case 'seldom':
+        case "seldom":
           return 300; // Every 300ms
-        case 'very_seldom':
+        case "very_seldom":
           return 400; // Every 400ms
         default:
           return 200; // Default to 'sometimes'
@@ -616,82 +668,78 @@ export default {
     setSpeed() {
       const baseSpeed = 0.02; // This was the original 'very_slow' speed
       const speedMultiplier = {
-        'very_slow': 0.2,
-        'slow': 0.5,
-        'medium': 0.7,
-        'fast': 0.9,
-        'very_fast': 1.2
+        very_slow: 0.2,
+        slow: 0.5,
+        medium: 0.7,
+        fast: 0.9,
+        very_fast: 1.2,
       };
 
       return baseSpeed * (speedMultiplier[this.config.speed] || 1);
     },
     setDensity() {
-      if (this.config.density === 'very_easy') {
+      if (this.config.density === "very_easy") {
         return 3;
-      }
-      else if (this.config.density === 'easy') {
+      } else if (this.config.density === "easy") {
         return 4;
-      }
-      else if (this.config.density === 'medium') {
+      } else if (this.config.density === "medium") {
         return 5;
-      }
-      else if (this.config.density === 'hard') {
+      } else if (this.config.density === "hard") {
         return 7;
-      }
-      else if (this.config.density === 'very_hard') {
+      } else if (this.config.density === "very_hard") {
         return 10;
       }
     },
     setShapeSize(type = null) {
       if (type === "triangle") {
-        if (this.config.shapeSize === 'very_small') {
+        if (this.config.shapeSize === "very_small") {
           return 6;
         }
-        if (this.config.shapeSize === 'small') {
+        if (this.config.shapeSize === "small") {
           return 8;
         }
-        if (this.config.shapeSize === 'medium') {
+        if (this.config.shapeSize === "medium") {
           return 12;
         }
-        if (this.config.shapeSize === 'big') {
+        if (this.config.shapeSize === "big") {
           return 16;
         }
-        if (this.config.shapeSize === 'very_big') {
+        if (this.config.shapeSize === "very_big") {
           return 20;
         }
       }
 
       if (type === "square") {
-        if (this.config.shapeSize === 'very_small') {
+        if (this.config.shapeSize === "very_small") {
           return 6;
         }
-        if (this.config.shapeSize === 'small') {
+        if (this.config.shapeSize === "small") {
           return 9;
         }
-        if (this.config.shapeSize === 'medium') {
+        if (this.config.shapeSize === "medium") {
           return 11;
         }
-        if (this.config.shapeSize === 'big') {
+        if (this.config.shapeSize === "big") {
           return 14;
         }
-        if (this.config.shapeSize === 'very_big') {
+        if (this.config.shapeSize === "very_big") {
           return 16;
         }
       }
 
-      if (this.config.shapeSize === 'very_small') {
+      if (this.config.shapeSize === "very_small") {
         return 3;
       }
-      if (this.config.shapeSize === 'small') {
+      if (this.config.shapeSize === "small") {
         return 5;
       }
-      if (this.config.shapeSize === 'medium') {
+      if (this.config.shapeSize === "medium") {
         return 7;
       }
-      if (this.config.shapeSize === 'big') {
+      if (this.config.shapeSize === "big") {
         return 9;
       }
-      if (this.config.shapeSize === 'very_big') {
+      if (this.config.shapeSize === "very_big") {
         return 11;
       }
     },
@@ -706,12 +754,17 @@ export default {
       const scannerStartAngle = this.scannerAngle;
       const scannerEndAngle = this.scannerAngle + Math.PI / 3; // Widened to 60 degrees
       const normalizedAngle = angle < 0 ? angle + 2 * Math.PI : angle;
-      const normalizedScannerEndAngle = scannerEndAngle > 2 * Math.PI ? scannerEndAngle - 2 * Math.PI : scannerEndAngle;
+      const normalizedScannerEndAngle =
+        scannerEndAngle > 2 * Math.PI
+          ? scannerEndAngle - 2 * Math.PI
+          : scannerEndAngle;
       const withinRadius = distance <= radius;
-      const withinAngle = (
-        (scannerStartAngle <= normalizedAngle && normalizedAngle <= normalizedScannerEndAngle) ||
-        (scannerEndAngle > 2 * Math.PI && (normalizedAngle >= scannerStartAngle || normalizedAngle <= (scannerEndAngle - 2 * Math.PI)))
-      );
+      const withinAngle =
+        (scannerStartAngle <= normalizedAngle &&
+          normalizedAngle <= normalizedScannerEndAngle) ||
+        (scannerEndAngle > 2 * Math.PI &&
+          (normalizedAngle >= scannerStartAngle ||
+            normalizedAngle <= scannerEndAngle - 2 * Math.PI));
 
       return withinRadius && withinAngle;
     },
@@ -726,7 +779,14 @@ export default {
         obj.creationTime = Date.now(); // Add creation time for fade-in effect
         return obj;
       }
-      return { type, x, y, detected: false, sweepCount: 0, creationTime: Date.now() };
+      return {
+        type,
+        x,
+        y,
+        detected: false,
+        sweepCount: 0,
+        creationTime: Date.now(),
+      };
     },
     removeObject(obj) {
       const index = this.objects.indexOf(obj);
@@ -760,7 +820,9 @@ export default {
         type = this.config.targetShape;
       } else {
         // If not target, randomly choose from other shapes
-        const otherShapes = this.config.shapes.filter(shape => shape !== this.config.targetShape);
+        const otherShapes = this.config.shapes.filter(
+          (shape) => shape !== this.config.targetShape
+        );
         type = otherShapes[Math.floor(Math.random() * otherShapes.length)];
       }
 
@@ -773,7 +835,7 @@ export default {
     },
     removeUndetectedObjects() {
       const sweepLimit = 5;
-      this.objects = this.objects.filter(obj => {
+      this.objects = this.objects.filter((obj) => {
         if (obj.sweepCount > sweepLimit) {
           this.removeObject(obj);
           return false;
@@ -790,8 +852,12 @@ export default {
       }
     },
     calculateResponseTime() {
-      if (this.suitableObjectTimes.length > 0 && this.responseTimes.length > 0) {
-        const suitableTime = this.suitableObjectTimes[this.suitableObjectTimes.length - 1];
+      if (
+        this.suitableObjectTimes.length > 0 &&
+        this.responseTimes.length > 0
+      ) {
+        const suitableTime =
+          this.suitableObjectTimes[this.suitableObjectTimes.length - 1];
         const responseTime = this.responseTimes.shift();
         const responseDuration = responseTime - suitableTime;
 
@@ -804,17 +870,20 @@ export default {
     averageResponseTime() {
       if (this.responseDurations.length > 0) {
         const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
-        return (sum / this.responseDurations.length) / 1000;
+        return sum / this.responseDurations.length / 1000;
       }
       return 0;
     },
   },
   created() {
-    window.addEventListener('keydown', this.handleKeydown);
+    window.addEventListener("keydown", this.handleKeydown);
   },
   beforeUnmount() {
     window.removeEventListener("gamepadconnected", this.handleGamepadConnected);
-    window.removeEventListener("gamepaddisconnected", this.handleGamepadDisconnected);
+    window.removeEventListener(
+      "gamepaddisconnected",
+      this.handleGamepadDisconnected
+    );
     this.stopGamepadPolling();
     window.removeEventListener("keydown", this.handleKeydown);
 
@@ -827,103 +896,103 @@ export default {
 </script>
 
 <style scoped>
-  .main-view {
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 60px auto;
+.main-view {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 60px auto;
+}
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+}
+.modal-content button {
+  background-color: #6200ee;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+.modal-content button:hover {
+  background-color: #5e37a6;
+}
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0349d0;
+  padding: 1.5rem 5rem;
+  color: #ffffff;
+  font-weight: bold;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+.radar-container {
+  display: flex;
+  align-items: center;
+}
+canvas {
+  margin-top: 15px !important;
+  display: block;
+  margin: 0 auto;
+  background-color: black;
+}
+.loading-container {
+  /* Add your loading indicator styles here */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Black background with 80% opacity */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  /* Ensure it is above other content */
+}
+.spinner {
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  /* Light border */
+  border-top: 8px solid #ffffff;
+  /* White border for the spinning part */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  .modal-overlay {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
-  }
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-  }
-  .modal-content button {
-    background-color: #6200ee;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-  }
-  .modal-content button:hover {
-    background-color: #5e37a6;
-  }
-  .timer-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0349D0;
-    padding: 1.5rem 5rem;
-    color: #ffffff;
-    font-weight: bold;
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
-  .radar-container {
-    display: flex;
-    align-items: center;
-  }
-  canvas {
-    margin-top: 15px !important;
-    display: block;
-    margin: 0 auto;
-    background-color: black;
-  }
-  .loading-container {
-    /* Add your loading indicator styles here */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    /* Black background with 80% opacity */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    /* Ensure it is above other content */
-  }
-  .spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3);
-    /* Light border */
-    border-top: 8px solid #ffffff;
-    /* White border for the spinning part */
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
 
-    100% {
-      transform: rotate(360deg);
-    }
+  100% {
+    transform: rotate(360deg);
   }
-  .text {
-    color: #ffffff;
-    margin-top: 20px;
-    font-size: 1.2em;
-  }
+}
+.text {
+  color: #ffffff;
+  margin-top: 20px;
+  font-size: 1.2em;
+}
 </style>
