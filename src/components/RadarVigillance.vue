@@ -153,7 +153,7 @@ export default {
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
 
-        this.durationTest = 2 * 60;
+        this.durationTest = 1 * 60;
       } else {
         this.setConfig(this.configs[this.indexConfig]);
 
