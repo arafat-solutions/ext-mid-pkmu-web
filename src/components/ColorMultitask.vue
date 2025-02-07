@@ -415,9 +415,13 @@ Menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain
       this.$refs.arithmeticTaskRef?.generateNumbers();
     },
     endTrainingTask() {
+      if (this.$refs.arithmeticTaskRef) {
+        this.isPauseArithmetics = true;
+        this.$refs.arithmeticTaskRef.stop();
+      }
+
       // stop sound and reset the game
       // this.$refs.colorTankTaskRef.stop();
-      // this.$refs.arithmeticTaskRef.reset();
       // this.$refs.horizonTaskRef.reset();
 
       const currentTaskIndex = this.trainingTasks.indexOf(
