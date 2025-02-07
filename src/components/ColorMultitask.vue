@@ -10,10 +10,12 @@
             <button
               @click="prevSlide"
               :disabled="currentSlide == 0"
+              v-if="currentslide > 0"
               class="nav-button disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sebelum
+              : Sebelum
             </button>
+            <div v-else></div>
             <div>
               <button
                 v-if="currentSlide === instructionModalContent.length - 1"
@@ -31,7 +33,7 @@
       </div>
       <div v-else>
         <p>
-          Anda Telah menyelesaikan semua pelatihan, setelah ini, anda akan
+          Anda Telah menyelesaikan semua pelatihan. setelah ini, anda akan
           memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi
           prima dan tanpa distraksi, test ini tidak dapat di pause.
         </p>
@@ -319,10 +321,11 @@ export default {
         ],
         colorTank: [
           `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah (ASDF) terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas (QWER). Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi Kembali dengan menekan tombol sebagai berikut:
-Apabila tangki air warna kuning susut (tangki S dan D) maka Anda harus menekan tombol Q S D atau Q D S, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol Q S D atau Q D S agar tangki bawah berwarna kuning terisi Kembali.`,
-          `Contoh lain.
+Apabila tangki air warna kuning susut (tangki S dan D) maka Anda harus menekan tombol Q S D atau Q D S, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol Q S D atau Q D S agar tangka bawah berwarna kuning terisi Kembali.
+<br>          Contoh lain.
 
-Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.`,
+Menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.
+            <img src="/devices/mwc_core.png" alt="Headset instruction" style="width: 350px; display: block; margin: 20px auto;">`,
         ],
         horizon: [
           "<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.",
@@ -492,7 +495,6 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
         }, 1000);
       }
     },
-
 
     arithmeticResult(result) {
       this.result.arithmetics.correct_answer = result.correctAnswer;
