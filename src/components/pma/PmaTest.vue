@@ -117,9 +117,9 @@
 
         <!-- Actual Test Mode -->
         <template v-else>
-          <div class="timer">
+            <div class="timer" style="right: 20px; left: auto; transform: none;">
             Sisa Waktu: {{ formatTime(remainingTime) }}
-          </div>
+            </div>
           <div class="subtasks">
             <StringMemorization v-if="currentSubtask === 'string'" :key="'string'" :training-mode="false"
               @update-score="updateStringScore" />
@@ -406,17 +406,14 @@ export default {
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 20px;
-  font-size: 1.2em;
-  font-weight: bold;
-  width: 100%;
-  max-width: 300px;
-  z-index: 100;
   background-color: blue;
   color: white;
-  padding: 10px;
-  text-align: center;
+  padding: 10px 20px;
   border-radius: 20px;
+  z-index: 100;
+  font-size: 1.2em;
+  font-weight: bold;
+  text-align: center;
 }
 
 .test-content {
