@@ -4,7 +4,7 @@
     <Modal v-if="showTrainingStartModal" @close="startTraining">
       <h2>Latihan Test</h2>
       <p>
-        Dalam sesi pelatihan ini, Anda akan berlatih menavigasi melalui labirin.
+        Dalam sesi latihan ini, Anda akan berlatih menavigasi melalui labirin.
         Gunakan tombol panah untuk bergerak. Tujuannya adalah mencapai target
         secepat mungkin. Sesi ini akan membantu Anda terbiasa dengan kontrol dan
         tingkat kesulitan.
@@ -21,7 +21,7 @@
     <Modal v-if="showTestStartModal" @close="startActualTest">
       <h2>Siap untuk memulai tes?</h2>
       <p>
-        Kerja bagus menyelesaikan pelatihan! Anda sekarang siap untuk memulai
+        Kerja bagus menyelesaikan latihan! Anda sekarang siap untuk memulai
         tes sebenarnya. Ingat, kinerja Anda dalam tes ini akan dicatat.
       </p>
       <button

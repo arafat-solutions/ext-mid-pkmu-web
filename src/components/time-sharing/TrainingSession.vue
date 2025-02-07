@@ -13,7 +13,7 @@
         <div v-else-if="showEndModal" class="modal">
             <div class="modal-content">
                 <h2>Latihan Selesai</h2>
-                <p>Anda telah menyelesaikan sesi pelatihan. Apakah Anda siap untuk memulai tes yang sebenarnya?</p>
+                <p>Anda telah menyelesaikan sesi latihan. Apakah Anda siap untuk memulai tes yang sebenarnya?</p>
                 <button @click="startActualTest" class="button start-button">Start Test</button>
             </div>
         </div>

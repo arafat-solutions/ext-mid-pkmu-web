@@ -70,7 +70,7 @@ export default {
   data() {
     return {
       isAllTankEmpty: false,
-      finalScore: 150,
+      finalScore: 120,
       keysPressed: {},
       colors: ["yellow", "blue", "red", "green"],
       lowerTanks: [],
@@ -918,7 +918,7 @@ export default {
 }
 
 .tank-section {
-  margin-right: 10%;
+  margin-right: 33%;
   display: flex;
   flex-direction: column;
 }
