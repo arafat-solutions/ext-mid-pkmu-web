@@ -1,16 +1,24 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Running Memory Span?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <p>
+        <strong>Apakah anda yakin akan memulai latihan ?</strong>
+      </p>
+      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
+        Batal
+      </button>
       <button @click="startTest()">Ya</button>
     </div>
   </div>
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai ujian Running Memory Span?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
+      <p>
+        <strong>Apakah anda yakin akan memulai test?</strong>
+      </p>
+      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
+        Batal
+      </button>
       <button @click="startTest()">Ya</button>
     </div>
   </div>
@@ -21,52 +29,80 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container">
-      Time: {{ formattedTime }}
-    </div>
+    <div class="timer-container">Time: {{ formattedTime }}</div>
 
     <div class="input-simulation-container">
       <div v-if="isShowQuestion">
         <div class="question">
-          <p class="text-question"> Urutkan dari angka terakhir </p>
-          <p v-if="showFeedback" :class="{ 'feedback-correct': lastAnswerCorrect, 'feedback-wrong': !lastAnswerCorrect }">
-            {{ lastAnswerCorrect ? 'Benar!' : 'Salah!' }}
+          <p class="text-question">Urutkan dari angka terakhir</p>
+          <p
+            v-if="showFeedback"
+            :class="{
+              'feedback-correct': lastAnswerCorrect,
+              'feedback-wrong': !lastAnswerCorrect,
+            }"
+          >
+            {{ lastAnswerCorrect ? "Benar!" : "Salah!" }}
           </p>
         </div>
 
         <div class="calculator">
-          <input type="text" v-model.trim="expression" readonly>
+          <input type="text" v-model.trim="expression" readonly />
           <div class="buttons">
-            <button class="digit-number" @click="appendToExpression('1')">1</button>
-            <button class="digit-number" @click="appendToExpression('2')">2</button>
-            <button class="digit-number" @click="appendToExpression('3')">3</button>
-            <button class="digit-number" @click="appendToExpression('4')">4</button>
-            <button class="digit-number" @click="appendToExpression('5')">5</button>
-            <button class="digit-number" @click="appendToExpression('6')">6</button>
-            <button class="digit-number" @click="appendToExpression('7')">7</button>
-            <button class="digit-number" @click="appendToExpression('8')">8</button>
-            <button class="digit-number" @click="appendToExpression('9')">9</button>
-            <button class="digit-number" @click="clearExpression()">Hapus</button>
-            <button class="digit-number" @click="appendToExpression('0')">0</button>
+            <button class="digit-number" @click="appendToExpression('1')">
+              1
+            </button>
+            <button class="digit-number" @click="appendToExpression('2')">
+              2
+            </button>
+            <button class="digit-number" @click="appendToExpression('3')">
+              3
+            </button>
+            <button class="digit-number" @click="appendToExpression('4')">
+              4
+            </button>
+            <button class="digit-number" @click="appendToExpression('5')">
+              5
+            </button>
+            <button class="digit-number" @click="appendToExpression('6')">
+              6
+            </button>
+            <button class="digit-number" @click="appendToExpression('7')">
+              7
+            </button>
+            <button class="digit-number" @click="appendToExpression('8')">
+              8
+            </button>
+            <button class="digit-number" @click="appendToExpression('9')">
+              9
+            </button>
+            <button class="digit-number" @click="clearExpression()">
+              Hapus
+            </button>
+            <button class="digit-number" @click="appendToExpression('0')">
+              0
+            </button>
             <button class="digit-number" @click="submitAnswer()">Kirim</button>
           </div>
         </div>
       </div>
 
-      <div v-else style="margin-top: 20%;">
+      <div v-else style="margin-top: 20%">
         <p class="text-question">Dengarkan angka yang disebutkan!</p>
       </div>
-
     </div>
   </div>
 </template>
 
 <script>
-import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import { getConfigs } from '@/utils/configs';
+import {
+  completeTrainingTestAndUpdateLocalStorage,
+  removeTestByNameAndUpdateLocalStorage,
+} from "@/utils/index";
+import { getConfigs } from "@/utils/configs";
 
 export default {
-  name: 'RunningMemorySpan',
+  name: "RunningMemorySpan",
   data() {
     return {
       isNextLevel: false,
@@ -78,16 +114,16 @@ export default {
       isTrainingCompleted: false,
       countdownInterval: null,
       countdownNextQuestion: null,
-      expression: '',
+      expression: "",
       audios: [],
       utterances: [],
       answer: [],
       config: {},
       configs: [],
-      moduleId: '',
-      sessionId: '',
-      userId: '',
-      testId: '',
+      moduleId: "",
+      sessionId: "",
+      userId: "",
+      testId: "",
       indexConfig: 0,
       durationTest: 0,
       totalQuestion: 0,
@@ -109,37 +145,47 @@ export default {
   },
   computed: {
     formattedTime() {
-      const minutes = Math.floor(this.durationTest / 60).toString().padStart(2, '0');
-      const seconds = (this.durationTest % 60).toString().padStart(2, '0');
+      const minutes = Math.floor(this.durationTest / 60)
+        .toString()
+        .padStart(2, "0");
+      const seconds = (this.durationTest % 60).toString().padStart(2, "0");
       return `${minutes}:${seconds}`;
     },
   },
   mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountRunningMemorySpan') || '0')
-    reloadCount++
-    localStorage.setItem('reloadCountRunningMemorySpan', reloadCount.toString())
+    let reloadCount = parseInt(
+      localStorage.getItem("reloadCountRunningMemorySpan") || "0"
+    );
+    reloadCount++;
+    localStorage.setItem(
+      "reloadCountRunningMemorySpan",
+      reloadCount.toString()
+    );
 
-    window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountRunningMemorySpan', reloadCount.toString())
-    })
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem(
+        "reloadCountRunningMemorySpan",
+        reloadCount.toString()
+      );
+    });
 
     this.initConfig();
   },
   methods: {
     startTest() {
       if (!this.isTrainingCompleted) {
-        this.setConfig(this.configs[0])
+        this.setConfig(this.configs[0]);
 
-        this.durationTest = 1 * 60
+        this.durationTest = 1 * 60;
       } else {
-        this.setConfig(this.configs[this.indexConfig])
+        this.setConfig(this.configs[this.indexConfig]);
 
-        this.durationTest = 0
+        this.durationTest = 0;
         for (const i in this.configs) {
-          this.durationTest += this.configs[i].duration * 60
+          this.durationTest += this.configs[i].duration * 60;
         }
 
-        this.config.duration = this.configs[this.indexConfig].duration * 60
+        this.config.duration = this.configs[this.indexConfig].duration * 60;
       }
 
       this.isModalTrainingVisible = false;
@@ -155,13 +201,17 @@ export default {
       clearInterval(this.countdownInterval);
       clearInterval(this.countdownNextQuestion);
 
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel()
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
       }
     },
     exit() {
-      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
-        this.$router.push('module');
+      if (
+        confirm(
+          "Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang."
+        )
+      ) {
+        this.$router.push("module");
       }
     },
     startCountdown() {
@@ -174,13 +224,15 @@ export default {
           //For Training
           if (!this.isTrainingCompleted) {
             this.isTrainingCompleted = true;
-            completeTrainingTestAndUpdateLocalStorage("Running Memory Span Test");
+            completeTrainingTestAndUpdateLocalStorage(
+              "Running Memory Span Test"
+            );
 
             //Start Exam After Training
-            this.isModalVisible = true
+            this.isModalVisible = true;
             this.totalQuestion = 0;
             this.correctAnswer = 0;
-            this.responseDurations = []
+            this.responseDurations = [];
             this.userInputs = [];
           } else {
             setTimeout(() => {
@@ -192,25 +244,26 @@ export default {
         //Check timer for next level exam
         if (this.isTrainingCompleted) {
           if (this.config.duration >= 0) {
-            this.config.duration--
+            this.config.duration--;
 
             if (this.config.duration === 0) {
-              this.isNextLevel = true
+              this.isNextLevel = true;
             }
           } else {
             if (this.isNextLevel) {
-              this.isNextLevel = false
-              this.indexConfig++
-              this.config.duration = this.configs[this.indexConfig].duration * 60
+              this.isNextLevel = false;
+              this.indexConfig++;
+              this.config.duration =
+                this.configs[this.indexConfig].duration * 60;
             }
           }
         }
       }, 1000);
     },
     initConfig() {
-      const configData = getConfigs('running-memory-span-test');
+      const configData = getConfigs("running-memory-span-test");
       if (!configData) {
-        this.$router.push('/module');
+        this.$router.push("/module");
         return;
       }
 
@@ -230,12 +283,12 @@ export default {
       }
     },
     setConfig(config) {
-      this.config.broadcastLength = config.broadcast_length
-      this.config.difficultyLevel = config.difficulty_level
-      this.config.includeZero = config.include_zero
-      this.config.speed = config.speed
-      this.config.subtask = config.subtask
-      this.config.testId = config.id
+      this.config.broadcastLength = config.broadcast_length;
+      this.config.difficultyLevel = config.difficulty_level;
+      this.config.includeZero = config.include_zero;
+      this.config.speed = config.speed;
+      this.config.subtask = config.subtask;
+      this.config.testId = config.id;
 
       this.isConfigLoaded = true;
     },
@@ -243,17 +296,17 @@ export default {
       this.result.total_question = this.totalQuestion;
       this.result.correct_answer = this.correctAnswer;
 
-      const resultTimeResonded = this.averageResponseTime()
+      const resultTimeResonded = this.averageResponseTime();
       this.result.avg_response_time = resultTimeResonded.toFixed(2);
 
-      this.result.response_times = this.responseDurations.map(duration => ({
+      this.result.response_times = this.responseDurations.map((duration) => ({
         responseTime: duration,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }));
 
       this.result.graph_data = this.userInputs;
 
-      this.submitResult()
+      this.submitResult();
     },
     async submitResult() {
       try {
@@ -265,48 +318,48 @@ export default {
           testSessionId: this.sessionId,
           userId: this.userId,
           batteryTestId: this.testId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountRunningMemorySpan')),
+          refreshCount: parseInt(
+            localStorage.getItem("reloadCountRunningMemorySpan")
+          ),
           result: this.result,
-        }
+        };
 
-        const res = await fetch(`${API_URL}/api/submission`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        )
+        const res = await fetch(`${API_URL}/api/submission`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
         if (!res.ok) {
-          throw new Error('Failed Submit Test');
+          throw new Error("Failed Submit Test");
         }
       } catch (error) {
         console.error(error), "error";
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Running Memory Span Test');
-        localStorage.removeItem('reloadCountRunningMemorySpan');
-        this.$router.push('/module');
+        removeTestByNameAndUpdateLocalStorage("Running Memory Span Test");
+        localStorage.removeItem("reloadCountRunningMemorySpan");
+        this.$router.push("/module");
       }
     },
     setLength() {
-      if (this.config.broadcastLength === 'short') {
+      if (this.config.broadcastLength === "short") {
         return 5;
       }
 
-      if (this.config.broadcastLength === 'medium') {
+      if (this.config.broadcastLength === "medium") {
         return 7;
       }
 
-      if (this.config.broadcastLength === 'long') {
+      if (this.config.broadcastLength === "long") {
         return 9;
       }
     },
     generateAudio() {
-      this.setConfig(this.configs[this.indexConfig])
+      this.setConfig(this.configs[this.indexConfig]);
 
       this.audios = [];
       this.utterances = [];
@@ -314,7 +367,7 @@ export default {
       this.responseTime = 0;
 
       for (let i = 0; i < this.setLength(); i++) {
-        let number = null
+        let number = null;
 
         if (!this.config.includeZero) {
           number = Math.floor(Math.random() * 9) + 1;
@@ -326,7 +379,7 @@ export default {
       }
 
       if (this.audios.length > 0) {
-        this.utterances = this.audios.map(audio => {
+        this.utterances = this.audios.map((audio) => {
           const speak = new SpeechSynthesisUtterance(audio.toString());
           return speak;
         });
@@ -341,7 +394,9 @@ export default {
       this.totalQuestion++;
 
       const reverseAudios = [...this.audios].reverse();
-      let checkAnswer = this.answer.length === reverseAudios.length && this.answer.every((value, index) => value === reverseAudios[index]);
+      let checkAnswer =
+        this.answer.length === reverseAudios.length &&
+        this.answer.every((value, index) => value === reverseAudios[index]);
 
       this.responseTime = Date.now();
       this.lastAnswerCorrect = checkAnswer;
@@ -350,20 +405,20 @@ export default {
       if (checkAnswer) {
         this.correctAnswer++;
         this.userInputs.push({
-          type: 'correct',
+          type: "correct",
           responseTime: this.responseTime - this.responseQuestion,
           timestamp: Date.now(),
         });
       } else {
         this.userInputs.push({
-          type: 'wrong',
+          type: "wrong",
           responseTime: this.responseTime - this.responseQuestion,
           timestamp: Date.now(),
         });
       }
 
       this.responseDurations.push(this.responseTime - this.responseQuestion);
-      this.expression = '';
+      this.expression = "";
       this.answer = [];
 
       // Clear feedback after delay
@@ -378,7 +433,7 @@ export default {
       if (this.responseDurations.length > 0) {
         const sum = this.responseDurations.reduce((acc, curr) => acc + curr, 0);
 
-        return (sum / this.responseDurations.length) / 1000;
+        return sum / this.responseDurations.length / 1000;
       }
 
       return 0;
@@ -392,15 +447,14 @@ export default {
       this.answer.pop();
     },
     startPlayback() {
-      if ('speechSynthesis' in window) {
-
+      if ("speechSynthesis" in window) {
         setTimeout(() => {
           // Initial
           const preambule = new SpeechSynthesisUtterance("  ");
           preambule.rate = 1;
           preambule.pitch = 1.2;
           preambule.volume = 1;
-          preambule.lang = 'id-ID';
+          preambule.lang = "id-ID";
           window.speechSynthesis.speak(preambule);
           // Initial
 
@@ -411,7 +465,7 @@ export default {
               utterance.rate = 1 + (this.config.speed - 1) / 10;
               utterance.pitch = 1.2;
               utterance.volume = 1;
-              utterance.lang = 'id-ID';
+              utterance.lang = "id-ID";
               utterance.onend = () => {
                 index++;
                 speakNext();
@@ -421,12 +475,12 @@ export default {
               this.responseQuestion = Date.now();
               this.isShowQuestion = true;
 
-              let intervalQuestion = 10
+              let intervalQuestion = 10;
               this.countdownNextQuestion = setInterval(() => {
                 if (intervalQuestion > 0) {
                   intervalQuestion--;
                 } else {
-                  this.submitAnswer()
+                  this.submitAnswer();
                 }
               }, 1000);
             }
@@ -434,7 +488,7 @@ export default {
           speakNext();
         }, 500);
       } else {
-        alert('Sorry, your browser does not support text-to-speech.');
+        alert("Sorry, your browser does not support text-to-speech.");
       }
     },
   },
@@ -489,7 +543,7 @@ export default {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #0349D0;
+  background-color: #0349d0;
   padding: 1.5rem 5rem;
   color: #ffffff;
   font-weight: bold;
@@ -586,7 +640,7 @@ input[type="text"] {
 }
 
 .feedback-correct {
-  color: #4CAF50;
+  color: #4caf50;
   font-weight: bold;
   margin-top: 10px;
   font-size: 1.2em;

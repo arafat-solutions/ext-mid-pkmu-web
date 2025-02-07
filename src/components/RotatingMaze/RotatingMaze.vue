@@ -2,7 +2,7 @@
   <div>
     <!-- Training Start Modal -->
     <Modal v-if="showTrainingStartModal" @close="startTraining">
-      <h2>Welcome to the Maze Game Training</h2>
+      <h2>Latihan Test</h2>
       <p>
         Dalam sesi pelatihan ini, Anda akan berlatih menavigasi melalui labirin.
         Gunakan tombol panah untuk bergerak. Tujuannya adalah mencapai target
@@ -13,7 +13,7 @@
         @click="startTraining"
         class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2"
       >
-        Start Training
+        Mulai Latihan
       </button>
     </Modal>
 
