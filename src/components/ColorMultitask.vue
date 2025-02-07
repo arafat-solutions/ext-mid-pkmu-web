@@ -33,7 +33,7 @@
       </div>
       <div v-else>
         <p>
-          Anda Telah menyelesaikan semua pelatihan. setelah ini, anda akan
+          Anda Telah menyelesaikan semua latihan. setelah ini, anda akan
           memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi
           prima dan tanpa distraksi, test ini tidak dapat di pause.
         </p>

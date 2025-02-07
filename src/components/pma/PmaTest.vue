@@ -3,7 +3,7 @@
     <!-- Initial Instructions Modal -->
     <div v-if="showModal" class="modal">
       <div class="modal-content">
-        <h2>Pelatihan PMA Test</h2>
+        <h2>latihan PMA Test</h2>
         <div class="instruction-content">
           <h3>Perangkat yang Digunakan:</h3>
           <ul>
@@ -12,7 +12,7 @@
             <li>Layar Sentuh: Menjawab pertanyaan dengan menyentuh opsi yang tersedia</li>
           </ul>
         </div>
-        <button @click="startTraining" class="start-btn">Mulai Pelatihan</button>
+        <button @click="startTraining" class="start-btn">Mulai latihan</button>
       </div>
     </div>
 
@@ -20,55 +20,55 @@
       <!-- Tracking Joystick Instructions Modal -->
       <div v-if="currentStep === 'tracking_joystick' && showModalJoystick" class="modal">
         <div class="modal-content">
-          <h2>Instruksi Pelatihan Tracking Joystick</h2>
+          <h2>Instruksi latihan Tracking Joystick</h2>
           <p>Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran</p>
           <p>Objek dot secara automatis akan berusaha bergerak kearah luar lingkaran</p>
           <p>Tugas anda adalah mengontrol objek dot untuk selalu berada di dalam lingkaran dengan menggerakan joystick</p>
           <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
-          <button @click="startTrackingJoystick" class="start-btn">Mulai Pelatihan Joystick</button>
+          <button @click="startTrackingJoystick" class="start-btn">Mulai latihan Joystick</button>
         </div>
       </div>
 
       <!-- Tracking Thruster Instructions Modal -->
       <div v-if="currentStep === 'tracking_thruster' && showModalThruster" class="modal">
         <div class="modal-content">
-          <h2>Instruksi Pelatihan Tracking Thruster</h2>
+          <h2>Instruksi latihan Tracking Thruster</h2>
           <p>Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.</p>
           <p>Ukuran lingkaran putus-putus akan bergerak secara automatis.</p>
           <p>Tugas anda adalah merubah ukuran lingkaran tanpa putus, mengikuti ukuran lingkaran putus-putus.</p>
           <img :src="'devices/thruster.png'" class="center" alt="Joystick" />
-          <button @click="startTrackingThruster" class="start-btn">Mulai Pelatihan Thruster</button>
+          <button @click="startTrackingThruster" class="start-btn">Mulai latihan Thruster</button>
         </div>
       </div>
 
 
       <div v-if="currentStep === 'string' && showModalString" class="modal">
         <div class="modal-content">
-          <h2>Instruksi Pelatihan Memori</h2>
+          <h2>Instruksi latihan Memori</h2>
           <p> Serangkaian string akan diperlihatkan</p>
           <img :src="'devices/memory_pre.png'" class="center" alt="Joystick" />
           <p> Akan terdapat opsi jawaban berupa bagian - bagian kecil dari alfanumerik yang telah di perlihatkan sebelumnya</p>
           <p> Tugas anda adalah memilih dari opsi jawaban tersebut dimana bagian kecil tersebut diperlihatkan </p>
           <img :src="'devices/memory.png'" class="center" alt="Joystick" />
-          <button @click="startString" class="start-btn">Mulai Pelatihan Memory</button>
+          <button @click="startString" class="start-btn">Mulai latihan Memory</button>
         </div>
       </div>
 
       <div v-if="currentStep === 'audio' && showModalAudio" class="modal">
         <div class="modal-content">
           <h3>Gunakan Headphone yang tersedia!</h3>
-          <h2>Instruksi Pelatihan Memori</h2>
+          <h2>Instruksi latihan Memori</h2>
           
-          <button @click="startAudio" class="start-btn">Mulai Pelatihan Audio</button>
+          <button @click="startAudio" class="start-btn">Mulai latihan Audio</button>
         </div>
       </div>
 
       <!-- Combined Training Instructions Modal -->
       <div v-if="currentStep === 'combined_training' && showModalCombined" class="modal">
         <div class="modal-content">
-          <h2>Instruksi Pelatihan Gabungan</h2>
-          <p>Lakukan semua tugas pelatihan secara bersamaan</p>
-          <button @click="startCombinedTraining" class="start-btn">Mulai Pelatihan Gabungan</button>
+          <h2>Instruksi latihan Gabungan</h2>
+          <p>Lakukan semua tugas latihan secara bersamaan</p>
+          <button @click="startCombinedTraining" class="start-btn">Mulai latihan Gabungan</button>
         </div>
       </div>
 
@@ -76,12 +76,12 @@
         <!-- Training Mode -->
         <template v-if="!isActualTest">
           <div v-if="currentStep === 'tracking_joystick'" class="tracking-section">
-            <h3>Pelatihan Tracking Joystick</h3>
+            <h3>latihan Tracking Joystick</h3>
             <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'joystick'" />
           </div>
 
           <div v-if="currentStep === 'tracking_thruster'" class="tracking-section">
-            <h3>Pelatihan Tracking Thruster</h3>
+            <h3>latihan Tracking Thruster</h3>
             <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'thruster'" />
           </div>
 
@@ -101,7 +101,7 @@
           </div>
 
           <div v-if="currentStep === 'combined_training'" class="combined-training-section">
-            <h3>Pelatihan Gabungan</h3>
+            <h3>latihan Gabungan</h3>
             <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'all'" />
             <div class="subtasks">
               <StringMemorization v-if="currentSubtask === 'combined_training'" :training-mode="true"
@@ -136,8 +136,8 @@
 
       <div v-if="trainingComplete" class="completion-modal modal">
         <div class="modal-content">
-          <h2>Pelatihan Selesai</h2>
-          <p>Anda telah menyelesaikan sesi pelatihan. Siap untuk memulai tes yang sebenarnya?</p>
+          <h2>latihan Selesai</h2>
+          <p>Anda telah menyelesaikan sesi latihan. Siap untuk memulai tes yang sebenarnya?</p>
           <div class="button-group">
             <button @click="startActualTest" class="start-btn">Mulai Tes</button>
           </div>
