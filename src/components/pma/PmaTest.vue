@@ -41,6 +41,28 @@
         </div>
       </div>
 
+
+      <div v-if="currentStep === 'string' && showModalString" class="modal">
+        <div class="modal-content">
+          <h2>Instruksi Pelatihan Memori</h2>
+          <p> Serangkaian string akan diperlihatkan</p>
+          <img :src="'devices/memory_pre.png'" class="center" alt="Joystick" />
+          <p> Akan terdapat opsi jawaban berupa bagian - bagian kecil dari alfanumerik yang telah di perlihatkan sebelumnya</p>
+          <p> Tugas anda adalah memilih dari opsi jawaban tersebut dimana bagian kecil tersebut diperlihatkan </p>
+          <img :src="'devices/memory.png'" class="center" alt="Joystick" />
+          <button @click="startString" class="start-btn">Mulai Pelatihan Memory</button>
+        </div>
+      </div>
+
+      <div v-if="currentStep === 'audio' && showModalAudio" class="modal">
+        <div class="modal-content">
+          <h3>Gunakan Headphone yang tersedia!</h3>
+          <h2>Instruksi Pelatihan Memori</h2>
+          
+          <button @click="startAudio" class="start-btn">Mulai Pelatihan Audio</button>
+        </div>
+      </div>
+
       <!-- Combined Training Instructions Modal -->
       <div v-if="currentStep === 'combined_training' && showModalCombined" class="modal">
         <div class="modal-content">
@@ -63,14 +85,27 @@
             <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'thruster'" />
           </div>
 
+          <div v-if="currentStep === 'string'" class="combined-training-section">
+            <div class="subtasks">
+              <StringMemorization v-if="currentSubtask === 'string'" :training-mode="true"
+                @update-score="updateStringScore" />
+            </div>
+          </div>
+
+
+          <div v-if="currentStep === 'audio'" class="combined-training-section">
+            <div class="subtasks">
+              <AudioInformation v-if="currentSubtask === 'audio'" :training-mode="true"
+                @update-score="updateStringScore" />
+            </div>
+          </div>
+
           <div v-if="currentStep === 'combined_training'" class="combined-training-section">
             <h3>Pelatihan Gabungan</h3>
             <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'all'" />
             <div class="subtasks">
-              <StringMemorization v-if="currentSubtask === 'string'" :training-mode="true"
+              <StringMemorization v-if="currentSubtask === 'combined_training'" :training-mode="true"
                 @update-score="updateStringScore" />
-              <AudioInformation v-if="currentSubtask === 'audio'" :training-mode="true"
-                @update-score="updateAudioScore" />
             </div>
           </div>
 
@@ -132,6 +167,8 @@ export default {
     const showModalJoystick = ref(false);
     const showModalThruster = ref(false);
     const showModalCombined = ref(false);
+    const showModalString = ref(false);
+    const showModalAudio = ref(false);
     const currentStep = ref('');
     const currentSubtask = ref('string');
     const remainingTime = ref(60);
@@ -186,6 +223,14 @@ export default {
 
     const startTrackingThruster = () => {
       showModalThruster.value = false;
+    };
+
+    const startString = () => {
+      showModalString.value = false;
+    };
+
+    const startAudio = () => {
+      showModalAudio.value = false;
     };
 
     const startCombinedTraining = () => {
@@ -301,12 +346,16 @@ export default {
         showModalThruster.value = true;
         startTimer();
       } else if (currentStep.value === 'tracking_thruster') {
+        currentStep.value = 'string';
+        showModalString.value = true;
+        startTimer();
+      } else if (currentStep.value === 'string') {
         currentStep.value = 'combined_training';
         showModalCombined.value = true;
         startTimer();
       } else if (currentStep.value === 'combined_training') {
         trainingComplete.value = true;
-      }
+      } 
     };
 
     onUnmounted(() => {
@@ -317,6 +366,8 @@ export default {
       showModal,
       showModalJoystick,
       showModalThruster,
+      showModalString,
+      showModalAudio,
       showModalCombined,
       currentStep,
       currentSubtask,
@@ -326,6 +377,8 @@ export default {
       startTraining,
       startTrackingJoystick,
       startTrackingThruster,
+      startString,
+      startAudio,
       startCombinedTraining,
       startActualTest,
       formatTime,
