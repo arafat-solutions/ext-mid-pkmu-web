@@ -366,7 +366,7 @@ export default {
       const canvasWidth = this.$refs.horizonCanvas.width;
       const canvasHeight = this.$refs.horizonCanvas.height;
 
-      const sensitivity = 5;  // You can adjust this value to control how fast the focus line moves
+      const sensitivity = 0.5;  // You can adjust this value to control how fast the focus line moves
 
       this.config.focusX += leftStickX * sensitivity;
       this.config.focusY += leftStickY * sensitivity;
