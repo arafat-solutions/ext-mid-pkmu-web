@@ -1,7 +1,7 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Accoustic Memory?</strong></p>
+      <p><strong>Apakah Anda Yakin <br>akan memulai latihan Accoustic Memory?</strong></p>
       <button @click="startTest()">Ya</button>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
     </div>

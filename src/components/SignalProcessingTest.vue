@@ -1,7 +1,7 @@
 <template>
   <div v-if="isModalVisible" class="modal-overlay">
   <div class="modal-content">
-    <h2 class="text-xl font-bold mb-4">{{ isTrainingCompleted ? 'Konfirmasi Ujian' : 'Konfirmasi Pelatihan' }}</h2>
+    <h2 class="text-xl font-bold mb-4">{{ isTrainingCompleted ? 'Konfirmasi Ujian' : 'Konfirmasi latihan' }}</h2>
 
     <div class="mb-4">
       <p class="mb-2"><strong>Untuk blok merah:</strong> {{ ruleOptions[currentRuleSet.red] }}</p>
@@ -11,7 +11,7 @@
 
     <p class="mb-4 text-center">
       <strong>
-        Apakah Anda yakin akan memulai {{ isTrainingCompleted ? 'ujian' : 'pelatihan' }} Signal Processing?
+        Apakah Anda yakin akan memulai {{ isTrainingCompleted ? 'ujian' : 'latihan' }} Signal Processing?
       </strong>
     </p>
 

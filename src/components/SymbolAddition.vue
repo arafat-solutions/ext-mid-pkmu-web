@@ -1,7 +1,7 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p><strong>Apakah Anda Yakin <br>akan memulai pelatihan Symbol Addition?</strong></p>
+      <p><strong>Apakah Anda Yakin <br>akan memulai latihan Symbol Addition?</strong></p>
       <button @click="exit()" style="margin-right: 20px;">Batal</button>
       <button @click="startTest()">Ya</button>
     </div>
