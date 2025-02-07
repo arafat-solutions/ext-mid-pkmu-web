@@ -918,7 +918,7 @@ export default {
 }
 
 .tank-section {
-  margin-right: 10%;
+  margin-right: 33%;
   display: flex;
   flex-direction: column;
 }
