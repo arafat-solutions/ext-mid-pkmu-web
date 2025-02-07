@@ -3,15 +3,14 @@
     <!-- Initial Instructions Modal -->
     <div v-if="showModal" class="modal">
       <div class="modal-content">
-        <h2>Instruksi Pelatihan PMA Test</h2>
+        <h2>Pelatihan PMA Test</h2>
         <div class="instruction-content">
           <h3>Perangkat yang Digunakan:</h3>
           <ul>
-            <li>Joystick: Menggerakkan objek hijau secara horizontal dan vertikal</li>
-            <li>Thruster: Mengatur kecepatan pergerakan objek</li>
+            <li>Joystick: Menggerakkan objek dot</li>
+            <li>Thruster: Mengatur Ukuran lingkaran</li>
             <li>Layar Sentuh: Menjawab pertanyaan dengan menyentuh opsi yang tersedia</li>
           </ul>
-          <p>Durasi pelatihan: 1 menit untuk setiap bagian</p>
         </div>
         <button @click="startTraining" class="start-btn">Mulai Pelatihan</button>
       </div>
@@ -22,8 +21,10 @@
       <div v-if="currentStep === 'tracking_joystick' && showModalJoystick" class="modal">
         <div class="modal-content">
           <h2>Instruksi Pelatihan Tracking Joystick</h2>
-          <p>Gunakan joystick untuk menggerakkan objek hijau ke posisi target</p>
-            <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
+          <p>Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran</p>
+          <p>Objek dot secara automatis akan berusaha bergerak kearah luar lingkaran</p>
+          <p>Tugas anda adalah mengontrol objek dot untuk selalu berada di dalam lingkaran dengan menggerakan joystick</p>
+          <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
           <button @click="startTrackingJoystick" class="start-btn">Mulai Pelatihan Joystick</button>
         </div>
       </div>
@@ -32,7 +33,9 @@
       <div v-if="currentStep === 'tracking_thruster' && showModalThruster" class="modal">
         <div class="modal-content">
           <h2>Instruksi Pelatihan Tracking Thruster</h2>
-          <p>Gunakan thruster untuk mengatur kecepatan pergerakan objek</p>
+          <p>Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.</p>
+          <p>Ukuran lingkaran putus-putus akan bergerak secara automatis.</p>
+          <p>Tugas anda adalah merubah ukuran lingkaran tanpa putus, mengikuti ukuran lingkaran putus-putus.</p>
           <img :src="'devices/thruster.png'" class="center" alt="Joystick" />
           <button @click="startTrackingThruster" class="start-btn">Mulai Pelatihan Thruster</button>
         </div>
@@ -53,9 +56,6 @@
           <div v-if="currentStep === 'tracking_joystick'" class="tracking-section">
             <h3>Pelatihan Tracking Joystick</h3>
             <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'joystick'" />
-            <div class="next-button-container">
-              <button @click="nextStep" class="start-btn next-btn">Berikutnya</button>
-            </div>
           </div>
 
           <div v-if="currentStep === 'tracking_thruster'" class="tracking-section">
@@ -73,8 +73,10 @@
                 @update-score="updateAudioScore" />
             </div>
           </div>
+
+          <!-- Single, consistently placed next button for all training steps -->
           <div class="next-button-container">
-            <button @click="nextStep" class="start-btn next-btn">Berikutnyass</button>
+            <button @click="nextStep" class="start-btn next-btn">Berikutnya</button>
           </div>
         </template>
 
@@ -106,10 +108,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="next-button-container">
-      <button @click="nextStep" class="start-btn next-btn">Berikutnya x</button>
     </div>
   </div>
 </template>
@@ -436,9 +434,10 @@ export default {
 }
 
 .next-button-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
 }
 
 .next-btn {
@@ -449,6 +448,7 @@ export default {
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .next-btn:hover {
