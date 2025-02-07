@@ -328,7 +328,8 @@ Menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain
             <img src="/devices/mwc_core.png" alt="Headset instruction" style="width: 350px; display: block; margin: 20px auto;">`,
         ],
         horizon: [
-          "<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.",
+          `<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.
+          <img src="/devices/mwc_horizon.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         combined: [
           "<b>SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.",
