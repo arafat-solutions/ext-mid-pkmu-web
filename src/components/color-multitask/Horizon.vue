@@ -1,16 +1,21 @@
 <template>
-  <canvas ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" class="no-pointer-events">
+  <canvas
+    ref="horizonCanvas"
+    :width="horizonWidth"
+    :height="horizonHeight"
+    class="no-pointer-events"
+  >
   </canvas>
 </template>
 
 <script>
 export default {
-  name: 'HorizonTest',
+  name: "HorizonTest",
   props: {
     isTimesUp: Boolean,
     speed: String,
     isPause: Boolean,
-    isActive: Boolean
+    isActive: Boolean,
   },
   data() {
     return {
@@ -21,14 +26,14 @@ export default {
       config: {
         x: 10,
         y: 5,
-        skyColor: '#87CEEB',
-        landColor: '#8B4513',
+        skyColor: "#87CEEB",
+        landColor: "#8B4513",
         whiteBorderHeight: 5,
         focusY: 300,
         focusX: 100,
         angle: 0,
         horizonOffsetY: 0,
-        horizonOffsetX: 0
+        horizonOffsetX: 0,
       },
       currentTilt: 0,
       currentShiftX: 0,
@@ -39,7 +44,7 @@ export default {
       gamepadCheckInterval: null,
       lastGamepadState: null,
       reconnectAttempts: 0,
-      maxReconnectAttempts: 5
+      maxReconnectAttempts: 5,
     };
   },
   mounted() {
@@ -47,13 +52,16 @@ export default {
   },
   unmounted() {
     this.stopAnimation();
-    window.removeEventListener('gamepadconnected', this.onGamepadConnected);
-    window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+    window.removeEventListener("gamepadconnected", this.onGamepadConnected);
+    window.removeEventListener(
+      "gamepaddisconnected",
+      this.onGamepadDisconnected
+    );
     clearInterval(this.gamepadCheckInterval);
   },
   watch: {
     isTimesUp() {
-      this.$emit('getResult', {
+      this.$emit("getResult", {
         correctTime: this.greenLineDuration,
       });
     },
@@ -73,8 +81,11 @@ export default {
         this.startAnimation();
       }
 
-      window.addEventListener('gamepadconnected', this.onGamepadConnected);
-      window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
+      window.addEventListener("gamepadconnected", this.onGamepadConnected);
+      window.addEventListener(
+        "gamepaddisconnected",
+        this.onGamepadDisconnected
+      );
       this.startGamepadCheck();
     },
 
@@ -86,8 +97,9 @@ export default {
 
     checkForGamepad() {
       const gamepads = navigator.getGamepads();
-      const joystick = Array.from(gamepads).find(gamepad =>
-        gamepad && gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)'
+      const joystick = Array.from(gamepads).find(
+        (gamepad) =>
+          gamepad && gamepad.id === "T.16000M (Vendor: 044f Product: b10a)"
       );
 
       if (joystick) {
@@ -98,7 +110,9 @@ export default {
       } else if (this.gamepadIndex !== null) {
         this.reconnectAttempts++;
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          console.warn('Gamepad disconnected, attempting to re-enumerate devices');
+          console.warn(
+            "Gamepad disconnected, attempting to re-enumerate devices"
+          );
           this.gamepadIndex = null;
           this.reconnectAttempts = 0;
         }
@@ -106,7 +120,7 @@ export default {
     },
 
     onGamepadConnected(event) {
-      if (event.gamepad.id !== 'T.16000M (Vendor: 044f Product: b10a)') return;
+      if (event.gamepad.id !== "T.16000M (Vendor: 044f Product: b10a)") return;
 
       this.gamepadIndex = event.gamepad.index;
       this.lastGamepadState = event.gamepad;
@@ -139,7 +153,7 @@ export default {
       const canvas = this.$refs.horizonCanvas;
       canvas.width = this.horizonWidth;
       canvas.height = this.horizonHeight;
-      this.ctx = canvas.getContext('2d');
+      this.ctx = canvas.getContext("2d");
     },
     drawVisual() {
       this.clearCanvas();
@@ -157,21 +171,42 @@ export default {
       ctx.stroke();
       ctx.clip();
 
-      const angleInRadians = this.currentTilt * Math.PI / 180;
+      const angleInRadians = (this.currentTilt * Math.PI) / 180;
 
-      ctx.translate(config.x + this.horizonWidth / 2, config.y + this.horizonHeight / 2);
+      ctx.translate(
+        config.x + this.horizonWidth / 2,
+        config.y + this.horizonHeight / 2
+      );
       ctx.translate(this.currentShiftX, this.currentShiftY);
       ctx.rotate(angleInRadians);
-      ctx.translate(-config.x - this.horizonWidth / 2, -config.y - this.horizonHeight / 2);
+      ctx.translate(
+        -config.x - this.horizonWidth / 2,
+        -config.y - this.horizonHeight / 2
+      );
 
       ctx.fillStyle = config.skyColor;
-      ctx.fillRect(config.x - this.horizonWidth / 2, config.y - this.horizonHeight, this.horizonWidth * 2, this.horizonHeight * 4);
+      ctx.fillRect(
+        config.x - this.horizonWidth / 2,
+        config.y - this.horizonHeight,
+        this.horizonWidth * 2,
+        this.horizonHeight * 4
+      );
 
-      ctx.fillStyle = 'white';
-      ctx.fillRect(config.x - this.horizonWidth / 2, config.y + this.horizonHeight / 2 - config.whiteBorderHeight, this.horizonWidth * 2, config.whiteBorderHeight + this.horizonHeight / 4);
+      ctx.fillStyle = "white";
+      ctx.fillRect(
+        config.x - this.horizonWidth / 2,
+        config.y + this.horizonHeight / 2 - config.whiteBorderHeight,
+        this.horizonWidth * 2,
+        config.whiteBorderHeight + this.horizonHeight / 4
+      );
 
       ctx.fillStyle = config.landColor;
-      ctx.fillRect(config.x - this.horizonWidth / 2, config.y + this.horizonHeight / 2, this.horizonWidth * 2, this.horizonHeight * 4);
+      ctx.fillRect(
+        config.x - this.horizonWidth / 2,
+        config.y + this.horizonHeight / 2,
+        this.horizonWidth * 2,
+        this.horizonHeight * 4
+      );
 
       this.drawIndicator();
       ctx.restore();
@@ -186,7 +221,7 @@ export default {
 
       ctx.beginPath();
       ctx.arc(centerX, centerY - 10, radius, 0, Math.PI, true);
-      ctx.strokeStyle = 'white';
+      ctx.strokeStyle = "white";
       ctx.lineWidth = 10;
       ctx.setLineDash([2, 24]);
       ctx.stroke();
@@ -218,7 +253,7 @@ export default {
     },
     drawTriangle({ x, y, width, height }) {
       const { ctx } = this;
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.save();
       ctx.translate(x, y);
       ctx.beginPath();
@@ -245,16 +280,18 @@ export default {
       const circleY = centerY + this.currentShiftY;
       const radius = 15;
 
-      const distanceToCircle = Math.sqrt((focusX - circleX) ** 2 + (focusY - circleY) ** 2);
+      const distanceToCircle = Math.sqrt(
+        (focusX - circleX) ** 2 + (focusY - circleY) ** 2
+      );
       const isInRadius = distanceToCircle <= radius;
 
       this.updateGreenTime(isInRadius);
 
-      const lineColor = isInRadius ? 'green' : 'yellow';
+      const lineColor = isInRadius ? "green" : "yellow";
 
       ctx.beginPath();
       ctx.arc(circleX, circleY, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'transparent';
+      ctx.strokeStyle = "transparent";
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -289,23 +326,38 @@ export default {
     },
     randomTilt() {
       const targetTilt = this.getRandom(-70, 70);
-      this.animateValue(this.currentTilt, targetTilt, this.setSpeed(), (value) => {
-        this.currentTilt = value;
-        this.drawVisual();
-      });
+      this.animateValue(
+        this.currentTilt,
+        targetTilt,
+        this.setSpeed(),
+        (value) => {
+          this.currentTilt = value;
+          this.drawVisual();
+        }
+      );
     },
     randomShift() {
       const targetShiftX = this.getRandom(-70, 70);
       const targetShiftY = this.getRandom(-70, 70);
-      this.animateValue(this.currentShiftX, targetShiftX, this.setSpeed(), (value) => {
-        this.currentShiftX = value;
-        this.drawVisual();
-      });
+      this.animateValue(
+        this.currentShiftX,
+        targetShiftX,
+        this.setSpeed(),
+        (value) => {
+          this.currentShiftX = value;
+          this.drawVisual();
+        }
+      );
 
-      this.animateValue(this.currentShiftY, targetShiftY, this.setSpeed(), (value) => {
-        this.currentShiftY = value;
-        this.drawVisual();
-      });
+      this.animateValue(
+        this.currentShiftY,
+        targetShiftY,
+        this.setSpeed(),
+        (value) => {
+          this.currentShiftY = value;
+          this.drawVisual();
+        }
+      );
     },
     getRandom(min, max) {
       return Math.random() * (max - min) + min;
@@ -331,19 +383,19 @@ export default {
       return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     },
     setSpeed() {
-      if (this.speed === 'very_slow') {
+      if (this.speed === "very_slow") {
         return 6000;
       }
-      if (this.speed === 'slow') {
+      if (this.speed === "slow") {
         return 5000;
       }
-      if (this.speed === 'medium') {
+      if (this.speed === "medium") {
         return 4000;
       }
-      if (this.speed === 'fast') {
+      if (this.speed === "fast") {
         return 3000;
       }
-      if (this.speed === 'very_fast') {
+      if (this.speed === "very_fast") {
         return 2000;
       }
     },
@@ -353,7 +405,8 @@ export default {
       } else {
         if (isGreen && this.greenLineStartTime) {
           const currentTime = Date.now();
-          this.greenLineDuration += (currentTime - this.greenLineStartTime) / 1000;
+          this.greenLineDuration +=
+            (currentTime - this.greenLineStartTime) / 1000;
           this.greenLineStartTime = null;
         }
       }
@@ -366,14 +419,20 @@ export default {
       const canvasWidth = this.$refs.horizonCanvas.width;
       const canvasHeight = this.$refs.horizonCanvas.height;
 
-      const sensitivity = 0.5;  // You can adjust this value to control how fast the focus line moves
+      const sensitivity = 0.1; // You can adjust this value to control how fast the focus line moves
 
       this.config.focusX += leftStickX * sensitivity;
       this.config.focusY += leftStickY * sensitivity;
 
       // Clamp the focusX and focusY to stay within the canvas bounds
-      this.config.focusX = Math.max(0, Math.min(this.config.focusX, canvasWidth));
-      this.config.focusY = Math.max(0, Math.min(this.config.focusY, canvasHeight));
+      this.config.focusX = Math.max(
+        0,
+        Math.min(this.config.focusX, canvasWidth)
+      );
+      this.config.focusY = Math.max(
+        0,
+        Math.min(this.config.focusY, canvasHeight)
+      );
 
       this.drawVisual();
     },
