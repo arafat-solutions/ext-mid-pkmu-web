@@ -4,18 +4,37 @@
       <div v-if="!trainingCompleted">
         <div v-html="instructionModalContent[currentSlide]"></div>
         <div class="navigation-buttons">
-          <div style="display: flex; justify-content: space-between; width: 100%">
-            <button @click="prevSlide" :disabled="currentSlide == 0" class="nav-button">Sebelum</button>
+          <div
+            style="display: flex; justify-content: space-between; width: 100%"
+          >
+            <button
+              @click="prevSlide"
+              :disabled="currentSlide == 0"
+              class="nav-button disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sebelum
+            </button>
             <div>
-              <button v-if="currentSlide === instructionModalContent.length - 1" @click="startTrainingTask"
-                class="start-button">Mulai Latihan</button>
-              <button v-else @click="nextSlide" class="nav-button">Selanjutnya</button>
+              <button
+                v-if="currentSlide === instructionModalContent.length - 1"
+                @click="startTrainingTask"
+                class="start-button"
+              >
+                Mulai Latihan
+              </button>
+              <button v-else @click="nextSlide" class="nav-button">
+                Selanjutnya
+              </button>
             </div>
           </div>
         </div>
       </div>
       <div v-else>
-        <p>Anda Telah menyelesaikan semua pelatihan, setelah ini, anda akan memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi prima dan tanpa distraksi, test ini tidak dapat di pause.</p>
+        <p>
+          Anda Telah menyelesaikan semua pelatihan, setelah ini, anda akan
+          memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi
+          prima dan tanpa distraksi, test ini tidak dapat di pause.
+        </p>
         <button @click="startTrainingTask">Mulai Test</button>
       </div>
     </div>
@@ -32,37 +51,76 @@
     </div>
 
     <div class="horizon-tank">
-      <ColorTank ref="colorTankTaskRef" :isTimesUp="isTimesUp" :speed="config.color_tank.speed"
-        :coloredLowerTank="config.color_tank.colored_lower_tank" :isNegativeScore="config.color_tank.negative_score"
-        :isPause="isPauseColorTank" :isActive="config.color_tank.is_active" @getResult="colorTankResult"
-        v-if="currentTrainingTask === 'colorTank' || trainingCompleted || currentTrainingTask == 'combined'"  />
+      <ColorTank
+        ref="colorTankTaskRef"
+        :isTimesUp="isTimesUp"
+        :speed="config.color_tank.speed"
+        :coloredLowerTank="config.color_tank.colored_lower_tank"
+        :isNegativeScore="config.color_tank.negative_score"
+        :isPause="isPauseColorTank"
+        :isActive="config.color_tank.is_active"
+        @getResult="colorTankResult"
+        v-if="
+          currentTrainingTask === 'colorTank' ||
+          trainingCompleted ||
+          currentTrainingTask == 'combined'
+        "
+      />
 
       <div class="horizon-section">
-        <Horizon :isTimesUp="isTimesUp" :speed="config.horizon.speed" :isPause="isPauseHorizon"
-          :isActive="config.horizon.is_active" @getResult="horizonResult" class="no-pointer-events"
-          v-if="currentTrainingTask === 'horizon' || trainingCompleted || currentTrainingTask == 'combined'"  />
+        <Horizon
+          :isTimesUp="isTimesUp"
+          :speed="config.horizon.speed"
+          :isPause="isPauseHorizon"
+          :isActive="config.horizon.is_active"
+          @getResult="horizonResult"
+          class="no-pointer-events"
+          v-if="
+            currentTrainingTask === 'horizon' ||
+            trainingCompleted ||
+            currentTrainingTask == 'combined'
+          "
+        />
 
-        <Arithmetics ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetics.difficulty"
-          :duration="config.duration" :isPause="isPauseArithmetics" :isActive="config.arithmetics.is_active"
-          :useSound="config.arithmetics.sound" @getResult="arithmeticResult"
-          v-if="currentTrainingTask === 'arithmetic' || trainingCompleted || currentTrainingTask == 'combined'" />
+        <Arithmetics
+          ref="arithmeticTaskRef"
+          :isTimesUp="isTimesUp"
+          :difficulty="config.arithmetics.difficulty"
+          :duration="config.duration"
+          :isPause="isPauseArithmetics"
+          :isActive="config.arithmetics.is_active"
+          :useSound="config.arithmetics.sound"
+          @getResult="arithmeticResult"
+          v-if="
+            currentTrainingTask === 'arithmetic' ||
+            trainingCompleted ||
+            currentTrainingTask == 'combined'
+          "
+        />
       </div>
     </div>
   </div>
-  <button v-if="!trainingCompleted && !showInstructionModal" @click="endTrainingTask" class="finish-button">
+  <button
+    v-if="!trainingCompleted && !showInstructionModal"
+    @click="endTrainingTask"
+    class="finish-button"
+  >
     Selesai Latihan dan Lanjutkan ke Tes Berikutnya
   </button>
 </template>
 
 <script>
-import { getConfigs } from '@/utils/configs';
-import Arithmetics from './color-multitask/Arithmetics';
-import ColorTank from './color-multitask/ColorTank';
-import Horizon from './color-multitask/Horizon';
-import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
+import { getConfigs } from "@/utils/configs";
+import Arithmetics from "./color-multitask/Arithmetics";
+import ColorTank from "./color-multitask/ColorTank";
+import Horizon from "./color-multitask/Horizon";
+import {
+  completeTrainingTestAndUpdateLocalStorage,
+  removeTestByNameAndUpdateLocalStorage,
+} from "@/utils/index";
 
 export default {
-  name: 'MainView',
+  name: "MainView",
   components: {
     Arithmetics,
     ColorTank,
@@ -73,9 +131,9 @@ export default {
       trainingCompleted: false,
       showInstructionModal: false,
       currentTrainingTask: null,
-      instructionModalContent: '',
+      instructionModalContent: "",
 
-      trainingTasks: ['colorTank', 'horizon', 'arithmetic', 'combined'],
+      trainingTasks: ["colorTank", "horizon", "arithmetic", "combined"],
 
       isPauseArithmetics: false,
       isPauseColorTank: false,
@@ -83,11 +141,10 @@ export default {
       configs: [],
       minuteTest: null,
 
-
       isLoading: false,
       timer: {
         minutes: 0,
-        second: 0
+        second: 0,
       },
       countdownInterval: null,
       isPause: false,
@@ -102,7 +159,7 @@ export default {
         },
         arithmetics: {
           difficulty: null, //easy, medium, difficult
-          sound: null
+          sound: null,
         },
         horizon: {
           speed: null, //very_slow, slow, medium, fast, very_fast
@@ -130,15 +187,23 @@ export default {
     };
   },
   async mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountColorTankMultitask') || '0')
-    reloadCount++
-    localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
+    let reloadCount = parseInt(
+      localStorage.getItem("reloadCountColorTankMultitask") || "0"
+    );
+    reloadCount++;
+    localStorage.setItem(
+      "reloadCountColorTankMultitask",
+      reloadCount.toString()
+    );
 
-    window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountColorTankMultitask', reloadCount.toString())
-    })
-    const configData = getConfigs('color-multitask-test')
-    this.testId = configData.testId
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem(
+        "reloadCountColorTankMultitask",
+        reloadCount.toString()
+      );
+    });
+    const configData = getConfigs("color-multitask-test");
+    this.testId = configData.testId;
     this.initConfig();
   },
   beforeUnmount() {
@@ -149,8 +214,10 @@ export default {
       return this.config.duration < 1;
     },
     formattedTime() {
-      const minutes = Math.floor(this.config.duration / 60).toString().padStart(2, '0');
-      const seconds = (this.config.duration % 60).toString().padStart(2, '0');
+      const minutes = Math.floor(this.config.duration / 60)
+        .toString()
+        .padStart(2, "0");
+      const seconds = (this.config.duration % 60).toString().padStart(2, "0");
       return `${minutes}:${seconds}`;
     },
   },
@@ -163,19 +230,25 @@ export default {
     },
     initConfig() {
       try {
-        let config = JSON.parse(localStorage.getItem('scheduleData'));
+        let config = JSON.parse(localStorage.getItem("scheduleData"));
 
         if (config) {
           // @TODO: Config Flow
-          this.configs = config.tests.find(test => test.testUrl === 'color-multitask-test').configs;
-          this.trainingCompleted = config.tests.find(test => test.testUrl === 'color-multitask-test').trainingCompleted ?? false; //default false
+          this.configs = config.tests.find(
+            (test) => test.testUrl === "color-multitask-test"
+          ).configs;
+          this.trainingCompleted =
+            config.tests.find((test) => test.testUrl === "color-multitask-test")
+              .trainingCompleted ?? false; //default false
 
           this.minuteTest = 0;
           for (const i in this.configs) {
-            this.minuteTest += parseInt(this.configs[i].duration)
+            this.minuteTest += parseInt(this.configs[i].duration);
           }
 
-          const colorMultitask = config.tests.find(test => test.testUrl === 'color-multitask-test').configs[0];
+          const colorMultitask = config.tests.find(
+            (test) => test.testUrl === "color-multitask-test"
+          ).configs[0];
 
           this.config.duration = colorMultitask.duration * 60;
           this.config.batteryTestId = config.testId;
@@ -183,27 +256,30 @@ export default {
           this.config.userId = config.userId;
 
           // Color Tank
-          this.config.subtask.color_tank = colorMultitask.subtask.color_tank
+          this.config.subtask.color_tank = colorMultitask.subtask.color_tank;
           if (this.config.subtask.color_tank) {
-            this.config.color_tank.is_active = true
-            this.config.color_tank.negative_score = colorMultitask.color_tank.negative_score
-            this.config.color_tank.speed = colorMultitask.color_tank.speed
-            this.config.color_tank.colored_lower_tank = colorMultitask.color_tank.colored_lower_tank
+            this.config.color_tank.is_active = true;
+            this.config.color_tank.negative_score =
+              colorMultitask.color_tank.negative_score;
+            this.config.color_tank.speed = colorMultitask.color_tank.speed;
+            this.config.color_tank.colored_lower_tank =
+              colorMultitask.color_tank.colored_lower_tank;
           }
 
           // Arithmetic
-          this.config.subtask.arithmetics = colorMultitask.subtask.arithmetics
+          this.config.subtask.arithmetics = colorMultitask.subtask.arithmetics;
           if (this.config.subtask.arithmetics) {
-            this.config.arithmetics.is_active = true
-            this.config.arithmetics.sound = colorMultitask.arithmetics.sound
-            this.config.arithmetics.difficulty = colorMultitask.arithmetics.difficulty
+            this.config.arithmetics.is_active = true;
+            this.config.arithmetics.sound = colorMultitask.arithmetics.sound;
+            this.config.arithmetics.difficulty =
+              colorMultitask.arithmetics.difficulty;
           }
 
           // Horizon
-          this.config.subtask.horizon = colorMultitask.subtask.horizon
+          this.config.subtask.horizon = colorMultitask.subtask.horizon;
           if (this.config.subtask.horizon) {
-            this.config.horizon.is_active = true
-            this.config.horizon.speed = colorMultitask.horizon.speed
+            this.config.horizon.is_active = true;
+            this.config.horizon.speed = colorMultitask.horizon.speed;
           }
 
           this.isConfigLoaded = true;
@@ -211,7 +287,7 @@ export default {
           this.startSimulation();
         }
       } catch (error) {
-        console.log(error, 'error')
+        console.log(error, "error");
       }
     },
     startSimulation() {
@@ -226,7 +302,7 @@ export default {
       if (!this.trainingCompleted) {
         this.startTraining();
       } else {
-        this.showInstructionModal = true
+        this.showInstructionModal = true;
       }
     },
     startTraining() {
@@ -240,17 +316,17 @@ export default {
         ],
         colorTank: [
           `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah (ASDF) terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas (QWER). Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi Kembali dengan menekan tombol sebagai berikut:
-Apabila tangki air warna kuning susut (tangki S dan D) maka Anda harus menekan tombol Q S D atau Q D S, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol Q S D atau Q D S agar tangka bawah berwarna kuning terisi Kembali.`,
+Apabila tangki air warna kuning susut (tangki S dan D) maka Anda harus menekan tombol Q S D atau Q D S, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol Q S D atau Q D S agar tangki bawah berwarna kuning terisi Kembali.`,
           `Contoh lain.
 
-Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.`
+Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki hijau lain masih penuh (A dan D) Anda tetap diwajibkan menekan kombinasi 3 tombol, oleh karena itu Anda harus menekan tombol R D F atau R F D secara berurutan agar tangki warna hijau terisi Kembali. Tombol kombinasi lain agar tangki hijau F terisi Kembali juga dapat menggunakan kombinasi tombol R A F atau R F A.`,
         ],
         horizon: [
-          "<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal titik (intersection) tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.",
+          "<b>Horizon SubTask</b> <br> Pada tugas ini Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal tetap berwarna hijau selama mungkin. Tugas ini dikendalikan menggunakan JOYSTICK. Jika garis berwarna kuning, Anda harus secepatnya menempatkan Kembali titik tersebut (dengan mengarahkan joystick) untuk kembali ke tengah perpotongan garis agar warna berubah hijau kembali.",
         ],
         combined: [
           "<b>SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.",
-        ]
+        ],
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
@@ -263,19 +339,19 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
         this.startActualTest();
       } else {
         switch (this.currentTrainingTask) {
-          case 'colorTank':
+          case "colorTank":
             this.currentSlide = 0;
             this.startColorTankTraining();
             break;
-          case 'arithmetic':
+          case "arithmetic":
             this.currentSlide = 0;
             this.startArithmeticTraining();
             break;
-          case 'horizon':
+          case "horizon":
             this.currentSlide = 0;
             this.startHorizonTraining();
             break;
-          case 'combined':
+          case "combined":
             this.currentSlide = 0;
             this.startCombinedTraining();
             break;
@@ -283,7 +359,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       }
     },
     startHorizonTraining() {
-      this.config.duration = 1 * 60000 // basically forever until the user ends it
+      this.config.duration = 1 * 60000; // basically forever until the user ends it
 
       this.isPauseHorizon = false;
       this.isPauseColorTank = true;
@@ -296,7 +372,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       this.startCountdown();
     },
     startColorTankTraining() {
-      this.config.duration = 1 * 60000 // basically forever until the user ends it
+      this.config.duration = 1 * 60000; // basically forever until the user ends it
 
       this.isPauseColorTank = false;
       this.isPauseHorizon = true;
@@ -311,7 +387,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       this.startCountdown();
     },
     startArithmeticTraining() {
-      this.config.duration = 1 * 60000 // basically forever until the user ends it
+      this.config.duration = 1 * 60000; // basically forever until the user ends it
 
       this.isPauseArithmetics = false;
       this.isPauseColorTank = true;
@@ -326,7 +402,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       this.startCountdown();
     },
     startCombinedTraining() {
-      this.config.duration = 1 * 60000 // basically forever until the user ends it
+      this.config.duration = 1 * 60000; // basically forever until the user ends it
 
       this.isPauseArithmetics = false;
       this.isPauseColorTank = false;
@@ -335,7 +411,6 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       this.config.arithmetics.is_active = true;
       this.config.color_tank.is_active = true;
       this.config.horizon.is_active = true;
-
 
       this.$refs.colorTankTaskRef?.initLowerTank();
       this.$refs.colorTankTaskRef?.initScore();
@@ -349,8 +424,10 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       // this.$refs.colorTankTaskRef.stop();
       // this.$refs.arithmeticTaskRef.reset();
       // this.$refs.horizonTaskRef.reset();
-      
-      const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
+
+      const currentTaskIndex = this.trainingTasks.indexOf(
+        this.currentTrainingTask
+      );
       if (currentTaskIndex < this.trainingTasks.length - 1) {
         this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
         this.showTrainingInstructions();
@@ -361,12 +438,13 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
     completeTraining() {
       this.trainingCompleted = true;
       this.showInstructionModal = true;
-      this.instructionModalContent = "Training completed! The actual test will begin now.";
+      this.instructionModalContent =
+        "Training completed! The actual test will begin now.";
 
       completeTrainingTestAndUpdateLocalStorage("Multitasking With Color");
     },
     startActualTest() {
-      this.result = {
+      (this.result = {
         arithmetics: {
           total_questions: null,
           correct_answer: null,
@@ -378,9 +456,8 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
         color_tank: {
           final_score: null,
         },
-      },
-
-        this.config.duration = this.minuteTest * 60
+      }),
+        (this.config.duration = this.minuteTest * 60);
 
       this.isPauseArithmetics = false;
       this.isPauseColorTank = false;
@@ -398,8 +475,12 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
       this.startCountdown();
     },
     exit() {
-      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
-        this.$router.push('module');
+      if (
+        confirm(
+          "Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang."
+        )
+      ) {
+        this.$router.push("module");
       }
     },
     startCountdown() {
@@ -420,7 +501,8 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
     arithmeticResult(result) {
       this.result.arithmetics.correct_answer = result.correctAnswer;
       this.result.arithmetics.total_questions = result.totalQuestion;
-      this.result.arithmetics.avg_response_time = result.responseTime.toFixed(2);
+      this.result.arithmetics.avg_response_time =
+        result.responseTime.toFixed(2);
     },
     colorTankResult(result) {
       this.result.color_tank.final_score = result.score;
@@ -437,31 +519,31 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
           batteryTestId: this.testId,
-          refreshCount: parseInt(localStorage.getItem('reloadCountColorTankMultitask')),
+          refreshCount: parseInt(
+            localStorage.getItem("reloadCountColorTankMultitask")
+          ),
           result: this.result,
-        }
+        };
 
-        const res = await fetch(`${API_URL}/api/submission`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        )
+        const res = await fetch(`${API_URL}/api/submission`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
         if (!res.ok) {
-          throw new Error('Failed Submit Test');
+          throw new Error("Failed Submit Test");
         }
       } catch (error) {
         console.error(error), "error";
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Multitasking With Color')
-        localStorage.removeItem('reloadCountColorTankMultitask');
-        this.$router.push('/module');
+        removeTestByNameAndUpdateLocalStorage("Multitasking With Color");
+        localStorage.removeItem("reloadCountColorTankMultitask");
+        this.$router.push("/module");
       }
     },
   },
@@ -482,7 +564,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
   left: 50%;
   transform: translate(-50%, -50%);
   width: 80%;
-  height: 80%;
+  height: 100%;
   background-color: white;
   display: flex;
   justify-content: center;
@@ -522,7 +604,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #0349D0;
+  background-color: #0349d0;
   padding: 1.5rem 5rem;
   color: #ffffff;
   font-weight: bold;
@@ -607,7 +689,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
 }
 
 :deep(.answer-button.selected) {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border-color: #45a049;
 }
@@ -624,5 +706,4 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangka F. Meski tangki
   border-radius: 5px;
   cursor: pointer;
 }
-
 </style>
