@@ -19,7 +19,7 @@
 
     <!-- Actual Test Start Modal -->
     <Modal v-if="showTestStartModal" @close="startActualTest">
-      <h2>Apakah anda siap untuk test sebenarnya?</h2>
+      <h2>Siap untuk memulai tes?</h2>
       <p>
         Kerja bagus menyelesaikan pelatihan! Anda sekarang siap untuk memulai
         tes sebenarnya. Ingat, kinerja Anda dalam tes ini akan dicatat.
@@ -28,7 +28,7 @@
         @click="startActualTest"
         class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2"
       >
-        Mulai Test
+        Mulai Tes
       </button>
     </Modal>
 
@@ -67,6 +67,7 @@
             }"
           ></div>
           <div class="rotationIndicatorMaze"></div>
+          <div class="northIndicatorMaze">U</div>
         </div>
       </div>
     </div>
@@ -1095,6 +1096,16 @@ export default {
   align-items: center;
   justify-content: center;
   margin-top: 4%;
+}
+
+.northIndicatorMaze {
+  position: absolute;
+  top: -18%;
+  right: 51.5%;
+  width: 0;
+  height: 0;
+  font-weight: bold;
+  font-size: 20px;
 }
 
 .rotationIndicatorMaze {
