@@ -6,32 +6,48 @@
         <!-- Slide container -->
         <div class="relative">
           <!-- Image container without any padding or background -->
-            <template v-if="selectedTestTitle !== 'Ujian anda telah selesai'">
+          <template v-if="selectedTestTitle !== 'Test anda telah selesai'">
             <div class="flex justify-center">
               <div class="w-full p-6 bg-white rounded-lg shadow">
-                <p class="text-3xl text-left" v-html="selectedTestDescription[currentSlide]">
-                </p>
+                <p
+                  class="text-3xl text-left"
+                  v-html="selectedTestDescription[currentSlide]"
+                ></p>
               </div>
             </div>
 
             <!-- Navigation Controls -->
             <div class="flex justify-between items-center mt-16 px-6">
-              <button @click="previousSlide" :disabled="currentSlide === 0"
-              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
-              Sebelumnya
+              <button
+                @click="previousSlide"
+                :disabled="currentSlide === 0"
+                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg"
+              >
+                Sebelumnya
               </button>
-              <span class="text-xl">{{ currentSlide + 1 }} / {{ totalSlides }}</span>
-              <button @click="nextSlide" v-if="currentSlide !== totalSlides - 1"
-              class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
-              Selanjutnya
+              <span class="text-xl"
+                >{{ currentSlide + 1 }} / {{ totalSlides }}</span
+              >
+              <button
+                @click="nextSlide"
+                v-if="currentSlide !== totalSlides - 1"
+                class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg"
+              >
+                Selanjutnya
               </button>
-              <router-link :to="url" class="block" v-if="currentSlide === totalSlides - 1">
-              <div class="bg-[#f5d442] border-2 border-[#f5d442] text-[#000000] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg">
-                Mulai Latihan Test
-              </div>
+              <router-link
+                :to="url"
+                class="block"
+                v-if="currentSlide === totalSlides - 1"
+              >
+                <div
+                  class="bg-[#f5d442] border-2 border-[#f5d442] text-[#000000] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg"
+                >
+                  Mulai Latihan Test
+                </div>
               </router-link>
             </div>
-            </template>
+          </template>
           <template v-else>
             <div class="text-center py-10">
               <h2 class="text-2xl font-bold mb-5">{{ selectedTestTitle }}</h2>
@@ -45,58 +61,62 @@
 </template>
 
 <script>
-import EventBus from '@/eventBus';
+import EventBus from "@/eventBus";
 
 export default {
-  name: 'RadarVigilanceMenu',
+  name: "RadarVigilanceMenu",
   data() {
     return {
-      selectedTestTitle: 'Ujian anda telah selesai',
-      selectedTestDescription: 'Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan',
-      url: '',
-      slidesPath: '/instructions_slides',
+      selectedTestTitle: "Test anda telah selesai",
+      selectedTestDescription:
+        "Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan",
+      url: "",
+      slidesPath: "/instructions_slides",
       currentSlide: 0,
       totalSlides: 1,
     };
   },
   created() {
-    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+    const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
     if (scheduleData) {
       try {
-        const firstIncompleteTest = scheduleData.tests.find(test => !test.completed);
+        const firstIncompleteTest = scheduleData.tests.find(
+          (test) => !test.completed
+        );
         if (firstIncompleteTest) {
-          console.log('Next test:', firstIncompleteTest);
+          console.log("Next test:", firstIncompleteTest);
           this.handleTestSelected(firstIncompleteTest);
         } else {
           this.handleTestCompleted();
-          console.log('All tests are completed');
+          console.log("All tests are completed");
         }
       } catch (error) {
-        console.error('Error parsing schedule data:', error);
+        console.error("Error parsing schedule data:", error);
       }
     }
   },
   beforeUnmount() {
-    EventBus.$off('testSelected', this.handleTestSelected);
+    EventBus.$off("testSelected", this.handleTestSelected);
   },
   methods: {
     handleTestSelected(test) {
       const shortenedTestName = test.name
-        .split(' ')
-        .map(word => word[0])
-        .join('')
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
         .toUpperCase();
       this.selectedTestTitle = `Instruksi Test ${shortenedTestName}`;
       this.url = test.testUrl;
       this.slidesPath = `/instructions_slides/${test.name}`;
-      
-      this.selectedTestDescription = test.description.split('=====');
-      console.log('Total slides:', this.selectedTestDescription.length);
+
+      this.selectedTestDescription = test.description.split("=====");
+      console.log("Total slides:", this.selectedTestDescription.length);
       this.totalSlides = this.selectedTestDescription.length;
     },
     handleTestCompleted() {
-      this.selectedTestTitle = 'Ujian anda telah selesai';
-      this.selectedTestDescription = 'Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan';
+      this.selectedTestTitle = "Test anda telah selesai";
+      this.selectedTestDescription =
+        "Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan";
       this.totalSlides = 0;
     },
     scanInstructionsSlides(slidesPath) {
@@ -115,8 +135,8 @@ export default {
     },
     handleImageError() {
       console.error(`Failed to load slide ${this.currentSlide + 1}`);
-    }
-  }
+    },
+  },
 };
 </script>
 
