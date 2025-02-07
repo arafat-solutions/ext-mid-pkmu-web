@@ -46,7 +46,7 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container" v-if="trainingCompleted">
+    <div class="timer-container" v-if="showTimer">
       Time: {{ formattedTime }}
     </div>
 
@@ -129,6 +129,7 @@ export default {
   data() {
     return {
       trainingCompleted: false,
+      showTimer: false,
       showInstructionModal: false,
       currentTrainingTask: null,
       instructionModalContent: "",
@@ -312,7 +313,9 @@ export default {
     showTrainingInstructions() {
       const instructions = {
         arithmetic: [
-          "<b>Arithmetic SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.",
+          `<b>Arithmetic SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.
+            <br> <br> <b>Contoh Pertanyaan:</b> <br> 2 + 3 = ? <br> <br> <b>Jawaban:</b> 5 <br> <br> <b>Contoh Pertanyaan:</b> <br> 4 - 1 = ? <br> <br> <b>Jawaban:</b> 3
+            <img src="/devices/mwc_math.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         colorTank: [
           `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah (ASDF) terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas (QWER). Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi Kembali dengan menekan tombol sebagai berikut:
@@ -425,9 +428,7 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       // this.$refs.arithmeticTaskRef.reset();
       // this.$refs.horizonTaskRef.reset();
 
-      const currentTaskIndex = this.trainingTasks.indexOf(
-        this.currentTrainingTask
-      );
+      const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
       if (currentTaskIndex < this.trainingTasks.length - 1) {
         this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
         this.showTrainingInstructions();
@@ -444,7 +445,8 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       completeTrainingTestAndUpdateLocalStorage("Multitasking With Color");
     },
     startActualTest() {
-      (this.result = {
+      this.showTimer = true;
+      this.result = {
         arithmetics: {
           total_questions: null,
           correct_answer: null,
