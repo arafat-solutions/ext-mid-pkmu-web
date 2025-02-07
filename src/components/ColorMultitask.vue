@@ -363,7 +363,6 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
     },
     startHorizonTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
-
       this.isPauseHorizon = false;
       this.isPauseColorTank = true;
       this.isPauseArithmetics = true;
@@ -371,12 +370,9 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       this.config.horizon.is_active = true;
       this.config.arithmetics.is_active = false;
       this.config.color_tank.is_active = false;
-
-      this.startCountdown();
     },
     startColorTankTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
-
       this.isPauseColorTank = false;
       this.isPauseHorizon = true;
       this.isPauseArithmetics = true;
@@ -386,12 +382,9 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       this.config.arithmetics.is_active = false;
 
       this.$refs.colorTankTaskRef.start();
-
-      this.startCountdown();
     },
     startArithmeticTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
-
       this.isPauseArithmetics = false;
       this.isPauseColorTank = true;
       this.isPauseHorizon = true;
@@ -401,12 +394,9 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       this.config.horizon.is_active = false;
 
       this.$refs.arithmeticTaskRef.generateNumbers();
-
-      this.startCountdown();
     },
     startCombinedTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
-
       this.isPauseArithmetics = false;
       this.isPauseColorTank = false;
       this.isPauseHorizon = false;
@@ -419,8 +409,6 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       this.$refs.colorTankTaskRef?.initScore();
       this.$refs.colorTankTaskRef?.start();
       this.$refs.arithmeticTaskRef?.generateNumbers();
-
-      this.startCountdown();
     },
     endTrainingTask() {
       // stop sound and reset the game
@@ -487,19 +475,24 @@ Contoh ini menunjukkan pengisian tangki warna hijau yaitu tangki F. Meski tangki
       }
     },
     startCountdown() {
-      this.countdownInterval = setInterval(() => {
-        if (this.config.duration > 0) {
-          this.config.duration--;
-        } else {
-          clearInterval(this.countdownInterval);
-          if (this.trainingCompleted) {
-            this.submitResult();
+      // Clear any existing interval first
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+      }
+
+      // Only start countdown for actual test
+      if (this.trainingCompleted) {
+        this.countdownInterval = setInterval(() => {
+          if (this.config.duration > 0) {
+            this.config.duration--;
           } else {
-            this.endTrainingTask();
+            clearInterval(this.countdownInterval);
+            this.submitResult();
           }
-        }
-      }, 1000);
+        }, 1000);
+      }
     },
+
 
     arithmeticResult(result) {
       this.result.arithmetics.correct_answer = result.correctAnswer;
