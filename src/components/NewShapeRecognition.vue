@@ -27,13 +27,13 @@
                 </div>
 
                 <div class="flex justify-between items-center mt-8 border-t pt-4">
-                    <button @click="startTraining"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                        Ya
-                    </button>
                     <button @click="() => showTrainingModal = false"
                         class="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
                         Batal
+                    </button>
+                    <button @click="startTraining"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        Ya
                     </button>
                 </div>
             </div>
@@ -48,7 +48,7 @@
                     <p class="text-lg text-gray-700">
                         Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai ujian.
                         <span class="font-semibold">
-                            Ujian ini akan berlangsung selama {{ currentConfig.timePerQuestion }} detik per soal.
+                            Test ini akan berlangsung selama {{ currentConfig.timePerQuestion }} detik per soal.
                         </span>
                     </p>
 
@@ -106,7 +106,7 @@
         </div>
 
         <div class="timer" v-if="gameState !== 'idle'">
-            <p>Question: {{ currentQuestion }} / {{ totalQuestion }}</p>
+            <p>Soal: {{ currentQuestion }} / {{ totalQuestion }}</p>
             <p>Time left: {{ questionCountdown }}s</p>
         </div>
     </div>
