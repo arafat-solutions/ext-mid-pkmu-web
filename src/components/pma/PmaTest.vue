@@ -23,11 +23,21 @@
       >
         <div class="modal-content">
           <h2>Instruksi latihan Tracking Joystick</h2>
-          <p>Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran</p>
-          <p>Objek dot secara automatis akan berusaha bergerak kearah luar lingkaran</p>
-          <p>Tugas anda adalah mengontrol objek dot untuk selalu berada di dalam lingkaran dengan menggerakan joystick</p>
+          <p>
+            Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran
+          </p>
+          <p>
+            Objek dot secara automatis akan berusaha bergerak kearah luar
+            lingkaran
+          </p>
+          <p>
+            Tugas anda adalah mengontrol objek dot untuk selalu berada di dalam
+            lingkaran dengan menggerakan joystick
+          </p>
           <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
-          <button @click="startTrackingJoystick" class="start-btn">Mulai latihan Joystick</button>
+          <button @click="startTrackingJoystick" class="start-btn">
+            Mulai latihan Joystick
+          </button>
         </div>
       </div>
 
@@ -38,21 +48,25 @@
       >
         <div class="modal-content">
           <h2>Instruksi latihan Tracking Thruster</h2>
-          <p>Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.</p>
+          <p>
+            Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.
+          </p>
           <p>Ukuran lingkaran putus-putus akan bergerak secara automatis.</p>
           <p>
             Tugas anda adalah merubah ukuran lingkaran tanpa putus, mengikuti
             ukuran lingkaran putus-putus.
           </p>
           <img :src="'devices/thruster.png'" class="center" alt="Joystick" />
-          <button @click="startTrackingThruster" class="start-btn">Mulai latihan Thruster</button>
+          <button @click="startTrackingThruster" class="start-btn">
+            Mulai latihan Thruster
+          </button>
         </div>
       </div>
 
       <div v-if="currentStep === 'string' && showModalString" class="modal">
         <div class="modal-content">
           <h2>Instruksi latihan Memori</h2>
-          <p> Serangkaian string akan diperlihatkan</p>
+          <p>Serangkaian string akan diperlihatkan</p>
           <img :src="'devices/memory_pre.png'" class="center" alt="Joystick" />
           <p>
             Akan terdapat opsi jawaban berupa bagian - bagian kecil dari
@@ -63,7 +77,9 @@
             kecil tersebut diperlihatkan
           </p>
           <img :src="'devices/memory.png'" class="center" alt="Joystick" />
-          <button @click="startString" class="start-btn">Mulai latihan Memory</button>
+          <button @click="startString" class="start-btn">
+            Mulai latihan Memory
+          </button>
         </div>
       </div>
 
@@ -71,8 +87,10 @@
         <div class="modal-content">
           <h3>Gunakan Headphone yang tersedia!</h3>
           <h2>Instruksi latihan Memori</h2>
-          
-          <button @click="startAudio" class="start-btn">Mulai latihan Audio</button>
+
+          <button @click="startAudio" class="start-btn">
+            Mulai latihan Audio
+          </button>
         </div>
       </div>
 
@@ -87,21 +105,34 @@
           <button @click="startCombinedTraining" class="start-btn">
             Mulai latihan Gabungan
           </button>
-          <button @click="startCombinedTraining" class="start-btn">Mulai latihan Gabungan</button>
         </div>
       </div>
 
       <div class="test-content">
         <!-- Training Mode -->
         <template v-if="!isActualTest">
-          <div v-if="currentStep === 'tracking_joystick'" class="tracking-section">
+          <div
+            v-if="currentStep === 'tracking_joystick'"
+            class="tracking-section"
+          >
             <h3>latihan Tracking Joystick</h3>
-            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'joystick'" />
+            <TrackingTest
+              @update-score="updateTrackingScore"
+              :training-mode="true"
+              :current-training="'joystick'"
+            />
           </div>
 
-          <div v-if="currentStep === 'tracking_thruster'" class="tracking-section">
+          <div
+            v-if="currentStep === 'tracking_thruster'"
+            class="tracking-section"
+          >
             <h3>latihan Tracking Thruster</h3>
-            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'thruster'" />
+            <TrackingTest
+              @update-score="updateTrackingScore"
+              :training-mode="true"
+              :current-training="'thruster'"
+            />
           </div>
 
           <div
@@ -127,14 +158,26 @@
             </div>
           </div>
 
-          <div v-if="currentStep === 'combined_training'" class="combined-training-section">
+          <div
+            v-if="currentStep === 'combined_training'"
+            class="combined-training-section"
+          >
             <h3>latihan Gabungan</h3>
-            <TrackingTest @update-score="updateTrackingScore" :training-mode="true" :current-training="'all'" />
+
             <div class="subtasks">
               <StringMemorization
-                v-if="currentSubtask === 'combined_training'"
+                v-if="currentSubtask === 'string'"
+                :key="'string'"
                 :training-mode="true"
                 @update-score="updateStringScore"
+              />
+            </div>
+
+            <div class="tracking-test">
+              <TrackingTest
+                @update-score="updateTrackingScore"
+                :training-mode="true"
+                :current-training="'all'"
               />
             </div>
           </div>
@@ -179,7 +222,10 @@
       <div v-if="trainingComplete" class="completion-modal modal">
         <div class="modal-content">
           <h2>latihan Selesai</h2>
-          <p>Anda telah menyelesaikan sesi latihan. Siap untuk memulai tes yang sebenarnya?</p>
+          <p>
+            Anda telah menyelesaikan sesi latihan. Siap untuk memulai tes yang
+            sebenarnya?
+          </p>
           <div class="button-group">
             <button @click="startActualTest" class="start-btn">
               Mulai Tes
@@ -602,6 +648,7 @@ li {
 
   .timer {
     top: 40px;
+    right: -100px;
     font-size: 1.5em;
   }
 
@@ -647,6 +694,7 @@ li {
 .paragraph {
   font-size: 20px;
 }
+
 .modal-content {
   font-size: 20px;
 }
