@@ -34,7 +34,7 @@
             :style="{
               backgroundColor: tankItem.color,
               height: tankItem.height,
-              width: tankItem.color === 'black' ? '5%' : '100%',
+              width: tankItem.color === 'black' ? '9%' : '100%',
             }"
             class="tank-fill fill-animation"
           ></div>
@@ -225,9 +225,9 @@ export default {
         clearInterval(this.intervalCheckFullyTank);
         clearInterval(this.intervalContinueEmptyTank);
       } else {
-        this.runningInterval("check-empty-tank");
+        //this.runningInterval("check-empty-tank");
         this.runningInterval("check-fully-tank");
-        this.runningInterval("start-empty-tank");
+        //this.runningInterval("start-empty-tank");
         this.runningInterval("continue-empty-tank");
       }
     },
@@ -281,7 +281,7 @@ export default {
           if (tank["status"] === "stop") {
             if (
               tank["height"] != "0%" &&
-              parseFloat(tank["height"].replace("%", "")) > 5
+              parseFloat(tank["height"].replace("%", "")) > 9
             ) {
               tank["height"] = this.decreaseHeight(
                 tank["height"],
@@ -289,7 +289,7 @@ export default {
                 tank["color"]
               );
             } else {
-              tank["height"] = "5%";
+              tank["height"] = "9%";
             }
           }
         }
@@ -698,13 +698,13 @@ export default {
         return;
       }
 
-      const increment = 20;
+      const increment = 10;
       const tank = this.lowerTanks[tankIndex][tankItem];
 
       let currentFill = parseFloat(tank["height"].replace("%", ""));
 
       if (currentFill < 100) {
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 11; i++) {
           await new Promise((resolve) => setTimeout(resolve, 800));
 
           currentFill += increment;
@@ -723,16 +723,17 @@ export default {
       tank["status"] = "run";
     },
     checkEmptyTank() {
-      for (let i = 0; i < this.lowerTanks.length; i++) {
-        for (let j = 0; j < this.lowerTanks[i].length - 1; j++) {
-          if (this.lowerTanks[i][j]["color"] === "black") {
-            continue;
+      const found = this.lowerTanks.find((tank) =>
+        tank.find((item) => {
+          if (item.color !== "black" && item.height == "9%") {
+            return true;
           }
+          return false;
+        })
+      );
 
-          if (this.lowerTanks[i][j]["height"] === "5%") {
-            this.finalScore--;
-          }
-        }
+      if (found) {
+        this.finalScore--;
       }
 
       if (this.isNegativeScore && this.finalScore <= 0) {
@@ -914,7 +915,7 @@ export default {
   width: 100%;
   background-color: black;
   position: absolute;
-  margin-top: 90px;
+  margin-top: 80px;
 }
 
 .tank-section {
