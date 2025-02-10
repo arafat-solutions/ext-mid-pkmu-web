@@ -321,10 +321,10 @@ export default {
         ],
         colorTank: [
           `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah <b>(ASDF)</b> terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas <b>(QWER)</b>. Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi kembali dengan menekan tombol sebagai berikut:
-Apabila tangki air warna kuning susut (tangki <b>S</b> dan <b>D</b>) maka Anda harus menekan tombol <b>Q</b> <b>S</b> <b>D</b> atau <b>Q</b> <b>D</b> <b>S</b>, Dimana tombol tangki atas harus di awal. maka Anda harus menekan tombol <b>Q S D</b> atau <b>Q D S</b> agar tangki bawah berwarna kuning terisi kembali.
+Apabila tangki air warna kuning susut (tangki <b>S</b> dan <b>D</b>) maka Anda harus menekan tombol <b>Q</b> <b>S</b> <b>D</b> atau <b>Q</b> <b>D</b> <b>S</b>, agar tangki bawah berwarna kuning terisi kembali.
 <br>          Contoh lain.
 
-Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tangki hijau lain masih penuh (<b>A</b> dan <b>D</b>) Anda tetap diwajibkan menekan kombinasi 3 tombol. Oleh karena itu, Anda harus menekan tombol <b>R D F</b> atau <b>R F D</b> secara berurutan agar tangki warna hijau terisi kembali. Tombol kombinasi lain agar tangki hijau <b>F</b> terisi kembali juga dapat menggunakan kombinasi tombol <b>R A F</b> atau <b>R F A</b>.
+Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tangki hijau lain masih penuh (<b>A</b> dan <b>D</b>) Anda tetap diwajibkan menekan kombinasi 3 tombol. Oleh karena itu, Anda harus menekan tombol <b>R D F</b> atau <b>R F A</b>.
 
             <img src="/devices/mwc_core.png" alt="Headset instruction" style="width: 350px; display: block; margin: 20px auto;">`,
         ],
