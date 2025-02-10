@@ -94,6 +94,7 @@
           :isPause="isPauseArithmetics"
           :isActive="config.arithmetics.is_active"
           :useSound="config.arithmetics.sound"
+          :isTraining="!trainingCompleted"
           @getResult="arithmeticResult"
           v-if="
             currentTrainingTask === 'arithmetic' ||
@@ -317,12 +318,12 @@ export default {
     showTrainingInstructions() {
       const instructions = {
         arithmetic: [
-          `<b>Aritmatika SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.
+          `<b style="font-size:24px;">Aritmatika SubTask</b> <br> Seharusnya headset Anda sudah terpasang saat ini. Dengarkan pertanyaan dan berikan jawaban yang benar.
             <br> <br> <b>Contoh Pertanyaan:</b> <br> 2 + 3 = ? <br> <br> <b>Jawaban:</b> 5 <br> <br> <b>Contoh Pertanyaan:</b> <br> 4 - 1 = ? <br> <br> <b>Jawaban:</b> 3
             <img src="/devices/mwc_math.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         colorTank: [
-          `<b>Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah <b>(ASDF)</b> terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas <b>(QWER)</b>. Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi kembali dengan menekan tombol sebagai berikut:
+          `<b style="font-size:24px;">Color Tank Subtask</b> <br> Gambar dibawah adalah tangki air warna, Dimana pada kotak bawah <b>(ASDF)</b> terdapat 3 jenis air (warna berbeda) yang dialirkan dari empat tangki atas <b>(QWER)</b>. Pada periode tertentu tangki bawah akan berkurang dan tugas Anda adalah mengisi kembali dengan menekan tombol sebagai berikut:
 Apabila tangki air warna kuning susut (tangki <b>S</b> dan <b>D</b>) maka Anda harus menekan tombol <b>Q</b> <b>S</b> <b>D</b> atau <b>Q</b> <b>D</b> <b>S</b>, agar tangki bawah berwarna kuning terisi kembali.
 <br>          Contoh lain.
 
@@ -331,11 +332,11 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
             <img src="/devices/mwc_core.png" alt="Headset instruction" style="width: 350px; display: block; margin: 20px auto;">`,
         ],
         horizon: [
-          `<b>Horizon SubTask</b> <br> Pada tugas ini, Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal tetap berwarna <b>HIJAU</b> selama mungkin. Tugas ini dikendalikan menggunakan <b>JOYSTICK</b>. Jika garis berwarna <b>KUNING</b>, Anda harus secepatnya menempatkan kembali titik tersebut (dengan mengarahkan <b>JOYSTICK</b>) untuk kembali ke tengah perpotongan garis agar warna berubah <b>HIJAU</b> kembali.
+          `<b style="font-size:24px;">Horizon SubTask</b> <br> Pada tugas ini, Anda diharuskan menempatkan perpotongan garis horizontal dan vertikal tetap berwarna <b>HIJAU</b> selama mungkin. Tugas ini dikendalikan menggunakan <b>JOYSTICK</b>. Jika garis berwarna <b>KUNING</b>, Anda harus secepatnya menempatkan kembali titik tersebut (dengan mengarahkan <b>JOYSTICK</b>) untuk kembali ke tengah perpotongan garis agar warna berubah <b>HIJAU</b> kembali.
           <img src="/devices/mwc_horizon.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         combined: [
-          "<b>SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.",
+          `<b style="font-size:24px;">SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.`,
         ],
       };
 
