@@ -1,11 +1,20 @@
 <template>
-  <canvas
-    ref="horizonCanvas"
-    :width="horizonWidth"
-    :height="horizonHeight"
-    class="no-pointer-events"
-  >
-  </canvas>
+  <div class="centered-component">
+    <canvas
+      ref="horizonCanvas"
+      :width="horizonWidth"
+      :height="horizonHeight"
+      class="no-pointer-events"
+    >
+    </canvas>
+    <p>
+      ⚠️ Perhatian! ⚠️<br /><b
+        >Harap arahkan garis Corsair hingga berwarna hijau</b
+      >
+      untuk memastikan akurasi dan kestabilan. Jika garis belum berwarna hijau,
+      sesuaikan kembali posisi hingga indikator berubah.
+    </p>
+  </div>
 </template>
 
 <script>
@@ -445,5 +454,12 @@ canvas {
   margin-bottom: 20px;
   margin-top: -20px;
   margin-right: 10px;
+  margin-left: 70px;
+}
+
+.centered-component {
+  margin: auto;
+  max-width: 600px;
+  width: 100%;
 }
 </style>

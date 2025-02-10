@@ -70,7 +70,7 @@ export default {
   data() {
     return {
       isAllTankEmpty: false,
-      finalScore: 120,
+      finalScore: 500,
       keysPressed: {},
       colors: ["yellow", "blue", "red", "green"],
       lowerTanks: [],
@@ -243,7 +243,7 @@ export default {
       this.runningInterval("check-empty-tank");
     },
     initScore() {
-      this.finalScore = 150;
+      this.finalScore = 500;
     },
     stop() {
       if (this.intervalStartEmptyTank) {
