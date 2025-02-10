@@ -8,11 +8,8 @@
     >
     </canvas>
     <p v-if="!trainingCompleted">
-      ⚠️ Perhatian! ⚠️<br /><b
-        >Harap arahkan garis Corsair hingga berwarna hijau</b
-      >
-      untuk memastikan akurasi dan kestabilan. Jika garis belum berwarna hijau,
-      sesuaikan kembali posisi hingga indikator berubah.
+      ⚠️ Perhatian! ⚠️<br />Upayakan garis potong berwarna <b>HIJAU</b> dengan
+      mengarahkan ke target menggunakan <b>JOYSTICK</b>
     </p>
   </div>
 </template>
