@@ -23,6 +23,8 @@
       >
         <div class="modal-content">
           <h2>LATIHAN JOYSTICK</h2>
+
+        <div class="instruction-content">
           <p>
             Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran
           </p>
@@ -34,7 +36,8 @@
             Tugas anda adalah mengontrol objek dot untuk selalu berada di dalam
             lingkaran dengan menggerakan joystick
           </p>
-          <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
+          </div>
+          <img :src="'devices/joystick.png'" class="center"  alt="Joystick" />
           <button @click="startTrackingJoystick" class="start-btn">
             Mulai latihan Joystick
           </button>
@@ -48,6 +51,8 @@
       >
         <div class="modal-content">
           <h2>LATIHAN THRUSTER</h2>
+        <div class="instruction-content">
+
           <p>
             Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.
           </p>
@@ -56,6 +61,7 @@
             Tugas anda adalah merubah ukuran lingkaran tanpa putus, mengikuti
             ukuran lingkaran putus-putus.
           </p>
+      </div>
           <img :src="'devices/thruster.png'" class="center" alt="Joystick" />
           <button @click="startTrackingThruster" class="start-btn">
             Mulai latihan Thruster
@@ -66,8 +72,12 @@
       <div v-if="currentStep === 'string' && showModalString" class="modal">
         <div class="modal-content">
           <h2>LATIHAN MEMORI</h2>
+          
+        <div class="instruction-content">
           <p>Serangkaian alphanumeric akan diperlihatkan</p>
+          <div style="display:flex;justify-content: center;width: 100%; margin-top: 4px;margin-bottom: 4px;">
           <img :src="'devices/memory_pre.png'" class="center" alt="Joystick" />
+          </div>
           <p>
             Akan terdapat opsi jawaban berupa bagian - bagian kecil dari
             alfanumerik yang telah di perlihatkan sebelumnya
@@ -76,6 +86,8 @@
             Tugas anda adalah memilih dari opsi jawaban tersebut dimana bagian
             kecil tersebut diperlihatkan
           </p>
+
+          </div>
           <img :src="'devices/memory.png'" class="center" alt="Joystick" />
           <button @click="startString" class="start-btn">
             Mulai latihan Memory
@@ -101,7 +113,10 @@
       >
         <div class="modal-content">
           <h2>LATIHAN GABUNGAN</h2>
+          
+        <div class="instruction-content">
           <p>Lakukan semua tugas latihan secara bersamaan</p>
+          </div>
           <button @click="startCombinedTraining" class="start-btn">
             Mulai latihan Gabungan
           </button>
@@ -675,11 +690,11 @@ li {
   }
 
   h2 {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
   }
 
   h3 {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
   }
 
   ul {
@@ -696,6 +711,9 @@ li {
 }
 
 .modal-content {
+  font-size: 24px;
+}
+.instruction-content {
   font-size: 20px;
 }
 </style>

@@ -21,10 +21,12 @@
               <button
                 @click="previousSlide"
                 :disabled="currentSlide === 0"
+                v-if="currentSlide > 0"
                 class="bg-[#ade5bd] border-2 border-[#4ae46e] text-[#207c43] px-5 py-2.5 rounded-full disabled:opacity-50 text-lg"
               >
                 Sebelumnya
               </button>
+              <div v-else></div>
               <span class="text-xl"
                 >{{ currentSlide + 1 }} / {{ totalSlides }}</span
               >
