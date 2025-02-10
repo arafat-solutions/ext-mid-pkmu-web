@@ -3,7 +3,7 @@
     <!-- Initial Instructions Modal -->
     <div v-if="showModal" class="modal">
       <div class="modal-content">
-        <h2>latihan PMA Test</h2>
+        <h2>LATIHAN</h2>
         <div class="instruction-content">
           <h3>Perangkat yang Digunakan:</h3>
           <p>
@@ -22,12 +22,12 @@
         class="modal"
       >
         <div class="modal-content">
-          <h2>Instruksi latihan Tracking Joystick</h2>
+          <h2>LATIHAN JOYSTICK</h2>
           <p>
             Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran
           </p>
           <p>
-            Objek dot secara automatis akan berusaha bergerak kearah luar
+            Objek dot secara otomatis akan berusaha bergerak kearah luar
             lingkaran
           </p>
           <p>
@@ -47,7 +47,7 @@
         class="modal"
       >
         <div class="modal-content">
-          <h2>Instruksi latihan Tracking Thruster</h2>
+          <h2>LATIHAN THRUSTER</h2>
           <p>
             Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.
           </p>
@@ -65,8 +65,8 @@
 
       <div v-if="currentStep === 'string' && showModalString" class="modal">
         <div class="modal-content">
-          <h2>Instruksi latihan Memori</h2>
-          <p>Serangkaian string akan diperlihatkan</p>
+          <h2>LATIHAN MEMORI</h2>
+          <p>Serangkaian alphanumeric akan diperlihatkan</p>
           <img :src="'devices/memory_pre.png'" class="center" alt="Joystick" />
           <p>
             Akan terdapat opsi jawaban berupa bagian - bagian kecil dari
@@ -86,7 +86,7 @@
       <div v-if="currentStep === 'audio' && showModalAudio" class="modal">
         <div class="modal-content">
           <h3>Gunakan Headphone yang tersedia!</h3>
-          <h2>Instruksi latihan Memori</h2>
+          <h2>LATIHAN MEMORI</h2>
 
           <button @click="startAudio" class="start-btn">
             Mulai latihan Audio
@@ -100,7 +100,7 @@
         class="modal"
       >
         <div class="modal-content">
-          <h2>Instruksi latihan Gabungan</h2>
+          <h2>LATIHAN GABUNGAN</h2>
           <p>Lakukan semua tugas latihan secara bersamaan</p>
           <button @click="startCombinedTraining" class="start-btn">
             Mulai latihan Gabungan
@@ -115,7 +115,7 @@
             v-if="currentStep === 'tracking_joystick'"
             class="tracking-section"
           >
-            <h3>latihan Tracking Joystick</h3>
+            <h3>LATIHAN JOYSTICK</h3>
             <TrackingTest
               @update-score="updateTrackingScore"
               :training-mode="true"
@@ -127,7 +127,7 @@
             v-if="currentStep === 'tracking_thruster'"
             class="tracking-section"
           >
-            <h3>latihan Tracking Thruster</h3>
+            <h3>LATIHAN THRUSTER</h3>
             <TrackingTest
               @update-score="updateTrackingScore"
               :training-mode="true"
@@ -647,8 +647,8 @@ li {
   }
 
   .timer {
-    top: 40px;
-    right: -100px;
+    top: 30px;
+    right: -700px;
     font-size: 1.5em;
   }
 
