@@ -7,7 +7,7 @@
       class="no-pointer-events"
     >
     </canvas>
-    <p>
+    <p v-if="!trainingCompleted">
       ⚠️ Perhatian! ⚠️<br /><b
         >Harap arahkan garis Corsair hingga berwarna hijau</b
       >
@@ -25,6 +25,7 @@ export default {
     speed: String,
     isPause: Boolean,
     isActive: Boolean,
+    trainingCompleted: Boolean,
   },
   data() {
     return {
