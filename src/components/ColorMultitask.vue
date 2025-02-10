@@ -53,6 +53,8 @@
     </div>
 
     <div class="horizon-tank">
+      <div style="margin-bottom: 90px;">
+
       <ColorTank
         ref="colorTankTaskRef"
         :isTimesUp="isTimesUp"
@@ -69,6 +71,7 @@
         "
       />
 
+      </div>
       <div class="horizon-section">
         <Horizon
           :isTimesUp="isTimesUp"
@@ -701,7 +704,8 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
 .finish-button {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust to truly center */
   padding: 10px 20px;
   font-size: 16px;
   background-color: #007bff;
@@ -710,4 +714,5 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
   border-radius: 5px;
   cursor: pointer;
 }
+
 </style>

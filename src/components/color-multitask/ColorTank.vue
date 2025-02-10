@@ -919,9 +919,9 @@ export default {
 }
 
 .tank-section {
-  margin-right: 33%;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .upper-tanks {
@@ -969,5 +969,10 @@ export default {
 
 .keyboard {
   margin-left: 0px;
+}
+
+.line {
+  position: relative;
+  right: -85px;
 }
 </style>
