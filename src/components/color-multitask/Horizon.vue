@@ -1,11 +1,17 @@
 <template>
-  <canvas
-    ref="horizonCanvas"
-    :width="horizonWidth"
-    :height="horizonHeight"
-    class="no-pointer-events"
-  >
-  </canvas>
+  <div class="centered-component">
+    <canvas
+      ref="horizonCanvas"
+      :width="horizonWidth"
+      :height="horizonHeight"
+      class="no-pointer-events"
+    >
+    </canvas>
+    <p v-if="!trainingCompleted">
+      ⚠️ Perhatian! ⚠️<br />Upayakan garis potong berwarna <b>HIJAU</b> dengan
+      mengarahkan ke target menggunakan <b>JOYSTICK</b>
+    </p>
+  </div>
 </template>
 
 <script>
@@ -16,6 +22,7 @@ export default {
     speed: String,
     isPause: Boolean,
     isActive: Boolean,
+    trainingCompleted: Boolean,
   },
   data() {
     return {
@@ -445,5 +452,12 @@ canvas {
   margin-bottom: 20px;
   margin-top: -20px;
   margin-right: 10px;
+  margin-left: 70px;
+}
+
+.centered-component {
+  margin: auto;
+  max-width: 600px;
+  width: 100%;
 }
 </style>

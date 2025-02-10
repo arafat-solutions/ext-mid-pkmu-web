@@ -33,9 +33,9 @@
       </div>
       <div v-else>
         <p>
-          Anda Telah menyelesaikan semua latihan. setelah ini, anda akan
-          memulai test yang sesungguhnya. Pastikan kondisi anda dalam kondisi
-          prima dan tanpa distraksi, test ini tidak dapat di pause.
+          Anda Telah menyelesaikan semua latihan. setelah ini, anda akan memulai
+          test yang sesungguhnya. Pastikan kondisi anda dalam kondisi prima dan
+          tanpa distraksi, test ini tidak dapat di pause.
         </p>
         <button @click="startTrainingTask">Mulai Test</button>
       </div>
@@ -53,24 +53,22 @@
     </div>
 
     <div class="horizon-tank">
-      <div style="margin-bottom: 90px;">
-
-      <ColorTank
-        ref="colorTankTaskRef"
-        :isTimesUp="isTimesUp"
-        :speed="config.color_tank.speed"
-        :coloredLowerTank="config.color_tank.colored_lower_tank"
-        :isNegativeScore="config.color_tank.negative_score"
-        :isPause="isPauseColorTank"
-        :isActive="config.color_tank.is_active"
-        @getResult="colorTankResult"
-        v-if="
-          currentTrainingTask === 'colorTank' ||
-          trainingCompleted ||
-          currentTrainingTask == 'combined'
-        "
-      />
-
+      <div style="margin-bottom: 90px">
+        <ColorTank
+          ref="colorTankTaskRef"
+          :isTimesUp="isTimesUp"
+          :speed="config.color_tank.speed"
+          :coloredLowerTank="config.color_tank.colored_lower_tank"
+          :isNegativeScore="config.color_tank.negative_score"
+          :isPause="isPauseColorTank"
+          :isActive="config.color_tank.is_active"
+          @getResult="colorTankResult"
+          v-if="
+            currentTrainingTask === 'colorTank' ||
+            trainingCompleted ||
+            currentTrainingTask == 'combined'
+          "
+        />
       </div>
       <div class="horizon-section">
         <Horizon
@@ -78,6 +76,7 @@
           :speed="config.horizon.speed"
           :isPause="isPauseHorizon"
           :isActive="config.horizon.is_active"
+          :trainingCompleted="trainingCompleted"
           @getResult="horizonResult"
           class="no-pointer-events"
           v-if="
@@ -715,5 +714,4 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
   border-radius: 5px;
   cursor: pointer;
 }
-
 </style>
