@@ -73,7 +73,7 @@
     </div>
 
     <div class="timerMaze">
-      <p>{{ isTraining ? "Training" : "Test" }} Progress:</p>
+      <p>Jumlah {{ isTraining ? "Latihan" : "Tes" }}:</p>
       <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : testMazes }}</p>
     </div>
   </div>

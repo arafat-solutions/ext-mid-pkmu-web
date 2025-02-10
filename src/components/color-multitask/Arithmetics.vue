@@ -257,6 +257,7 @@ export default {
 					this.currentUtterance.pitch = 1;
 					this.currentUtterance.volume = 1;
 					this.currentUtterance.lang = 'id-ID';
+					console.log(this.currentUtterance.lang)
 
 					this.currentUtterance.onend = () => {
 						if (!this.isTimesUp && !this.isPause && this.isActive) {
@@ -434,13 +435,13 @@ export default {
 	color: white;
 	padding: 5px 10px;
 	border-radius: 5px;
-	font-size: 18px;
+	font-size: 14px;
 	margin-bottom: 10px;
 	transition: background-color 0.3s ease;
 }
 
 .option-value {
-	font-size: 24px;
+	font-size: 40px;
 	font-weight: bold;
 }
 
