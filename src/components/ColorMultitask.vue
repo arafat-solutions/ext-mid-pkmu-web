@@ -71,7 +71,7 @@
         />
       </div>
       <div class="horizon-section">
-        <Horizon
+        <!-- <Horizon
           :isTimesUp="isTimesUp"
           :speed="config.horizon.speed"
           :isPause="isPauseHorizon"
@@ -84,8 +84,24 @@
             trainingCompleted ||
             currentTrainingTask == 'combined'
           "
-        />
-
+        /> -->
+        <div
+          :style="
+            currentTrainingTask === 'horizon' ? 'min-width: 440px' : 'auto'
+          "
+        >
+          <HorizonTest
+            v-if="
+              currentTrainingTask === 'horizon' ||
+              trainingCompleted ||
+              currentTrainingTask == 'combined'
+            "
+            :horizon-data="config.horizon"
+            :update-results="updateResults"
+            :trainingCompleted="trainingCompleted"
+            class="centered-component"
+          />
+        </div>
         <Arithmetics
           ref="arithmeticTaskRef"
           :isTimesUp="isTimesUp"
@@ -118,7 +134,7 @@
 import { getConfigs } from "@/utils/configs";
 import Arithmetics from "./color-multitask/Arithmetics";
 import ColorTank from "./color-multitask/ColorTank";
-import Horizon from "./color-multitask/Horizon";
+import HorizonTest from "./CallSignMultitaskingTest/HorizonTest.vue";
 import {
   completeTrainingTestAndUpdateLocalStorage,
   removeTestByNameAndUpdateLocalStorage,
@@ -129,7 +145,7 @@ export default {
   components: {
     Arithmetics,
     ColorTank,
-    Horizon,
+    HorizonTest,
   },
   data() {
     return {
@@ -169,6 +185,7 @@ export default {
         },
         horizon: {
           speed: null, //very_slow, slow, medium, fast, very_fast
+          play: true,
         },
         color_tank: {
           negative_score: null,
@@ -228,6 +245,18 @@ export default {
     },
   },
   methods: {
+    updateResults(component, data) {
+      console.log(this.result.horizon, data.correct_time);
+      console.log(data.correct_time);
+      this.result.horizon.correct_time += data.correct_time;
+      // if (!this.trainingCompleted && Object.hasOwn(this.result, component)) {
+      //   Object.keys(data).forEach((key) => {
+      //     if (Object.hasOwn(this.results[component], key)) {
+      //       this.results[component][key] += data[key];
+      //     }
+      //   });
+      // }
+    },
     nextSlide() {
       this.currentSlide++;
     },
@@ -713,5 +742,11 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
   border: none;
   border-radius: 5px;
   cursor: pointer;
+}
+
+.centered-component {
+  margin: auto;
+  max-width: 400px;
+  width: 100%;
 }
 </style>
