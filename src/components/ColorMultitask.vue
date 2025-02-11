@@ -20,7 +20,7 @@
               <button
                 v-if="currentSlide === instructionModalContent.length - 1"
                 @click="startTrainingTask"
-                class="start-button"
+                class="finish-button"
               >
                 Mulai Latihan
               </button>
@@ -570,7 +570,7 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 80%;
+  width: 100%;
   height: 100%;
   background-color: white;
   display: flex;
