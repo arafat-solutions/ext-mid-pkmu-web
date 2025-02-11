@@ -423,7 +423,7 @@ export default {
         }
 
         localStorage.removeItem("pmaTrainingCompleted");
-        removeTestByNameAndUpdateLocalStorage("PMA Training");
+        removeTestByNameAndUpdateLocalStorage("PMA Test");
         window.location.href = "/module";
       } catch (error) {
         console.error("Error submitting training results:", error);
