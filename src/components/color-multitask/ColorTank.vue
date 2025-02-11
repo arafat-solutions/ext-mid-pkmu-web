@@ -43,7 +43,7 @@
 
       <div class="counter">
         <input
-          type="text"
+          type="hidden"
           v-model="finalScore"
           readonly
           style="text-align: center; width: 15%"
