@@ -8,7 +8,10 @@
     >
     </canvas>
   </div>
-  <div class="centered-component" style="height: 70px; width: 500px">
+  <div
+    class="centered-component"
+    style="height: 70px; width: 500px; bottom: 20% !important"
+  >
     <p v-if="!trainingCompleted && !isGreen">
       ⚠️ Perhatian! ⚠️<br />Upayakan garis potong berwarna <b>HIJAU</b> dengan
       mengarahkan ke target menggunakan <b>JOYSTICK</b>
@@ -457,11 +460,13 @@ canvas {
   margin-bottom: 20px;
   margin-top: -20px;
   margin-right: 10px;
-  margin-left: 70px;
+  margin-left: 30px;
 }
 
 .centered-component {
   margin: auto;
   width: 100%;
+  bottom: 30%;
+  left: 50%; /* Center horizontally */
 }
 </style>
