@@ -38,6 +38,7 @@
           </p>
           </div>
           <img :src="'devices/joystick.png'" class="center"  alt="Joystick" />
+          <img :src="'devices/joystick_example.png'" class="center"  alt="Joystick" />
           <button @click="startTrackingJoystick" class="start-btn">
             Mulai latihan Joystick
           </button>
@@ -50,7 +51,7 @@
         class="modal"
       >
         <div class="modal-content">
-          <h2>LATIHAN THRUSTER</h2>
+          <h2>LATIHAN THRUSTER & PEDAL</h2>
         <div class="instruction-content">
 
           <p>
@@ -62,7 +63,8 @@
             ukuran lingkaran putus-putus.
           </p>
       </div>
-          <img :src="'devices/thruster.png'" class="center" alt="Joystick" />
+          <img :src="'devices/thruster.png'" class="center" alt="thruster" />
+          <img :src="'devices/pedal.png'" class="center" alt="pedal" />
           <button @click="startTrackingThruster" class="start-btn">
             Mulai latihan Thruster
           </button>
@@ -345,7 +347,7 @@ export default {
     const startTimer = () => {
       const testData = getConfigs("pma-test");
       if (!isActualTest.value) {
-        remainingTime.value = 60;
+        remainingTime.value = 99999999;
       } else {
         remainingTime.value =
           testData.configs.reduce(

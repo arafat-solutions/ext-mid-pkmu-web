@@ -68,7 +68,7 @@ export default {
         blue: 0
       },
       isModalTrainingVisible: false,
-      isModalVisible: false,
+      isModalVisible: true,
       indexConfig: 0,
       configs: [],
       duration: 0,
