@@ -8,7 +8,6 @@
       @confirm="handleTrainingConfirm"
       @cancel="handleCancel"
     />
-    
 
     <ModalComponent
       :visible="isTestModalVisible"
@@ -28,7 +27,7 @@
           :update-results="updateResults"
           class="centered-component"
           style="margin: auto; max-width: 400px; width: 100%"
-          :trainingCompleted="true"
+          :trainingCompleted="false"
         />
         <CallSignTest
           v-if="currentTraining === 'callsign' && configReady"
@@ -74,6 +73,7 @@
             v-if="configReady"
             :horizon-data="configBe.horizon"
             :update-results="updateResults"
+            :trainingCompleted="true"
           />
           <CallSignTest
             v-if="configReady"
@@ -449,7 +449,8 @@ export default {
   align-items: center;
   width: 100%;
   height: 100%;
-  padding: 60px 20px 20px 20px; /* Add top padding for timer */
+  padding: 60px 20px 20px 20px;
+  /* Add top padding for timer */
 }
 
 .training-container {
@@ -470,7 +471,8 @@ export default {
 .content-test {
   display: flex;
   width: 100%;
-  padding-top: 60px; /* Add padding for timer */
+  padding-top: 60px;
+  /* Add padding for timer */
 }
 
 .left-side {
@@ -546,6 +548,7 @@ export default {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
