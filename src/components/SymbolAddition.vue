@@ -2,20 +2,26 @@
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai latihan Symbol Addition?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="startTest()">Ya</button>
+      <img src='devices/sa.png'/>
+      <div>
+        <button @click="exit()" style="margin-right: 20px;">Batal</button>
+        <button @click="startTest()">Ya</button>
+      </div>
     </div>
+
   </div>
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p><strong>Apakah Anda Yakin <br>akan memulai ujian Symbol Addition?</strong></p>
-      <button @click="exit()" style="margin-right: 20px;">Batal</button>
-      <button @click="startTest()">Ya</button>
+      <div>
+        <button @click="exit()" style="margin-right: 20px;">Batal</button>
+        <button @click="startTest()">Ya</button>
+      </div>
     </div>
   </div>
 
-  <div class='timer-container' v-if="!isTimesUp">
+  <div class='timer-container' v-if="!isTimesUp&&isTrainingCompleted">
     Task: {{ currentTask }} / {{ numberOfTask }}
   </div>
   <div v-if="!isTimesUp">
@@ -54,6 +60,13 @@
       <div class="inline-block text-red-600 font-bold text-lg text-left ml-6 mt-5" v-if="currentWrong">{{ currentWrong }} answer{{ currentWrong > 1 ? 's' : '' }} wrong</div>
     </div>
   </div>
+  <button
+      v-if="!isTrainingCompleted"
+      @click="finishTraining"
+      class="finish-button"
+    >
+      Selesai Latihan
+  </button>
   <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner"></div>
     <div class="loading-text">Your result is submitting</div>
@@ -154,9 +167,18 @@ export default {
     }
   },
   methods: {
+    finishTraining(){
+      this.isTrainingCompleted = true;
+      completeTrainingTestAndUpdateLocalStorage("Symbol Addition");
+
+      //Start Exam After Training
+      this.isModalVisible = true
+      this.result.correct = 0
+      this.result.wrong = 0
+    },
     startTest() {
       if (!this.isTrainingCompleted) {
-        this.numberOfTask = this.configs[0].numberOfQuestion;
+        this.numberOfTask = 999999;
       } else {
         this.currentTask = 1
         this.numberOfTask = 0
@@ -416,14 +438,19 @@ export default {
     z-index: 1000;
   }
 
-  .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-  }
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 
   .modal-content button {
     background-color: #6200ee;
