@@ -17,33 +17,51 @@
     </div>
     <div v-if="showInstructionModal" class="instruction-modal">
       <div class="instruction-modal-content">
-        <h2>{{ currentTrainingTask ? 'Training: ' + currentTrainingTask : 'Instructions' }}</h2>
-        <p>{{ instructionModalContent }}</p>
-        <button @click="startTrainingTask">{{ trainingCompleted ? 'Start Test' : 'Start Task' }}</button>
+        <h2 style="font-size: 24px">
+          <b>{{
+            currentTrainingTask
+              ? "Training: " + currentTrainingTask
+              : "Instructions"
+          }}</b>
+        </h2>
+        <p style="font-size: 20px" class="flex flex-col items-center" v-html="instructionModalContent"></p>
+        <button @click="startTrainingTask">
+          {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
+        </button>
       </div>
     </div>
   </div>
+  <button
+      v-if="!trainingCompleted"
+      @click="endTrainingTask"
+      class="finish-button"
+    >
+      Selesai Latihan
+  </button>
 </template>
 
 <script>
-import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils';
+import {
+  completeTrainingTestAndUpdateLocalStorage,
+  removeTestByNameAndUpdateLocalStorage,
+} from "@/utils";
 
 export default {
   data() {
     return {
       canvasWidth: 1000,
       canvasHeight: 600,
-      backgroundColor: 'black',
-      separatorColor: '#333',
-      textColor: 'white',
+      backgroundColor: "black",
+      separatorColor: "#333",
+      textColor: "white",
       leftTarget: { x: 75, y: 450 },
       rightTarget: { x: 700, y: 300 },
       leftCursor: { x: 75, y: 450 },
       rightCursor: { x: 700, y: 300 },
       config: {
-        sessionId: '',
-        userId: '',
-        testId: '',
+        sessionId: "",
+        userId: "",
+        testId: "",
       },
       gamepad: null,
       gamepadIndex: 0,
@@ -61,14 +79,14 @@ export default {
       deviationThreshold: 20,
       targetSpeed: 0.7,
       lights: [
-        { id: 1, state: 'off', timer: null },
-        { id: 2, state: 'off', timer: null },
-        { id: 3, state: 'off', timer: null },
-        { id: 4, state: 'off', timer: null }
+        { id: 1, state: "off", timer: null },
+        { id: 2, state: "off", timer: null },
+        { id: 3, state: "off", timer: null },
+        { id: 4, state: "off", timer: null },
       ],
       alertResponses: [],
-      question: '',
-      userAnswer: '',
+      question: "",
+      userAnswer: "",
       mathResponses: [],
       currentAnswer: 0,
       questionTimer: null,
@@ -84,7 +102,7 @@ export default {
       leftAimedTime: 0,
       rightAimedTime: 0,
       showVirtualKeyboard: false,
-      leftTargetDirection: { x: 0, y: 1 },  // Initially moving down
+      leftTargetDirection: { x: 0, y: 1 }, // Initially moving down
       rightTargetDirection: { x: 1, y: 1 }, // Initially moving down-right
       directionChangeInterval: 3000, // Change direction every 3 seconds
       targetRadius: 10, // Increased target size
@@ -93,33 +111,40 @@ export default {
       nearThreshold: 30, // Distance threshold for "near" cursor state
       trainingCompleted: false,
       currentTrainingTask: null,
-      trainingTasks: ['navigation', 'math', 'alertLight', 'combined'],
+      trainingTasks: ["navigation", "math", "alertLight", "combined"],
       showInstructionModal: false,
-      instructionModalContent: '',
-      trainingDuration: 15000, // 15 seconds for each training task
+      instructionModalContent: "",
+      trainingDuration: 99999989, // 15 seconds for each training task
       activeTasks: {
         navigation: false,
         math: false,
-        alertLight: false
+        alertLight: false,
       },
     };
   },
   computed: {
     averageResponseTime() {
-      const allResponses = [...this.alertResponses, ...this.mathResponses, ...this.navigationResponses];
-      return allResponses.length ? allResponses.reduce((a, b) => a + b.responseTime, 0) / allResponses.length : 0;
+      const allResponses = [
+        ...this.alertResponses,
+        ...this.mathResponses,
+        ...this.navigationResponses,
+      ];
+      return allResponses.length
+        ? allResponses.reduce((a, b) => a + b.responseTime, 0) /
+        allResponses.length
+        : 0;
     },
     formattedTime() {
       const minutes = Math.floor(this.timeRemaining / 60);
       const seconds = this.timeRemaining % 60;
-      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    }
+      return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+    },
   },
   methods: {
     draw() {
       const canvas = this.$refs.canvas;
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
 
       ctx.fillStyle = this.backgroundColor;
       ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
@@ -162,7 +187,12 @@ export default {
         const x = padding + col * (lightSize + padding);
         const y = padding + row * (lightSize + padding);
 
-        ctx.fillStyle = light.state === 'red' ? 'red' : (light.state === 'yellow' ? 'yellow' : 'grey');
+        ctx.fillStyle =
+          light.state === "red"
+            ? "red"
+            : light.state === "yellow"
+              ? "yellow"
+              : "grey";
         ctx.fillRect(x, y, lightSize, lightSize);
       });
     },
@@ -171,11 +201,11 @@ export default {
       const keyboardHeight = this.topSectionHeight;
 
       // Draw answer box with color based on answer state
-      let boxColor = '#222'; // Default color
-      if (this.answerState === 'correct') {
-        boxColor = 'green';
-      } else if (this.answerState === 'incorrect') {
-        boxColor = 'red';
+      let boxColor = "#222"; // Default color
+      if (this.answerState === "correct") {
+        boxColor = "green";
+      } else if (this.answerState === "incorrect") {
+        boxColor = "red";
       }
 
       const leftSectionWidth = this.canvasWidth * 0.15;
@@ -183,33 +213,47 @@ export default {
       const keyboardWidth = mathSectionWidth * 0.6;
 
       ctx.fillStyle = boxColor;
-      ctx.fillRect(leftSectionWidth + keyboardWidth + 20, 70, mathSectionWidth - keyboardWidth - 40, 40);
-      ctx.fillStyle = 'white';
-      ctx.fillText(`${this.userAnswer}`, leftSectionWidth + keyboardWidth + 30, 95);
+      ctx.fillRect(
+        leftSectionWidth + keyboardWidth + 20,
+        70,
+        mathSectionWidth - keyboardWidth - 40,
+        40
+      );
+      ctx.fillStyle = "white";
+      ctx.fillText(
+        `${this.userAnswer}`,
+        leftSectionWidth + keyboardWidth + 30,
+        95
+      );
       // Draw question
       ctx.fillStyle = this.textColor;
-      ctx.font = '24px Arial';
-      ctx.textAlign = 'left';
+      ctx.font = "24px Arial";
+      ctx.textAlign = "left";
       ctx.fillText(this.question, leftSectionWidth + keyboardWidth + 20, 40);
 
-      this.drawVirtualKeyboard(ctx, leftSectionWidth, keyboardWidth, keyboardHeight);
+      this.drawVirtualKeyboard(
+        ctx,
+        leftSectionWidth,
+        keyboardWidth,
+        keyboardHeight
+      );
     },
 
     drawVirtualKeyboard(ctx, startX, keyboardWidth, keyboardHeight) {
       const numRows = 2;
       const numCols = 6;
-      const keyWidth = (keyboardWidth / numCols) - 10; // 5px gap on each side
-      const keyHeight = (keyboardHeight / numRows) - 10; // 5px gap on top and bottom
+      const keyWidth = keyboardWidth / numCols - 10; // 5px gap on each side
+      const keyHeight = keyboardHeight / numRows - 10; // 5px gap on top and bottom
       const startY = 5; // Top padding
 
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 28px Arial'; // Larger, bold font
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = "#333";
+      ctx.font = "bold 28px Arial"; // Larger, bold font
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
       const keys = [
-        ['7', '8', '9', '4', '5', '6'],
-        ['1', '2', '3', '0', 'Hapus', 'Kirim']
+        ["7", "8", "9", "4", "5", "6"],
+        ["1", "2", "3", "0", "Hapus", "Kirim"],
       ];
 
       keys.forEach((row, rowIndex) => {
@@ -217,10 +261,11 @@ export default {
           const x = startX + colIndex * (keyWidth + 10) + 5;
           const y = startY + rowIndex * (keyHeight + 10);
 
-          ctx.fillStyle = key === 'Hapus' || key === 'Kirim' ? '#4a4a4a' : '#333';
+          ctx.fillStyle =
+            key === "Hapus" || key === "Kirim" ? "#4a4a4a" : "#333";
           ctx.fillRect(x, y, keyWidth, keyHeight);
 
-          ctx.fillStyle = 'white';
+          ctx.fillStyle = "white";
           ctx.fillText(key, x + keyWidth / 2, y + keyHeight / 2);
         });
       });
@@ -237,7 +282,11 @@ export default {
       const keyboardWidth = mathSectionWidth * 0.6;
 
       // Check if the click is within the virtual keyboard area
-      if (y < this.topSectionHeight && x > leftSectionWidth && x < leftSectionWidth + keyboardWidth) {
+      if (
+        y < this.topSectionHeight &&
+        x > leftSectionWidth &&
+        x < leftSectionWidth + keyboardWidth
+      ) {
         this.handleVirtualKeyboardClick(x - leftSectionWidth, y);
       } else if (y < this.topSectionHeight && x < leftSectionWidth) {
         this.handleLightClick(x, y);
@@ -249,8 +298,8 @@ export default {
       const keyboardHeight = this.topSectionHeight;
       const numRows = 2;
       const numCols = 6;
-      const keyWidth = (keyboardWidth / numCols) - 10;
-      const keyHeight = (keyboardHeight / numRows) - 10;
+      const keyWidth = keyboardWidth / numCols - 10;
+      const keyHeight = keyboardHeight / numRows - 10;
       const startY = 5;
 
       const col = Math.floor(x / (keyWidth + 10));
@@ -258,14 +307,14 @@ export default {
 
       if (row >= 0 && row < 2 && col >= 0 && col < 6) {
         const keys = [
-          ['7', '8', '9', '4', '5', '6'],
-          ['1', '2', '3', '0', 'Hapus', 'Kirim']
+          ["7", "8", "9", "4", "5", "6"],
+          ["1", "2", "3", "0", "Hapus", "Kirim"],
         ];
         const key = keys[row][col];
 
-        if (key === 'Kirim') {
+        if (key === "Kirim") {
           this.submitAnswer();
-        } else if (key === 'Hapus') {
+        } else if (key === "Hapus") {
           this.clearAnswer();
         } else {
           this.addToAnswer(key);
@@ -275,12 +324,24 @@ export default {
 
     drawNavigationTasks(ctx) {
       // Draw targets
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.beginPath();
-      ctx.arc(this.leftTarget.x, this.leftTarget.y, this.targetRadius, 0, Math.PI * 2);
+      ctx.arc(
+        this.leftTarget.x,
+        this.leftTarget.y,
+        this.targetRadius,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(this.rightTarget.x, this.rightTarget.y, this.targetRadius, 0, Math.PI * 2);
+      ctx.arc(
+        this.rightTarget.x,
+        this.rightTarget.y,
+        this.targetRadius,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
 
       // Draw aim cursors
@@ -292,7 +353,7 @@ export default {
       const distance = Math.sqrt(
         Math.pow(cursor.x - target.x, 2) + Math.pow(cursor.y - target.y, 2)
       );
-      ctx.strokeStyle = distance <= this.nearThreshold ? 'green' : 'red';
+      ctx.strokeStyle = distance <= this.nearThreshold ? "green" : "red";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(cursor.x, cursor.y, this.cursorRadius, 0, Math.PI * 2);
@@ -305,7 +366,6 @@ export default {
       ctx.stroke();
     },
 
-
     moveTargets() {
       // Move left target
       this.leftTarget.y += this.leftTargetDirection.y * this.targetSpeed;
@@ -316,12 +376,18 @@ export default {
 
       // Constrain targets within bounds
       const leftSectionWidth = this.canvasWidth * 0.15;
-      this.leftTarget.y = Math.max(this.topSectionHeight + this.targetRadius,
-        Math.min(this.canvasHeight - this.targetRadius, this.leftTarget.y));
-      this.rightTarget.x = Math.max(leftSectionWidth + this.targetRadius,
-        Math.min(this.canvasWidth - this.targetRadius, this.rightTarget.x));
-      this.rightTarget.y = Math.max(this.topSectionHeight + this.targetRadius,
-        Math.min(this.canvasHeight - this.targetRadius, this.rightTarget.y));
+      this.leftTarget.y = Math.max(
+        this.topSectionHeight + this.targetRadius,
+        Math.min(this.canvasHeight - this.targetRadius, this.leftTarget.y)
+      );
+      this.rightTarget.x = Math.max(
+        leftSectionWidth + this.targetRadius,
+        Math.min(this.canvasWidth - this.targetRadius, this.rightTarget.x)
+      );
+      this.rightTarget.y = Math.max(
+        this.topSectionHeight + this.targetRadius,
+        Math.min(this.canvasHeight - this.targetRadius, this.rightTarget.y)
+      );
     },
 
     changeTargetDirections() {
@@ -333,7 +399,6 @@ export default {
       this.rightTargetDirection.y = Math.random() < 0.5 ? 1 : -1;
     },
 
-
     checkDeviation() {
       const leftDeviation = Math.abs(this.leftCursor.y - this.leftTarget.y);
       const rightDeviation = Math.sqrt(
@@ -342,17 +407,17 @@ export default {
       );
 
       this.navigationResponses.push({
-        type: leftDeviation <= this.deviationThreshold ? 'correct' : 'wrong',
+        type: leftDeviation <= this.deviationThreshold ? "correct" : "wrong",
         deviation: leftDeviation,
         responseTime: this.deviationCheckInterval,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       this.navigationResponses.push({
-        type: rightDeviation <= this.deviationThreshold ? 'correct' : 'wrong',
+        type: rightDeviation <= this.deviationThreshold ? "correct" : "wrong",
         deviation: rightDeviation,
         responseTime: this.deviationCheckInterval,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       this.leftAimedTime += leftDeviation <= this.deviationThreshold ? 1 : 0;
@@ -371,20 +436,24 @@ export default {
     },
 
     onGamepadConnected(e) {
-      if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+      if (e.gamepad.id === "T.16000M (Vendor: 044f Product: b10a)") {
         this.gamepadIndex = e.gamepad.index;
         this.gamepadConnected = true;
-      } else if (e.gamepad.id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
+      } else if (
+        e.gamepad.id === "TWCS Throttle (Vendor: 044f Product: b687)"
+      ) {
         this.thrusterIndex = e.gamepad.index;
         this.thrustConnected = true;
       }
     },
 
     onGamepadDisconnected(e) {
-      if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+      if (e.gamepad.id === "T.16000M (Vendor: 044f Product: b10a)") {
         this.gamepadIndex = null;
         this.gamepadConnected = false;
-      } else if (e.gamepad.id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
+      } else if (
+        e.gamepad.id === "TWCS Throttle (Vendor: 044f Product: b687)"
+      ) {
         this.thrusterIndex = null;
         this.thrustConnected = false;
       }
@@ -401,8 +470,8 @@ export default {
 
     activateRandomLight() {
       // Turn off all lights
-      this.lights.forEach(light => {
-        light.state = 'off';
+      this.lights.forEach((light) => {
+        light.state = "off";
         clearTimeout(light.timer);
       });
 
@@ -411,12 +480,12 @@ export default {
       const light = this.lights[randomIndex];
       const isRed = Math.random() < 0.5;
 
-      light.state = isRed ? 'red' : 'yellow';
+      light.state = isRed ? "red" : "yellow";
       light.timer = setTimeout(() => {
-        if (light.state === 'red') {
-          this.recordAlertResponse(light.id, 'wrong', 10000);
+        if (light.state === "red") {
+          this.recordAlertResponse(light.id, "wrong", 10000);
         }
-        light.state = 'off';
+        light.state = "off";
       }, 10000);
     },
 
@@ -435,16 +504,29 @@ export default {
         const lightX = padding + col * (lightSize + padding);
         const lightY = padding + row * (lightSize + padding);
 
-        if (x >= lightX && x <= lightX + lightSize && y >= lightY && y <= lightY + lightSize) {
-          if (light.state === 'red') {
-            this.recordAlertResponse(light.id, 'correct', Date.now() - light.timer.getTimestamp());
+        if (
+          x >= lightX &&
+          x <= lightX + lightSize &&
+          y >= lightY &&
+          y <= lightY + lightSize
+        ) {
+          if (light.state === "red") {
+            this.recordAlertResponse(
+              light.id,
+              "correct",
+              Date.now() - light.timer.getTimestamp()
+            );
             this.correctPresses++;
-          } else if (light.state === 'yellow') {
-            this.recordAlertResponse(light.id, 'wrong', Date.now() - light.timer.getTimestamp());
+          } else if (light.state === "yellow") {
+            this.recordAlertResponse(
+              light.id,
+              "wrong",
+              Date.now() - light.timer.getTimestamp()
+            );
             this.mispresses++;
           }
           clearTimeout(light.timer);
-          light.state = 'off';
+          light.state = "off";
         }
       });
     },
@@ -453,7 +535,7 @@ export default {
       this.alertResponses.push({
         type,
         responseTime,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     },
 
@@ -470,7 +552,7 @@ export default {
       const num2 = Math.floor(Math.random() * 100);
       this.question = `${num1} + ${num2} = ?`;
       this.currentAnswer = num1 + num2;
-      this.userAnswer = '';
+      this.userAnswer = "";
     },
 
     addToAnswer(digit) {
@@ -480,26 +562,29 @@ export default {
     },
 
     clearAnswer() {
-      this.userAnswer = '';
+      this.userAnswer = "";
     },
 
     submitAnswer() {
       const answer = parseInt(this.userAnswer);
       if (answer === this.currentAnswer) {
-        this.answerState = 'correct';
+        this.answerState = "correct";
         this.correctAnswers++;
       } else {
-        this.answerState = 'incorrect';
+        this.answerState = "incorrect";
         this.incorrectAnswers++;
       }
-      this.recordMathResponse(this.answerState, Date.now() - this.lastQuestionTime);
+      this.recordMathResponse(
+        this.answerState,
+        Date.now() - this.lastQuestionTime
+      );
     },
 
     recordMathResponse(type, responseTime) {
       this.mathResponses.push({
         type,
         responseTime,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     },
 
@@ -518,10 +603,11 @@ export default {
 
     showTrainingInstructions() {
       const instructions = {
-        navigation: "Gunakan joystick untuk menggerakkan kursor ke target. Pastikan kursor berada di target, warna akan berubah menjadi hijau.",
-        math: "Jawab soal matematika secepat mungkin. Jawaban benar akan berwarna hijau, jawaban salah akan berwarna merah.",
-        alertLight: "Klik lampu merah yang menyala. abaikan lampu kuning.",
-        combined: "Latihan gabungan dari ketiga tugas sebelumnya."
+        navigation:
+          "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU.<img src='devices/omt.png'/>",
+        math: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar. <img src='devices/omt.png'/>",
+        alertLight: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar dan memilih LAMPU berwarna MERAH di layar. <img src='devices/omt.png'/>",
+        combined: "Latihan gabungan dari ketiga tugas sebelumnya.",
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
@@ -531,16 +617,16 @@ export default {
     startTrainingTask() {
       this.showInstructionModal = false;
       switch (this.currentTrainingTask) {
-        case 'navigation':
+        case "navigation":
           this.startNavigationTraining();
           break;
-        case 'math':
+        case "math":
           this.startMathTraining();
           break;
-        case 'alertLight':
+        case "alertLight":
           this.startAlertLightTraining();
           break;
-        case 'combined':
+        case "combined":
           this.startCombinedTraining();
           break;
       }
@@ -597,7 +683,9 @@ export default {
 
     endTrainingTask() {
       this.stopSimulation();
-      const currentTaskIndex = this.trainingTasks.indexOf(this.currentTrainingTask);
+      const currentTaskIndex = this.trainingTasks.indexOf(
+        this.currentTrainingTask
+      );
       if (currentTaskIndex < this.trainingTasks.length - 1) {
         this.currentTrainingTask = this.trainingTasks[currentTaskIndex + 1];
         this.showTrainingInstructions();
@@ -610,16 +698,18 @@ export default {
       this.trainingCompleted = true;
       this.updateLocalStorage();
       this.showInstructionModal = true;
-      this.instructionModalContent = "Training completed! The actual test will begin now.";
+      this.instructionModalContent =
+        "Training completed! The actual test will begin now.";
     },
 
-
     updateLocalStorage() {
-      let scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const testIndex = scheduleData.tests.findIndex(test => test.name === 'Test For Operative Multitasking');
+      let scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+      const testIndex = scheduleData.tests.findIndex(
+        (test) => test.name === "Test For Operative Multitasking"
+      );
       if (testIndex !== -1) {
         scheduleData.tests[testIndex].trainingCompleted = true;
-        localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+        localStorage.setItem("scheduleData", JSON.stringify(scheduleData));
       }
     },
 
@@ -652,7 +742,6 @@ export default {
       this.handleMathQuestionInterval(timestamp);
     },
 
-
     handleGamepadInput() {
       const gamepads = navigator.getGamepads();
 
@@ -665,8 +754,14 @@ export default {
 
         // Constrain right cursor within its quadrant
         const leftSectionWidth = this.canvasWidth * 0.15;
-        this.rightCursor.x = Math.max(leftSectionWidth, Math.min(this.canvasWidth - 10, this.rightCursor.x));
-        this.rightCursor.y = Math.max(this.topSectionHeight + 10, Math.min(this.canvasHeight - 10, this.rightCursor.y));
+        this.rightCursor.x = Math.max(
+          leftSectionWidth,
+          Math.min(this.canvasWidth - 10, this.rightCursor.x)
+        );
+        this.rightCursor.y = Math.max(
+          this.topSectionHeight + 10,
+          Math.min(this.canvasHeight - 10, this.rightCursor.y)
+        );
       }
 
       if (this.thrusterIndex !== null && gamepads[this.thrusterIndex]) {
@@ -676,17 +771,20 @@ export default {
         this.leftCursor.y += throttleY * 5;
 
         // Constrain left cursor within its quadrant
-        this.leftCursor.y = Math.max(this.topSectionHeight + 10, Math.min(this.canvasHeight - 10, this.leftCursor.y));
+        this.leftCursor.y = Math.max(
+          this.topSectionHeight + 10,
+          Math.min(this.canvasHeight - 10, this.leftCursor.y)
+        );
       }
     },
 
     getSpeed(speed) {
-      console.log(speed, 'speed');
-      if (speed === 'slow') {
+      console.log(speed, "speed");
+      if (speed === "slow") {
         return 1;
-      } else if (speed === 'medium') {
+      } else if (speed === "medium") {
         return 2;
-      } else if (speed === 'fast') {
+      } else if (speed === "fast") {
         return 3;
       }
     },
@@ -709,9 +807,10 @@ export default {
     async endSimulation() {
       if (!this.trainingCompleted) {
         this.trainingCompleted = true;
-        completeTrainingTestAndUpdateLocalStorage("Test For Operative Multitasking");
+        completeTrainingTestAndUpdateLocalStorage(
+          "Test For Operative Multitasking"
+        );
         // start over for actual test
-
       }
       clearInterval(this.drawInterval);
       this.showModal = true;
@@ -730,53 +829,52 @@ export default {
             leftAimedTime: this.leftAimedTime,
             rightAimedTime: this.rightAimedTime,
             graph_data: {
-              'alert': this.alertResponses,
-              'math': this.mathResponses,
-              'navigation': this.navigationResponses
+              alert: this.alertResponses,
+              math: this.mathResponses,
+              navigation: this.navigationResponses,
             },
           },
-        }
+        };
 
-        const res = await fetch(`${API_URL}/api/submission`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        )
+        const res = await fetch(`${API_URL}/api/submission`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
         if (!res.ok) {
-          throw new Error('Failed Submit Test');
+          throw new Error("Failed Submit Test");
         }
       } catch (error) {
         console.error(error), "error";
       } finally {
-        removeTestByNameAndUpdateLocalStorage("Test For Operative Multitasking");
-        localStorage.removeItem('reloadCountRadarVigilance');
-        window.location.href = '/module';
+        removeTestByNameAndUpdateLocalStorage(
+          "Test For Operative Multitasking"
+        );
+        localStorage.removeItem("reloadCountRadarVigilance");
+        window.location.href = "/module";
       }
     },
 
     closeModal() {
       this.showModal = false;
     },
-
   },
   mounted() {
-    window.addEventListener('gamepadconnected', this.onGamepadConnected);
-    window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-    window.addEventListener('keydown', this.handleKeyPress);
-    this.$refs.canvas.addEventListener('click', this.handleCanvasClick);
+    window.addEventListener("gamepadconnected", this.onGamepadConnected);
+    window.addEventListener("gamepaddisconnected", this.onGamepadDisconnected);
+    window.addEventListener("keydown", this.handleKeyPress);
+    this.$refs.canvas.addEventListener("click", this.handleCanvasClick);
 
     // Check for gamepads periodically
     setInterval(this.checkGamepadConnection, 5000);
 
-    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+    const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
     const tests = scheduleData.tests;
     const operativeTest = tests?.find((test) => {
-      return test.name === 'Test For Operative Multitasking';
+      return test.name === "Test For Operative Multitasking";
     });
     this.trainingCompleted = operativeTest?.trainingCompleted; //default false
     const config = operativeTest?.configs[0];
@@ -787,15 +885,25 @@ export default {
     this.targetSpeed = this.getSpeed("fast");
     this.duration = config.duration * 60; // Default to 5 minutes if not specified
 
-    console.log(config, 'config', this.targetSpeed, 'speed', this.duration, 'duration');
+    console.log(
+      config,
+      "config",
+      this.targetSpeed,
+      "speed",
+      this.duration,
+      "duration"
+    );
     this.startSimulation();
   },
 
   beforeUnmount() {
-    window.removeEventListener('gamepadconnected', this.onGamepadConnected);
-    window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
-    window.removeEventListener('keydown', this.handleKeyPress);
-    this.$refs.canvas.removeEventListener('click', this.handleCanvasClick)
+    window.removeEventListener("gamepadconnected", this.onGamepadConnected);
+    window.removeEventListener(
+      "gamepaddisconnected",
+      this.onGamepadDisconnected
+    );
+    window.removeEventListener("keydown", this.handleKeyPress);
+    this.$refs.canvas.removeEventListener("click", this.handleCanvasClick);
     clearInterval(this.drawInterval);
     this.stopSimulation();
   },
@@ -821,7 +929,8 @@ export default {
   padding: 10px;
   font-size: 24px;
   border-radius: 5px;
-  z-index: 1000; /* Ensure it's above the canvas */
+  z-index: 1000;
+  /* Ensure it's above the canvas */
 }
 
 canvas {
@@ -854,11 +963,16 @@ canvas {
 }
 
 .modal-content {
-  background: #222;
-  color: white;
+  background-color: white;
   padding: 20px;
   border-radius: 5px;
-  text-align: center;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 button {
@@ -890,11 +1004,16 @@ button:hover {
 }
 
 .instruction-modal-content {
-  background-color: #fff;
+  background-color: white;
   padding: 20px;
   border-radius: 5px;
-  text-align: center;
-  max-width: 80%;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .instruction-modal-content h2 {
