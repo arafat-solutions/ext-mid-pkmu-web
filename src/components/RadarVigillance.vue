@@ -1,14 +1,21 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p>
+      <p style="font-size: 24px">
         <strong>Apakah anda yakin akan memulai latihan ?</strong>
       </p>
+      <p style="font-size: 20px; max-width: 80%">
+        Dalam tes ini anda akan menggunakan Joystick. Gambar di bawah
+        menunjukkan RADAR sebuah pesawat. Anda diminta untuk MENEKAN tombol
+        Trigger pada Joystick saat objek “circle putih” muncul dalam radar.
+      </p>
+
+      <div style="display: flex">
+        <img src="devices/radar_1.png" />
+        <img src="devices/radar_2.png" />
+      </div>
       <div>
-        <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-          Batal
-        </button>
-        <button @click="startTest()">Ya</button>
+        <button @click="startTest()">Mulai Latihan</button>
       </div>
     </div>
   </div>
@@ -54,7 +61,11 @@
         </div>
       </div>
     </div>
-    <button v-if="!isTrainingCompleted" @click="finishTraining" class="finish-button">
+    <button
+      v-if="!isTrainingCompleted"
+      @click="finishTraining"
+      class="finish-button"
+    >
       Selesai Latihan
     </button>
   </div>
