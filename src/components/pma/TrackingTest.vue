@@ -18,7 +18,7 @@ export default {
     props: {
         currentTraining: {
             type: String,
-            default: 'all', // 'all', 'joystick', or 'thruster'
+            default: 'all',
             validator: (value) => ['all', 'joystick', 'thruster'].includes(value)
         }
     },
@@ -33,6 +33,7 @@ export default {
 
         const centerX = 250;
         const centerY = 250;
+        const staticBoundaryRadius = 90; // New static boundary for dot
         let solidCircleRadius = 150;
         let referenceCircleRadius = 200;
         let expandInterval = 3000;
@@ -80,7 +81,15 @@ export default {
         };
 
         const drawCircles = () => {
-            // Draw solid circle
+            // Draw static boundary circle
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = 'transparent';
+            ctx.lineWidth = 2;
+            ctx.arc(centerX, centerY, staticBoundaryRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw solid circle (thruster controlled)
             ctx.beginPath();
             ctx.setLineDash([]);
             const radiusDifference = Math.abs(solidCircleRadius - referenceCircleRadius);
@@ -99,7 +108,7 @@ export default {
         const drawDot = () => {
             const distanceFromCenter = Math.sqrt(Math.pow(dotX - centerX, 2) + Math.pow(dotY - centerY, 2));
             ctx.beginPath();
-            ctx.fillStyle = distanceFromCenter <= solidCircleRadius ? 'green' : 'red';
+            ctx.fillStyle = distanceFromCenter <= staticBoundaryRadius ? 'green' : 'red'; // Changed to use staticBoundaryRadius
             ctx.arc(dotX, dotY, 10, 0, Math.PI * 2);
             ctx.fill();
         };
@@ -153,19 +162,19 @@ export default {
                 const joystickState = navigator.getGamepads()[joystick.index];
                 if (joystickState) {
                     const axes = joystickState.axes;
-                    dotX += axes[0] * 2;
-                    dotY += axes[1] * 2;
+                    const newX = dotX + axes[0] * 2;
+                    const newY = dotY + axes[1] * 2;
 
-                    const angle = Math.atan2(dotY - centerY, dotX - centerX);
-                    dotX += Math.cos(angle) * 0.5;
-                    dotY += Math.sin(angle) * 0.5;
-
-                    dotX = Math.max(0, Math.min(500, dotX));
-                    dotY = Math.max(0, Math.min(500, dotY));
+                    // Update position within canvas bounds
+                    dotX = Math.max(0, Math.min(500, newX));
+                    dotY = Math.max(0, Math.min(500, newY));
                 }
             }
         };
 
+        // Rest of the code remains the same...
+        // Include all the remaining methods (updateCircleAndPill, updateScores, etc.)
+        
         const updateCircleAndPill = (timestamp) => {
             if (timestamp - lastExpandTime > expandInterval) {
                 expanding = Math.random() < 0.5;
@@ -222,14 +231,13 @@ export default {
 
             if (shouldShowJoystickStatus.value) {
                 const distanceFromCenter = Math.sqrt(Math.pow(dotX - centerX, 2) + Math.pow(dotY - centerY, 2));
-                if (distanceFromCenter <= solidCircleRadius) {
+                if (distanceFromCenter <= staticBoundaryRadius) {
                     dot_correct_position.value += deltaTime;
                 } else {
                     dot_wrong_position.value += deltaTime;
                 }
             }
         };
-
         const checkGamepadConnection = () => {
             const gamepads = navigator.getGamepads();
             for (let gamepad of gamepads) {
@@ -244,6 +252,7 @@ export default {
                 }
             }
         };
+
 
         let lastTimestamp = 0;
         const gameLoop = (timestamp) => {
@@ -308,7 +317,7 @@ export default {
             pill_wrong_position
         ], emitScoreUpdate);
 
-        onMounted(() => {
+        onMounted(() => {   
             ctx = canvas.value.getContext('2d');
             gameLoop();
             window.addEventListener("gamepadconnected", handleGamepadConnected);
