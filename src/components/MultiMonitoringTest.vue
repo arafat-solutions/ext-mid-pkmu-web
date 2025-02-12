@@ -208,7 +208,7 @@ function getModalTitle() {
       currentTrainingTask.value.slice(1)
     } `;
   }
-  return "Start Test";
+  return "Mulai Test";
 }
 
 function getModalMessage() {

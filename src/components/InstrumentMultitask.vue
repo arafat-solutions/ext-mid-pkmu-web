@@ -6,8 +6,8 @@
           <b>
             {{
               currentTrainingTask
-                ? "Training: " + currentTrainingTask
-                : "Instructions"
+                ? "Latihan: " + currentTrainingTask
+                : "Instruksi"
             }}
           </b>
         </h2>
@@ -21,7 +21,7 @@
         <p v-else>Apakah Anda Yakin <br />akan memulai ujian {{ testName }}?</p>
 
         <button @click="startTrainingTask">
-          {{ trainingCompleted ? "Start Test" : "Start Task" }}
+          {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
         </button>
       </div>
     </div>
@@ -38,6 +38,7 @@
           :isTimesUp="isTimesUp"
           :isPause="isPauseHorizon"
           :isActive="config.horizon.isActive"
+          v-if="config.horizon.isActive"
           @getResult="horizonResult"
         />
         <ArithmeticTask
@@ -47,6 +48,7 @@
           :minuteTime="minuteTime"
           :isPause="isPauseArithmetic"
           :isActive="config.arithmetic.isActive"
+          v-if="config.arithmetic.isActive"
           :useSound="config.arithmetic.useSound"
           :canPressAnswer="config.arithmetic.canPressAnswer"
           :allowSound="allowSound"
@@ -60,6 +62,7 @@
           :frequency="config.alertLight.frequency"
           :isPause="isPauseAlertLight"
           :isActive="config.alertLight.isActive"
+          v-if="config.alertLight.isActive"
           @getResult="alertLightResult"
         />
       </div>
@@ -69,6 +72,7 @@
           :isPause="isPauseGaugesMeter"
           :frequency="config.gaugesMeter.frequency"
           :isActive="config.gaugesMeter.isActive"
+          v-if="config.gaugesMeter.isActive"
           @getResult="gaugesMeterResult"
           :size="50"
         />
@@ -328,7 +332,9 @@ export default {
       this.config.horizon.isActive = false;
 
       this.allowSound = true;
-      this.$refs.arithmeticTaskRef.generateProblem();
+      if (this.config.arithmetic.isActive) {
+        this.$refs.arithmeticTaskRef.generateProblem();
+      }
 
       this.startCountdown();
     },
@@ -376,14 +382,19 @@ export default {
       this.config.gaugesMeter.isActive = true;
 
       this.allowSound = true;
-      this.$refs.arithmeticTaskRef.generateProblem();
+
+      if (this.config.arithmetic.isActive) {
+        this.$refs.arithmeticTaskRef.generateProblem();
+      }
 
       this.minuteTime = 1;
       this.timeLeft = this.minuteTime * 60;
       this.startCountdown();
     },
     endTrainingTask() {
-      this.$refs.arithmeticTaskRef.stop();
+      if (this.config.arithmetic.isActive) {
+        this.$refs.arithmeticTaskRef.stop();
+      }
 
       const currentTaskIndex = this.trainingTasks.indexOf(
         this.currentTrainingTask
