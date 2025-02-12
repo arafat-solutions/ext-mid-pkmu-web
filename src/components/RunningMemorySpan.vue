@@ -1,13 +1,21 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p>
+      <p style="font-size: 24px;">
         <strong>Apakah anda yakin akan memulai latihan ?</strong>
       </p>
-      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-        Batal
-      </button>
-      <button @click="startTest()">Ya</button>
+      <p style="font-size: 20px;">
+        Pada tes ini, Anda harus menggunakan headset dan layar sentuh. Anda akan
+        mendengarkan serangkaian angka yang harus Anda ingat. Kemudian, Anda
+        diminta memasukkan serangkaian angka tersebut secara terbalik
+        menggunakan layar sentuh. Anda wajib memasukkan mouse dan keyboard ke
+        dalam laci.
+      </p>
+      <img src="devices/rmt.png"/>
+      
+      <div>
+        <button @click="startTest()">Mulai Latihan</button>
+      </div>
     </div>
   </div>
 
@@ -16,10 +24,10 @@
       <p>
         <strong>Apakah anda yakin akan memulai test?</strong>
       </p>
-      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-        Batal
-      </button>
-      <button @click="startTest()">Ya</button>
+      <div>
+        
+        <button @click="startTest()">Mulai Test</button>
+      </div>
     </div>
   </div>
 
@@ -29,7 +37,9 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container">Time: {{ formattedTime }}</div>
+    <div class="timer-container" v-if="isTrainingCompleted">
+      Time: {{ formattedTime }}
+    </div>
 
     <div class="input-simulation-container">
       <div v-if="isShowQuestion">
@@ -91,6 +101,13 @@
         <p class="text-question">Dengarkan angka yang disebutkan!</p>
       </div>
     </div>
+    <button
+      v-if="!isTrainingCompleted"
+      @click="finishTraining"
+      class="finish-button"
+    >
+      Selesai Latihan
+    </button>
   </div>
 </template>
 
@@ -176,7 +193,7 @@ export default {
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
 
-        this.durationTest = 1 * 60;
+        this.durationTest = 9999;
       } else {
         this.setConfig(this.configs[this.indexConfig]);
 
@@ -214,6 +231,17 @@ export default {
         this.$router.push("module");
       }
     },
+    finishTraining() {
+      this.isTrainingCompleted = true;
+      completeTrainingTestAndUpdateLocalStorage("Running Memory Span Test");
+
+      //Start Exam After Training
+      this.isModalVisible = true;
+      this.totalQuestion = 0;
+      this.correctAnswer = 0;
+      this.responseDurations = [];
+      this.userInputs = [];
+    },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.durationTest > 0) {
@@ -223,17 +251,7 @@ export default {
 
           //For Training
           if (!this.isTrainingCompleted) {
-            this.isTrainingCompleted = true;
-            completeTrainingTestAndUpdateLocalStorage(
-              "Running Memory Span Test"
-            );
-
-            //Start Exam After Training
-            this.isModalVisible = true;
-            this.totalQuestion = 0;
-            this.correctAnswer = 0;
-            this.responseDurations = [];
-            this.userInputs = [];
+            this.finishTraining();
           } else {
             setTimeout(() => {
               this.calculatedResult();
@@ -520,9 +538,13 @@ export default {
   background-color: white;
   padding: 20px;
   border-radius: 5px;
-  max-width: 90%;
-  max-height: 90%;
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-content button {

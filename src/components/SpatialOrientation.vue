@@ -1,14 +1,19 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p>
+      <p style="font-size: 24px;">
         <strong>Apakah anda yakin akan memulai latihan?</strong>
       </p>
+      <p style="font-size: 20px; max-width: 80%;">
+        Pada tes ini Anda akan menggunakan Touch Screen. Anda diminta untuk
+        menghitung JUMLAH BELOKAN KANAN atau KIRI yang ada pada gambar sesuai
+        dengan soal. Lalu pilih jawaban yang benar dengan cara menyentuh LAYAR
+        MONITOR.
+      </p>
+
+      <img src="devices/spatial.png"/>
       <div class="button-container">
-        <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-          Batal
-        </button>
-        <button @click="startTest()">Ya</button>
+        <button @click="startTest()">Mulai Latihan</button>
       </div>
     </div>
   </div>
@@ -16,13 +21,10 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p>
-        <strong>Apakah anda yakin akan memulai test?</strong>
+        <strong>Apakah anda yakin akan memulai tes?</strong>
       </p>
       <div>
-        <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-          Batal
-        </button>
-        <button @click="startTest()">Ya</button>
+        <button @click="startTest()">Mulai Tes</button>
       </div>
     </div>
   </div>
