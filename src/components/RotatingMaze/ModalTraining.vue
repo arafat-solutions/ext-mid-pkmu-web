@@ -31,8 +31,12 @@
     background-color: white;
     padding: 20px;
     border-radius: 5px;
-    max-width: 80%;
-    max-height: 80%;
+    width: 100%;
+    height: 100%;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
   </style>

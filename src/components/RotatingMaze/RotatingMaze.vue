@@ -2,8 +2,8 @@
   <div>
     <!-- Training Start Modal -->
     <Modal v-if="showTrainingStartModal" @close="startTraining">
-      <h2>Latihan Test</h2>
-      <p>
+      <h2 style="font-size: 24px"><b>Latihan Test</b></h2>
+      <p style="font-size: 20px; max-width: 50%">
         Dalam sesi latihan ini, Anda akan berlatih menavigasi melalui labirin.
         Gunakan tombol panah untuk bergerak. Tujuannya adalah mencapai target
         secepat mungkin. Sesi ini akan membantu Anda terbiasa dengan kontrol dan
@@ -19,10 +19,10 @@
 
     <!-- Actual Test Start Modal -->
     <Modal v-if="showTestStartModal" @close="startActualTest">
-      <h2>Siap untuk memulai tes?</h2>
-      <p>
-        Kerja bagus menyelesaikan latihan! Anda sekarang siap untuk memulai
-        tes sebenarnya. Ingat, kinerja Anda dalam tes ini akan dicatat.
+      <h2 style="font-size: 24px"><b>Siap untuk memulai tes?</b></h2>
+      <p style="font-size: 20px; max-width: 50%">
+        Kerja bagus menyelesaikan latihan! Anda sekarang siap untuk memulai tes
+        sebenarnya. Ingat, kinerja Anda dalam tes ini akan dicatat.
       </p>
       <button
         @click="startActualTest"
@@ -71,8 +71,10 @@
         </div>
       </div>
     </div>
-
-    <div class="timerMaze">
+    <button v-if="isTraining" @click="finishTraining" class="finish-button">
+      Selesai Latihan
+    </button>
+    <div class="timerMaze" v-if="!isTraining">
       <p>Jumlah {{ isTraining ? "Latihan" : "Tes" }}:</p>
       <p>{{ completedMazes }} / {{ isTraining ? trainingMazes : testMazes }}</p>
     </div>
@@ -122,7 +124,7 @@ export default {
     const isTraining = ref(true);
     const showTrainingStartModal = ref(true);
     const showTestStartModal = ref(false);
-    const trainingMazes = 3; // Number of training mazes
+    const trainingMazes = 999; // Number of training mazes
     const testMazes = ref(0);
     const config = ref({
       numberOfMaze: 10,
@@ -705,6 +707,10 @@ export default {
       return true;
     };
 
+    const finishTraining = () => {
+      completeTrainingTestAndUpdateLocalStorage("Rotating Maze");
+      showTestStartModal.value = true;
+    };
     const movePlayer = async (direction) => {
       // prevent user move when generating maze
       if (loadingGenerating.value) return;
@@ -808,8 +814,7 @@ export default {
         completedMazes.value++;
 
         if (isTraining.value && completedMazes.value >= trainingMazes) {
-          completeTrainingTestAndUpdateLocalStorage("Rotating Maze");
-          showTestStartModal.value = true;
+          finishTraining();
         } else if (
           !isTraining.value &&
           completedMazes.value == testMazes.value
@@ -1023,6 +1028,7 @@ export default {
       mazeWidth,
       mazeHeight,
       cellSize,
+      finishTraining,
       gridSizeX,
       gridSizeY,
       quizMetrics,
@@ -1263,6 +1269,20 @@ export default {
   flex-direction: column;
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
+}
+
+.finish-button {
+  position: fixed;
+  bottom: 20px;
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust to truly center */
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 .timerMaze p {
