@@ -20,8 +20,8 @@
         <h2 style="font-size: 24px">
           <b>{{
             currentTrainingTask
-              ? "Training: " + currentTrainingTask
-              : "Instructions"
+              ? "Latihan: " + currentTrainingTask
+              : "Instruksi"
           }}</b>
         </h2>
         <p style="font-size: 20px" class="flex flex-col items-center" v-html="instructionModalContent"></p>
@@ -240,38 +240,37 @@ export default {
     },
 
     drawVirtualKeyboard(ctx, startX, keyboardWidth, keyboardHeight) {
-      const numRows = 2;
-      const numCols = 6;
-      const keyWidth = keyboardWidth / numCols - 10; // 5px gap on each side
-      const keyHeight = keyboardHeight / numRows - 10; // 5px gap on top and bottom
-      const startY = 5; // Top padding
+  const numRows = 2;
+  const numCols = 6;
+  const keyWidth = keyboardWidth / numCols - 10; // 5px gap on each side
+  const keyHeight = keyboardHeight / numRows - 10; // 5px gap on top and bottom
+  const startY = 5; // Top padding
 
-      ctx.fillStyle = "#333";
-      ctx.font = "bold 28px Arial"; // Larger, bold font
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+  const keys = [
+    ["7", "8", "9", "4", "5", "6"],
+    ["1", "2", "3", "0", "Hapus", "Kirim"],
+  ];
 
-      const keys = [
-        ["7", "8", "9", "4", "5", "6"],
-        ["1", "2", "3", "0", "Hapus", "Kirim"],
-      ];
+  ctx.textAlign = "center"; // Center text horizontally
+  ctx.textBaseline = "middle"; // Center text vertically
 
-      keys.forEach((row, rowIndex) => {
-        row.forEach((key, colIndex) => {
-          const x = startX + colIndex * (keyWidth + 10) + 5;
-          const y = startY + rowIndex * (keyHeight + 10);
+  keys.forEach((row, rowIndex) => {
+    row.forEach((key, colIndex) => {
+      const x = startX + colIndex * (keyWidth + 10) + 5;
+      const y = startY + rowIndex * (keyHeight + 10);
 
-          ctx.fillStyle =
-            key === "Hapus" || key === "Kirim" ? "#4a4a4a" : "#333";
-          ctx.fillRect(x, y, keyWidth, keyHeight);
+      ctx.fillStyle = key === "Hapus" || key === "Kirim" ? "#4a4a4a" : "#333";
+      ctx.fillRect(x, y, keyWidth, keyHeight);
 
-          ctx.fillStyle = "white";
-          ctx.fillText(key, x + keyWidth / 2, y + keyHeight / 2);
-        });
-      });
-    },
+      // Adjust font size for numbers and text buttons
+      ctx.fillStyle = "white";
+      ctx.font = key === "Hapus" || key === "Kirim" ? "bold 20px Arial" : "bold 28px Arial";
 
-    handleCanvasClick(event) {
+      // Draw text centered both horizontally and vertically
+      ctx.fillText(key, x + keyWidth / 2, y + keyHeight / 2);
+    });
+  });
+},handleCanvasClick(event) {
       const canvas = this.$refs.canvas;
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
@@ -294,6 +293,7 @@ export default {
     },
 
     handleVirtualKeyboardClick(x, y) {
+      if(this.answerState) return
       const keyboardWidth = (this.canvasWidth - this.canvasWidth * 0.15) * 0.6;
       const keyboardHeight = this.topSectionHeight;
       const numRows = 2;
