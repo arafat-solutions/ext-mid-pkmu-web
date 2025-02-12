@@ -99,7 +99,6 @@ import { Altimeter, Airspeed, Heading } from 'vue-flight-indicators';
 import AnalogClock from "./AnalogClock.vue";
 import { useRouter } from 'vue-router';
 
-const router = useRouter()
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
@@ -1000,9 +999,6 @@ const handleStartExam = () => {
     initAudioContext();
 };
 
-const handleCancel = () => {
-    router.replace("/module");
-}
 
 const handleKeyDown = (event) => {
     if (controlMode.value === 'manual') {
