@@ -7,7 +7,12 @@
       class="no-pointer-events"
     >
     </canvas>
-    <p v-if="!trainingCompleted">
+  </div>
+  <div
+    class="centered-component"
+    style="height: 70px; width: 500px; bottom: 20% !important"
+  >
+    <p v-if="!trainingCompleted && !isGreen">
       ⚠️ Perhatian! ⚠️<br />Upayakan garis potong berwarna <b>HIJAU</b> dengan
       mengarahkan ke target menggunakan <b>JOYSTICK</b>
     </p>
@@ -29,6 +34,7 @@ export default {
       horizonWidth: 450,
       horizonHeight: 350,
       greenLineStartTime: null,
+      isGreen: false,
       greenLineDuration: 0,
       config: {
         x: 10,
@@ -292,6 +298,8 @@ export default {
       );
       const isInRadius = distanceToCircle <= radius;
 
+      this.isGreen = isInRadius ? true : false;
+
       this.updateGreenTime(isInRadius);
 
       const lineColor = isInRadius ? "green" : "yellow";
@@ -452,12 +460,13 @@ canvas {
   margin-bottom: 20px;
   margin-top: -20px;
   margin-right: 10px;
-  margin-left: 70px;
+  margin-left: 30px;
 }
 
 .centered-component {
   margin: auto;
-  max-width: 600px;
   width: 100%;
+  bottom: 30%;
+  left: 50%; /* Center horizontally */
 }
 </style>
