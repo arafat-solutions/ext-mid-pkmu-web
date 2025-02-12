@@ -102,6 +102,7 @@ export default {
         math: false,
         alertLight: false
       },
+      answerSubmitted: false,
     };
   },
   computed: {
@@ -198,12 +199,11 @@ export default {
     drawVirtualKeyboard(ctx, startX, keyboardWidth, keyboardHeight) {
       const numRows = 2;
       const numCols = 6;
-      const keyWidth = (keyboardWidth / numCols) - 10; // 5px gap on each side
-      const keyHeight = (keyboardHeight / numRows) - 10; // 5px gap on top and bottom
-      const startY = 5; // Top padding
+      const keyWidth = (keyboardWidth / numCols) - 10;
+      const keyHeight = (keyboardHeight / numRows) - 10;
+      const startY = 5;
 
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 28px Arial'; // Larger, bold font
+      ctx.font = 'bold 28px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
@@ -217,34 +217,28 @@ export default {
           const x = startX + colIndex * (keyWidth + 10) + 5;
           const y = startY + rowIndex * (keyHeight + 10);
 
-          ctx.fillStyle = key === 'Hapus' || key === 'Kirim' ? '#4a4a4a' : '#333';
+          // Change button appearance based on whether answer is submitted
+          if (this.answerSubmitted) {
+            ctx.fillStyle = '#666'; // Disabled gray color
+          } else {
+            ctx.fillStyle = key === 'Hapus' || key === 'Kirim' ? '#4a4a4a' : '#333';
+          }
+          
           ctx.fillRect(x, y, keyWidth, keyHeight);
 
-          ctx.fillStyle = 'white';
+          // Change text color based on disabled state
+          ctx.fillStyle = this.answerSubmitted ? '#999' : 'white';
           ctx.fillText(key, x + keyWidth / 2, y + keyHeight / 2);
         });
       });
     },
 
-    handleCanvasClick(event) {
-      const canvas = this.$refs.canvas;
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      const leftSectionWidth = this.canvasWidth * 0.15;
-      const mathSectionWidth = this.canvasWidth - leftSectionWidth;
-      const keyboardWidth = mathSectionWidth * 0.6;
-
-      // Check if the click is within the virtual keyboard area
-      if (y < this.topSectionHeight && x > leftSectionWidth && x < leftSectionWidth + keyboardWidth) {
-        this.handleVirtualKeyboardClick(x - leftSectionWidth, y);
-      } else if (y < this.topSectionHeight && x < leftSectionWidth) {
-        this.handleLightClick(x, y);
-      }
-    },
-
     handleVirtualKeyboardClick(x, y) {
+      // If answer is already submitted, ignore clicks
+      if (this.answerSubmitted) {
+        return;
+      }
+
       const keyboardWidth = (this.canvasWidth - this.canvasWidth * 0.15) * 0.6;
       const keyboardHeight = this.topSectionHeight;
       const numRows = 2;
@@ -270,6 +264,47 @@ export default {
         } else {
           this.addToAnswer(key);
         }
+      }
+    },
+
+    submitAnswer() {
+      const answer = parseInt(this.userAnswer);
+      if (answer === this.currentAnswer) {
+        this.answerState = 'correct';
+        this.correctAnswers++;
+      } else {
+        this.answerState = 'incorrect';
+        this.incorrectAnswers++;
+      }
+      this.recordMathResponse(this.answerState, Date.now() - this.lastQuestionTime);
+      this.answerSubmitted = true; // Set answer as submitted
+    },
+
+    generateNewQuestion() {
+      const num1 = Math.floor(Math.random() * 100);
+      const num2 = Math.floor(Math.random() * 100);
+      this.question = `${num1} + ${num2} = ?`;
+      this.currentAnswer = num1 + num2;
+      this.userAnswer = '';
+      this.answerSubmitted = false; // Reset answer submitted state
+      this.answerState = null;
+    },
+
+    handleCanvasClick(event) {
+      const canvas = this.$refs.canvas;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      const leftSectionWidth = this.canvasWidth * 0.15;
+      const mathSectionWidth = this.canvasWidth - leftSectionWidth;
+      const keyboardWidth = mathSectionWidth * 0.6;
+
+      // Check if the click is within the virtual keyboard area
+      if (y < this.topSectionHeight && x > leftSectionWidth && x < leftSectionWidth + keyboardWidth) {
+        this.handleVirtualKeyboardClick(x - leftSectionWidth, y);
+      } else if (y < this.topSectionHeight && x < leftSectionWidth) {
+        this.handleLightClick(x, y);
       }
     },
 
@@ -465,14 +500,6 @@ export default {
       }
     },
 
-    generateNewQuestion() {
-      const num1 = Math.floor(Math.random() * 100);
-      const num2 = Math.floor(Math.random() * 100);
-      this.question = `${num1} + ${num2} = ?`;
-      this.currentAnswer = num1 + num2;
-      this.userAnswer = '';
-    },
-
     addToAnswer(digit) {
       if (this.userAnswer.length < 3) {
         this.userAnswer += digit;
@@ -481,18 +508,6 @@ export default {
 
     clearAnswer() {
       this.userAnswer = '';
-    },
-
-    submitAnswer() {
-      const answer = parseInt(this.userAnswer);
-      if (answer === this.currentAnswer) {
-        this.answerState = 'correct';
-        this.correctAnswers++;
-      } else {
-        this.answerState = 'incorrect';
-        this.incorrectAnswers++;
-      }
-      this.recordMathResponse(this.answerState, Date.now() - this.lastQuestionTime);
     },
 
     recordMathResponse(type, responseTime) {
