@@ -5,12 +5,11 @@
             <div class="icon">
                 <i class="fas fa-info-circle"></i>
             </div>
-            <h2>{{ title }}</h2>
-            <p class="message">{{ message }}</p>
-            <p class="instructions">{{ instructions }}</p>
+            <h2 style="font-size: 24px;">{{ title }}</h2>
+            <p class="message" style="font-size: 20px;">{{ message }}</p>
+            <p class="instructions" style="font-size: 20px;">{{ instructions }}</p>
             <div class="button-group">
                 <button @click="confirm" class="confirm-btn">{{ confirmButtonText }}</button>
-                <button @click="cancel" class="cancel-btn">BATAL</button>
             </div>
         </div>
     </div>
@@ -76,16 +75,17 @@ export default {
 }
 
 .modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    width: 400px;
-    border: 1px solid gray;
-    box-shadow: -1px -1px 5px 3px rgba(0, 0, 0, 0.13);
-    -webkit-box-shadow: -1px -1px 5px 3px rgba(0, 0, 0, 0.13);
-    -moz-box-shadow: -1px -1px 5px 3px rgba(0, 0, 0, 0.13);
+  background-color: white;
+  padding: 20px;
     z-index: 40;
+  border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .icon {

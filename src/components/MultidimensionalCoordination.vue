@@ -1,58 +1,79 @@
 <template>
   <div ref="container" class="coordination-test">
-    <div class="countdown">{{ formattedTime }}</div>
+    <div class="countdown" v-if="!isTrainingMode">{{ formattedTime }}</div>
     <canvas ref="canvas"></canvas>
-    <img src="@/assets/airplane-icon.png" alt="Airplane" :style="airplaneStyle" class="airplane"
-      :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }" />
+    <img
+      src="@/assets/airplane-icon.png"
+      alt="Airplane"
+      :style="airplaneStyle"
+      class="airplane"
+      :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }"
+    />
 
     <!-- Training Modal -->
     <div v-if="showTrainingModal" class="modal">
       <div class="modal-content">
-        <h2>Training Mode</h2>
-        <p>Anda akan melakukan latihan yang bertujuan agar anda paham apa yang harus anda lakukan dalam ujian ini.</p>
-        <p>Anda akan diberikan waktu 30 detik untuk berlatih.</p>
-        <p>Gunakan joystick untuk menggerakkan pesawat dan throttle untuk mengatur kecepatan.</p>
-        <p>Perhatikan posisi pesawat dan marker pada layar.</p>
-        <p>Latihan akan dimulai setelah anda menekan tombol di bawah.</p>
-        <button @click="startTraining" class="modal-button">Mulai Training</button>
+        <h2 style="font-size: 24px"><b>Training Mode</b></h2>
+        <p style="font-size: 20px; width: 80%">
+          Pada tes ini, anda diminta untuk mengendalikan pesawat yang mengalami
+          turbulansi dengan menggunakan JOYSTICK hingga kursor berwarna KUNING
+          berubah menjadi berwarna HIJAU.
+        </p>
+        <img src="devices/mct.png" />
+        <button @click="startTraining" class="modal-button">
+          Mulai Training
+        </button>
       </div>
     </div>
 
     <!-- Test Start Modal -->
     <div v-if="showTestModal" class="modal">
       <div class="modal-content">
-        <h2>Mulai Ujian</h2>
-        <p>Latihan telah selesai! Anda akan memulai ujian yang sebenarnya.</p>
-        <p>Ujian akan berlangsung sesuai dengan waktu yang ditentukan.</p>
-        <p>Ingat untuk tetap fokus dan konsentrasi.</p>
-        <button @click="startActualTest" class="modal-button">Mulai Ujian</button>
+        <h2 style="font-size: 24px">Mulai Ujian</h2>
+        <p style="font-size: 20px">
+          Latihan telah selesai! Anda akan memulai ujian yang sebenarnya.
+        </p>
+        <p style="font-size: 20px">
+          Ujian akan berlangsung sesuai dengan waktu yang ditentukan.
+        </p>
+        <p style="font-size: 20px">Ingat untuk tetap fokus dan konsentrasi.</p>
+        <button @click="startActualTest" class="modal-button">
+          Mulai Ujian
+        </button>
       </div>
     </div>
+    <button
+      v-if="isTrainingMode"
+      @click="openModalActualTest"
+      class="finish-button"
+    >
+      Selesai Latihan
+    </button>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
-import * as THREE from 'three';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
+import { ref, onMounted, onUnmounted, computed } from "vue";
+import * as THREE from "three";
+import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 
 // Intensity level configurations
 const ANOMALI_INTENSITY = {
   LOW: 0.02,
   MEDIUM: 0.04,
-  HIGH: 0.06
+  HIGH: 0.06,
 };
 
 const TURBULENCE_INTENSITY = {
   LOW: 0.0003,
   MEDIUM: 0.0005,
-  HIGH: 0.001
+  HIGH: 0.001,
 };
 
 const POV_CHANGE_SPEED = {
   SLOW: 5000,
   MEDIUM: 3000,
-  FAST: 1500
+  FAST: 1500,
 };
 
 const CONFIG = {
@@ -61,11 +82,11 @@ const CONFIG = {
   PLANE_ROTATION_SPEED: 0.03,
   MAX_PLANE_ROTATION: Math.PI / 4,
   ALIGNMENT_THRESHOLD: 0.5,
-  TRAINING_DURATION: 100 * 1000, // 30 seconds for training
+  TRAINING_DURATION: 9999999, // 30 seconds for training
 };
 
 export default {
-  name: 'PilotCoordinationTest',
+  name: "PilotCoordinationTest",
   setup() {
     // Refs for template
     const container = ref(null);
@@ -73,11 +94,13 @@ export default {
     let animationFrameId = null;
 
     // Get test configuration from storage
-    const schedule = JSON.parse(localStorage.getItem('scheduleData'));
-    const test = schedule.tests.find((t) => t.name === "Multidimensional Coordination Test");
+    const schedule = JSON.parse(localStorage.getItem("scheduleData"));
+    const test = schedule.tests.find(
+      (t) => t.name === "Multidimensional Coordination Test"
+    );
     const batteryTestId = test.id;
     const configs = test.configs;
-    console.log('Test config', configs, batteryTestId);
+    console.log("Test config", configs, batteryTestId);
 
     // Config management
     const activeConfig = ref(null);
@@ -86,7 +109,10 @@ export default {
 
     // Calculate total test duration
     const getTotalDuration = (configs) => {
-      return configs.reduce((total, config) => total + Number(config.duration), 0);
+      return configs.reduce(
+        (total, config) => total + Number(config.duration),
+        0
+      );
     };
     const totalTestDuration = getTotalDuration(configs) * 1000; // Convert to milliseconds
     // Three.js objects
@@ -113,6 +139,8 @@ export default {
     const showTestModal = ref(false);
     const isTrainingMode = ref(true);
 
+    console.log(isTrainingMode);
+
     // Animation timing
     let lastPerspectiveChange = 0;
     let perspectiveDirection = 1;
@@ -132,7 +160,11 @@ export default {
         if (currentConfigIndex.value < configs.length) {
           configStartTime.value = Date.now();
           activeConfig.value = configs[currentConfigIndex.value];
-          console.log('Switching to config:', currentConfigIndex.value, activeConfig.value);
+          console.log(
+            "Switching to config:",
+            currentConfigIndex.value,
+            activeConfig.value
+          );
         }
       }
     };
@@ -142,7 +174,9 @@ export default {
     };
 
     const getTurbulenceIntensity = (level) => {
-      return TURBULENCE_INTENSITY[level.toUpperCase()] || TURBULENCE_INTENSITY.LOW;
+      return (
+        TURBULENCE_INTENSITY[level.toUpperCase()] || TURBULENCE_INTENSITY.LOW
+      );
     };
 
     const getPovChangeSpeed = (speed) => {
@@ -161,11 +195,15 @@ export default {
       const seconds = Math.ceil(timeRemaining.value / 1000);
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
-      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+      return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+        .toString()
+        .padStart(2, "0")}`;
     });
 
     const airplaneStyle = computed(() => ({
-      transform: `translate3d(${airplanePosition.value.x * 50}px, ${airplanePosition.value.y * -50}px, ${airplanePosition.value.z * -10}px) 
+      transform: `translate3d(${airplanePosition.value.x * 50}px, ${
+        airplanePosition.value.y * -50
+      }px, ${airplanePosition.value.z * -10}px) 
                   rotateZ(${airplaneRotation.value.z}rad) 
                   rotateX(${airplaneRotation.value.x}rad) 
                   rotateY(${airplaneRotation.value.y}rad) 
@@ -175,24 +213,60 @@ export default {
     // Scene initialization
     const initScene = () => {
       scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, container.value.clientWidth / container.value.clientHeight, 0.1, 1000);
+      camera = new THREE.PerspectiveCamera(
+        75,
+        container.value.clientWidth / container.value.clientHeight,
+        0.1,
+        1000
+      );
       renderer = new THREE.WebGLRenderer({ canvas: canvas.value, alpha: true });
-      renderer.setSize(container.value.clientWidth, container.value.clientHeight);
+      renderer.setSize(
+        container.value.clientWidth,
+        container.value.clientHeight
+      );
 
       // Create box geometry
       const geometry = new THREE.BufferGeometry();
       originalVertices = new Float32Array([
-        -8, -5, -5, 8, -5, -5, 8, 5, -5, -8, 5, -5,
-        -8, -5, 5, 8, -5, 5, 8, 5, 5, -8, 5, 5,
+        -8, -5, -5, 8, -5, -5, 8, 5, -5, -8, 5, -5, -8, -5, 5, 8, -5, 5, 8, 5,
+        5, -8, 5, 5,
       ]);
-      geometry.setAttribute('position', new THREE.BufferAttribute(originalVertices.slice(), 3));
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(originalVertices.slice(), 3)
+      );
 
       const indices = [
-        0, 1, 2, 0, 2, 3,  // back
-        1, 5, 6, 1, 6, 2,  // right
-        4, 0, 3, 4, 3, 7,  // left
-        3, 2, 6, 3, 6, 7,  // top
-        4, 5, 1, 4, 1, 0   // bottom
+        0,
+        1,
+        2,
+        0,
+        2,
+        3, // back
+        1,
+        5,
+        6,
+        1,
+        6,
+        2, // right
+        4,
+        0,
+        3,
+        4,
+        3,
+        7, // left
+        3,
+        2,
+        6,
+        3,
+        6,
+        7, // top
+        4,
+        5,
+        1,
+        4,
+        1,
+        0, // bottom
       ];
       geometry.setIndex(indices);
 
@@ -205,18 +279,25 @@ export default {
         colors[i + 1] = 0.808 + 0.192 * t;
         colors[i + 2] = 0.922 + 0.078 * t;
       }
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-      const material = new THREE.MeshBasicMaterial({ vertexColors: true, wireframe: false });
+      const material = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        wireframe: false,
+      });
       box = new THREE.Mesh(geometry, material);
       scene.add(box);
 
       // Create marker
       const markerGeometry = new THREE.ConeGeometry(0.5, 1, 32);
-      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       marker = new THREE.Mesh(markerGeometry, markerMaterial);
       marker.rotation.x = Math.PI;
-      marker.position.set(markerPosition.value.x, markerPosition.value.y, markerPosition.value.z);
+      marker.position.set(
+        markerPosition.value.x,
+        markerPosition.value.y,
+        markerPosition.value.z
+      );
       scene.add(marker);
 
       camera.position.z = 20;
@@ -224,7 +305,6 @@ export default {
 
     // Game state management
     const startTraining = () => {
-      console.log('Starting training mode...');
       showTrainingModal.value = false;
       isTrainingMode.value = true;
       startTime.value = Date.now();
@@ -235,7 +315,6 @@ export default {
     };
 
     const startActualTest = () => {
-      console.log('Starting actual test...');
       showTestModal.value = false;
       isTrainingMode.value = false;
       startTime.value = Date.now();
@@ -253,16 +332,21 @@ export default {
     };
 
     const finishSim = async () => {
-      const alignmentScore = userInputs.value.filter(input => input.type === 'correct').length;
+      const alignmentScore = userInputs.value.filter(
+        (input) => input.type === "correct"
+      ).length;
       const totalInputs = userInputs.value.length;
       const accuracyPercentage = (alignmentScore / totalInputs) * 100;
 
-      const avgDeviations = userInputs.value.reduce((acc, curr) => {
-        acc.x += Math.abs(curr.deviations.x);
-        acc.y += Math.abs(curr.deviations.y);
-        acc.z += Math.abs(curr.deviations.z);
-        return acc;
-      }, { x: 0, y: 0, z: 0 });
+      const avgDeviations = userInputs.value.reduce(
+        (acc, curr) => {
+          acc.x += Math.abs(curr.deviations.x);
+          acc.y += Math.abs(curr.deviations.y);
+          acc.z += Math.abs(curr.deviations.z);
+          return acc;
+        },
+        { x: 0, y: 0, z: 0 }
+      );
 
       avgDeviations.x /= totalInputs;
       avgDeviations.y /= totalInputs;
@@ -274,46 +358,59 @@ export default {
         totalAttempts: totalInputs,
         averageDeviations: avgDeviations,
         timeSpent: totalTestDuration - timeRemaining.value,
-        graph_data: userInputs.value
+        graph_data: userInputs.value,
       };
 
-      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-      const test = scheduleData.tests.find((t) => t.name === "Multidimensional Coordination Test");
+      const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+      const test = scheduleData.tests.find(
+        (t) => t.name === "Multidimensional Coordination Test"
+      );
       const payload = {
-        'testSessionId': scheduleData.sessionId,
-        'userId': scheduleData.userId,
-        'moduleId': scheduleData.moduleId,
-        'batteryTestId': test.id,
-        'result': scores,
+        testSessionId: scheduleData.sessionId,
+        userId: scheduleData.userId,
+        moduleId: scheduleData.moduleId,
+        batteryTestId: test.id,
+        result: scores,
       };
 
-      console.log('Simulation completed! Final scores:', scores);
+      console.log("Simulation completed! Final scores:", scores);
       const API_URL = process.env.VUE_APP_API_URL;
       try {
         const response = await fetch(`${API_URL}/api/submission`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
         });
         const data = await response.json();
-        console.log('Test results submitted:', data);
-        removeTestByNameAndUpdateLocalStorage('Multidimensional Coordination Test');
-        window.location.href = '/module';
+        console.log("Test results submitted:", data);
+        removeTestByNameAndUpdateLocalStorage(
+          "Multidimensional Coordination Test"
+        );
+        window.location.href = "/module";
       } catch (error) {
-        console.error('Error submitting test results:', error);
+        console.error("Error submitting test results:", error);
       }
     };
 
     // Animation loop with anomali and config-based adjustments
+    const openModalActualTest = () => {
+      showTestModal.value = true;
+    };
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const now = Date.now();
 
       // Update time and check for completion
       if (startTime.value) {
-        timeRemaining.value = Math.max(0, (isTrainingMode.value ? CONFIG.TRAINING_DURATION : totalTestDuration) - (now - startTime.value));
+        timeRemaining.value = Math.max(
+          0,
+          (isTrainingMode.value
+            ? CONFIG.TRAINING_DURATION
+            : totalTestDuration) -
+            (now - startTime.value)
+        );
 
         if (timeRemaining.value === 0) {
           if (isTrainingMode.value) {
@@ -334,13 +431,17 @@ export default {
       if (!activeConfig.value) return;
 
       // Update perspective based on active config
-      const povSpeed = getPovChangeSpeed(activeConfig.value.turbulence.pov_change);
+      const povSpeed = getPovChangeSpeed(
+        activeConfig.value.turbulence.pov_change
+      );
       if (now - lastPerspectiveChange > povSpeed) {
         perspectiveDirection *= -1;
         lastPerspectiveChange = now;
       }
 
-      const turbulenceIntensity = getTurbulenceIntensity(activeConfig.value.turbulence.intensity);
+      const turbulenceIntensity = getTurbulenceIntensity(
+        activeConfig.value.turbulence.intensity
+      );
       perspectiveOffset.value += turbulenceIntensity * perspectiveDirection;
 
       // Update box vertices
@@ -361,13 +462,18 @@ export default {
       // Apply anomali based on current config
       if (!isTrainingMode.value) {
         // X-axis anomali
-        const xAnomaliIntensity = getAnomaliIntensity(activeConfig.value.x_axis.anomali);
-        if (Math.random() < 0.1) { // 10% chance per frame
+        const xAnomaliIntensity = getAnomaliIntensity(
+          activeConfig.value.x_axis.anomali
+        );
+        if (Math.random() < 0.1) {
+          // 10% chance per frame
           airplanePosition.value.x += (Math.random() - 0.5) * xAnomaliIntensity;
         }
 
         // Y-axis anomali
-        const yAnomaliIntensity = getAnomaliIntensity(activeConfig.value.y_axis.anomali);
+        const yAnomaliIntensity = getAnomaliIntensity(
+          activeConfig.value.y_axis.anomali
+        );
         if (Math.random() < 0.1) {
           airplanePosition.value.y += (Math.random() - 0.5) * yAnomaliIntensity;
         }
@@ -391,19 +497,29 @@ export default {
           // X-axis movement
           const xMovement = gp.axes[0] * xSensitivity;
           airplanePosition.value.x += xMovement;
-          airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
+          airplanePosition.value.x = Math.max(
+            -4.5,
+            Math.min(4.5, airplanePosition.value.x)
+          );
 
           // Y-axis movement (reversed)
           const yMovement = gp.axes[1] * ySensitivity;
           airplanePosition.value.y += yMovement;
-          airplanePosition.value.y = Math.max(-4.5, Math.min(4.5, airplanePosition.value.y));
+          airplanePosition.value.y = Math.max(
+            -4.5,
+            Math.min(4.5, airplanePosition.value.y)
+          );
 
           // Rotations
           const targetRotation = xMovement * CONFIG.MAX_PLANE_ROTATION;
-          airplaneRotation.value.z += (targetRotation - airplaneRotation.value.z) * CONFIG.PLANE_ROTATION_SPEED;
+          airplaneRotation.value.z +=
+            (targetRotation - airplaneRotation.value.z) *
+            CONFIG.PLANE_ROTATION_SPEED;
 
           const targetPitch = yMovement * CONFIG.MAX_PLANE_ROTATION;
-          airplaneRotation.value.x += (targetPitch - airplaneRotation.value.x) * CONFIG.PLANE_ROTATION_SPEED;
+          airplaneRotation.value.x +=
+            (targetPitch - airplaneRotation.value.x) *
+            CONFIG.PLANE_ROTATION_SPEED;
         }
       }
 
@@ -414,21 +530,26 @@ export default {
 
         if (th) {
           airplanePosition.value.z -= (th.axes[2] + 1) * 0.03;
-          airplanePosition.value.z = Math.max(CONFIG.MIN_FORWARD_POSITION, Math.min(CONFIG.MAX_BACKWARD_POSITION, airplanePosition.value.z));
+          airplanePosition.value.z = Math.max(
+            CONFIG.MIN_FORWARD_POSITION,
+            Math.min(CONFIG.MAX_BACKWARD_POSITION, airplanePosition.value.z)
+          );
         }
       }
 
       // Record metrics
       if (now - lastMetricRecordTime >= 1000) {
         userInputs.value.push({
-          type: isAligned.value ? 'correct' : 'wrong',
+          type: isAligned.value ? "correct" : "wrong",
           deviations: {
-            x: airplanePosition.value.x - (markerPosition.value.x + perspectiveOffset.value),
+            x:
+              airplanePosition.value.x -
+              (markerPosition.value.x + perspectiveOffset.value),
             y: airplanePosition.value.y - markerPosition.value.y,
             z: airplanePosition.value.z - markerPosition.value.z,
           },
           timestamp: now - startTime.value,
-          config: currentConfigIndex.value
+          config: currentConfigIndex.value,
         });
         lastMetricRecordTime = now;
       }
@@ -437,12 +558,14 @@ export default {
     };
 
     const onGamepadConnected = (e) => {
-      console.log('Connected:', e);
-      if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
+      console.log("Connected:", e);
+      if (e.gamepad.id === "T.16000M (Vendor: 044f Product: b10a)") {
         console.log("Correct gamepad connected:", e.gamepad);
         gamepad.value = e.gamepad;
         gamepadConnected.value = true;
-      } else if (e.gamepad.id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
+      } else if (
+        e.gamepad.id === "TWCS Throttle (Vendor: 044f Product: b687)"
+      ) {
         console.log("Correct thruster connected:", e.gamepad);
         thruster.value = e.gamepad;
         thrustConnected.value = true;
@@ -464,10 +587,10 @@ export default {
       if (container.value && renderer) {
         const width = container.value.clientWidth;
         const height = container.value.clientHeight;
-        
+
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-        
+
         renderer.setSize(width, height);
       }
     };
@@ -478,9 +601,9 @@ export default {
       animate();
 
       // Add event listeners
-      window.addEventListener('gamepadconnected', onGamepadConnected);
-      window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
-      window.addEventListener('resize', handleResize);
+      window.addEventListener("gamepadconnected", onGamepadConnected);
+      window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
+      window.addEventListener("resize", handleResize);
 
       // Set initial config
       activeConfig.value = configs[0];
@@ -491,11 +614,11 @@ export default {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
-      
+
       // Remove event listeners
-      window.removeEventListener('gamepadconnected', onGamepadConnected);
-      window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("gamepadconnected", onGamepadConnected);
+      window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
+      window.removeEventListener("resize", handleResize);
 
       // Clean up Three.js resources
       if (renderer) {
@@ -524,9 +647,12 @@ export default {
       showTestModal,
       startTraining,
       startActualTest,
+      animate,
+      isTrainingMode,
+      openModalActualTest,
     };
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
@@ -594,15 +720,19 @@ canvas {
 
 .modal-content {
   background-color: white;
-  padding: 2rem;
-  border-radius: 8px;
-  text-align: center;
-  max-width: 500px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-button {
-  background-color: #2196F3;
+  background-color: #2196f3;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -615,11 +745,11 @@ canvas {
 }
 
 .modal-button:hover {
-  background-color: #1976D2;
+  background-color: #1976d2;
 }
 
 .modal-button:active {
-  background-color: #1565C0;
+  background-color: #1565c0;
   transform: translateY(1px);
 }
 </style>
