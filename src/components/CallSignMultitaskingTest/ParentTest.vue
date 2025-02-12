@@ -85,10 +85,17 @@
       </template>
     </div>
 
-    <div class="timer">
+    <div class="timer" v-if="!isTraining">
       <p>{{ isTraining ? "Waktu Latihan:" : "Waktu Tes:" }}</p>
       <p>{{ formatTime(testTime) }}</p>
     </div>
+    <button
+      v-if="isTraining"
+      @click="handleTrainingComplete"
+      class="finish-button"
+    >
+      Selesai Latihan
+    </button>
 
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
@@ -106,26 +113,28 @@ import { removeTestByNameAndUpdateLocalStorage } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
 
 const TRAINING_SEQUENCE = ["horizon", "callsign", "color_tank", "circle_test"];
-const TRAINING_TIME = 60; // 1 minute for each training
+const TRAINING_TIME = 999999; // 1 minute for each training
 
 const TRAINING_INSTRUCTIONS = {
   horizon: {
     title: "Latihan Horizon",
     description:
-      "Pada latihan ini, Anda akan melihat sebuah garis horizon yang bergerak. Tugas Anda adalah menjaga garis tersebut tetap pada target menggunakan Joystick yang tersedia pada meja ujian anda. Latihan ini akan berlangsung selama 1 menit.",
+      "Anda diminta untuk mengarahkan garis penerbang dengan JOYSTICK mengikuti pergerakan target sampai berwarna HIJAU hingga selesai.<img style='border:1px solid gray' src='devices/mmwcs.png'/>",
   },
   callsign: {
     title: "Latihan Call Sign",
     description:
-      "Pada latihan ini, Anda akan mendengar beberapa panggilan. Tugas Anda adalah merespon hanya ketika mendengar panggilan yang sesuai dengan call sign Anda. Gunakan tombol spasi untuk merespon. Latihan ini akan berlangsung selama 1 menit.",
+      "Pada latihan ini, Anda akan mendengar beberapa panggilan. Tugas Anda adalah merespon hanya ketika mendengar panggilan yang sesuai dengan call sign Anda. Gunakan tombol spasi untuk merespon. Latihan ini akan berlangsung selama 1 menit.<img style='border:1px solid gray' src='devices/mmwcs_2.png'/>",
   },
   color_tank: {
     title: "Latihan Color Tank",
     description:
-      "Pada latihan ini, Anda akan melihat tangki berwarna yang bergerak turun. Tugas Anda adalah menjaga level tangki dengan menekan kombinasi tombol yang sesuai dengan warna yang ditampilkan. Latihan ini akan berlangsung selama 1 menit.",
+      "Anda diminta untuk mengisi tank bagian bawah (ASDF), dari tank bagian atas (QWER) dengan cara menekan salah satu tank yang berada diatas lalu menekan 2 tank yang berada di bawah dengan warna yang sama. (Contoh: Tank yang kosong berwarna MERAH, maka anda harus menyentuh huruf R (TANK ATAS MERAH), lalu menyentuh D & F (TANK BAWAH MERAH). <img style='border:1px solid gray' src='devices/mmwcs_3.png'/>",
   },
   circle_test: {
     title: "Latihan Rambu Peringatan",
+    description:
+      "Anda diminta untuk merespon bila huruf berwarna MERAH maka TEKAN HURUF WARNA MERAH pada layar, bila huruf berwarna KUNING maka ABAIKAN. <img style='border:1px solid gray' src='devices/mmwcs_4.png'/>",
   },
 };
 
