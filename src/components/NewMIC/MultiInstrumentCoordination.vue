@@ -1,5 +1,40 @@
 <template>
   <div class="pilot-exam">
+    <!-- In your template -->]
+    <!-- Final Exam Confirmation Modal -->
+    <Transition name="modal">
+      <div v-if="showExamConfirmModal" class="modal-overlay">
+        <div class="modal-container">
+          <div class="modal-content">
+            <h1 class="modal-title">Mulai Tes</h1>
+            <div class="modal-body">
+              <p class="mb-4">Anda akan memulai tes sesungguhnya. Dalam tes ini:</p>
+              <ul class="modal-list">
+                <li>Kontrol semua aspek pesawat menggunakan joystick dan throttle:</li>
+                <ul class="ml-8 mb-4">
+                  <li>Heading (arah) menggunakan gerakan kiri-kanan joystick</li>
+                  <li>Altitude (ketinggian) menggunakan gerakan atas-bawah joystick</li>
+                  <li>Airspeed (kecepatan) menggunakan throttle</li>
+                </ul>
+                <li>Jaga semua indikator dalam rentang target yang ditentukan</li>
+                <li>Bersamaan dengan itu, dengarkan urutan angka dan identifikasi apakah semuanya ganjil atau genap</li>
+                <li>Durasi tes: {{ Math.round(config.totalDuration / 60) }} menit</li>
+              </ul>
+              <p class="mt-4 text-red-600 font-bold">Pastikan Anda sudah siap sebelum memulai tes!</p>
+            </div>
+            <div class="modal-footer">
+              <button class="modal-button bg-gray-500 mr-4" @click="showExamConfirmModal = false">
+                Kembali
+              </button>
+              <button class="modal-button bg-green-500" @click="startActualExam">
+                Mulai Tes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="modal">
       <div v-if="showStartModal" class="modal-overlay">
         <div class="modal-container">
@@ -7,38 +42,61 @@
             <div class="modal-body">
               <p>Dalam tes ini, Anda perlu:</p>
               <ul class="modal-list">
-                <li>
-                  Mengendalikan indikator pesawat menggunakan joystick dan
-                  throttle
-                </li>
+                <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
                 <li>Menjaga indikator dalam rentang target</li>
-                <li>
-                  Mendengarkan urutan angka dan mengidentifikasi apakah semuanya
-                  ganjil atau genap
-                </li>
+                <li>Mendengarkan urutan angka dan mengidentifikasi apakah semuanya ganjil atau genap</li>
               </ul>
             </div>
             <div class="modal-footer">
-              <button
-                class="modal-button bg-green-500 mr-4"
-                @click="handleStartExam"
-              >
-                Mulai Latihan
+              <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">
+                {{ trainingMode ? 'Mulai Latihan' : 'Mulai Tes' }}
               </button>
             </div>
           </div>
         </div>
       </div>
     </Transition>
+
+    <Transition name="modal">
+      <div v-if="showTrainingModal" class="modal-overlay">
+        <div class="modal-container">
+          <div class="modal-content">
+            <h1 class="modal-title">{{ currentTrainingStep < TRAINING_STEPS.length ?
+              TRAINING_STEPS[currentTrainingStep].title : '' }}</h1>
+                <div class="modal-body"
+                  v-html="currentTrainingStep < TRAINING_STEPS.length ? TRAINING_STEPS[currentTrainingStep].instructions : ''">
+                </div>
+                <div class="modal-footer">
+                  <button class="modal-button bg-green-500" @click="startTrainingStep">
+                    Mulai
+                  </button>
+                </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Feedback Message -->
+    <Transition name="fade">
+      <div v-if="showFeedback" class="feedback-message"
+        :class="userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'">
+        {{ feedbackMessage }}
+      </div>
+    </Transition>
+
+    <button v-if="trainingMode && examRunning" class="next-step-button" @click="moveToNextTrainingStep">
+      {{ nextStepButtonText }}
+    </button>
+
     <div class="countdown-timer">{{ formatTime(config.totalDuration) }}</div>
     <div class="control-mode-toggle">
-      <button @click="toggleControlMode">
+      <!-- <button @click="toggleControlMode">
         {{
           controlMode === "joystick"
             ? "Switch to Manual Control"
             : "Switch to Joystick Control"
         }}
-      </button>
+      </button> -->
     </div>
     <div class="manual-control-instructions" v-if="controlMode === 'manual'">
       <p>Manual Controls:</p>
@@ -49,38 +107,25 @@
       </ul>
     </div>
     <div class="indicators place-items-center">
+      <!-- Heading - only show during joystick training -->
       <div
-        class="indicator-wrapper col-span-3"
-        :class="{ blink: isHeadingOutOfTarget }"
-      >
-        <Heading
-          class="indicator-bg"
-          :size="200"
-          :heading="Math.round(heading)"
-        />
+        v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('compass'))"
+        class="indicator-wrapper col-span-3" :class="{ blink: isHeadingOutOfTarget }">
+        <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
         <div class="target-text">
           Target: {{ Math.round(headingTarget) }}°
-          <span
-            v-if="headingChangeDirection"
-            :class="['direction-indicator', headingChangeDirection]"
-          ></span>
+          <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
         </div>
       </div>
+
+      <!-- Airspeed/Thrust - only show during throttle training -->
       <div
-        class="indicator-wrapper col-span-1"
-        :class="{ blink: isAirspeedOutOfTarget }"
-      >
-        <Airspeed
-          class="indicator-bg"
-          :size="200"
-          :airspeed="Math.round(airspeed)"
-        />
+        v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('airspeed'))"
+        class="indicator-wrapper col-span-1" :class="{ blink: isAirspeedOutOfTarget }">
+        <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
         <div class="thruster-indicator">
           <div class="thruster-bar">
-            <div
-              class="thruster-fill"
-              :style="{ height: `${thrustLevel}%` }"
-            ></div>
+            <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
           </div>
           <div class="thruster-value">
             Thrust: {{ Math.round(thrustLevel) }}%
@@ -88,56 +133,40 @@
         </div>
         <div class="target-text">
           Target: {{ Math.round(airspeedTarget) }} knots
-          <span
-            v-if="airspeedChangeDirection"
-            :class="['direction-indicator', airspeedChangeDirection]"
-          ></span>
+          <span v-if="airspeedChangeDirection" :class="['direction-indicator', airspeedChangeDirection]"></span>
         </div>
       </div>
-      <div
-        class="indicator-wrapper col-span-1"
-        :class="{ blink: isAltitudeOutOfTarget }"
-      >
+
+      <!-- Analog Clock - always shown -->
+      <div class="indicator-wrapper col-span-1">
         <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
       </div>
+
+      <!-- Altimeter - only show during joystick training -->
       <div
-        class="indicator-wrapper col-span-1"
-        :class="{ blink: isAltitudeOutOfTarget }"
-      >
-        <Altimeter
-          class="indicator-bg"
-          :size="200"
-          :altitude="Math.round(altitude)"
-        />
+        v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('altimeter'))"
+        class="indicator-wrapper col-span-1" :class="{ blink: isAltitudeOutOfTarget }">
+        <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
         <div class="target-text">
           Target: {{ Math.round(altitudeTarget) }} ft
-          <span
-            v-if="altitudeChangeDirection"
-            :class="['direction-indicator', altitudeChangeDirection]"
-          ></span>
+          <span v-if="altitudeChangeDirection" :class="['direction-indicator', altitudeChangeDirection]"></span>
         </div>
       </div>
     </div>
 
     <!-- Audio Test Controls -->
-    <div class="audio-test">
+    <!-- Audio Test Controls -->
+    <div class="audio-test"
+      v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))">
       <div class="number-display">
         Dengarkan dan pilih apakah semua angka yang Anda dengar adalah genap
         atau ganjil.
       </div>
       <div class="response-buttons">
-        <button
-          class="btn-red"
-          @click="handleAudioResponse('odd')"
-          :disabled="!canRespond"
-        >
+        <button class="btn-red" @click="handleAudioResponse('odd')" :disabled="!canRespond">
           Ganjil
         </button>
-        <button
-          class="btn-green"
-          @click="handleAudioResponse('even')"
-          :disabled="!canRespond"
-        >
+        <button class="btn-green" @click="handleAudioResponse('even')" :disabled="!canRespond">
           Genap
         </button>
       </div>
@@ -240,6 +269,106 @@ const config = ref({
 const lastRecordedTime = ref(Date.now());
 const userInputs = ref([]);
 
+const trainingMode = ref(true);
+const currentTrainingStep = ref(0);
+const showFeedback = ref(false);
+const feedbackMessage = ref('');
+const userFollowingDirection = ref(false);
+const lastTargetDirection = ref(null);
+const currentStep = ref(null);
+const performanceMetrics = ref({});
+const showTrainingModal = ref(false); // Training step modal
+const showExamConfirmModal = ref(false);
+
+const TRAINING_STEPS = [
+  {
+    id: 'joystick',
+    title: 'Latihan Kontrol Joystick',
+    instructions: `
+      <div class="training-instructions">
+        <h2>Latihan Menggunakan Joystick</h2>
+        <img src="/devices/joystick.png" alt="Panduan Joystick" class="instruction-image" style="display: block; margin: 0 auto;" />
+        <ul>
+          <li>Gunakan joystick untuk mengontrol heading dan altitude pesawat</li>
+          <li>Perhatikan target yang ditampilkan</li>
+          <li>Cobalah untuk mengarahkan pesawat sesuai dengan target</li>
+        </ul>
+      </div>
+    `,
+    activeControls: ['compass', 'altimeter'],
+    feedbackThreshold: 5 // seconds to maintain correct direction before positive feedback
+  },
+  {
+    id: 'throttle',
+    title: 'Latihan Kontrol Throttle',
+    instructions: `
+      <div class="training-instructions">
+        <h2>Latihan Menggunakan Throttle</h2>
+      <img src="/devices/thruster.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
+        <ul>
+          <li>Gunakan throttle untuk mengontrol kecepatan pesawat</li>
+          <li>Perhatikan indikator airspeed</li>
+          <li>Sesuaikan throttle untuk mencapai target kecepatan</li>
+        </ul>
+      </div>
+    `,
+    activeControls: ['airspeed'],
+    feedbackThreshold: 3
+  },
+  {
+    id: 'numbers',
+    title: 'Latihan Tes Angka',
+    instructions: `
+      <div class="training-instructions">
+        <h2>Latihan Mendengarkan dan Mengidentifikasi Angka</h2>
+        <ul>
+          <li>Anda akan mendengar serangkaian angka</li>
+          <li>Tentukan apakah semua angka yang Anda dengar ganjil atau genap</li>
+          <li>Tekan tombol yang sesuai untuk menjawab</li>
+        </ul>
+      </div>
+    `,
+    activeControls: ['audio'],
+    feedbackThreshold: 2
+  },
+  {
+    id: 'combined',
+    title: 'Latihan Gabungan',
+    instructions: `
+      <div class="training-instructions">
+        <h2>Latihan Semua Kontrol</h2>
+        <ul>
+          <li>Kontrol semua aspek pesawat sambil mendengarkan angka</li>
+          <li>Prioritaskan kontrol pesawat</li>
+          <li>Jawab pertanyaan angka saat Anda siap</li>
+        </ul>
+      </div>
+    `,
+    activeControls: ['compass', 'altimeter', 'airspeed', 'audio'],
+    feedbackThreshold: 8
+  }
+];
+
+const checkDirectionFollowing = () => {
+  const currentStep = TRAINING_STEPS[currentTrainingStep.value];
+
+  if (currentStep.activeControls.includes('compass')) {
+    const headingDiff = heading.value - headingTarget.value;
+    const isCorrectDirection = (headingChangeDirection.value === 'up' && headingDiff < 0) ||
+      (headingChangeDirection.value === 'down' && headingDiff > 0);
+    return isCorrectDirection;
+  }
+
+  if (currentStep.activeControls.includes('airspeed')) {
+    const speedDiff = airspeed.value - airspeedTarget.value;
+    const isCorrectDirection = (airspeedChangeDirection.value === 'up' && speedDiff < 0) ||
+      (airspeedChangeDirection.value === 'down' && speedDiff > 0);
+    return isCorrectDirection;
+  }
+
+  return true;
+};
+
 // Computed properties
 const isAirspeedOutOfTarget = computed(() => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
@@ -264,9 +393,15 @@ const verticalSpeed = computed(() => {
   return altitude.value - lastAltitude.value;
 });
 
-const toggleControlMode = () => {
-  controlMode.value = controlMode.value === "joystick" ? "manual" : "joystick";
-};
+const nextStepButtonText = computed(() => {
+  return currentTrainingStep.value === TRAINING_STEPS.length - 1
+    ? 'Mulai Tes'
+    : 'Lanjut ke Latihan Berikutnya';
+});
+
+// const toggleControlMode = () => {
+//   controlMode.value = controlMode.value === "joystick" ? "manual" : "joystick";
+// };
 
 // Utility functions
 const formatTime = (time) => {
@@ -428,7 +563,7 @@ const updateSounds = () => {
   // Calculate RPM factor based on actual airspeed rather than thrust
   const rpmFactor = Math.pow(
     (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
-      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
+    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
     0.8
   );
 
@@ -522,6 +657,11 @@ const AUDIO_TEST = {
 // Audio test functions
 const startAudioSequence = () => {
   if (!examRunning.value) return;
+
+  if (trainingMode.value &&
+    !TRAINING_STEPS[currentTrainingStep.value].activeControls.includes('audio')) {
+    return;
+  }
 
   const numbers = [
     generateRandomNumber(),
@@ -692,7 +832,7 @@ const updatePlanePosition = () => {
   targetSpeed.value =
     MOVEMENT_SPEED.MIN_AIRSPEED +
     (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
-      (thrustLevel.value / 100);
+    (thrustLevel.value / 100);
 
   // Calculate acceleration more realistically
   const speedDifference = targetSpeed.value - airspeed.value;
@@ -776,33 +916,6 @@ const moveToNextConfig = () => {
   }
 };
 
-const updatePerformanceData = () => {
-  const currentTime = Date.now();
-  if (currentTime - lastRecordedTime.value >= 1000) {
-    headingPerformanceData.value.push({
-      type: isHeadingOutOfTarget.value ? "wrong" : "correct",
-      deviations: heading.value - headingTarget.value,
-      timestamp: currentTime,
-      configIndex: currentConfigIndex.value,
-    });
-
-    airspeedPerformanceData.value.push({
-      type: isAirspeedOutOfTarget.value ? "wrong" : "correct",
-      deviations: airspeed.value - airspeedTarget.value,
-      timestamp: currentTime,
-      configIndex: currentConfigIndex.value,
-    });
-
-    altitudePerformanceData.value.push({
-      type: isAltitudeOutOfTarget.value ? "wrong" : "correct",
-      deviations: altitude.value - altitudeTarget.value,
-      timestamp: currentTime,
-      configIndex: currentConfigIndex.value,
-    });
-
-    lastRecordedTime.value = currentTime;
-  }
-};
 
 const updateLoop = () => {
   checkGamepadConnection();
@@ -811,17 +924,23 @@ const updateLoop = () => {
     if (mode.value === "moving") {
       updateTargets();
     }
+    monitorPerformance();
+    // Remove checkTrainingProgress() here
     config.value.totalDuration -= 1 / 60;
     updateScore();
     updateTime();
     updatePerformanceData();
-    updateSounds(); // Add sound updates
+    updateSounds();
   }
   requestAnimationFrame(updateLoop);
 };
 
+
 const updateTime = () => {
   if (!examRunning.value) return;
+
+  // Don't decrease time during training mode
+  if (trainingMode.value) return;
 
   timeRemaining.value -= 1 / 60;
 
@@ -843,6 +962,11 @@ const updateTime = () => {
 
 const updateTargets = () => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
+  lastTargetDirection.value = {
+    airspeed: airspeedChangeDirection.value,
+    heading: headingChangeDirection.value,
+    altitude: altitudeChangeDirection.value
+  };
 
   if (Math.random() < 0.3) {
     updateIndicator("airspeed", currentConfig?.airspeed);
@@ -858,7 +982,7 @@ const updateIndicator = (indicator, mode) => {
   // }
   const currentTime = Date.now();
   if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) {
-    console.log(`${indicator} update skipped due to interval`);
+    // console.log(`${indicator} update skipped due to interval`);
     return;
   }
 
@@ -885,7 +1009,7 @@ const updateIndicator = (indicator, mode) => {
         break;
     }
 
-    console.log(`Updating ${indicator} target from ${currentTarget}`);
+    // console.log(`Updating ${indicator} target from ${currentTarget}`);
 
     // Calculate maximum change based on 5% of current value
     const maxChange = currentTarget * 0.05;
@@ -955,12 +1079,11 @@ const updateIndicator = (indicator, mode) => {
 };
 
 const startExam = () => {
+  console.log("Starting exam...");
+  // Common initialization regardless of mode
   examRunning.value = true;
-  score.value = 0;
   currentConfigIndex.value = 0;
-
-  // Initialize first config duration
-  timeRemaining.value = config.value.configs[0].duration * 60;
+  score.value = 0;
 
   // Reset performance tracking
   airspeed.value = 120;
@@ -979,10 +1102,228 @@ const startExam = () => {
   audioResponses.value = [];
   displayedNumbers.value = [];
 
-  // Initialize sound system
-  // initSounds();
+  if (trainingMode.value) {
+    // Training mode specific initialization
+    const currentStep = TRAINING_STEPS[currentTrainingStep.value];
 
-  startAudioSequence();
+    // Create a training config based on active controls
+    config.value = {
+      configs: [{
+        id: `training-${currentStep.id}`,
+        duration: currentStep.feedbackThreshold,
+        compass: currentStep.activeControls.includes('compass') ? 'adjust_for_consistent_updates' : 'inactive',
+        airspeed: currentStep.activeControls.includes('airspeed') ? 'adjust_for_consistent_updates' : 'inactive',
+        altimeter: currentStep.activeControls.includes('altimeter') ? 'adjust_for_consistent_updates' : 'inactive'
+      }],
+      totalDuration: currentStep.feedbackThreshold * 60, // Convert to seconds
+      sessionId: 'training-session',
+      userId: 'training-user'
+    };
+
+    currentConfigIndex.value = 0;
+    timeRemaining.value = currentStep.feedbackThreshold * 60;
+
+    // Only start audio sequence if it's part of current training step
+    if (currentStep.activeControls.includes('audio')) {
+      startAudioSequence();
+    }
+
+    // Start performance monitoring for training feedback
+    setInterval(() => {
+      monitorPerformance();
+    }, 1000);
+  } else {
+    // Regular exam mode initialization
+    currentConfigIndex.value = 0;
+    config.value.configs = config.value.configs.map(cfg => ({
+      ...cfg,
+      compass: 'adjust_for_consistent_updates',
+      airspeed: 'adjust_for_consistent_updates',
+      altimeter: 'adjust_for_consistent_updates'
+    }));
+
+    // Initialize with first config duration
+    if (config.value.configs && config.value.configs.length > 0) {
+      timeRemaining.value = config.value.configs.reduce((acc, cfg) => acc + cfg.duration, 0) * 60;
+      startAudioSequence();
+    }
+  }
+
+  // Log mode start
+  console.log(`Starting ${trainingMode.value ? 'training' : 'exam'} mode`);
+  console.log('Initial config:', config.value.configs[currentConfigIndex.value]);
+};
+
+// Update these functions:
+const handleStartExam = () => {
+  showStartModal.value = false;
+  if (trainingMode.value) {
+    // For training mode, show training instructions first
+    showTrainingModal.value = true;
+  } else {
+    // For regular exam, start directly
+    startExam();
+  }
+  initAudioContext();
+};
+
+
+const startTrainingStep = () => {
+  showTrainingModal.value = false;
+
+  // Configure controls based on current training step
+  const currentStep = TRAINING_STEPS[currentTrainingStep.value];
+
+  // Create a training config based on active controls
+  config.value = {
+    configs: [{
+      id: `training-${currentStep.id}`,
+      duration: 999999, // Very long duration for training
+      compass: currentStep.activeControls.includes('compass') ? 'adjust_for_consistent_updates' : 'inactive',
+      airspeed: currentStep.activeControls.includes('airspeed') ? 'adjust_for_consistent_updates' : 'inactive',
+      altimeter: currentStep.activeControls.includes('altimeter') ? 'adjust_for_consistent_updates' : 'inactive'
+    }],
+    totalDuration: 999999, // Very long duration for training
+    sessionId: 'training-session',
+    userId: 'training-user'
+  };
+
+  startExam();
+};
+
+const monitorPerformance = () => {
+  if (!examRunning.value) return;
+
+  // Collect metrics
+  currentStep.value = {
+    time: Date.now(),
+    heading: heading.value,
+    airspeed: airspeed.value,
+    altitude: altitude.value,
+    targets: {
+      heading: headingTarget.value,
+      airspeed: airspeedTarget.value,
+      altitude: altitudeTarget.value
+    }
+  };
+
+  // If in training mode, provide feedback
+  if (trainingMode.value) {
+    const isFollowingDirection = checkDirectionFollowing();
+
+    if (isFollowingDirection && !userFollowingDirection.value) {
+      feedbackMessage.value = "Bagus! Terus Ikuti Pergerakan Target";
+      showFeedback.value = true;
+      userFollowingDirection.value = true;
+    } else if (!isFollowingDirection && userFollowingDirection.value) {
+      feedbackMessage.value = "Perhatikan arah pergerakan target dan coba kontrol pesawat anda ke arah target";
+      showFeedback.value = true;
+      userFollowingDirection.value = false;
+    }
+
+    // Clear feedback after 3 seconds
+    setTimeout(() => {
+      showFeedback.value = false;
+    }, 3000);
+  }
+
+  updatePerformanceData();
+};
+
+// 3. performanceMetrics should be used in updatePerformanceData
+const updatePerformanceData = () => {
+  const currentTime = Date.now();
+  if (currentTime - lastRecordedTime.value >= 1000) {
+    performanceMetrics.value = {
+      heading: {
+        type: isHeadingOutOfTarget.value ? "wrong" : "correct",
+        deviations: heading.value - headingTarget.value,
+        timestamp: currentTime,
+        configIndex: currentConfigIndex.value
+      },
+      airspeed: {
+        type: isAirspeedOutOfTarget.value ? "wrong" : "correct",
+        deviations: airspeed.value - airspeedTarget.value,
+        timestamp: currentTime,
+        configIndex: currentConfigIndex.value
+      },
+      altitude: {
+        type: isAltitudeOutOfTarget.value ? "wrong" : "correct",
+        deviations: altitude.value - altitudeTarget.value,
+        timestamp: currentTime,
+        configIndex: currentConfigIndex.value
+      }
+    };
+
+    // Use these metrics to update the performance data arrays
+    headingPerformanceData.value.push(performanceMetrics.value.heading);
+    airspeedPerformanceData.value.push(performanceMetrics.value.airspeed);
+    altitudePerformanceData.value.push(performanceMetrics.value.altitude);
+
+    lastRecordedTime.value = currentTime;
+  }
+};
+
+const moveToNextTrainingStep = () => {
+  examRunning.value = false; // Stop current step
+  currentTrainingStep.value++;
+
+  if (currentTrainingStep.value < TRAINING_STEPS.length) {
+    // Show instructions for next step
+    showTrainingModal.value = true;
+    cancelAudioSequence(); // Stop any ongoing audio
+  } else {
+    // Show final exam confirmation modal
+    showExamConfirmModal.value = true;
+  }
+};
+
+
+const startActualExam = async () => {
+  // Close confirmation modal
+  showExamConfirmModal.value = false;
+  
+  // Reset everything
+  examRunning.value = false;
+  trainingMode.value = false;
+  score.value = 0;
+  timeOnTargetAirspeed.value = 0;
+  timeOnTargetHeading.value = 0;
+  timeOnTargetAltitude.value = 0;
+  currentTrainingStep.value = 0;
+  // Reset performance tracking
+  airspeed.value = 120;
+  heading.value = 0;
+  altitude.value = 5000;
+  airspeedTarget.value = 120;
+  headingTarget.value = 0;
+  altitudeTarget.value = 5000;
+  thrustLevel.value = 60;
+  
+  // Reset audio
+  cancelAudioSequence();
+  audioResponses.value = [];
+  displayedNumbers.value = [];
+  
+  // Reset performance data
+  headingPerformanceData.value = [];
+  airspeedPerformanceData.value = [];
+  altitudePerformanceData.value = [];
+  userInputs.value = [];
+  
+  // Reinitialize config
+  await initConfig();
+  
+  // Make sure all controls are active
+  config.value.configs = config.value.configs.map(cfg => ({
+    ...cfg,
+    compass: 'adjust_for_consistent_updates',
+    airspeed: 'adjust_for_consistent_updates',
+    altimeter: 'adjust_for_consistent_updates'
+  }));
+  
+  // Start the exam
+  startExam();
 };
 
 // Modify endExam to cleanup sounds
@@ -1009,20 +1350,22 @@ const initConfig = async () => {
   // Store all configs and calculate total duration
   config.value = {
     configs: configMIC.configs,
-    totalDuration:
-      configMIC.configs.reduce(
-        (total, cfg) => total + Number(cfg.duration),
-        0
-      ) * 60,
+    totalDuration: configMIC.configs.reduce(
+      (acc, curr) => acc + curr.duration,
+      0
+    ),
     sessionId: scheduleData.sessionId,
     userId: scheduleData.userId,
+    batteryTestId: configMIC.id,
   };
 };
+
+// Define router at the top level of script setup
+const router = useRouter();
 
 const sendPerformanceData = async () => {
   try {
     loading.value = true;
-    const router = useRouter();
     const API_URL = process.env.VUE_APP_API_URL;
 
     // Prepare performance data by config
@@ -1044,9 +1387,11 @@ const sendPerformanceData = async () => {
       };
     });
 
+    console.log('config:', config.value);
     const payload = {
       testSessionId: config.value.sessionId,
       userId: config.value.userId,
+      batteryTestId: config.value.batteryTestId,
       result: {
         // multi_graph_data: performanceByConfig.map(perf => ({
         //     heading: perf.headingData,
@@ -1093,7 +1438,7 @@ const sendPerformanceData = async () => {
       "Monitoring & Instrument Koordination"
     );
     localStorage.removeItem("refreshCountShapeRecognition");
-    router.push("/module");
+    router.push('/module');
   } catch (error) {
     console.log("error submit:", error);
   } finally {
@@ -1104,13 +1449,6 @@ const sendPerformanceData = async () => {
 // Add this to your state declarations
 const showStartModal = ref(true);
 
-// Add this method
-const handleStartExam = () => {
-  showStartModal.value = false;
-  // initSounds();
-  startExam();
-  initAudioContext();
-};
 
 const handleKeyDown = (event) => {
   if (controlMode.value === "manual") {
@@ -1522,6 +1860,7 @@ onUnmounted(() => {
 .manual-control-instructions li {
   margin: 5px 0;
 }
+
 .modal-content {
   background-color: white;
   padding: 20px;
@@ -1533,5 +1872,91 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.feedback-message {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 15px 30px;
+  border-radius: 8px;
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.training-instructions {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.instruction-image {
+  max-width: 100%;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.feedback-correct {
+  background-color: rgba(0, 255, 0, 0.2);
+}
+
+.feedback-incorrect {
+  background-color: rgba(255, 0, 0, 0.2);
+}
+
+.next-step-button {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4CAF50;
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1000;
+  transition: background-color 0.3s;
+}
+
+.next-step-button:hover {
+  background-color: #45a049;
+}
+
+.modal-list li {
+  margin-bottom: 0.75rem;
+}
+
+.modal-list ul li {
+  margin-bottom: 0.5rem;
+  list-style-type: circle;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.ml-8 {
+  margin-left: 2rem;
+}
+
+.text-red-600 {
+  color: #dc2626;
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+.bg-gray-500 {
+  background-color: #6b7280;
 }
 </style>
