@@ -68,14 +68,14 @@
               :alert-lights-data="configBe.alert_lights"
               :update-results="updateResults"
               :update-result-light-avg-time="updateResultLightAvgTime"
-              style="margin-bottom: 20px;"
+              style="margin-bottom: 20px"
             />
             <HorizonTest
               v-if="configReady"
               :horizon-data="configBe.horizon"
               :update-results="updateResults"
               :trainingCompleted="false"
-              style="margin-bottom: 40px;"
+              :alertOnRight="true"
             />
             <CallSignTest
               v-if="configReady"
@@ -396,6 +396,7 @@ export default {
       this.configBe.horizon = { ...horizon, play: subtask?.horizon };
     },
     handleTrainingConfirm() {
+      clearInterval(this.tesInterval);
       this.isTrainingModalVisible = false;
       this.setTrainingConfig(this.currentTraining);
       this.countDownTime();
@@ -405,6 +406,7 @@ export default {
       }
     },
     handleTestConfirm() {
+      clearInterval(this.tesInterval);
       this.isTestModalVisible = false;
       this.isActualTest = true;
       this.setActualTestConfig(this.configs[this.indexConfig]);
