@@ -25,6 +25,7 @@ export default {
     const options = ref([]);
     const correct = ref(false);
     const score = ref(0);
+    let timeoutId = null;
 
     const generateString = () => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -50,15 +51,27 @@ export default {
         const correctOption = currentString.value.substr(Math.floor(Math.random() * 5), 4);
         options.value = generateOptions(correctOption);
         showOptions.value = true;
+
+        // Start a 10-second timer to trigger the next question if no option is selected
+        timeoutId = setTimeout(() => {
+          // Automatically trigger next question if no option is selected within 10 seconds
+          nextQuestion();
+        }, 10000); // 10 seconds
       }, 5000); // Show string for 5 seconds
     };
 
     const selectOption = (option) => {
+      clearTimeout(timeoutId);  // Clear the timeout if an option is selected
       showOptions.value = false;
       correct.value = currentString.value.includes(option);
       if (correct.value) score.value++;
       emit('update-score', score.value);
       setTimeout(startTest, 2000); // Start next round after 2 seconds
+    };
+
+    const nextQuestion = () => {
+      showOptions.value = false; // Hide the options
+      setTimeout(startTest, 2000); // Start the next round after a brief delay
     };
 
     onMounted(startTest);

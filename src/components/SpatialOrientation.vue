@@ -937,7 +937,7 @@ canvas {
 
 .question {
   padding: 30px;
-  font-size: 1em;
+  font-size: 24px;
   font-weight: bold;
 }
 
