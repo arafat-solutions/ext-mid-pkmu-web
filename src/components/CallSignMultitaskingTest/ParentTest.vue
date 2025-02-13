@@ -26,7 +26,7 @@
           :horizon-data="configBe.horizon"
           :update-results="updateResults"
           class="centered-component"
-          style="margin: auto; max-width: 400px; width: 100%"
+          style="margin: auto; max-width: 370px; width: 100%"
           :trainingCompleted="false"
         />
         <CallSignTest
@@ -49,6 +49,7 @@
           :update-results="updateResults"
           :update-result-light-avg-time="updateResultLightAvgTime"
           class="centered-component"
+          style="margin: auto; max-width: 370px; width: 100%"
         />
       </div>
 

@@ -224,22 +224,22 @@ export default {
 
     const shapeGenerators = [
       generateOctagon,
-      generateStar,
+      // generateStar,
       generateParallelogram,
-      generateLeftArrow,
-      generateH,
-      generatePlane,
-      generateReturnArrow,
+      // generateLeftArrow,
+      // generateH,
+      // generatePlane,
+      // generateReturnArrow,
       generateHexagon,
-      generateQuestionMark,
+      // generateQuestionMark,
       generateChevronLeft,
       generateT,
-      generateHeart,
-      generateS,
+      // generateHeart,
+      // generateS,
       generateL,
       generateTriangle,
       generateSquare,
-      generateCircle,
+      // generateCircle,
     ];
 
     function drawShape(ctx, shapeGenerator, canvasWidth, canvasHeight, angle) {
@@ -346,7 +346,6 @@ export default {
       }
 
       // Wait for the question timer before moving to next question
-      const remainingTime = questionCountdown.value * 1000;
       setTimeout(() => {
         feedbackState.value.show = false;
         if (currentQuestion.value < currentConfig.value.numberOfQuestion) {
@@ -365,7 +364,7 @@ export default {
             }
           }
         }
-      }, remainingTime);
+      }, 1000);
     }
 
     function drawRandomizedShapes(ctx, randomAngle) {
@@ -482,9 +481,6 @@ export default {
       ctx.rect(-35, -35, 70, 70);
     }
 
-    function generateCircle(ctx) {
-      ctx.arc(0, 0, 40, 0, 2 * Math.PI);
-    }
 
     function generateOctagon(ctx) {
       for (let i = 0; i < 8; i++) {
@@ -497,16 +493,6 @@ export default {
       ctx.closePath();
     }
 
-    function generateStar(ctx) {
-      for (let i = 0; i < 5; i++) {
-        const angle = (i * 4 * Math.PI) / 5;
-        const x = 40 * Math.cos(angle);
-        const y = 40 * Math.sin(angle);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-    }
 
     function generateParallelogram(ctx) {
       ctx.beginPath();
@@ -517,39 +503,6 @@ export default {
       ctx.closePath();
     }
 
-    function generateLeftArrow(ctx) {
-      ctx.beginPath();
-      ctx.moveTo(20, -30);
-      ctx.lineTo(-20, 0);
-      ctx.lineTo(20, 30);
-      ctx.lineTo(20, 15);
-      ctx.lineTo(40, 15);
-      ctx.lineTo(40, -15);
-      ctx.lineTo(20, -15);
-      ctx.closePath();
-    }
-
-    function generateH(ctx) {
-      ctx.save();
-      ctx.scale(0.6, 0.8);
-
-      ctx.beginPath();
-      ctx.moveTo(-40, -40);
-      ctx.lineTo(-40, 40);
-      ctx.lineTo(-10, 40);
-      ctx.lineTo(-10, 10);
-      ctx.lineTo(10, 10);
-      ctx.lineTo(10, 40);
-      ctx.lineTo(40, 40);
-      ctx.lineTo(40, -40);
-      ctx.lineTo(10, -40);
-      ctx.lineTo(10, -15);
-      ctx.lineTo(-10, -15);
-      ctx.lineTo(-10, -40);
-      ctx.lineTo(-40, -40);
-
-      ctx.restore();
-    }
 
     function generateHexagon(ctx) {
       ctx.beginPath();
@@ -563,13 +516,6 @@ export default {
       ctx.closePath();
     }
 
-    function generateQuestionMark(ctx) {
-      ctx.beginPath();
-      ctx.arc(0, -15, 25, -Math.PI * 0.8, Math.PI * 0.1, false);
-      ctx.lineTo(5, 15);
-      ctx.moveTo(0, 30);
-      ctx.arc(0, 30, 3, 0, Math.PI * 2);
-    }
 
     function generateChevronLeft(ctx) {
       ctx.save();
@@ -582,114 +528,6 @@ export default {
       ctx.lineTo(-10, 0);
       ctx.lineTo(-40, 20);
       ctx.lineTo(-40, 50);
-      ctx.closePath();
-
-      ctx.restore();
-    }
-
-    function generatePlane(ctx) {
-      ctx.save();
-      ctx.scale(0.8, 0.8);
-
-      ctx.beginPath();
-      ctx.moveTo(-30, -30);
-      ctx.lineTo(40, -20);
-      ctx.lineTo(50, 0);
-      ctx.lineTo(40, 20);
-      ctx.lineTo(10, 10);
-      ctx.lineTo(20, 40);
-      ctx.lineTo(0, 50);
-      ctx.lineTo(-20, 40);
-      ctx.closePath();
-
-      ctx.restore();
-    }
-
-    function generateReturnArrow(ctx) {
-      ctx.save();
-      ctx.scale(0.6, 0.6);
-
-      ctx.beginPath();
-      ctx.moveTo(-60, -50);
-      ctx.lineTo(50, -50);
-      ctx.lineTo(70, -30);
-      ctx.lineTo(70, 30);
-      ctx.lineTo(50, 50);
-      ctx.lineTo(-60, 50);
-      ctx.lineTo(-60, 20);
-      ctx.lineTo(20, 20);
-      ctx.lineTo(40, 0);
-      ctx.lineTo(20, -20);
-      ctx.lineTo(-60, -20);
-      ctx.closePath();
-
-      ctx.restore();
-    }
-
-    function generateHeart(ctx) {
-      const x = 0;
-      const y = -40;
-      const width = 80;
-      const height = 90;
-
-      ctx.save();
-      ctx.beginPath();
-
-      const topCurveHeight = height * 0.3;
-      ctx.moveTo(x, y + topCurveHeight);
-
-      // top left curve
-      ctx.bezierCurveTo(
-        x,
-        y,
-        x - width / 2,
-        y,
-        x - width / 2,
-        y + topCurveHeight
-      );
-
-      // bottom left curve
-      ctx.bezierCurveTo(
-        x - width / 2,
-        y + (height + topCurveHeight) / 2,
-        x,
-        y + (height + topCurveHeight) / 2,
-        x,
-        y + height
-      );
-
-      // bottom right curve
-      ctx.bezierCurveTo(
-        x,
-        y + (height + topCurveHeight) / 2,
-        x + width / 2,
-        y + (height + topCurveHeight) / 2,
-        x + width / 2,
-        y + topCurveHeight
-      );
-
-      // top right curve
-      ctx.bezierCurveTo(x + width / 2, y, x, y, x, y + topCurveHeight);
-
-      ctx.closePath();
-      ctx.restore();
-    }
-
-    function generateS(ctx) {
-      const rand = Math.random() < 0.5;
-
-      ctx.save();
-      ctx.scale(0.8, 0.8);
-
-      ctx.beginPath();
-      ctx.moveTo(-50, 40);
-      ctx.lineTo(20, 40);
-      ctx.lineTo(20, 10);
-      ctx.lineTo(rand ? 90 : 60, 10);
-      ctx.lineTo(rand ? 90 : 60, -20);
-      ctx.lineTo(-10, -20);
-      ctx.lineTo(-10, 10);
-      ctx.lineTo(-50, 10);
       ctx.closePath();
 
       ctx.restore();
