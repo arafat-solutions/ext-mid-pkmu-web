@@ -1,14 +1,19 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p>
+      <p style="font-size: 24px;">
         <strong>Apakah anda yakin akan memulai latihan?</strong>
       </p>
+      <p style="font-size: 20px; max-width: 80%;">
+        Pada tes ini Anda akan menggunakan Touch Screen. Anda diminta untuk
+        menghitung JUMLAH BELOKAN KANAN atau KIRI yang ada pada gambar sesuai
+        dengan soal. Lalu pilih jawaban yang benar dengan cara menyentuh LAYAR
+        MONITOR.
+      </p>
+
+      <img src="devices/spatial.png"/>
       <div class="button-container">
-        <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-          Batal
-        </button>
-        <button @click="startTest()">Ya</button>
+        <button @click="startTest()">Mulai Latihan</button>
       </div>
     </div>
   </div>
@@ -16,12 +21,11 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p>
-        <strong>Apakah anda yakin akan memulai test?</strong>
+        <strong>Apakah anda yakin akan memulai tes?</strong>
       </p>
-      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-        Batal
-      </button>
-      <button @click="startTest()">Ya</button>
+      <div>
+        <button @click="startTest()">Mulai Tes</button>
+      </div>
     </div>
   </div>
 
@@ -31,8 +35,8 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container">
-      Question: {{ config.current_question }} / {{ totalQuestion }}
+    <div class="timer-container" v-if="isTrainingCompleted">
+      Pertanyaan: {{ config.current_question }} / {{ totalQuestion }}
     </div>
 
     <div class="line-container">
@@ -85,6 +89,9 @@
         </p>
       </div>
     </div>
+    <button v-if="!isTrainingCompleted" @click="endGame" class="finish-button">
+      Selesai Latihan
+    </button>
   </div>
 </template>
 
@@ -174,7 +181,7 @@ export default {
         this.setConfig(this.configs[0]);
 
         this.config.current_question = 1;
-        this.totalQuestion = this.configs[0].number_of_question;
+        this.totalQuestion = 9999;
       } else {
         this.setConfig(this.configs[this.indexConfig]);
 
@@ -803,9 +810,13 @@ export default {
   background-color: white;
   padding: 20px;
   border-radius: 5px;
-  max-width: 90%;
-  max-height: 90%;
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-content button {
@@ -964,5 +975,19 @@ canvas {
 .digit-number.next:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.finish-button {
+  position: fixed;
+  bottom: 20px;
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust to truly center */
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 </style>

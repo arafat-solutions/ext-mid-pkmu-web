@@ -1,13 +1,22 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p>
+      <p style="font-size: 24px">
         <strong>Apakah anda yakin akan memulai latihan ?</strong>
       </p>
-      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-        Batal
-      </button>
-      <button @click="startTest()">Ya</button>
+      <p style="font-size: 20px; max-width: 80%">
+        Dalam tes ini anda akan menggunakan Joystick. Gambar di bawah
+        menunjukkan RADAR sebuah pesawat. Anda diminta untuk MENEKAN tombol
+        Trigger pada Joystick saat objek “circle putih” muncul dalam radar.
+      </p>
+
+      <div style="display: flex">
+        <img src="devices/radar_1.png" />
+        <img src="devices/radar_2.png" />
+      </div>
+      <div>
+        <button @click="startTest()">Mulai Latihan</button>
+      </div>
     </div>
   </div>
 
@@ -16,10 +25,12 @@
       <p>
         <strong>Apakah anda yakin akan memulai test ?</strong>
       </p>
-      <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
-        Batal
-      </button>
-      <button @click="startTest()">Ya</button>
+      <div>
+        <button @click="exit()" style="margin-right: 50px; margin-top: 10px">
+          Batal
+        </button>
+        <button @click="startTest()">Ya</button>
+      </div>
     </div>
   </div>
 
@@ -29,7 +40,9 @@
       <div class="text">submitting a result</div>
     </div>
 
-    <div class="timer-container">Time: {{ formattedTime }}</div>
+    <div class="timer-container" v-if="isTrainingCompleted">
+      Waktu: {{ formattedTime }}
+    </div>
 
     <div class="radar-container">
       <div class="row">
@@ -48,6 +61,13 @@
         </div>
       </div>
     </div>
+    <button
+      v-if="!isTrainingCompleted"
+      @click="finishTraining"
+      class="finish-button"
+    >
+      Selesai Latihan
+    </button>
   </div>
 </template>
 
@@ -153,7 +173,7 @@ export default {
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
 
-        this.durationTest = 1 * 60;
+        this.durationTest = 99999999; // make the test forever
       } else {
         this.setConfig(this.configs[this.indexConfig]);
 
@@ -187,6 +207,18 @@ export default {
         this.$router.push("module");
       }
     },
+    finishTraining() {
+      this.isTrainingCompleted = true;
+      completeTrainingTestAndUpdateLocalStorage("Radar Vigilance Test");
+
+      //Start Exam After Training
+      this.isModalVisible = true;
+      this.totalAllShapeObject = 0;
+      this.detectedObject = 0;
+      this.userCorrectClickCount = 0;
+      this.falsePositives = 0;
+      this.userInputs = [];
+    },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         if (this.durationTest > 0) {
@@ -196,16 +228,7 @@ export default {
 
           //For Training
           if (!this.isTrainingCompleted) {
-            this.isTrainingCompleted = true;
-            completeTrainingTestAndUpdateLocalStorage("Radar Vigilance Test");
-
-            //Start Exam After Training
-            this.isModalVisible = true;
-            this.totalAllShapeObject = 0;
-            this.detectedObject = 0;
-            this.userCorrectClickCount = 0;
-            this.falsePositives = 0;
-            this.userInputs = [];
+            this.finishTraining();
           } else {
             setTimeout(() => {
               this.calculatedResult();
@@ -914,13 +937,18 @@ export default {
   background-color: rgba(0, 0, 0, 0.8);
   z-index: 1000;
 }
+
 .modal-content {
   background-color: white;
   padding: 20px;
   border-radius: 5px;
-  max-width: 90%;
-  max-height: 90%;
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 .modal-content button {
   background-color: #6200ee;
@@ -994,5 +1022,19 @@ canvas {
   color: #ffffff;
   margin-top: 20px;
   font-size: 1.2em;
+}
+
+.finish-button {
+  position: fixed;
+  bottom: 20px;
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust to truly center */
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 </style>

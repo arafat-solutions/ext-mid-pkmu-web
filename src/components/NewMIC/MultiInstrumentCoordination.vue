@@ -16,8 +16,7 @@
                             <p class="modal-footer-text">Klik OK saat Anda siap untuk memulai.</p>
                         </div>
                         <div class="modal-footer">
-                            <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">OK</button>
-                            <button class="modal-button bg-red-500" @click="handleCancel">Batal</button>
+                            <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">Mulai Latihan</button>
                         </div>
                     </div>
                 </div>
@@ -100,7 +99,6 @@ import { Altimeter, Airspeed, Heading } from 'vue-flight-indicators';
 import AnalogClock from "./AnalogClock.vue";
 import { useRouter } from 'vue-router';
 
-const router = useRouter()
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
@@ -1001,10 +999,6 @@ const handleStartExam = () => {
     initAudioContext();
 };
 
-const handleCancel = () => {
-    router.replace("/module");
-}
-
 const handleKeyDown = (event) => {
     if (controlMode.value === 'manual') {
         switch (event.key) {
@@ -1305,26 +1299,27 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 100000;
 }
 
 .modal-container {
     background-color: white;
     border-radius: 8px;
     padding: 20px;
-    max-width: 500px;
-    width: 90%;
+    width: 100%;
+    height: 100%;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .modal-title {
-    font-size: 1.5rem;
+    font-size: 24px;
     font-weight: bold;
     color: #333;
     margin-bottom: 1rem;
 }
 
 .modal-body {
+    font-size: 20px;
     margin: 1rem 0;
 }
 
@@ -1414,5 +1409,17 @@ onUnmounted(() => {
 
 .manual-control-instructions li {
     margin: 5px 0;
+}
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 </style>

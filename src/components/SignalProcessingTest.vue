@@ -1,37 +1,67 @@
 <template>
   <div v-if="isModalVisible" class="modal-overlay">
-  <div class="modal-content">
-    <h2 class="text-xl font-bold mb-4">{{ isTrainingCompleted ? 'Konfirmasi Ujian' : 'Konfirmasi latihan' }}</h2>
+    <div class="modal-content">
+      <h2 class="text-xl font-bold mb-4" style="font-size: 24px">
+        {{ isTrainingCompleted ? "Konfirmasi Ujian" : "Konfirmasi latihan" }}
+      </h2>
 
-    <div class="mb-4">
-      <p class="mb-2"><strong>Untuk blok merah:</strong> {{ ruleOptions[currentRuleSet.red] }}</p>
-      <p class="mb-2"><strong>Untuk blok hijau:</strong> {{ ruleOptions[currentRuleSet.green] }}</p>
-      <p class="mb-2"><strong>Untuk blok biru:</strong> {{ ruleOptions[currentRuleSet.blue] }}</p>
-    </div>
+      <div class="mb-4" style="font-size: 20px">
+        <p class="mb-2">
+          <strong>Untuk blok merah:</strong>
+          {{ ruleOptions[currentRuleSet.red] }}
+        </p>
+        <p class="mb-2">
+          <strong>Untuk blok hijau:</strong>
+          {{ ruleOptions[currentRuleSet.green] }}
+        </p>
+        <p class="mb-2">
+          <strong>Untuk blok biru:</strong>
+          {{ ruleOptions[currentRuleSet.blue] }}
+        </p>
+      </div>
 
-    <p class="mb-4 text-center">
-      <strong>
-        Apakah Anda yakin akan memulai {{ isTrainingCompleted ? 'ujian' : 'latihan' }} Signal Processing?
-      </strong>
-    </p>
+      <p class="mb-4 text-center" style="font-size: 20px">
+        <strong>
+          Apakah Anda yakin akan memulai
+          {{ isTrainingCompleted ? "ujian" : "latihan" }} Signal Processing?
+        </strong>
+      </p>
 
-    <div class="flex justify-center space-x-4">
-      <button @click="startTest()" class="bg-green-500 text-white px-4 py-2 rounded">Ya</button>
-      <button @click="exit()" class="bg-red-500 text-white px-4 py-2 rounded">Batal</button>
+      <div class="flex justify-center space-x-4">
+        <button
+          @click="startTest()"
+          class="bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Ya
+        </button>
+        <button @click="exit()" class="bg-red-500 text-white px-4 py-2 rounded">
+          Batal
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
-  <div v-if="timeLeft > 0" class="timer-container">
-    Time: {{ formattedTime }}
+  <div v-if="timeLeft > 0 && isTrainingCompleted" class="timer-container">
+    Waktu: {{ formattedTime }}
   </div>
 
-  <div class="relative flex justify-center items-center min-h-screen" v-if="!isTimesUp">
+  <div
+    class="relative flex justify-center items-center min-h-screen"
+    v-if="!isTimesUp"
+  >
     <div class="flex flex-col items-center justify-center">
       <div class="grid grid-cols-2 gap-4">
-        <div class="h-24 w-24 hover:cursor-pointer"
-          :class="(currentQuestion && currentQuestion.position === i) && !clickedAnswer ? `bg-${currentQuestion.color}-500` : 'bg-gray-500'"
-          v-for="i in 4" :key="i" @click="checkAnswer(i)" />
+        <div
+          class="h-24 w-24 hover:cursor-pointer"
+          :class="
+            currentQuestion && currentQuestion.position === i && !clickedAnswer
+              ? `bg-${currentQuestion.color}-500`
+              : 'bg-gray-500'
+          "
+          v-for="i in 4"
+          :key="i"
+          @click="checkAnswer(i)"
+        />
       </div>
       <div class="font-bold text-lg text-center mt-5">
         <span class="text-red-600" v-if="isWrongAnswer">Salah</span>
@@ -39,6 +69,13 @@
       </div>
     </div>
   </div>
+  <button
+    v-if="!isTrainingCompleted"
+    @click="finishTraining"
+    class="finish-button"
+  >
+    Selesai Latihan
+  </button>
   <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner"></div>
     <div class="loading-text">Your result is submitting</div>
@@ -46,16 +83,19 @@
 </template>
 
 <script>
-import { completeTrainingTestAndUpdateLocalStorage, removeTestByNameAndUpdateLocalStorage } from '@/utils/index'
-import { getConfigs } from '@/utils/configs';
+import {
+  completeTrainingTestAndUpdateLocalStorage,
+  removeTestByNameAndUpdateLocalStorage,
+} from "@/utils/index";
+import { getConfigs } from "@/utils/configs";
 
 export default {
   data() {
     return {
       currentRules: {
-        red: '',
-        green: '',
-        blue: ''
+        red: "",
+        green: "",
+        blue: "",
       },
       ruleOptions: [
         'Klik blok yang menyala',
@@ -64,8 +104,8 @@ export default {
       ],
       currentRuleSet: {
         red: 0,
-        green: 0,
-        blue: 0
+        green: 2,
+        blue: 1,
       },
       isModalTrainingVisible: false,
       isModalVisible: true,
@@ -85,7 +125,7 @@ export default {
       clickedAnswer: false,
       isWrongAnswer: false,
       isCorrectAnswer: false,
-      colors: ['red', 'green', 'blue'],
+      colors: ["red", "green", "blue"],
       positions: [1, 2, 3, 4],
       level: null, //very_easy, easy, medium, difficult, very_difficult
       frequent: null, //never, very_rarely, rarely, normal, often, very_often
@@ -112,12 +152,17 @@ export default {
     };
   },
   mounted() {
-    let reloadCount = parseInt(localStorage.getItem('reloadCountSignalProcessing') || '0');
+    let reloadCount = parseInt(
+      localStorage.getItem("reloadCountSignalProcessing") || "0"
+    );
     reloadCount++;
-    localStorage.setItem('reloadCountSignalProcessing', reloadCount.toString());
+    localStorage.setItem("reloadCountSignalProcessing", reloadCount.toString());
 
-    window.addEventListener('beforeunload', () => {
-      localStorage.setItem('reloadCountSignalProcessing', reloadCount.toString());
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem(
+        "reloadCountSignalProcessing",
+        reloadCount.toString()
+      );
     });
 
     this.initConfig();
@@ -129,16 +174,16 @@ export default {
     formattedTime() {
       const minutes = Math.floor(this.timeLeft / 60);
       const seconds = this.timeLeft % 60;
-      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
     },
     intervalChangeQuestion() {
       const intervalMap = {
         never: null, // or a very high number, or skip entirely
         very_rarely: 10, // 10 seconds
-        rarely: 8,       // 8 seconds
-        normal: 6,       // 6 seconds
-        often: 4,        // 4 seconds
-        very_often: 2    // 2 seconds
+        rarely: 8, // 8 seconds
+        normal: 6, // 6 seconds
+        often: 4, // 4 seconds
+        very_often: 2, // 2 seconds
       };
 
       return intervalMap[this.frequent];
@@ -158,14 +203,19 @@ export default {
       return this.questions[this.currentIndexQuestion];
     },
     resultMissed() {
-      return this.currentIndexQuestion + 1 - this.result.correct - this.result.wrong;
+      return (
+        this.currentIndexQuestion + 1 - this.result.correct - this.result.wrong
+      );
     },
     averageAnswerTime() {
       if (this.result.answerTimes.length === 0) return 0; // Handle empty this.result.answerTimesay case
-      const sum = this.result.answerTimes.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+      const sum = this.result.answerTimes.reduce(
+        (accumulator, currentValue) => accumulator + currentValue,
+        0
+      );
       const average = sum / this.result.answerTimes.length;
       return parseFloat(average.toFixed(2));
-    }
+    },
   },
   watch: {
     isTimesUp(value) {
@@ -173,31 +223,34 @@ export default {
         this.cleanUp();
 
         if (!this.isTrainingCompleted) {
-          this.isTrainingCompleted = true;
-          completeTrainingTestAndUpdateLocalStorage("Signal Processing Test");
-
-          //Start Exam After Training
-          this.isModalVisible = true
-          this.currentIndexQuestion = 0
-          this.userInputs = [];
-          this.result.correct = 0;
-          this.result.wrong = 0;
-          this.result.answerTimes = [];
+          this.finishTraining;
         } else {
           this.submitResult();
         }
       }
-    }
+    },
   },
   methods: {
+    finishTraining() {
+      this.isTrainingCompleted = true;
+      completeTrainingTestAndUpdateLocalStorage("Signal Processing Test");
+
+      //Start Exam After Training
+      this.isModalVisible = true;
+      this.currentIndexQuestion = 0;
+      this.userInputs = [];
+      this.result.correct = 0;
+      this.result.wrong = 0;
+      this.result.answerTimes = [];
+    },
     generateUniqueRules() {
-      const colors = ['red', 'green', 'blue'];
+      const colors = ["red", "green", "blue"];
       const usedRuleIndices = new Set();
 
       // Shuffle colors to randomize rule assignment
       const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
 
-      shuffledColors.forEach(color => {
+      shuffledColors.forEach((color) => {
         let randomIndex;
         do {
           randomIndex = Math.floor(Math.random() * this.ruleOptions.length);
@@ -211,15 +264,17 @@ export default {
       this.isModalVisible = true;
     },
 
-
     startTest() {
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
-        this.minuteTime = Number(this.duration);
+        this.minuteTime = 9999;
         this.timeLeft = this.minuteTime;
       } else {
         this.setConfig(this.configs[this.indexConfig]);
-        this.minuteTime = this.configs.reduce((acc, config) => acc + Number(config.duration), 0);
+        this.minuteTime = this.configs.reduce(
+          (acc, config) => acc + Number(config.duration),
+          0
+        );
         this.timeLeft = this.minuteTime * 60;
       }
 
@@ -242,7 +297,6 @@ export default {
       this.startChangeQuestion();
     },
 
-
     checkAnswer(n) {
       if (this.clickedAnswer) {
         return;
@@ -256,13 +310,13 @@ export default {
 
       // Check answer based on current rules
       switch (this.currentQuestion.color) {
-        case 'red':
+        case "red":
           isCorrect = this.checkRedAnswer(n);
           break;
-        case 'green':
+        case "green":
           isCorrect = this.checkGreenAnswer(n);
           break;
-        case 'blue':
+        case "blue":
           isCorrect = this.checkBlueAnswer(n);
           break;
       }
@@ -270,7 +324,7 @@ export default {
       if (isCorrect) {
         this.result.correct++;
         this.userInputs.push({
-          type: 'correct',
+          type: "correct",
           responseTime: responseTime,
           timestamp: Date.now(),
         });
@@ -278,7 +332,7 @@ export default {
       } else {
         this.result.wrong++;
         this.userInputs.push({
-          type: 'wrong',
+          type: "wrong",
           responseTime: responseTime,
           timestamp: Date.now(),
         });
@@ -287,7 +341,8 @@ export default {
 
       if (this.startTimeAnswer) {
         const endTime = new Date();
-        const differenceInMilliseconds = endTime.getTime() - this.startTimeAnswer.getTime();
+        const differenceInMilliseconds =
+          endTime.getTime() - this.startTimeAnswer.getTime();
         this.result.answerTimes.push(differenceInMilliseconds);
         this.startTimeAnswer = null;
       }
@@ -302,7 +357,9 @@ export default {
         case 1: // Click vertical
           return this.getVerticalPosition(this.currentQuestion.position) === n;
         case 2: // Click horizontal
-          return this.getHorizontalPosition(this.currentQuestion.position) === n;
+          return (
+            this.getHorizontalPosition(this.currentQuestion.position) === n
+          );
         default:
           return false;
       }
@@ -316,7 +373,9 @@ export default {
         case 1: // Click vertical
           return this.getVerticalPosition(this.currentQuestion.position) === n;
         case 2: // Click horizontal
-          return this.getHorizontalPosition(this.currentQuestion.position) === n;
+          return (
+            this.getHorizontalPosition(this.currentQuestion.position) === n
+          );
         default:
           return false;
       }
@@ -330,7 +389,9 @@ export default {
         case 1: // Click vertical
           return this.getVerticalPosition(this.currentQuestion.position) === n;
         case 2: // Click horizontal
-          return this.getHorizontalPosition(this.currentQuestion.position) === n;
+          return (
+            this.getHorizontalPosition(this.currentQuestion.position) === n
+          );
         default:
           return false;
       }
@@ -342,7 +403,7 @@ export default {
         1: 3, // Top left to bottom left
         2: 4, // Top right to bottom right
         3: 1, // Bottom left to top left
-        4: 2  // Bottom right to top right
+        4: 2, // Bottom right to top right
       };
       return verticalMap[position];
     },
@@ -352,7 +413,7 @@ export default {
         1: 2, // Top left to top right
         2: 1, // Top right to top left
         3: 4, // Bottom left to bottom right
-        4: 3  // Bottom right to bottom left
+        4: 3, // Bottom right to bottom left
       };
       return horizontalMap[position];
     },
@@ -362,15 +423,19 @@ export default {
       clearInterval(this.intervalQuestionId);
     },
     exit() {
-      if (confirm("Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang.")) {
-        this.$router.push('module');
+      if (
+        confirm(
+          "Apakah Anda yakin ingin keluar dari tes? Semua progres akan hilang."
+        )
+      ) {
+        this.$router.push("module");
       }
     },
     // Modify initConfig() to not generate rules immediately
     initConfig() {
-      const configData = getConfigs('signal-processing-test');
+      const configData = getConfigs("signal-processing-test");
       if (!configData) {
-        this.$router.push('/module');
+        this.$router.push("/module");
         return;
       }
 
@@ -400,9 +465,13 @@ export default {
       }
 
       // Generate rules only once per config level
-      if (!this.currentRules.red && !this.currentRules.green && !this.currentRules.blue) {
-        this.generateUniqueRules();
-      }
+      // if (
+      //   !this.currentRules.red &&
+      //   !this.currentRules.green &&
+      //   !this.currentRules.blue
+      // ) {
+      //   this.generateUniqueRules();
+      // }
     },
     startCountdown() {
       this.intervalCountdownId = setInterval(() => {
@@ -413,10 +482,10 @@ export default {
         //Check timer for next level exam
         if (this.isTrainingCompleted) {
           if (this.duration >= 0) {
-            this.duration--
+            this.duration--;
 
             if (this.duration === 0) {
-              this.isNextLevel = true
+              this.isNextLevel = true;
             }
           } else {
             if (this.isNextLevel) {
@@ -424,19 +493,17 @@ export default {
                 this.submitResult();
               } else {
                 this.cleanUp();
-                this.isNextLevel = false
-                this.indexConfig++
-                this.setConfig(this.configs[this.indexConfig])
+                this.isNextLevel = false;
+                this.indexConfig++;
+                this.setConfig(this.configs[this.indexConfig]);
                 setTimeout(() => {
                   this.startCountdown();
                   this.startChangeQuestion();
                 }, 500);
               }
-
             }
           }
         }
-
       }, 1000);
     },
     startChangeQuestion() {
@@ -450,7 +517,7 @@ export default {
         this.isCorrectAnswer = false;
         this.currentIndexQuestion++;
         this.clickedAnswer = false;
-      }, (this.displayDuration * 1000));
+      }, this.displayDuration * 1000);
     },
     getRandomWeightedColor(level) {
       const weights = {
@@ -462,7 +529,10 @@ export default {
       };
 
       const levelWeights = weights[level];
-      const totalWeight = Object.values(levelWeights).reduce((a, b) => a + b, 0);
+      const totalWeight = Object.values(levelWeights).reduce(
+        (a, b) => a + b,
+        0
+      );
       const randomNum = Math.random() * totalWeight;
 
       let weightSum = 0;
@@ -484,7 +554,9 @@ export default {
 
       const changeChance = levelChangeProbability[level];
       if (Math.random() < changeChance) {
-        return this.positions[Math.floor(Math.random() * this.positions.length)];
+        return this.positions[
+          Math.floor(Math.random() * this.positions.length)
+        ];
       }
 
       return this.positions[0];
@@ -500,7 +572,11 @@ export default {
             color: this.getRandomWeightedColor(this.level),
             position: this.getRandomPosition(this.level),
           };
-        } while (i > 0 && newQuestion.color === questions[i - 1].color && newQuestion.position === questions[i - 1].position);
+        } while (
+          i > 0 &&
+          newQuestion.color === questions[i - 1].color &&
+          newQuestion.position === questions[i - 1].position
+        );
 
         questions.push(newQuestion);
       }
@@ -509,22 +585,24 @@ export default {
     },
 
     generatePayloadForSubmit() {
-      const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
+      const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
       const totalQuestion = this.currentIndexQuestion + 1;
       const payload = {
-        'testSessionId': scheduleData.sessionId,
-        'userId': scheduleData.userId,
-        'moduleId': scheduleData.moduleId,
-        'batteryTestConfigId': this.batteryTestConfigId,
-        'batteryTestId': scheduleData.testId,
-        'refreshCount': parseInt(localStorage.getItem('reloadCountSignalProcessing')),
-        'result': {
-          'totalQuestion': totalQuestion,
-          'correctAnswer': this.result.correct,
-          'avgResponseTIme': this.averageAnswerTime,
-          'graph_data': this.userInputs,
-        }
-      }
+        testSessionId: scheduleData.sessionId,
+        userId: scheduleData.userId,
+        moduleId: scheduleData.moduleId,
+        batteryTestConfigId: this.batteryTestConfigId,
+        batteryTestId: scheduleData.testId,
+        refreshCount: parseInt(
+          localStorage.getItem("reloadCountSignalProcessing")
+        ),
+        result: {
+          totalQuestion: totalQuestion,
+          correctAnswer: this.result.correct,
+          avgResponseTIme: this.averageAnswerTime,
+          graph_data: this.userInputs,
+        },
+      };
 
       return payload;
     },
@@ -534,9 +612,9 @@ export default {
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
         const response = await fetch(`${API_URL}/api/submission`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
         });
@@ -549,10 +627,10 @@ export default {
       } finally {
         this.isLoading = false;
         removeTestByNameAndUpdateLocalStorage("Signal Processing Test");
-        localStorage.removeItem('reloadCountSignalProcessing');
-        this.$router.push('/module');// Set isLoading to false when the submission is complete
+        localStorage.removeItem("reloadCountSignalProcessing");
+        this.$router.push("/module"); // Set isLoading to false when the submission is complete
       }
-    }
+    },
   },
 };
 </script>
@@ -575,9 +653,13 @@ export default {
   background-color: white;
   padding: 20px;
   border-radius: 5px;
-  max-width: 90%;
-  max-height: 90%;
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-content button {
@@ -602,8 +684,8 @@ export default {
 }
 
 .loading-spinner {
-    @apply border-[8px] border-solid border-[rgba(255,255,255,0.3)] border-t-white rounded-full w-[60px] h-[60px] animate-spin;
-  }
+  @apply border-[8px] border-solid border-[rgba(255,255,255,0.3)] border-t-white rounded-full w-[60px] h-[60px] animate-spin;
+}
 
 @keyframes spin {
   0% {
@@ -620,18 +702,18 @@ export default {
 }
 
 .bg-gray-500 {
-  background-color: #6B7280;
+  background-color: #6b7280;
 }
 
 .bg-green-500 {
-  background-color: #22C55E;
+  background-color: #22c55e;
 }
 
 .bg-blue-500 {
-  background-color: #3B82F6;
+  background-color: #3b82f6;
 }
 
 .bg-red-500 {
-  background-color: #EF4444;
+  background-color: #ef4444;
 }
 </style>
