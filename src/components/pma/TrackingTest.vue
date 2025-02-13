@@ -2,11 +2,11 @@
   <div class="canvas-container">
     <canvas ref="canvas" width="500" height="500"></canvas>
     <!-- <div v-if="shouldShowJoystickStatus && joystickConnected" class="joystick-status connected">Joystick Connected</div>
-        <div v-if="shouldShowThrusterStatus && thrusterConnected" class="joystick-status connected">Thruster Connected</div>
-        <div v-if="(shouldShowJoystickStatus && !joystickConnected) || (shouldShowThrusterStatus && !thrusterConnected)"
-             class="joystick-status disconnected">
-            {{ getCurrentModeStatus }}
-        </div> -->
+      <div v-if="shouldShowThrusterStatus && thrusterConnected" class="joystick-status connected">Thruster Connected</div>
+      <div v-if="(shouldShowJoystickStatus && !joystickConnected) || (shouldShowThrusterStatus && !thrusterConnected)"
+           class="joystick-status disconnected">
+          {{ getCurrentModeStatus }}
+      </div> -->
   </div>
   <div
     class="centered-component"
@@ -20,10 +20,12 @@
       "
     >
       ⚠️ Perhatian! ⚠️<br />Upayakan lingkaran potong berwarna
+
       <b>BIRU</b> dengan mengarahkan ke target lingkaran bergaris putus-putus
       menggunakan <b>THRUSTER</b> dan juga dot berwarna <b>KUNING</b> dengan
       mengarahkan ke target menggunakan <b>PEDAL</b>
     </p>
+
     <p
       v-else-if="
         !isActualTest &&
@@ -43,6 +45,7 @@ import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 export default {
   name: "PMATrackingTest",
   props: {
+    isActualTest: Boolean,
     currentTraining: {
       type: String,
       default: "all",
@@ -128,7 +131,6 @@ export default {
       );
       ctx.strokeStyle = radiusDifference <= 20 ? "blue" : "red";
       isCircleRed.value = radiusDifference > 20;
-
       ctx.arc(centerX, centerY, solidCircleRadius, 0, Math.PI * 2);
       ctx.stroke();
 
@@ -146,8 +148,8 @@ export default {
       );
       ctx.beginPath();
       ctx.fillStyle =
-        distanceFromCenter <= staticBoundaryRadius ? "green" : "red";
-      isPointRed.value = distanceFromCenter > solidCircleRadius; // Changed to use staticBoundaryRadius
+        distanceFromCenter <= staticBoundaryRadius ? "green" : "red"; // Changed to use staticBoundaryRadius
+      isPointRed.value = distanceFromCenter > staticBoundaryRadius;
       ctx.arc(dotX, dotY, 10, 0, Math.PI * 2);
       ctx.fill();
     };
