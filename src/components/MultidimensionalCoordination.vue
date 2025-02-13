@@ -398,9 +398,32 @@ export default {
     const openModalActualTest = () => {
       showTestModal.value = true;
     };
+    const drift = () => {
+      const driftSpeed = 0.02;
+      const driftAngle = Date.now() * 0.001; // Time-based angle for smooth motion
+      
+      // Sine wave motion for x and y drift
+      airplanePosition.value.x += Math.sin(driftAngle) * driftSpeed;
+      airplanePosition.value.y += Math.cos(driftAngle * 0.7) * driftSpeed;
+      
+      // Add rotation effect
+      const baseRotation = Math.sin(driftAngle * 0.5) * (Math.PI / 6);
+      airplaneRotation.value.z = baseRotation;
+      
+      // Clamp positions
+      airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
+      airplanePosition.value.y = Math.max(-4.5, Math.min(4.5, airplanePosition.value.y));
+      
+      // Regular backward drift
+      if (airplanePosition.value.z < CONFIG.MAX_BACKWARD_POSITION) {
+        airplanePosition.value.z += 0.015; // Base backward drift
+      }
+    };
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const now = Date.now();
+
+      drift();
 
       // Update time and check for completion
       if (startTime.value) {
