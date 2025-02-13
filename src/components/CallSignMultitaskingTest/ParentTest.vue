@@ -21,39 +21,74 @@
     <div :class="contentLayoutClass">
       <!-- Training Mode -->
       <div v-if="isTraining" class="training-container">
-        <HorizonTest
-          v-if="currentTraining === 'horizon' && configReady"
-          :horizon-data="configBe.horizon"
-          :update-results="updateResults"
-          class="centered-component"
-          style="margin: auto; max-width: 370px; width: 100%"
-          :trainingCompleted="false"
-        />
-        <CallSignTest
-          v-if="currentTraining === 'callsign' && configReady"
-          :callsign-data="configBe.callsign"
-          :update-results="updateResults"
-          ref="callSignTest"
-          class="centered-component"
-        />
-        <ColorTest
-          v-if="currentTraining === 'color_tank' && configReady"
-          :color-tank-data="configBe.color_tank"
-          :update-results="updateResults"
-          :finalScore="results.color_tank.final_score"
-          class="centered-component"
-        />
-        <CircleTest
-          v-if="currentTraining === 'circle_test' && configReady"
-          :alert-lights-data="configBe.alert_lights"
-          :update-results="updateResults"
-          :update-result-light-avg-time="updateResultLightAvgTime"
-          class="centered-component"
-          style="margin: auto; max-width: 370px; width: 100%"
-        />
+        <div v-if="currentTraining !== 'combined'" class="training-container">
+          <HorizonTest
+            v-if="currentTraining === 'horizon' && configReady"
+            :horizon-data="configBe.horizon"
+            :update-results="updateResults"
+            class="centered-component"
+            style="margin: auto; max-width: 370px; width: 100%"
+            :trainingCompleted="false"
+          />
+          <CallSignTest
+            v-if="currentTraining === 'callsign' && configReady"
+            :callsign-data="configBe.callsign"
+            :update-results="updateResults"
+            ref="callSignTest"
+            class="centered-component"
+          />
+          <ColorTest
+            v-if="currentTraining === 'color_tank' && configReady"
+            :color-tank-data="configBe.color_tank"
+            :update-results="updateResults"
+            :finalScore="results.color_tank.final_score"
+            class="centered-component"
+          />
+          <CircleTest
+            v-if="currentTraining === 'circle_test' && configReady"
+            :alert-lights-data="configBe.alert_lights"
+            :update-results="updateResults"
+            :update-result-light-avg-time="updateResultLightAvgTime"
+            class="centered-component"
+            style="margin: auto; max-width: 370px; width: 100%"
+          />
+        </div>
+        <template v-else>
+          <div class="left-side">
+            <ColorTest
+              v-if="configReady"
+              :color-tank-data="configBe.color_tank"
+              :update-results="updateResults"
+              :finalScore="results.color_tank.final_score"
+            />
+          </div>
+          <div class="right-side">
+            <CircleTest
+              v-if="configReady"
+              :alert-lights-data="configBe.alert_lights"
+              :update-results="updateResults"
+              :update-result-light-avg-time="updateResultLightAvgTime"
+              style="margin-bottom: 20px;"
+            />
+            <HorizonTest
+              v-if="configReady"
+              :horizon-data="configBe.horizon"
+              :update-results="updateResults"
+              :trainingCompleted="false"
+              style="margin-bottom: 40px;"
+            />
+            <CallSignTest
+              v-if="configReady"
+              ref="callSignTest"
+              :callsign-data="configBe.callsign"
+              :update-results="updateResults"
+            />
+          </div>
+        </template>
       </div>
 
       <!-- Actual Test Mode -->
+
       <template v-else>
         <div class="left-side">
           <ColorTest
@@ -113,29 +148,40 @@ import ModalComponent from "./Modal.vue";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
 
-const TRAINING_SEQUENCE = ["horizon", "callsign", "color_tank", "circle_test"];
+const TRAINING_SEQUENCE = [
+  "horizon",
+  "callsign",
+  "color_tank",
+  "circle_test",
+  "combined",
+];
 const TRAINING_TIME = 999999; // 1 minute for each training
 
 const TRAINING_INSTRUCTIONS = {
   horizon: {
     title: "Latihan Horizon",
     description:
-      "Anda diminta untuk mengarahkan garis penerbang dengan JOYSTICK mengikuti pergerakan target sampai berwarna HIJAU hingga selesai.<img style='border:1px solid gray' src='devices/mmwcs.png'/>",
+      "Anda diminta untuk mengarahkan garis penerbang dengan JOYSTICK mengikuti pergerakan target sampai berwarna HIJAU hingga selesai.<img style='border:1px solid gray;margin:auto' src='devices/mmwcs.png'/>",
   },
   callsign: {
     title: "Latihan Call Sign",
     description:
-      "Pada latihan ini, Anda akan mendengar beberapa panggilan. Tugas Anda adalah merespon hanya ketika mendengar panggilan yang sesuai dengan call sign Anda. Gunakan tombol spasi untuk merespon. Latihan ini akan berlangsung selama 1 menit.<img style='border:1px solid gray' src='devices/mmwcs_2.png'/>",
+      "Pada latihan ini, Anda akan mendengar beberapa panggilan. Tugas Anda adalah merespon hanya ketika mendengar panggilan yang sesuai dengan call sign Anda. Gunakan tombol spasi untuk merespon. Latihan ini akan berlangsung selama 1 menit.<img style='border:1px solid gray;margin:auto' src='devices/mmwcs_2.png'/>",
   },
   color_tank: {
     title: "Latihan Color Tank",
     description:
-      "Anda diminta untuk mengisi tank bagian bawah (ASDF), dari tank bagian atas (QWER) dengan cara menekan salah satu tank yang berada diatas lalu menekan 2 tank yang berada di bawah dengan warna yang sama. (Contoh: Tank yang kosong berwarna MERAH, maka anda harus menyentuh huruf R (TANK ATAS MERAH), lalu menyentuh D & F (TANK BAWAH MERAH). <img style='border:1px solid gray' src='devices/mmwcs_3.png'/>",
+      "Anda diminta untuk mengisi tank bagian bawah (ASDF), dari tank bagian atas (QWER) dengan cara menekan salah satu tank yang berada diatas lalu menekan 2 tank yang berada di bawah dengan warna yang sama. (Contoh: Tank yang kosong berwarna MERAH, maka anda harus menyentuh huruf R (TANK ATAS MERAH), lalu menyentuh D & F (TANK BAWAH MERAH). <img style='border:1px solid gray;margin:auto' src='devices/mmwcs_3.png'/>",
   },
   circle_test: {
     title: "Latihan Rambu Peringatan",
     description:
-      "Anda diminta untuk merespon bila huruf berwarna MERAH maka TEKAN HURUF WARNA MERAH pada layar, bila huruf berwarna KUNING maka ABAIKAN. <img style='border:1px solid gray' src='devices/mmwcs_4.png'/>",
+      "Anda diminta untuk merespon bila huruf berwarna MERAH maka TEKAN HURUF WARNA MERAH pada layar, bila huruf berwarna KUNING maka ABAIKAN. <img style='border:1px solid gray;margin:auto' src='devices/mmwcs_4.png'/>",
+  },
+  combined: {
+    title: "Latihan Gabungan",
+    description:
+      "Latihan gabungan akan menggabungkan semua tugas yang telah Anda latih sebelumnya. Anda akan melalui semua tugas yang telah Anda latih sebelumnya dalam satu sesi.",
   },
 };
 
