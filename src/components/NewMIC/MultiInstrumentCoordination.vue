@@ -1,138 +1,193 @@
 <template>
-    <div class="pilot-exam">
-        <Transition name="modal">
-            <div v-if="showStartModal" class="modal-overlay">
-                <div class="modal-container">
-                    <div class="modal-content">
-                        <h2 class="modal-title">Monitoring & Instrument Coordination Test</h2>
-                        <div class="modal-body">
-                            <p>Dalam tes ini, Anda perlu:</p>
-                            <ul class="modal-list">
-                                <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
-                                <li>Menjaga indikator dalam rentang target</li>
-                                <li>Mendengarkan urutan angka dan mengidentifikasi apakah semuanya ganjil atau genap
-                                </li>
-                            </ul>
-                            <p class="modal-footer-text">Klik OK saat Anda siap untuk memulai.</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">Mulai Latihan</button>
-                        </div>
-                    </div>
-                </div>
+  <div class="pilot-exam">
+    <Transition name="modal">
+      <div v-if="showStartModal" class="modal-overlay">
+        <div class="modal-container">
+          <div class="modal-content">
+            <div class="modal-body">
+              <p>Dalam tes ini, Anda perlu:</p>
+              <ul class="modal-list">
+                <li>
+                  Mengendalikan indikator pesawat menggunakan joystick dan
+                  throttle
+                </li>
+                <li>Menjaga indikator dalam rentang target</li>
+                <li>
+                  Mendengarkan urutan angka dan mengidentifikasi apakah semuanya
+                  ganjil atau genap
+                </li>
+              </ul>
             </div>
-        </Transition>
-        <div class="countdown-timer">{{ formatTime(config.totalDuration) }}</div>
-        <div class="control-mode-toggle">
-            <button @click="toggleControlMode">
-                {{ controlMode === 'joystick' ? 'Switch to Manual Control' : 'Switch to Joystick Control' }}
-            </button>
+            <div class="modal-footer">
+              <button
+                class="modal-button bg-green-500 mr-4"
+                @click="handleStartExam"
+              >
+                Mulai Latihan
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="manual-control-instructions" v-if="controlMode === 'manual'">
-            <p>Manual Controls:</p>
-            <ul>
-                <li>Arrow Keys: Control heading and altitude</li>
-                <li>W: Increase thrust</li>
-                <li>S: Decrease thrust</li>
-            </ul>
-        </div>
-        <div class="indicators place-items-center">
-            <div class="indicator-wrapper col-span-3" :class="{ 'blink': isHeadingOutOfTarget }">
-                <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
-                <div class="target-text">
-                    Target: {{ Math.round(headingTarget) }}°
-                    <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
-                </div>
-            </div>
-            <div class="indicator-wrapper col-span-1" :class="{ 'blink': isAirspeedOutOfTarget }">
-                <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
-                <div class="thruster-indicator">
-                    <div class="thruster-bar">
-                        <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
-                    </div>
-                    <div class="thruster-value">Thrust: {{ Math.round(thrustLevel) }}%</div>
-                </div>
-                <div class="target-text">
-                    Target: {{ Math.round(airspeedTarget) }} knots
-                    <span v-if="airspeedChangeDirection"
-                        :class="['direction-indicator', airspeedChangeDirection]"></span>
-                </div>
-            </div>
-            <div class="indicator-wrapper col-span-1" :class="{ 'blink': isAltitudeOutOfTarget }">
-                <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
-            </div>
-            <div class="indicator-wrapper col-span-1" :class="{ 'blink': isAltitudeOutOfTarget }">
-                <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
-                <div class="target-text">
-                    Target: {{ Math.round(altitudeTarget) }} ft
-                    <span v-if="altitudeChangeDirection"
-                        :class="['direction-indicator', altitudeChangeDirection]"></span>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Audio Test Controls -->
-        <div class="audio-test">
-            <div class="number-display">
-                Dengarkan dan pilih apakah semua angka yang Anda dengar adalah genap atau ganjil.
-            </div>
-            <div class="response-buttons">
-                <button class="btn-red" @click="handleAudioResponse('odd')" :disabled="!canRespond">
-                    Ganjil
-                </button>
-                <button class="btn-green" @click="handleAudioResponse('even')" :disabled="!canRespond">
-                    Genap
-                </button>
-            </div>
-        </div>
-        <div v-if="examRunning">
-            <p>Score: {{ score }}</p>
-        </div>
+      </div>
+    </Transition>
+    <div class="countdown-timer">{{ formatTime(config.totalDuration) }}</div>
+    <div class="control-mode-toggle">
+      <button @click="toggleControlMode">
+        {{
+          controlMode === "joystick"
+            ? "Switch to Manual Control"
+            : "Switch to Joystick Control"
+        }}
+      </button>
     </div>
+    <div class="manual-control-instructions" v-if="controlMode === 'manual'">
+      <p>Manual Controls:</p>
+      <ul>
+        <li>Arrow Keys: Control heading and altitude</li>
+        <li>W: Increase thrust</li>
+        <li>S: Decrease thrust</li>
+      </ul>
+    </div>
+    <div class="indicators place-items-center">
+      <div
+        class="indicator-wrapper col-span-3"
+        :class="{ blink: isHeadingOutOfTarget }"
+      >
+        <Heading
+          class="indicator-bg"
+          :size="200"
+          :heading="Math.round(heading)"
+        />
+        <div class="target-text">
+          Target: {{ Math.round(headingTarget) }}°
+          <span
+            v-if="headingChangeDirection"
+            :class="['direction-indicator', headingChangeDirection]"
+          ></span>
+        </div>
+      </div>
+      <div
+        class="indicator-wrapper col-span-1"
+        :class="{ blink: isAirspeedOutOfTarget }"
+      >
+        <Airspeed
+          class="indicator-bg"
+          :size="200"
+          :airspeed="Math.round(airspeed)"
+        />
+        <div class="thruster-indicator">
+          <div class="thruster-bar">
+            <div
+              class="thruster-fill"
+              :style="{ height: `${thrustLevel}%` }"
+            ></div>
+          </div>
+          <div class="thruster-value">
+            Thrust: {{ Math.round(thrustLevel) }}%
+          </div>
+        </div>
+        <div class="target-text">
+          Target: {{ Math.round(airspeedTarget) }} knots
+          <span
+            v-if="airspeedChangeDirection"
+            :class="['direction-indicator', airspeedChangeDirection]"
+          ></span>
+        </div>
+      </div>
+      <div
+        class="indicator-wrapper col-span-1"
+        :class="{ blink: isAltitudeOutOfTarget }"
+      >
+        <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
+      </div>
+      <div
+        class="indicator-wrapper col-span-1"
+        :class="{ blink: isAltitudeOutOfTarget }"
+      >
+        <Altimeter
+          class="indicator-bg"
+          :size="200"
+          :altitude="Math.round(altitude)"
+        />
+        <div class="target-text">
+          Target: {{ Math.round(altitudeTarget) }} ft
+          <span
+            v-if="altitudeChangeDirection"
+            :class="['direction-indicator', altitudeChangeDirection]"
+          ></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio Test Controls -->
+    <div class="audio-test">
+      <div class="number-display">
+        Dengarkan dan pilih apakah semua angka yang Anda dengar adalah genap
+        atau ganjil.
+      </div>
+      <div class="response-buttons">
+        <button
+          class="btn-red"
+          @click="handleAudioResponse('odd')"
+          :disabled="!canRespond"
+        >
+          Ganjil
+        </button>
+        <button
+          class="btn-green"
+          @click="handleAudioResponse('even')"
+          :disabled="!canRespond"
+        >
+          Genap
+        </button>
+      </div>
+    </div>
+    <div v-if="examRunning">
+      <p>Score: {{ score }}</p>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Altimeter, Airspeed, Heading } from 'vue-flight-indicators';
+import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { Altimeter, Airspeed, Heading } from "vue-flight-indicators";
 import AnalogClock from "./AnalogClock.vue";
-import { useRouter } from 'vue-router';
-
+import { useRouter } from "vue-router";
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
-    HEADING: 0.2,
-    ALTITUDE: 2,
-    THRUST_RESPONSE: 1,
-    MIN_AIRSPEED: 60,
-    MAX_AIRSPEED: 160,
-    GRAVITY_EFFECT: 0.08,
-    VERTICAL_SPEED_MULTIPLIER: 1.2,
-    TARGET_CHANGE_RATE: 1,
-    ACCELERATION_RATE: 0.001,     // Increased from 0.000001
-    DECELERATION_RATE: 0.0008,     // Increased from 0.000001
-    DRAG_COEFFICIENT: 0.00015,     // Adjusted to match new acceleration
-    MOMENTUM_RETENTION: 0.98,      // Slightly reduced from 1 to allow for more responsive changes
-    ENGINE_IDLE_THRUST: 15,
-    ALTITUDE_EFFECT_RATE: 0.0004,
-    MAX_ALTITUDE_EFFECT: 5,
-    THRUST_MULTIPLIER: 4,    // New: how much momentum is retained (close to 1)
+  HEADING: 0.2,
+  ALTITUDE: 2,
+  THRUST_RESPONSE: 1,
+  MIN_AIRSPEED: 60,
+  MAX_AIRSPEED: 160,
+  GRAVITY_EFFECT: 0.08,
+  VERTICAL_SPEED_MULTIPLIER: 1.2,
+  TARGET_CHANGE_RATE: 1,
+  ACCELERATION_RATE: 0.001, // Increased from 0.000001
+  DECELERATION_RATE: 0.0008, // Increased from 0.000001
+  DRAG_COEFFICIENT: 0.00015, // Adjusted to match new acceleration
+  MOMENTUM_RETENTION: 0.98, // Slightly reduced from 1 to allow for more responsive changes
+  ENGINE_IDLE_THRUST: 15,
+  ALTITUDE_EFFECT_RATE: 0.0004,
+  MAX_ALTITUDE_EFFECT: 5,
+  THRUST_MULTIPLIER: 4, // New: how much momentum is retained (close to 1)
 };
 
 //  manual input
-const controlMode = ref('joystick');
+const controlMode = ref("joystick");
 const manualInput = ref({
-    up: false,    // Increase altitude
-    down: false,  // Decrease altitude
-    left: false,  // Decrease heading
-    right: false, // Increase heading
-    thrustUp: false, // Increase thrust
-    thrustDown: false, // Decrease thrust
+  up: false, // Increase altitude
+  down: false, // Decrease altitude
+  left: false, // Decrease heading
+  right: false, // Increase heading
+  thrustUp: false, // Increase thrust
+  thrustDown: false, // Decrease thrust
 });
 
 // State
-const mode = ref('moving');
+const mode = ref("moving");
 const examRunning = ref(false);
 const airspeed = ref(100);
 const heading = ref(0);
@@ -179,64 +234,66 @@ const headingPerformanceData = ref([]);
 const airspeedPerformanceData = ref([]);
 const altitudePerformanceData = ref([]);
 const config = ref({
-    configs: [],
-    totalDuration: 0
+  configs: [],
+  totalDuration: 0,
 });
 const lastRecordedTime = ref(Date.now());
 const userInputs = ref([]);
 
 // Computed properties
 const isAirspeedOutOfTarget = computed(() => {
-    const currentConfig = config.value.configs[currentConfigIndex.value];
-    if (currentConfig?.airspeed === 'inactive') return false;
-    return Math.abs(airspeed.value - airspeedTarget.value) > 5;
+  const currentConfig = config.value.configs[currentConfigIndex.value];
+  if (currentConfig?.airspeed === "inactive") return false;
+  return Math.abs(airspeed.value - airspeedTarget.value) > 5;
 });
 
 const isHeadingOutOfTarget = computed(() => {
-    const currentConfig = config.value.configs[currentConfigIndex.value];
-    if (currentConfig?.compass === 'inactive') return false;
-    const diff = Math.abs(heading.value - headingTarget.value);
-    return Math.min(diff, 360 - diff) > 5;
+  const currentConfig = config.value.configs[currentConfigIndex.value];
+  if (currentConfig?.compass === "inactive") return false;
+  const diff = Math.abs(heading.value - headingTarget.value);
+  return Math.min(diff, 360 - diff) > 5;
 });
 
 const isAltitudeOutOfTarget = computed(() => {
-    const currentConfig = config.value.configs[currentConfigIndex.value];
-    if (currentConfig?.altimeter === 'inactive') return false;
-    return Math.abs(altitude.value - altitudeTarget.value) > 100;
+  const currentConfig = config.value.configs[currentConfigIndex.value];
+  if (currentConfig?.altimeter === "inactive") return false;
+  return Math.abs(altitude.value - altitudeTarget.value) > 100;
 });
 
 const verticalSpeed = computed(() => {
-    return altitude.value - lastAltitude.value;
+  return altitude.value - lastAltitude.value;
 });
 
 const toggleControlMode = () => {
-    controlMode.value = controlMode.value === 'joystick' ? 'manual' : 'joystick';
+  controlMode.value = controlMode.value === "joystick" ? "manual" : "joystick";
 };
 
 // Utility functions
 const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
 };
 
 const generateRandomNumber = () => Math.floor(Math.random() * 10);
 
 const speakNumber = (number) => {
-    const utterance = new SpeechSynthesisUtterance(number.toString());
-    utterance.lang = 'id-ID'; // Set language
-    utterance.volume = 5;     // Maximum volume
-    utterance.rate = 1;       // Normal speed
-    utterance.pitch = 1;      // Normal pitch
+  const utterance = new SpeechSynthesisUtterance(number.toString());
+  utterance.lang = "id-ID"; // Set language
+  utterance.volume = 5; // Maximum volume
+  utterance.rate = 1; // Normal speed
+  utterance.pitch = 1; // Normal pitch
 
-    // Cancel any ongoing speech
-    synthesis.cancel();
+  // Cancel any ongoing speech
+  synthesis.cancel();
 
-    // Speak the new number
-    synthesis.speak(utterance);
+  // Speak the new number
+  synthesis.speak(utterance);
 
-    // Log for debugging
-    console.log('Speaking number:', number);
+  // Log for debugging
+  console.log("Speaking number:", number);
 };
 
 // const initSounds = () => {
@@ -349,643 +406,699 @@ const speakNumber = (number) => {
 
 // Add this method and call it on first user interaction
 const initAudioContext = () => {
-    if (audioContext.value === null) {
-        // initSounds();
-    } else if (audioContext.value.state === 'suspended') {
-        // audioContext.value.resume();
-    }
+  if (audioContext.value === null) {
+    // initSounds();
+  } else if (audioContext.value.state === "suspended") {
+    // audioContext.value.resume();
+  }
 };
 
 const updateSounds = () => {
-    if (!audioContext.value || !engineGain.value) return;
+  if (!audioContext.value || !engineGain.value) return;
 
-    // Ensure minimum thrust for idle
-    const effectiveThrust = Math.max(MOVEMENT_SPEED.ENGINE_IDLE_THRUST, thrustLevel.value);
+  // Ensure minimum thrust for idle
+  const effectiveThrust = Math.max(
+    MOVEMENT_SPEED.ENGINE_IDLE_THRUST,
+    thrustLevel.value
+  );
 
-    // Calculate base frequency with idle minimum
-    const baseFreq = 30 + (Math.pow(effectiveThrust / 100, 0.7) * 30);
+  // Calculate base frequency with idle minimum
+  const baseFreq = 30 + Math.pow(effectiveThrust / 100, 0.7) * 30;
 
-    // Calculate RPM factor based on actual airspeed rather than thrust
-    const rpmFactor = Math.pow(
-        (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
-        (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
-        0.8
+  // Calculate RPM factor based on actual airspeed rather than thrust
+  const rpmFactor = Math.pow(
+    (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
+      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
+    0.8
+  );
+
+  // Add altitude effect to sound (higher altitude = thinner air = higher pitch)
+  const altitudePitchEffect = (altitude.value / 10000) * 5; // 5Hz variation across full altitude range
+
+  // Add vertical speed effect (diving increases pitch, climbing decreases)
+  const verticalSpeedEffect =
+    (verticalSpeed.value / MOVEMENT_SPEED.ALTITUDE) * 3; // 3Hz variation for max climb/dive rate
+
+  if (baseOscillator.value) {
+    // Base engine sound - mostly affected by thrust
+    baseOscillator.value.frequency.setTargetAtTime(
+      baseFreq + altitudePitchEffect,
+      audioContext.value.currentTime,
+      0.1
     );
 
-    // Add altitude effect to sound (higher altitude = thinner air = higher pitch)
-    const altitudePitchEffect = (altitude.value / 10000) * 5; // 5Hz variation across full altitude range
-
-    // Add vertical speed effect (diving increases pitch, climbing decreases)
-    const verticalSpeedEffect = (verticalSpeed.value / MOVEMENT_SPEED.ALTITUDE) * 3; // 3Hz variation for max climb/dive rate
-
-    if (baseOscillator.value) {
-        // Base engine sound - mostly affected by thrust
-        baseOscillator.value.frequency.setTargetAtTime(
-            baseFreq + altitudePitchEffect,
-            audioContext.value.currentTime,
-            0.1
-        );
-
-        // Propeller sound - more affected by actual airspeed
-        propellerOscillator.value.frequency.setTargetAtTime(
-            70 + (rpmFactor * 50) + altitudePitchEffect + verticalSpeedEffect,
-            audioContext.value.currentTime,
-            0.1
-        );
-
-        // Harmonics - blend of thrust and airspeed effects
-        harmonic1.value.frequency.setTargetAtTime(
-            baseFreq * 3 + (rpmFactor * 20) + altitudePitchEffect,
-            audioContext.value.currentTime,
-            0.1
-        );
-
-        harmonic2.value.frequency.setTargetAtTime(
-            baseFreq * 4 + (rpmFactor * 25) + altitudePitchEffect,
-            audioContext.value.currentTime,
-            0.1
-        );
-    }
-
-    // Volume based on thrust but with minimum idle level
-    const idleVolume = 0.1;
-    const thrustVolume = Math.pow(effectiveThrust / 100, 1.2) * 0.3;
-    const engineVolume = idleVolume + thrustVolume;
-
-    engineGain.value.gain.setTargetAtTime(
-        Math.min(0.4, engineVolume),
-        audioContext.value.currentTime,
-        0.1
+    // Propeller sound - more affected by actual airspeed
+    propellerOscillator.value.frequency.setTargetAtTime(
+      70 + rpmFactor * 50 + altitudePitchEffect + verticalSpeedEffect,
+      audioContext.value.currentTime,
+      0.1
     );
+
+    // Harmonics - blend of thrust and airspeed effects
+    harmonic1.value.frequency.setTargetAtTime(
+      baseFreq * 3 + rpmFactor * 20 + altitudePitchEffect,
+      audioContext.value.currentTime,
+      0.1
+    );
+
+    harmonic2.value.frequency.setTargetAtTime(
+      baseFreq * 4 + rpmFactor * 25 + altitudePitchEffect,
+      audioContext.value.currentTime,
+      0.1
+    );
+  }
+
+  // Volume based on thrust but with minimum idle level
+  const idleVolume = 0.1;
+  const thrustVolume = Math.pow(effectiveThrust / 100, 1.2) * 0.3;
+  const engineVolume = idleVolume + thrustVolume;
+
+  engineGain.value.gain.setTargetAtTime(
+    Math.min(0.4, engineVolume),
+    audioContext.value.currentTime,
+    0.1
+  );
 };
 
 // Gamepad handling
 const checkGamepadConnection = () => {
-    const gamepads = navigator.getGamepads();
-    for (let i = 0; i < gamepads.length; i++) {
-        if (gamepads[i]) {
-            if (gamepads[i].id === 'T.16000M (Vendor: 044f Product: b10a)') {
-                gamepad.value = gamepads[i];
-            } else if (gamepads[i].id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
-                thruster.value = gamepads[i];
-            }
-        }
+  const gamepads = navigator.getGamepads();
+  for (let i = 0; i < gamepads.length; i++) {
+    if (gamepads[i]) {
+      if (gamepads[i].id === "T.16000M (Vendor: 044f Product: b10a)") {
+        gamepad.value = gamepads[i];
+      } else if (
+        gamepads[i].id === "TWCS Throttle (Vendor: 044f Product: b687)"
+      ) {
+        thruster.value = gamepads[i];
+      }
     }
+  }
 };
 
 const onGamepadConnected = (e) => {
-    if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
-        gamepad.value = e.gamepad;
-    } else if (e.gamepad.id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
-        thruster.value = e.gamepad;
-    }
+  if (e.gamepad.id === "T.16000M (Vendor: 044f Product: b10a)") {
+    gamepad.value = e.gamepad;
+  } else if (e.gamepad.id === "TWCS Throttle (Vendor: 044f Product: b687)") {
+    thruster.value = e.gamepad;
+  }
 };
 
 const onGamepadDisconnected = (e) => {
-    if (e.gamepad.id === 'T.16000M (Vendor: 044f Product: b10a)') {
-        gamepad.value = null;
-    } else if (e.gamepad.id === 'TWCS Throttle (Vendor: 044f Product: b687)') {
-        thruster.value = null;
-    }
+  if (e.gamepad.id === "T.16000M (Vendor: 044f Product: b10a)") {
+    gamepad.value = null;
+  } else if (e.gamepad.id === "TWCS Throttle (Vendor: 044f Product: b687)") {
+    thruster.value = null;
+  }
 };
 
 // Constants for audio test
 const AUDIO_TEST = {
-    SEQUENCE_PAUSE: 15000,
-    NUMBER_INTERVAL: 1000,
-    RESPONSE_WINDOW: 15000
+  SEQUENCE_PAUSE: 15000,
+  NUMBER_INTERVAL: 1000,
+  RESPONSE_WINDOW: 15000,
 };
 
 // Audio test functions
 const startAudioSequence = () => {
-    if (!examRunning.value) return;
+  if (!examRunning.value) return;
 
-    const numbers = [generateRandomNumber(), generateRandomNumber(), generateRandomNumber()];
-    displayedNumbers.value = numbers;
+  const numbers = [
+    generateRandomNumber(),
+    generateRandomNumber(),
+    generateRandomNumber(),
+  ];
+  displayedNumbers.value = numbers;
 
-    let index = 0;
-    const speakNextNumber = () => {
-        if (index < numbers.length) {
-            speakNumber(numbers[index]);
-            index++;
-            setTimeout(speakNextNumber, AUDIO_TEST.NUMBER_INTERVAL);
-        } else {
-            canRespond.value = true;
-            currentAudioStart.value = Date.now();
+  let index = 0;
+  const speakNextNumber = () => {
+    if (index < numbers.length) {
+      speakNumber(numbers[index]);
+      index++;
+      setTimeout(speakNextNumber, AUDIO_TEST.NUMBER_INTERVAL);
+    } else {
+      canRespond.value = true;
+      currentAudioStart.value = Date.now();
 
-            audioTimeout.value = setTimeout(() => {
-                if (canRespond.value) {
-                    handleNoResponse();
-                }
-            }, AUDIO_TEST.RESPONSE_WINDOW);
+      audioTimeout.value = setTimeout(() => {
+        if (canRespond.value) {
+          handleNoResponse();
         }
-    };
+      }, AUDIO_TEST.RESPONSE_WINDOW);
+    }
+  };
 
-    speakNextNumber();
+  speakNextNumber();
 };
 
 const handleAudioResponse = (response) => {
-    if (!canRespond.value) return;
+  if (!canRespond.value) return;
 
-    clearTimeout(audioTimeout.value);
-    const responseTime = Date.now() - currentAudioStart.value;
+  clearTimeout(audioTimeout.value);
+  const responseTime = Date.now() - currentAudioStart.value;
 
-    const allEven = displayedNumbers.value.every(num => num % 2 === 0);
-    const allOdd = displayedNumbers.value.every(num => num % 2 === 1);
-    const isCorrect = (allEven && response === 'even') || (allOdd && response === 'odd');
+  const allEven = displayedNumbers.value.every((num) => num % 2 === 0);
+  const allOdd = displayedNumbers.value.every((num) => num % 2 === 1);
+  const isCorrect =
+    (allEven && response === "even") || (allOdd && response === "odd");
 
-    audioResponses.value.push({
-        numbers: [...displayedNumbers.value],
-        response,
-        responseTime,
-        correct: isCorrect,
-        configIndex: currentConfigIndex.value
-    });
+  audioResponses.value.push({
+    numbers: [...displayedNumbers.value],
+    response,
+    responseTime,
+    correct: isCorrect,
+    configIndex: currentConfigIndex.value,
+  });
 
-    // graph data
-    userInputs.value.push({
-        type: isCorrect ? "correct" : "wrong",
-        responseTime,
-        timestamp: Date.now(),
-    });
+  // graph data
+  userInputs.value.push({
+    type: isCorrect ? "correct" : "wrong",
+    responseTime,
+    timestamp: Date.now(),
+  });
 
-    canRespond.value = false;
-    displayedNumbers.value = [];
+  canRespond.value = false;
+  displayedNumbers.value = [];
 
-    setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
+  setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
 };
 
 const handleNoResponse = () => {
-    audioResponses.value.push({
-        numbers: [...displayedNumbers.value],
-        response: 'none',
-        responseTime: AUDIO_TEST.RESPONSE_WINDOW,
-        correct: false,
-        configIndex: currentConfigIndex.value
-    });
+  audioResponses.value.push({
+    numbers: [...displayedNumbers.value],
+    response: "none",
+    responseTime: AUDIO_TEST.RESPONSE_WINDOW,
+    correct: false,
+    configIndex: currentConfigIndex.value,
+  });
 
-    canRespond.value = false;
-    displayedNumbers.value = [];
+  canRespond.value = false;
+  displayedNumbers.value = [];
 
-    setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
+  setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
 };
 
 const cancelAudioSequence = () => {
-    clearTimeout(audioTimeout.value);
-    synthesis.cancel();
-    displayedNumbers.value = [];
-    canRespond.value = false;
+  clearTimeout(audioTimeout.value);
+  synthesis.cancel();
+  displayedNumbers.value = [];
+  canRespond.value = false;
 };
 
 // Update the plane position function
 const updatePlanePosition = () => {
-    lastAltitude.value = altitude.value;
+  lastAltitude.value = altitude.value;
 
-    // Handle joystick controls...
-    if (controlMode.value === 'joystick') {
-        if (gamepad.value) {
-            const stick = navigator.getGamepads()[gamepad.value.index];
-            if (stick) {
-                const headingChange = stick.axes[0] * MOVEMENT_SPEED.HEADING;
-                heading.value = (heading.value + headingChange + 360) % 360;
-
-                const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
-                altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
-            }
-        }
-
-        if (thruster.value) {
-            const throttle = navigator.getGamepads()[thruster.value.index];
-            if (throttle) {
-                thrustLevel.value = (1 - throttle.axes[2]) * 100;
-            }
-        }
-    } else if (controlMode.value === 'manual') {
-        // this is the manual input to test without joystick
-        let headingChange = 0;
-        let altitudeChange = 0;
-
-        if (manualInput.value.left) {
-            headingChange = -MOVEMENT_SPEED.HEADING; // Turn left
-        }
-        if (manualInput.value.right) {
-            headingChange = MOVEMENT_SPEED.HEADING; // Turn right
-        }
-        if (manualInput.value.up) {
-            altitudeChange = MOVEMENT_SPEED.ALTITUDE; // Increase altitude
-        }
-        if (manualInput.value.down) {
-            altitudeChange = -MOVEMENT_SPEED.ALTITUDE; // Decrease altitude
-        }
-
-        // Apply changes to heading and altitude
+  // Handle joystick controls...
+  if (controlMode.value === "joystick") {
+    if (gamepad.value) {
+      const stick = navigator.getGamepads()[gamepad.value.index];
+      if (stick) {
+        const headingChange = stick.axes[0] * MOVEMENT_SPEED.HEADING;
         heading.value = (heading.value + headingChange + 360) % 360;
-        altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
 
-        // Update thrust based on manual input
-        if (manualInput.value.thrustUp) {
-            thrustLevel.value = Math.min(100, thrustLevel.value + MOVEMENT_SPEED.THRUST_RESPONSE); // Increase thrust
-        }
-        if (manualInput.value.thrustDown) {
-            thrustLevel.value = Math.max(0, thrustLevel.value - MOVEMENT_SPEED.THRUST_RESPONSE); // Decrease thrust
-        }
+        const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
+        altitude.value = Math.max(
+          0,
+          Math.min(10000, altitude.value + altitudeChange)
+        );
+      }
     }
 
-    // Calculate air density factor (thinner air at higher altitudes)
-    const altitudeFactor = 1 - (altitude.value / 20000); // Simplified air density calculation
-
-    // Calculate drag (increases with speed)
-    const dragForce = Math.pow(airspeed.value / 100, 2) * MOVEMENT_SPEED.DRAG_COEFFICIENT * altitudeFactor;
-
-    // Calculate vertical speed effects
-    const altitudeEffect = verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
-    const clampedAltitudeEffect = Math.max(
-        -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
-        Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
-    );
-
-    // Calculate target speed based on thrust
-    targetSpeed.value = MOVEMENT_SPEED.MIN_AIRSPEED +
-        ((MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) * (thrustLevel.value / 100));
-
-    // Calculate acceleration more realistically
-    const speedDifference = targetSpeed.value - airspeed.value;
-    const accelerationRate = speedDifference > 0 ?
-        MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor :
-        MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
-
-    // Update acceleration with momentum
-    currentAcceleration.value += speedDifference * accelerationRate;
-    currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;  // Maintain momentum
-
-    // Apply drag
-    currentAcceleration.value -= dragForce;
-
-    // Apply altitude effects
-    currentAcceleration.value -= clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
-
-    // Update airspeed
-    airspeed.value = Math.max(
-        MOVEMENT_SPEED.MIN_AIRSPEED,
-        Math.min(
-            MOVEMENT_SPEED.MAX_AIRSPEED,
-            airspeed.value + currentAcceleration.value
-        )
-    );
-
-    // Debug logging - remove in production
-    if (Math.random() < 0.01) { // Log only occasionally to avoid spam
-        console.log({
-            currentSpeed: Math.round(airspeed.value),
-            targetSpeed: Math.round(targetSpeed.value),
-            acceleration: currentAcceleration.value,
-            drag: dragForce,
-            altitudeEffect: clampedAltitudeEffect
-        });
+    if (thruster.value) {
+      const throttle = navigator.getGamepads()[thruster.value.index];
+      if (throttle) {
+        thrustLevel.value = (1 - throttle.axes[2]) * 100;
+      }
     }
+  } else if (controlMode.value === "manual") {
+    // this is the manual input to test without joystick
+    let headingChange = 0;
+    let altitudeChange = 0;
+
+    if (manualInput.value.left) {
+      headingChange = -MOVEMENT_SPEED.HEADING; // Turn left
+    }
+    if (manualInput.value.right) {
+      headingChange = MOVEMENT_SPEED.HEADING; // Turn right
+    }
+    if (manualInput.value.up) {
+      altitudeChange = MOVEMENT_SPEED.ALTITUDE; // Increase altitude
+    }
+    if (manualInput.value.down) {
+      altitudeChange = -MOVEMENT_SPEED.ALTITUDE; // Decrease altitude
+    }
+
+    // Apply changes to heading and altitude
+    heading.value = (heading.value + headingChange + 360) % 360;
+    altitude.value = Math.max(
+      0,
+      Math.min(10000, altitude.value + altitudeChange)
+    );
+
+    // Update thrust based on manual input
+    if (manualInput.value.thrustUp) {
+      thrustLevel.value = Math.min(
+        100,
+        thrustLevel.value + MOVEMENT_SPEED.THRUST_RESPONSE
+      ); // Increase thrust
+    }
+    if (manualInput.value.thrustDown) {
+      thrustLevel.value = Math.max(
+        0,
+        thrustLevel.value - MOVEMENT_SPEED.THRUST_RESPONSE
+      ); // Decrease thrust
+    }
+  }
+
+  // Calculate air density factor (thinner air at higher altitudes)
+  const altitudeFactor = 1 - altitude.value / 20000; // Simplified air density calculation
+
+  // Calculate drag (increases with speed)
+  const dragForce =
+    Math.pow(airspeed.value / 100, 2) *
+    MOVEMENT_SPEED.DRAG_COEFFICIENT *
+    altitudeFactor;
+
+  // Calculate vertical speed effects
+  const altitudeEffect =
+    verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
+  const clampedAltitudeEffect = Math.max(
+    -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
+    Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
+  );
+
+  // Calculate target speed based on thrust
+  targetSpeed.value =
+    MOVEMENT_SPEED.MIN_AIRSPEED +
+    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
+      (thrustLevel.value / 100);
+
+  // Calculate acceleration more realistically
+  const speedDifference = targetSpeed.value - airspeed.value;
+  const accelerationRate =
+    speedDifference > 0
+      ? MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor
+      : MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
+
+  // Update acceleration with momentum
+  currentAcceleration.value += speedDifference * accelerationRate;
+  currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION; // Maintain momentum
+
+  // Apply drag
+  currentAcceleration.value -= dragForce;
+
+  // Apply altitude effects
+  currentAcceleration.value -=
+    clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
+
+  // Update airspeed
+  airspeed.value = Math.max(
+    MOVEMENT_SPEED.MIN_AIRSPEED,
+    Math.min(
+      MOVEMENT_SPEED.MAX_AIRSPEED,
+      airspeed.value + currentAcceleration.value
+    )
+  );
+
+  // Debug logging - remove in production
+  if (Math.random() < 0.01) {
+    // Log only occasionally to avoid spam
+    console.log({
+      currentSpeed: Math.round(airspeed.value),
+      targetSpeed: Math.round(targetSpeed.value),
+      acceleration: currentAcceleration.value,
+      drag: dragForce,
+      altitudeEffect: clampedAltitudeEffect,
+    });
+  }
 };
 
-
 const updateScore = () => {
-    const currentConfig = config.value.configs[currentConfigIndex.value];
+  const currentConfig = config.value.configs[currentConfigIndex.value];
 
-    if (currentConfig?.airspeed !== 'inactive' && !isAirspeedOutOfTarget.value) {
-        timeOnTargetAirspeed.value += 1 / 60;
-    }
-    if (currentConfig?.compass !== 'inactive' && !isHeadingOutOfTarget.value) {
-        timeOnTargetHeading.value += 1 / 60;
-    }
-    if (currentConfig?.altimeter !== 'inactive' && !isAltitudeOutOfTarget.value) {
-        timeOnTargetAltitude.value += 1 / 60;
-    }
+  if (currentConfig?.airspeed !== "inactive" && !isAirspeedOutOfTarget.value) {
+    timeOnTargetAirspeed.value += 1 / 60;
+  }
+  if (currentConfig?.compass !== "inactive" && !isHeadingOutOfTarget.value) {
+    timeOnTargetHeading.value += 1 / 60;
+  }
+  if (currentConfig?.altimeter !== "inactive" && !isAltitudeOutOfTarget.value) {
+    timeOnTargetAltitude.value += 1 / 60;
+  }
 
-    if ((!isAirspeedOutOfTarget.value || currentConfig?.airspeed === 'inactive') &&
-        (!isHeadingOutOfTarget.value || currentConfig?.compass === 'inactive') &&
-        (!isAltitudeOutOfTarget.value || currentConfig?.altimeter === 'inactive')) {
-        score.value += 1;
-    }
+  if (
+    (!isAirspeedOutOfTarget.value || currentConfig?.airspeed === "inactive") &&
+    (!isHeadingOutOfTarget.value || currentConfig?.compass === "inactive") &&
+    (!isAltitudeOutOfTarget.value || currentConfig?.altimeter === "inactive")
+  ) {
+    score.value += 1;
+  }
 };
 
 const moveToNextConfig = () => {
-    const nextIndex = currentConfigIndex.value + 1;
-    console.log(nextIndex, config.value.configs.length, "<< nextIndex")
-    if (config.value.totalDuration <= 0) {
-        endExam();
-        return;
-    }
-    if (nextIndex <= config.value.configs.length) {
-        currentConfigIndex.value = nextIndex;
-        // Reset targets for new config
-        airspeedTarget.value = airspeed.value;
-        headingTarget.value = heading.value;
-        altitudeTarget.value = altitude.value;
+  const nextIndex = currentConfigIndex.value + 1;
+  console.log(nextIndex, config.value.configs.length, "<< nextIndex");
+  if (config.value.totalDuration <= 0) {
+    endExam();
+    return;
+  }
+  if (nextIndex <= config.value.configs.length) {
+    currentConfigIndex.value = nextIndex;
+    // Reset targets for new config
+    airspeedTarget.value = airspeed.value;
+    headingTarget.value = heading.value;
+    altitudeTarget.value = altitude.value;
 
-        startAudioSequence();
-    } else {
-        endExam();
-    }
+    startAudioSequence();
+  } else {
+    endExam();
+  }
 };
 
 const updatePerformanceData = () => {
-    const currentTime = Date.now();
-    if (currentTime - lastRecordedTime.value >= 1000) {
-        headingPerformanceData.value.push({
-            type: isHeadingOutOfTarget.value ? 'wrong' : 'correct',
-            deviations: heading.value - headingTarget.value,
-            timestamp: currentTime,
-            configIndex: currentConfigIndex.value
-        });
+  const currentTime = Date.now();
+  if (currentTime - lastRecordedTime.value >= 1000) {
+    headingPerformanceData.value.push({
+      type: isHeadingOutOfTarget.value ? "wrong" : "correct",
+      deviations: heading.value - headingTarget.value,
+      timestamp: currentTime,
+      configIndex: currentConfigIndex.value,
+    });
 
-        airspeedPerformanceData.value.push({
-            type: isAirspeedOutOfTarget.value ? 'wrong' : 'correct',
-            deviations: airspeed.value - airspeedTarget.value,
-            timestamp: currentTime,
-            configIndex: currentConfigIndex.value
-        });
+    airspeedPerformanceData.value.push({
+      type: isAirspeedOutOfTarget.value ? "wrong" : "correct",
+      deviations: airspeed.value - airspeedTarget.value,
+      timestamp: currentTime,
+      configIndex: currentConfigIndex.value,
+    });
 
-        altitudePerformanceData.value.push({
-            type: isAltitudeOutOfTarget.value ? 'wrong' : 'correct',
-            deviations: altitude.value - altitudeTarget.value,
-            timestamp: currentTime,
-            configIndex: currentConfigIndex.value
-        });
+    altitudePerformanceData.value.push({
+      type: isAltitudeOutOfTarget.value ? "wrong" : "correct",
+      deviations: altitude.value - altitudeTarget.value,
+      timestamp: currentTime,
+      configIndex: currentConfigIndex.value,
+    });
 
-        lastRecordedTime.value = currentTime;
-    }
+    lastRecordedTime.value = currentTime;
+  }
 };
 
 const updateLoop = () => {
-    checkGamepadConnection();
-    if (examRunning.value) {
-        updatePlanePosition();
-        if (mode.value === 'moving') {
-            updateTargets();
-        }
-        config.value.totalDuration -= 1 / 60;
-        updateScore();
-        updateTime();
-        updatePerformanceData();
-        updateSounds(); // Add sound updates
+  checkGamepadConnection();
+  if (examRunning.value) {
+    updatePlanePosition();
+    if (mode.value === "moving") {
+      updateTargets();
     }
-    requestAnimationFrame(updateLoop);
+    config.value.totalDuration -= 1 / 60;
+    updateScore();
+    updateTime();
+    updatePerformanceData();
+    updateSounds(); // Add sound updates
+  }
+  requestAnimationFrame(updateLoop);
 };
 
 const updateTime = () => {
-    if (!examRunning.value) return;
+  if (!examRunning.value) return;
 
-    timeRemaining.value -= 1 / 60;
+  timeRemaining.value -= 1 / 60;
 
-    if (timeRemaining.value <= 0) {
-        const currentConfig = config.value.configs[currentConfigIndex.value];
-        const configDuration = currentConfig?.duration * 60;
+  if (timeRemaining.value <= 0) {
+    const currentConfig = config.value.configs[currentConfigIndex.value];
+    const configDuration = currentConfig?.duration * 60;
 
-        // Check if we've completed the current config's duration
-        if (Math.abs(timeRemaining.value) <= configDuration) {
-            moveToNextConfig();
-            // Reset timeRemaining for next config if there is one
-            if (currentConfigIndex.value < config.value.configs.length) {
-                timeRemaining.value = config.value.configs[currentConfigIndex.value].duration * 60;
-            }
-        }
+    // Check if we've completed the current config's duration
+    if (Math.abs(timeRemaining.value) <= configDuration) {
+      moveToNextConfig();
+      // Reset timeRemaining for next config if there is one
+      if (currentConfigIndex.value < config.value.configs.length) {
+        timeRemaining.value =
+          config.value.configs[currentConfigIndex.value].duration * 60;
+      }
     }
+  }
 };
 
 const updateTargets = () => {
-    const currentConfig = config.value.configs[currentConfigIndex.value];
+  const currentConfig = config.value.configs[currentConfigIndex.value];
 
-    if (Math.random() < 0.3) {
-        updateIndicator('airspeed', currentConfig?.airspeed);
-        updateIndicator('heading', currentConfig?.compass);
-        updateIndicator('altitude', currentConfig?.altimeter);
-    }
+  if (Math.random() < 0.3) {
+    updateIndicator("airspeed", currentConfig?.airspeed);
+    updateIndicator("heading", currentConfig?.compass);
+    updateIndicator("altitude", currentConfig?.altimeter);
+  }
 };
 
 const updateIndicator = (indicator, mode) => {
-    // if (mode === 'inactive' || mode === 'keep_indicator') {
-    //     console.log(`${indicator} is inactive or set to keep_indicator`);
-    //     return;
-    // }
-    const currentTime = Date.now();
-    if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) {
-        console.log(`${indicator} update skipped due to interval`);
-        return;
+  // if (mode === 'inactive' || mode === 'keep_indicator') {
+  //     console.log(`${indicator} is inactive or set to keep_indicator`);
+  //     return;
+  // }
+  const currentTime = Date.now();
+  if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) {
+    console.log(`${indicator} update skipped due to interval`);
+    return;
+  }
+
+  lastUpdateTime.value = currentTime;
+
+  if (mode === "adjust_for_consistent_updates") {
+    let currentTarget, minValue, maxValue;
+
+    switch (indicator) {
+      case "airspeed":
+        currentTarget = airspeedTarget.value;
+        minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
+        maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
+        break;
+      case "heading":
+        currentTarget = headingTarget.value;
+        minValue = 0;
+        maxValue = 360;
+        break;
+      case "altitude":
+        currentTarget = altitudeTarget.value;
+        minValue = 1000;
+        maxValue = 9000;
+        break;
     }
 
-    lastUpdateTime.value = currentTime;
+    console.log(`Updating ${indicator} target from ${currentTarget}`);
 
-    if (mode === 'adjust_for_consistent_updates') {
-        let currentTarget, minValue, maxValue;
+    // Calculate maximum change based on 5% of current value
+    const maxChange = currentTarget * 0.05;
 
-        switch (indicator) {
-            case 'airspeed':
-                currentTarget = airspeedTarget.value;
-                minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
-                maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
-                break;
-            case 'heading':
-                currentTarget = headingTarget.value;
-                minValue = 0;
-                maxValue = 360;
-                break;
-            case 'altitude':
-                currentTarget = altitudeTarget.value;
-                minValue = 1000;
-                maxValue = 9000;
-                break;
+    // Randomize the magnitude of the change (between 10% and 20% of current value)
+    const changeMagnitude = maxChange * (0.5 + Math.random() * 0.5);
+
+    // Randomize the direction of the change
+    // const changeDirection = Math.random() > 0.5 ? 1 : -1;
+    const changeDirection = 1;
+
+    // Calculate new target
+    let newTarget = currentTarget + changeDirection * changeMagnitude;
+
+    // Ensure the new target stays within bounds
+    newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
+
+    console.log(`New ${indicator} target: ${newTarget}`);
+
+    // Update the target
+    switch (indicator) {
+      case "airspeed":
+        airspeedTarget.value = newTarget;
+        airspeedChangeDirection.value = changeDirection > 0 ? "up" : "down";
+
+        // Adjust altitude inversely
+        if (
+          config.value.configs[currentConfigIndex.value]?.altimeter !==
+          "inactive"
+        ) {
+          const altitudeChange = -changeMagnitude * 0.5; // Adjust altitude by half the speed change
+          altitudeTarget.value = Math.max(
+            1000,
+            Math.min(9000, altitudeTarget.value + altitudeChange)
+          );
+          altitudeChangeDirection.value = altitudeChange > 0 ? "up" : "down";
         }
+        break;
 
-        console.log(`Updating ${indicator} target from ${currentTarget}`);
+      case "heading":
+        headingTarget.value = newTarget;
+        headingChangeDirection.value = changeDirection > 0 ? "up" : "down";
+        break;
 
-        // Calculate maximum change based on 5% of current value
-        const maxChange = currentTarget * 0.05;
+      case "altitude":
+        altitudeTarget.value = newTarget;
+        altitudeChangeDirection.value = changeDirection > 0 ? "up" : "down";
 
-        // Randomize the magnitude of the change (between 10% and 20% of current value)
-        const changeMagnitude = maxChange * (0.5 + Math.random() * 0.5);
-
-        // Randomize the direction of the change
-        // const changeDirection = Math.random() > 0.5 ? 1 : -1;
-        const changeDirection = 1;
-
-        // Calculate new target
-        let newTarget = currentTarget + changeDirection * changeMagnitude;
-
-        // Ensure the new target stays within bounds
-        newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
-
-        console.log(`New ${indicator} target: ${newTarget}`);
-
-        // Update the target
-        switch (indicator) {
-            case 'airspeed':
-                airspeedTarget.value = newTarget;
-                airspeedChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
-
-                // Adjust altitude inversely
-                if (config.value.configs[currentConfigIndex.value]?.altimeter !== 'inactive') {
-                    const altitudeChange = -changeMagnitude * 0.5; // Adjust altitude by half the speed change
-                    altitudeTarget.value = Math.max(
-                        1000,
-                        Math.min(
-                            9000,
-                            altitudeTarget.value + altitudeChange
-                        )
-                    );
-                    altitudeChangeDirection.value = altitudeChange > 0 ? 'up' : 'down';
-                }
-                break;
-
-            case 'heading':
-                headingTarget.value = newTarget;
-                headingChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
-                break;
-
-            case 'altitude':
-                altitudeTarget.value = newTarget;
-                altitudeChangeDirection.value = changeDirection > 0 ? 'up' : 'down';
-
-                // Adjust speed inversely
-                if (config.value.configs[currentConfigIndex.value]?.airspeed !== 'inactive') {
-                    const airspeedChange = -changeMagnitude * 0.5; // Adjust speed by half the altitude change
-                    airspeedTarget.value = Math.max(
-                        MOVEMENT_SPEED.MIN_AIRSPEED,
-                        Math.min(
-                            MOVEMENT_SPEED.MAX_AIRSPEED,
-                            airspeedTarget.value + airspeedChange
-                        )
-                    );
-                    airspeedChangeDirection.value = airspeedChange > 0 ? 'up' : 'down';
-                }
-                break;
+        // Adjust speed inversely
+        if (
+          config.value.configs[currentConfigIndex.value]?.airspeed !==
+          "inactive"
+        ) {
+          const airspeedChange = -changeMagnitude * 0.5; // Adjust speed by half the altitude change
+          airspeedTarget.value = Math.max(
+            MOVEMENT_SPEED.MIN_AIRSPEED,
+            Math.min(
+              MOVEMENT_SPEED.MAX_AIRSPEED,
+              airspeedTarget.value + airspeedChange
+            )
+          );
+          airspeedChangeDirection.value = airspeedChange > 0 ? "up" : "down";
         }
+        break;
     }
+  }
 };
 
-
 const startExam = () => {
-    examRunning.value = true;
-    score.value = 0;
-    currentConfigIndex.value = 0;
+  examRunning.value = true;
+  score.value = 0;
+  currentConfigIndex.value = 0;
 
-    // Initialize first config duration
-    timeRemaining.value = config.value.configs[0].duration * 60;
+  // Initialize first config duration
+  timeRemaining.value = config.value.configs[0].duration * 60;
 
-    // Reset performance tracking
-    airspeed.value = 120;
-    heading.value = 0;
-    altitude.value = 5000;
-    airspeedTarget.value = 120;
-    headingTarget.value = 0;
-    altitudeTarget.value = 5000;
-    thrustLevel.value = 60;
+  // Reset performance tracking
+  airspeed.value = 120;
+  heading.value = 0;
+  altitude.value = 5000;
+  airspeedTarget.value = 120;
+  headingTarget.value = 0;
+  altitudeTarget.value = 5000;
+  thrustLevel.value = 60;
 
-    timeOnTargetAirspeed.value = 0;
-    timeOnTargetHeading.value = 0;
-    timeOnTargetAltitude.value = 0;
+  timeOnTargetAirspeed.value = 0;
+  timeOnTargetHeading.value = 0;
+  timeOnTargetAltitude.value = 0;
 
-    // Reset audio test data
-    audioResponses.value = [];
-    displayedNumbers.value = [];
+  // Reset audio test data
+  audioResponses.value = [];
+  displayedNumbers.value = [];
 
-    // Initialize sound system
-    // initSounds();
+  // Initialize sound system
+  // initSounds();
 
-    startAudioSequence();
+  startAudioSequence();
 };
 
 // Modify endExam to cleanup sounds
 const endExam = () => {
-    examRunning.value = false;
-    cancelAudioSequence();
-    cleanupSounds();
+  examRunning.value = false;
+  cancelAudioSequence();
+  cleanupSounds();
 
-    sendPerformanceData();
+  sendPerformanceData();
 };
 
-
 const initConfig = async () => {
-    const scheduleData = JSON.parse(localStorage.getItem('scheduleData'));
-    const configMIC = scheduleData.tests.find((t) => t.testUrl === "monitoring-instrument-coordination-test");
-    console.log(configMIC, 'config')
+  const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+  const configMIC = scheduleData.tests.find(
+    (t) => t.testUrl === "monitoring-instrument-coordination-test"
+  );
+  console.log(configMIC, "config");
 
-    if (!configMIC || !configMIC.configs) {
-        console.error('Invalid configuration data');
-        return;
-    }
+  if (!configMIC || !configMIC.configs) {
+    console.error("Invalid configuration data");
+    return;
+  }
 
-    // Store all configs and calculate total duration
-    config.value = {
-        configs: configMIC.configs,
-        totalDuration: configMIC.configs.reduce((total, cfg) => total + Number(cfg.duration), 0) * 60,
-        sessionId: scheduleData.sessionId,
-        userId: scheduleData.userId
-    };
+  // Store all configs and calculate total duration
+  config.value = {
+    configs: configMIC.configs,
+    totalDuration:
+      configMIC.configs.reduce(
+        (total, cfg) => total + Number(cfg.duration),
+        0
+      ) * 60,
+    sessionId: scheduleData.sessionId,
+    userId: scheduleData.userId,
+  };
 };
 
 const sendPerformanceData = async () => {
-    try {
-        loading.value = true;
-        const router = useRouter();
-        const API_URL = process.env.VUE_APP_API_URL;
+  try {
+    loading.value = true;
+    const router = useRouter();
+    const API_URL = process.env.VUE_APP_API_URL;
 
-        // Prepare performance data by config
-        const performanceByConfig = config.value.configs.map((cfg, index) => {
-            return {
-                configId: cfg.id,
-                airspeedData: airspeedPerformanceData.value.filter(d => d.configIndex === index),
-                headingData: headingPerformanceData.value.filter(d => d.configIndex === index),
-                altitudeData: altitudePerformanceData.value.filter(d => d.configIndex === index),
-                audioResponses: audioResponses.value.filter(r => r.configIndex === index)
-            };
-        });
+    // Prepare performance data by config
+    const performanceByConfig = config.value.configs.map((cfg, index) => {
+      return {
+        configId: cfg.id,
+        airspeedData: airspeedPerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        headingData: headingPerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        altitudeData: altitudePerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        audioResponses: audioResponses.value.filter(
+          (r) => r.configIndex === index
+        ),
+      };
+    });
 
-        const payload = {
-            testSessionId: config.value.sessionId,
-            userId: config.value.userId,
-            result: {
-                // multi_graph_data: performanceByConfig.map(perf => ({
-                //     heading: perf.headingData,
-                //     airspeed: perf.airspeedData,
-                //     altitude: perf.altitudeData,
-                // })),
-                graph_data: userInputs.value,
-                timeOnTargetAirspeed: timeOnTargetAirspeed.value,
-                timeOnTargetHeading: timeOnTargetHeading.value,
-                timeOnTargetAltitude: timeOnTargetAltitude.value,
-                audioTest: performanceByConfig.map(perf => ({
-                    responses: perf.audioResponses,
-                    averageResponseTime: perf.audioResponses.reduce((acc, curr) => acc + curr.responseTime, 0) /
-                        (perf.audioResponses.length || 1),
-                    correctResponses: perf.audioResponses.filter(r => r.correct).length,
-                    totalResponses: perf.audioResponses.length,
-                    missedResponses: perf.audioResponses.filter(r => r.response === 'none').length
-                })),
-                thrustData: {
-                    averageThrust: thrustLevel.value,
-                    verticalSpeedImpact: verticalSpeed.value
-                }
-            },
-        };
+    const payload = {
+      testSessionId: config.value.sessionId,
+      userId: config.value.userId,
+      result: {
+        // multi_graph_data: performanceByConfig.map(perf => ({
+        //     heading: perf.headingData,
+        //     airspeed: perf.airspeedData,
+        //     altitude: perf.altitudeData,
+        // })),
+        graph_data: userInputs.value,
+        timeOnTargetAirspeed: timeOnTargetAirspeed.value,
+        timeOnTargetHeading: timeOnTargetHeading.value,
+        timeOnTargetAltitude: timeOnTargetAltitude.value,
+        audioTest: performanceByConfig.map((perf) => ({
+          responses: perf.audioResponses,
+          averageResponseTime:
+            perf.audioResponses.reduce(
+              (acc, curr) => acc + curr.responseTime,
+              0
+            ) / (perf.audioResponses.length || 1),
+          correctResponses: perf.audioResponses.filter((r) => r.correct).length,
+          totalResponses: perf.audioResponses.length,
+          missedResponses: perf.audioResponses.filter(
+            (r) => r.response === "none"
+          ).length,
+        })),
+        thrustData: {
+          averageThrust: thrustLevel.value,
+          verticalSpeedImpact: verticalSpeed.value,
+        },
+      },
+    };
 
-        const response = await fetch(`${API_URL}/api/submission`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
+    const response = await fetch(`${API_URL}/api/submission`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-        if (!response.ok) {
-            throw new Error(`Error: ${response.statusText}`);
-        }
-
-        removeTestByNameAndUpdateLocalStorage('Monitoring & Instrument Koordination');
-        localStorage.removeItem('refreshCountShapeRecognition');
-        router.push('/module');
-    } catch (error) {
-        console.log("error submit:", error);
-    } finally {
-        loading.value = false;
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
     }
+
+    removeTestByNameAndUpdateLocalStorage(
+      "Monitoring & Instrument Koordination"
+    );
+    localStorage.removeItem("refreshCountShapeRecognition");
+    router.push("/module");
+  } catch (error) {
+    console.log("error submit:", error);
+  } finally {
+    loading.value = false;
+  }
 };
 
 // Add this to your state declarations
@@ -993,422 +1106,421 @@ const showStartModal = ref(true);
 
 // Add this method
 const handleStartExam = () => {
-    showStartModal.value = false;
-    // initSounds();
-    startExam();
-    initAudioContext();
+  showStartModal.value = false;
+  // initSounds();
+  startExam();
+  initAudioContext();
 };
 
 const handleKeyDown = (event) => {
-    if (controlMode.value === 'manual') {
-        switch (event.key) {
-            case 'ArrowUp':
-                manualInput.value.up = true;
-                break;
-            case 'ArrowDown':
-                manualInput.value.down = true;
-                break;
-            case 'ArrowLeft':
-                manualInput.value.left = true;
-                break;
-            case 'ArrowRight':
-                manualInput.value.right = true;
-                break;
-            case 'w':
-                manualInput.value.thrustUp = true;
-                break;
-            case 's':
-                manualInput.value.thrustDown = true;
-                break;
-        }
+  if (controlMode.value === "manual") {
+    switch (event.key) {
+      case "ArrowUp":
+        manualInput.value.up = true;
+        break;
+      case "ArrowDown":
+        manualInput.value.down = true;
+        break;
+      case "ArrowLeft":
+        manualInput.value.left = true;
+        break;
+      case "ArrowRight":
+        manualInput.value.right = true;
+        break;
+      case "w":
+        manualInput.value.thrustUp = true;
+        break;
+      case "s":
+        manualInput.value.thrustDown = true;
+        break;
     }
+  }
 };
 
 const handleKeyUp = (event) => {
-    if (controlMode.value === 'manual') {
-        switch (event.key) {
-            case 'ArrowUp':
-                manualInput.value.up = false;
-                break;
-            case 'ArrowDown':
-                manualInput.value.down = false;
-                break;
-            case 'ArrowLeft':
-                manualInput.value.left = false;
-                break;
-            case 'ArrowRight':
-                manualInput.value.right = false;
-                break;
-            case 'w': // Stop increasing thrust
-                manualInput.value.thrustUp = false;
-                break;
-            case 's': // Stop decreasing thrust
-                manualInput.value.thrustDown = false;
-                break;
-        }
+  if (controlMode.value === "manual") {
+    switch (event.key) {
+      case "ArrowUp":
+        manualInput.value.up = false;
+        break;
+      case "ArrowDown":
+        manualInput.value.down = false;
+        break;
+      case "ArrowLeft":
+        manualInput.value.left = false;
+        break;
+      case "ArrowRight":
+        manualInput.value.right = false;
+        break;
+      case "w": // Stop increasing thrust
+        manualInput.value.thrustUp = false;
+        break;
+      case "s": // Stop decreasing thrust
+        manualInput.value.thrustDown = false;
+        break;
     }
+  }
 };
 
 // Lifecycle hooks
 onMounted(() => {
-    initConfig();
-    window.addEventListener('gamepadconnected', onGamepadConnected);
-    window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
-    checkGamepadConnection();
-    updateLoop();
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+  initConfig();
+  window.addEventListener("gamepadconnected", onGamepadConnected);
+  window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
+  checkGamepadConnection();
+  updateLoop();
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
 });
 
 const cleanupSounds = () => {
-    if (baseOscillator.value) {
-        baseOscillator.value.stop();
-        baseOscillator.value.disconnect();
-    }
-    if (propellerOscillator.value) {
-        propellerOscillator.value.stop();
-        propellerOscillator.value.disconnect();
-    }
-    if (harmonic1.value) {
-        harmonic1.value.stop();
-        harmonic1.value.disconnect();
-    }
-    if (harmonic2.value) {
-        harmonic2.value.stop();
-        harmonic2.value.disconnect();
-    }
-    if (audioContext.value) {
-        audioContext.value.close();
-    }
+  if (baseOscillator.value) {
+    baseOscillator.value.stop();
+    baseOscillator.value.disconnect();
+  }
+  if (propellerOscillator.value) {
+    propellerOscillator.value.stop();
+    propellerOscillator.value.disconnect();
+  }
+  if (harmonic1.value) {
+    harmonic1.value.stop();
+    harmonic1.value.disconnect();
+  }
+  if (harmonic2.value) {
+    harmonic2.value.stop();
+    harmonic2.value.disconnect();
+  }
+  if (audioContext.value) {
+    audioContext.value.close();
+  }
 };
 
 // Update onUnmounted to cleanup sounds
 onUnmounted(() => {
-    window.removeEventListener('gamepadconnected', onGamepadConnected);
-    window.removeEventListener('gamepaddisconnected', onGamepadDisconnected);
-    window.removeEventListener('keydown', handleKeyDown);
-    window.removeEventListener('keyup', handleKeyUp);
-    cancelAudioSequence();
+  window.removeEventListener("gamepadconnected", onGamepadConnected);
+  window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
+  window.removeEventListener("keydown", handleKeyDown);
+  window.removeEventListener("keyup", handleKeyUp);
+  cancelAudioSequence();
 
-    if (audioContext.value) {
-        audioContext.value.close();
-    }
+  if (audioContext.value) {
+    audioContext.value.close();
+  }
 });
-
 </script>
 
 <style scoped>
 .pilot-exam {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    padding-top: 60px;
-    background-color: #080808;
-    /* Make room for the timer */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding-top: 60px;
+  background-color: #080808;
+  /* Make room for the timer */
 }
 
 .countdown-timer {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    font-size: 24px;
-    font-weight: bold;
-    border-radius: 0 0 10px 10px;
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 0 0 10px 10px;
+  z-index: 1000;
 }
 
 .indicators {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .controls {
-    margin-top: 20px;
+  margin-top: 20px;
 }
 
 .indicator-bg {
-    background-color: #292929;
-    border-radius: 10px;
-    padding: 10px;
+  background-color: #292929;
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .indicator-wrapper {
-    position: relative;
-    width: 200px;
-    height: 240px;
+  position: relative;
+  width: 200px;
+  height: 240px;
 }
 
 .target-text {
-    text-align: center;
-    margin-top: 10px;
-    font-weight: bold;
-    color: white;
+  text-align: center;
+  margin-top: 10px;
+  font-weight: bold;
+  color: white;
 }
 
 .direction-indicator {
-    display: inline-block;
-    width: 0;
-    height: 0;
-    margin-left: 5px;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
 }
 
 .direction-indicator.up {
-    border-bottom: 10px solid lime;
-    animation: blink-green 1s infinite;
+  border-bottom: 10px solid lime;
+  animation: blink-green 1s infinite;
 }
 
 .direction-indicator.down {
-    border-top: 10px solid lime;
-    animation: blink-green 1s infinite;
+  border-top: 10px solid lime;
+  animation: blink-green 1s infinite;
 }
 
 @keyframes blink-green {
-    0% {
-        opacity: 1;
-    }
+  0% {
+    opacity: 1;
+  }
 
-    50% {
-        opacity: 0;
-    }
+  50% {
+    opacity: 0;
+  }
 
-    100% {
-        opacity: 1;
-    }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes blink {
-    0% {
-        background-color: #292929;
-    }
+  0% {
+    background-color: #292929;
+  }
 
-    50% {
-        background-color: rgba(255, 0, 0, 0.5);
-    }
+  50% {
+    background-color: rgba(255, 0, 0, 0.5);
+  }
 
-    100% {
-        background-color: #292929;
-    }
+  100% {
+    background-color: #292929;
+  }
 }
 
 .blink .indicator-bg {
-    animation: blink 1s infinite;
+  animation: blink 1s infinite;
 }
 
 .thruster-indicator {
-    position: absolute;
-    left: -60px;
-    top: 0;
-    height: 200px;
-    width: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  position: absolute;
+  left: -60px;
+  top: 0;
+  height: 200px;
+  width: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .thruster-bar {
-    height: 180px;
-    width: 20px;
-    background-color: #333;
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
+  height: 180px;
+  width: 20px;
+  background-color: #333;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
 }
 
 .thruster-fill {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    background-color: #ff6b6b;
-    transition: height 0.2s ease;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background-color: #ff6b6b;
+  transition: height 0.2s ease;
 }
 
 .thruster-value {
-    margin-top: 5px;
-    font-size: 12px;
-    white-space: nowrap;
-    color: white;
+  margin-top: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: white;
 }
 
 /* Audio test styles */
 .audio-test {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #f5f5f5;
-    border-radius: 10px;
-    text-align: center;
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  text-align: center;
 }
 
 .number-display {
-    font-size: 24px;
-    margin-bottom: 15px;
-    min-height: 36px;
+  font-size: 24px;
+  margin-bottom: 15px;
+  min-height: 36px;
 }
 
 .response-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
 }
 
 .btn-red,
 .btn-green {
-    padding: 15px 30px;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .btn-red {
-    background-color: #ff4444;
+  background-color: #ff4444;
 }
 
 .btn-green {
-    background-color: #00C851;
+  background-color: #00c851;
 }
 
 .btn-red:hover,
 .btn-green:hover {
-    transform: scale(1.05);
+  transform: scale(1.05);
 }
 
 .btn-red:disabled,
 .btn-green:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
 }
 
 .modal-container {
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    width: 100%;
-    height: 100%;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .modal-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 1rem;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 1rem;
 }
 
 .modal-body {
-    font-size: 20px;
-    margin: 1rem 0;
+  font-size: 20px;
+  margin: 1rem 0;
 }
 
 .modal-list {
-    list-style-type: disc;
-    margin-left: 1.5rem;
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .modal-list li {
-    margin-bottom: 0.5rem;
-    color: #666;
+  margin-bottom: 0.5rem;
+  color: #666;
 }
 
 .modal-footer-text {
-    margin-top: 1rem;
-    color: #666;
-    font-style: italic;
+  margin-top: 1rem;
+  color: #666;
+  font-style: italic;
 }
 
 .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 .modal-button {
-    color: white;
-    border: none;
-    padding: 8px 24px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
+  color: white;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
 }
 
 /* Transition animations */
 .modal-enter-active,
 .modal-leave-active {
-    transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .modal-enter-from,
 .modal-leave-to {
-    opacity: 0;
+  opacity: 0;
 }
 
 .control-mode-toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
 }
 
 .control-mode-toggle button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
 }
 
 .control-mode-toggle button:hover {
-    background-color: #0056b3;
+  background-color: #0056b3;
 }
 
 .manual-control-instructions {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    z-index: 1000;
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
 }
 
 .manual-control-instructions ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
 }
 
 .manual-control-instructions li {
-    margin: 5px 0;
+  margin: 5px 0;
 }
 .modal-content {
   background-color: white;
