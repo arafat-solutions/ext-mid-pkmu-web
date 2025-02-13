@@ -1,17 +1,17 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p style="font-size: 24px;">
+      <p style="font-size: 24px">
         <strong>Apakah anda yakin akan memulai latihan?</strong>
       </p>
-      <p style="font-size: 20px; max-width: 80%;">
+      <p style="font-size: 20px; max-width: 80%">
         Pada tes ini Anda akan menggunakan Touch Screen. Anda diminta untuk
         menghitung JUMLAH BELOKAN KANAN atau KIRI yang ada pada gambar sesuai
         dengan soal. Lalu pilih jawaban yang benar dengan cara menyentuh LAYAR
         MONITOR.
       </p>
 
-      <img src="devices/spatial.png"/>
+      <img src="devices/spatial.png" />
       <div class="button-container">
         <button @click="startTest()">Mulai Latihan</button>
       </div>
@@ -21,7 +21,9 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p>
-        <strong>Apakah anda yakin akan memulai tes?</strong>
+        <strong style="font-size: 24px"
+          >Apakah anda yakin akan memulai tes?</strong
+        >
       </p>
       <div>
         <button @click="startTest()">Mulai Tes</button>
@@ -70,9 +72,18 @@
                 :class="{
                   correct:
                     selectedAnswer &&
+                    !isTrainingCompleted &&
                     ((selectedAnswer === x && x === answer) ||
                       (selectedAnswer !== x && x === answer)),
-                  wrong: selectedAnswer && selectedAnswer === x && x !== answer,
+                  wrong:
+                    selectedAnswer &&
+                    !isTrainingCompleted &&
+                    selectedAnswer === x &&
+                    x !== answer,
+                  selected:
+                    selectedAnswer &&
+                    isTrainingCompleted &&
+                    selectedAnswer === x,
                 }"
                 @click="pressAnswer(x)"
               >
@@ -81,10 +92,16 @@
             </div>
           </div>
         </div>
-        <p v-if="answerIsRight === true" class="text-green-500 text-2xl">
+        <p
+          v-if="answerIsRight === true && !isTrainingCompleted"
+          class="text-green-500 text-2xl"
+        >
           Benar!
         </p>
-        <p v-else-if="answerIsRight === false" class="text-red-500 text-2xl">
+        <p
+          v-else-if="answerIsRight === false && !isTrainingCompleted"
+          class="text-red-500 text-2xl"
+        >
           Salah!
         </p>
       </div>
@@ -152,7 +169,7 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      questionDuration: 15000,
+      questionDuration: 20000,
       answerIsRight: null,
     };
   },
@@ -177,11 +194,15 @@ export default {
   },
   methods: {
     startTest() {
+      this.answerIsRight = null;
+      this.selectedAnswer = null;
+      this.answer = null;
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
 
         this.config.current_question = 1;
         this.totalQuestion = 9999;
+        this.questionDuration = 25000;
       } else {
         this.setConfig(this.configs[this.indexConfig]);
 
@@ -980,8 +1001,10 @@ canvas {
 .finish-button {
   position: fixed;
   bottom: 20px;
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to truly center */
+  left: 50%;
+  /* Center horizontally */
+  transform: translateX(-50%);
+  /* Adjust to truly center */
   padding: 10px 20px;
   font-size: 16px;
   background-color: #007bff;
@@ -989,5 +1012,10 @@ canvas {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+}
+
+.selected {
+  background-color: #007bff;
+  color: white;
 }
 </style>
