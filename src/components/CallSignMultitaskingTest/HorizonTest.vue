@@ -1,11 +1,11 @@
 <template>
-  <div class="horizon-test">
+  <div :class="'horizon-test ' + (alertOnRight ? 'flex' : '')">
     <canvas ref="horizonCanvas"></canvas>
-    <p v-if="!trainingCompleted && !isCurrentlyCorrect" >
+    <p v-if="!trainingCompleted && !isCurrentlyCorrect">
       ⚠️ Perhatian! ⚠️<br />Upayakan garis potong berwarna <b>HIJAU</b> dengan
       mengarahkan ke target menggunakan <b>JOYSTICK</b>
     </p>
-    <div v-else style="height: 72px;"></div>
+    <div v-else style="height: 72px"></div>
   </div>
 </template>
 
@@ -19,6 +19,7 @@ export default {
     },
     updateResults: Function,
     trainingCompleted: Boolean,
+    alertOnRight: Boolean,
   },
   data() {
     return {
