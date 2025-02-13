@@ -24,21 +24,25 @@
         <div class="modal-content">
           <h2>LATIHAN JOYSTICK</h2>
 
-        <div class="instruction-content">
-          <p>
-            Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran
-          </p>
-          <p>
-            Objek dot secara otomatis akan berusaha bergerak kearah luar
-            lingkaran
-          </p>
-          <p>
-            Tugas anda adalah mengontrol objek dot untuk selalu berada di dalam
-            lingkaran dengan menggerakan joystick
-          </p>
+          <div class="instruction-content">
+            <p>
+              Gunakan joystick untuk menggerakkan objek dot ke dalam lingkaran
+            </p>
+            <p>
+              Objek dot secara otomatis akan berusaha bergerak kearah luar
+              lingkaran
+            </p>
+            <p>
+              Tugas anda adalah mengontrol objek dot untuk selalu berada di
+              dalam lingkaran dengan menggerakan joystick
+            </p>
           </div>
-          <img :src="'devices/joystick.png'" class="center"  alt="Joystick" />
-          <img :src="'devices/joystick_example.png'" class="center"  alt="Joystick" />
+          <img :src="'devices/joystick.png'" class="center" alt="Joystick" />
+          <img
+            :src="'devices/joystick_example.png'"
+            class="center"
+            alt="Joystick"
+          />
           <button @click="startTrackingJoystick" class="start-btn">
             Mulai latihan Joystick
           </button>
@@ -52,17 +56,16 @@
       >
         <div class="modal-content">
           <h2>LATIHAN THRUSTER & PEDAL</h2>
-        <div class="instruction-content">
-
-          <p>
-            Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.
-          </p>
-          <p>Ukuran lingkaran putus-putus akan bergerak secara automatis.</p>
-          <p>
-            Tugas anda adalah merubah ukuran lingkaran tanpa putus, mengikuti
-            ukuran lingkaran putus-putus.
-          </p>
-      </div>
+          <div class="instruction-content">
+            <p>
+              Gunakan thruster untuk mengatur ukuran dari lingkaran tanpa putus.
+            </p>
+            <p>Ukuran lingkaran putus-putus akan bergerak secara automatis.</p>
+            <p>
+              Tugas anda adalah merubah ukuran lingkaran tanpa putus, mengikuti
+              ukuran lingkaran putus-putus.
+            </p>
+          </div>
           <img :src="'devices/thruster.png'" class="center" alt="thruster" />
           <img :src="'devices/pedal.png'" class="center" alt="pedal" />
           <button @click="startTrackingThruster" class="start-btn">
@@ -74,21 +77,32 @@
       <div v-if="currentStep === 'string' && showModalString" class="modal">
         <div class="modal-content">
           <h2>LATIHAN MEMORI</h2>
-          
-        <div class="instruction-content">
-          <p>Serangkaian alphanumeric akan diperlihatkan</p>
-          <div style="display:flex;justify-content: center;width: 100%; margin-top: 4px;margin-bottom: 4px;">
-          <img :src="'devices/memory_pre.png'" class="center" alt="Joystick" />
-          </div>
-          <p>
-            Akan terdapat opsi jawaban berupa bagian - bagian kecil dari
-            alfanumerik yang telah di perlihatkan sebelumnya
-          </p>
-          <p>
-            Tugas anda adalah memilih dari opsi jawaban tersebut dimana bagian
-            kecil tersebut diperlihatkan
-          </p>
 
+          <div class="instruction-content">
+            <p>Serangkaian alphanumeric akan diperlihatkan</p>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                width: 100%;
+                margin-top: 4px;
+                margin-bottom: 4px;
+              "
+            >
+              <img
+                :src="'devices/memory_pre.png'"
+                class="center"
+                alt="Joystick"
+              />
+            </div>
+            <p>
+              Akan terdapat opsi jawaban berupa bagian - bagian kecil dari
+              alfanumerik yang telah di perlihatkan sebelumnya
+            </p>
+            <p>
+              Tugas anda adalah memilih dari opsi jawaban tersebut dimana bagian
+              kecil tersebut diperlihatkan
+            </p>
           </div>
           <img :src="'devices/memory.png'" class="center" alt="Joystick" />
           <button @click="startString" class="start-btn">
@@ -115,9 +129,9 @@
       >
         <div class="modal-content">
           <h2>LATIHAN GABUNGAN</h2>
-          
-        <div class="instruction-content">
-          <p>Lakukan semua tugas latihan secara bersamaan</p>
+
+          <div class="instruction-content">
+            <p>Lakukan semua tugas latihan secara bersamaan</p>
           </div>
           <button @click="startCombinedTraining" class="start-btn">
             Mulai latihan Gabungan
@@ -137,6 +151,7 @@
               @update-score="updateTrackingScore"
               :training-mode="true"
               :current-training="'joystick'"
+              :isActualTest="isActualTest"
             />
           </div>
 
@@ -149,6 +164,7 @@
               @update-score="updateTrackingScore"
               :training-mode="true"
               :current-training="'thruster'"
+              :isActualTest="isActualTest"
             />
           </div>
 
@@ -195,16 +211,15 @@
                 @update-score="updateTrackingScore"
                 :training-mode="true"
                 :current-training="'all'"
+                :isActualTest="isActualTest"
               />
             </div>
           </div>
 
           <!-- Single, consistently placed next button for all training steps -->
-          <div class="next-button-container">
-            <button @click="nextStep" class="start-btn next-btn">
-              Berikutnya
-            </button>
-          </div>
+          <!-- <div class="next-button-container"> -->
+          <button @click="nextStep" class="start-btn">Berikutnya</button>
+          <!-- </div> -->
         </template>
 
         <!-- Actual Test Mode -->
@@ -231,6 +246,7 @@
               :training-mode="false"
               :current-training="'all'"
               @update-score="updateTrackingScore"
+              :isActualTest="isActualTest"
             />
           </div>
         </template>
@@ -386,6 +402,7 @@ export default {
       trainingComplete.value = false;
       isActualTest.value = true;
       currentSubtask.value = "string";
+
       scores.value = {
         tracking: {
           circle_correct_position: 0,
