@@ -378,6 +378,7 @@ export default {
 
     moveTargets() {
       // Move left target
+      console.log(this.targetSpeed)
       this.leftTarget.y += this.leftTargetDirection.y * this.targetSpeed;
 
       // Move right target
@@ -786,9 +787,10 @@ export default {
 
       if (this.thrusterIndex !== null && gamepads[this.thrusterIndex]) {
         const thruster = gamepads[this.thrusterIndex];
+
         const throttleY = thruster.axes[2];
 
-        this.leftCursor.y += throttleY * 5;
+        this.leftCursor.y += throttleY * 10;
 
         // Constrain left cursor within its quadrant
         this.leftCursor.y = Math.max(
@@ -902,7 +904,7 @@ export default {
     this.config.sessionId = scheduleData.sessionId;
     this.config.userId = scheduleData.userId;
     this.config.batteryTestConfigId = config?.id;
-    this.targetSpeed = this.getSpeed("fast");
+    this.targetSpeed = this.getSpeed("medium");
     this.duration = config.duration * 60; // Default to 5 minutes if not specified
 
     console.log(
