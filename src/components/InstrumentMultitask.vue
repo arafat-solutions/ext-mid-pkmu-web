@@ -30,7 +30,10 @@
       <div v-if="timeLeft > 0 && trainingCompleted" class="timer-container">
         Time: {{ formattedTime }}
       </div>
-      <div class="column-45 mt-3" v-show="!isTimesUp">
+      <div
+        :class="trainingCompleted ? 'column-45 mt-3' : ''"
+        v-show="!isTimesUp"
+      >
         <HorizonTest
           ref="horizonTaskRef"
           :speed="config.horizon.speed"
@@ -55,7 +58,10 @@
           @getResult="arithmeticResult"
         />
       </div>
-      <div class="column-10 mt-3" v-show="!isTimesUp">
+      <div
+        :class="trainingCompleted ? 'column-10 mt-3' : ''"
+        v-show="!isTimesUp"
+      >
         <AlertLights
           :speed="config.alertLight.speed"
           :isTimesUp="isTimesUp"
@@ -66,7 +72,10 @@
           @getResult="alertLightResult"
         />
       </div>
-      <div class="column-45 mt-3 text-left" v-show="!isTimesUp">
+      <div
+        :class="trainingCompleted ? 'column-45 mt-3 text-left' : ''"
+        v-show="!isTimesUp"
+      >
         <GaugesMeter
           :isTimesUp="isTimesUp"
           :isPause="isPauseGaugesMeter"
@@ -315,6 +324,8 @@ export default {
       this.config.arithmetic.isActive = false;
       this.config.horizon.isActive = false;
 
+      clearInterval(this.interval);
+      this.interval = null;
       this.startCountdown();
     },
     startArithmeticTraining() {
@@ -332,10 +343,12 @@ export default {
       this.config.horizon.isActive = false;
 
       this.allowSound = true;
-      if (this.config.arithmetic.isActive) {
+      if (this.config.arithmetic.isActive && this.$refs.arithmeticTaskRef) {
         this.$refs.arithmeticTaskRef.generateProblem();
       }
 
+      clearInterval(this.interval);
+      this.interval = null;
       this.startCountdown();
     },
     startAlertLightTraining() {
@@ -352,6 +365,8 @@ export default {
       this.config.gaugesMeter.isActive = false;
       this.config.horizon.isActive = false;
 
+      clearInterval(this.interval);
+      this.interval = null;
       this.startCountdown();
     },
     startHorizonTraining() {
@@ -368,6 +383,8 @@ export default {
       this.config.arithmetic.isActive = false;
       this.config.gaugesMeter.isActive = false;
 
+      clearInterval(this.interval);
+      this.interval = null;
       this.startCountdown();
     },
     startCombinedTraining() {
@@ -383,15 +400,19 @@ export default {
 
       this.allowSound = true;
 
-      if (this.config.arithmetic.isActive) {
+      if (this.config.arithmetic.isActive && this.$refs.arithmeticTaskRef) {
         this.$refs.arithmeticTaskRef.generateProblem();
       }
 
       this.minuteTime = 1;
       this.timeLeft = this.minuteTime * 60;
+      clearInterval(this.interval);
+      this.interval = null;
       this.startCountdown();
     },
     endTrainingTask() {
+      clearInterval(this.interval);
+      this.interval = null;
       if (this.config.arithmetic.isActive) {
         this.$refs.arithmeticTaskRef.stop();
       }
@@ -453,12 +474,15 @@ export default {
       this.config.gaugesMeter.isActive = true;
 
       this.allowSound = true;
-      this.$refs.arithmeticTaskRef.generateProblem();
+      if (this.config.arithmetic.isActive && this.$refs.arithmeticTaskRef) {
+        this.$refs.arithmeticTaskRef.generateProblem();
+      }
       this.$refs.horizonTaskRef.startAnimation();
 
       this.startCountdown();
     },
     startCountdown() {
+      console.log(this.interval);
       this.interval = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft -= 1;

@@ -63,7 +63,7 @@ export default {
           num1 = Math.floor(Math.random() * 5) + 1;
           num2 = Math.floor(Math.random() * 5) + 1;
           break;
-        case 'slow':
+        case 'easy':
           num1 = Math.floor(Math.random() * 10) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
@@ -75,7 +75,7 @@ export default {
           num1 = Math.floor(Math.random() * 50) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
-        case 'very_high':
+        case 'hard':
           num1 = Math.floor(Math.random() * 100) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
