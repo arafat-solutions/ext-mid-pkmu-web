@@ -2,13 +2,11 @@
   <div ref="container" class="coordination-test">
     <div class="countdown" v-if="!isTrainingMode">{{ formattedTime }}</div>
     <canvas ref="canvas"></canvas>
-    <img
-      src="@/assets/airplane-icon.png"
-      alt="Airplane"
-      :style="airplaneStyle"
-      class="airplane"
-      :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }"
-    />
+    <div class="position-feedback" :class="{ 'feedback-visible': isAligned }">
+      Perfect Position!
+    </div>
+    <img src="@/assets/airplane-icon.png" alt="Airplane" :style="airplaneStyle" class="airplane"
+      :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }" />
 
     <!-- Training Modal -->
     <div v-if="showTrainingModal" class="modal">
@@ -42,11 +40,7 @@
         </button>
       </div>
     </div>
-    <button
-      v-if="isTrainingMode"
-      @click="openModalActualTest"
-      class="finish-button"
-    >
+    <button v-if="isTrainingMode" @click="openModalActualTest" class="finish-button">
       Selesai Latihan
     </button>
   </div>
@@ -63,13 +57,6 @@ const ANOMALI_INTENSITY = {
   MEDIUM: 0.04,
   HIGH: 0.06,
 };
-
-const TURBULENCE_INTENSITY = {
-  LOW: 0.0003,
-  MEDIUM: 0.0005,
-  HIGH: 0.001,
-};
-
 const POV_CHANGE_SPEED = {
   SLOW: 5000,
   MEDIUM: 3000,
@@ -81,7 +68,7 @@ const CONFIG = {
   MIN_FORWARD_POSITION: -4.5,
   PLANE_ROTATION_SPEED: 0.03,
   MAX_PLANE_ROTATION: Math.PI / 4,
-  ALIGNMENT_THRESHOLD: 0.5,
+  ALIGNMENT_THRESHOLD: 3,
   TRAINING_DURATION: 9999999, // 30 seconds for training
 };
 
@@ -119,7 +106,7 @@ export default {
     let scene, camera, renderer, box, marker;
 
     // State management
-    const markerPosition = ref({ x: 0, y: -4.5, z: 0 });
+    const markerPosition = ref({ x: 0, y: -6, z: 0 }); // Changed y from -4.5 to -6
     const perspectiveOffset = ref(0);
     const airplanePosition = ref({ x: 0, y: 0, z: 0 });
     const airplaneRotation = ref({ x: 0, y: 0, z: 0 });
@@ -139,7 +126,11 @@ export default {
     const showTestModal = ref(false);
     const isTrainingMode = ref(true);
 
-    console.log(isTrainingMode);
+    const TURBULENCE_INTENSITY = {
+      LOW: 0.0004,
+      MEDIUM: 0.0007,
+      HIGH: 0.0012
+    };
 
     // Animation timing
     let lastPerspectiveChange = 0;
@@ -200,15 +191,20 @@ export default {
         .padStart(2, "0")}`;
     });
 
-    const airplaneStyle = computed(() => ({
-      transform: `translate3d(${airplanePosition.value.x * 50}px, ${
-        airplanePosition.value.y * -50
-      }px, ${airplanePosition.value.z * -10}px) 
-                  rotateZ(${airplaneRotation.value.z}rad) 
-                  rotateX(${airplaneRotation.value.x}rad) 
-                  rotateY(${airplaneRotation.value.y}rad) 
-                  scale(${5 - airplanePosition.value.z / 10})`,
-    }));
+    const airplaneStyle = computed(() => {
+      const baseScale = 5;
+      const zScale = Math.max(0.5, 1 - (airplanePosition.value.z / 5.5));
+      const finalScale = baseScale * zScale;
+
+      return {
+        transform: `translate3d(${airplanePosition.value.x * 50}px, ${airplanePosition.value.y * -50
+          }px, ${airplanePosition.value.z * -10}px) 
+    rotateZ(${airplaneRotation.value.z}rad) 
+    rotateX(${airplaneRotation.value.x}rad) 
+    rotateY(${airplaneRotation.value.y}rad) 
+    scale(${finalScale})`
+      };
+    });
 
     // Scene initialization
     const initScene = () => {
@@ -228,8 +224,14 @@ export default {
       // Create box geometry
       const geometry = new THREE.BufferGeometry();
       originalVertices = new Float32Array([
-        -8, -5, -5, 8, -5, -5, 8, 5, -5, -8, 5, -5, -8, -5, 5, 8, -5, 5, 8, 5,
-        5, -8, 5, 5,
+        -12, -8, -8,  // Increased from -8, -5, -5
+        12, -8, -8,  // Front face
+        12, 8, -8,
+        -12, 8, -8,
+        -12, -8, 8,  // Back face
+        12, -8, 8,
+        12, 8, 8,
+        -12, 8, 8
       ]);
       geometry.setAttribute(
         "position",
@@ -288,19 +290,19 @@ export default {
       box = new THREE.Mesh(geometry, material);
       scene.add(box);
 
-      // Create marker
+      // Create marker (change the y value to move it lower)
       const markerGeometry = new THREE.ConeGeometry(0.5, 1, 32);
       const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       marker = new THREE.Mesh(markerGeometry, markerMaterial);
       marker.rotation.x = Math.PI;
       marker.position.set(
         markerPosition.value.x,
-        markerPosition.value.y,
+        -6,  // Changed from -4.5 to -6 (or adjust this value as needed)
         markerPosition.value.z
       );
       scene.add(marker);
 
-      camera.position.z = 20;
+      camera.position.z = 25;
     };
 
     // Game state management
@@ -321,7 +323,7 @@ export default {
       configStartTime.value = Date.now();
       currentConfigIndex.value = 0;
       activeConfig.value = configs[0];
-      timeRemaining.value = totalTestDuration;
+      timeRemaining.value = 1000;
       userInputs.value = [];
       resetAirplanePosition();
     };
@@ -400,25 +402,30 @@ export default {
     };
     const drift = () => {
       const driftSpeed = 0.02;
-      const driftAngle = Date.now() * 0.001; // Time-based angle for smooth motion
-      
-      // Sine wave motion for x and y drift
-      airplanePosition.value.x += Math.sin(driftAngle) * driftSpeed;
-      airplanePosition.value.y += Math.cos(driftAngle * 0.7) * driftSpeed;
-      
-      // Add rotation effect
-      const baseRotation = Math.sin(driftAngle * 0.5) * (Math.PI / 6);
-      airplaneRotation.value.z = baseRotation;
-      
+      const driftAngle = Date.now() * 0.001;
+
+      // Calculate drift movement
+      const xDrift = Math.sin(driftAngle) * driftSpeed;
+      const yDrift = Math.cos(driftAngle * 0.7) * driftSpeed;
+
+      // Apply drift movement
+      airplanePosition.value.x += xDrift;
+      airplanePosition.value.y += yDrift;
+
+      // Apply tilt based on drift direction
+      const driftTilt = xDrift * 2; // Multiply by 2 to make tilt more noticeable
+      airplaneRotation.value.z = driftTilt * (Math.PI / 4); // Maximum 45 degrees tilt
+
       // Clamp positions
       airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
       airplanePosition.value.y = Math.max(-4.5, Math.min(4.5, airplanePosition.value.y));
-      
+
       // Regular backward drift
       if (airplanePosition.value.z < CONFIG.MAX_BACKWARD_POSITION) {
-        airplanePosition.value.z += 0.015; // Base backward drift
+        airplanePosition.value.z += 0.015;
       }
     };
+
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const now = Date.now();
@@ -432,7 +439,7 @@ export default {
           (isTrainingMode.value
             ? CONFIG.TRAINING_DURATION
             : totalTestDuration) -
-            (now - startTime.value)
+          (now - startTime.value)
         );
 
         if (timeRemaining.value === 0) {
@@ -513,38 +520,27 @@ export default {
         const gp = gamepads[gamepad.value.index];
 
         if (gp) {
-          // Apply sensitivity from current config
           const xSensitivity = activeConfig.value.x_axis.sensitivity / 1000;
           const ySensitivity = activeConfig.value.y_axis.sensitivity / 1000;
 
-          // X-axis movement
+          // X-axis movement and tilt
           const xMovement = gp.axes[0] * xSensitivity;
           airplanePosition.value.x += xMovement;
-          airplanePosition.value.x = Math.max(
-            -4.5,
-            Math.min(4.5, airplanePosition.value.x)
-          );
+          airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
 
-          // Y-axis movement (reversed)
+          // Direct tilt based on joystick position (not movement)
+          airplaneRotation.value.z = gp.axes[0] * (Math.PI / 4); // Maximum 45 degrees tilt
+
+          // Y-axis movement
           const yMovement = gp.axes[1] * ySensitivity;
           airplanePosition.value.y += yMovement;
-          airplanePosition.value.y = Math.max(
-            -4.5,
-            Math.min(4.5, airplanePosition.value.y)
-          );
+          airplanePosition.value.y = Math.max(-6, Math.min(4.5, airplanePosition.value.y));
 
-          // Rotations
-          const targetRotation = xMovement * CONFIG.MAX_PLANE_ROTATION;
-          airplaneRotation.value.z +=
-            (targetRotation - airplaneRotation.value.z) *
-            CONFIG.PLANE_ROTATION_SPEED;
-
-          const targetPitch = yMovement * CONFIG.MAX_PLANE_ROTATION;
-          airplaneRotation.value.x +=
-            (targetPitch - airplaneRotation.value.x) *
-            CONFIG.PLANE_ROTATION_SPEED;
+          // Pitch based on vertical movement
+          airplaneRotation.value.x = gp.axes[1] * (Math.PI / 6); // Maximum 30 degrees pitch
         }
       }
+
 
       // Handle thruster input
       if (thrustConnected.value) {
@@ -774,5 +770,26 @@ canvas {
 .modal-button:active {
   background-color: #1565c0;
   transform: translateY(1px);
+}
+
+.position-feedback {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background-color: rgba(0, 255, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 20px;
+  font-weight: bold;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.feedback-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 </style>
