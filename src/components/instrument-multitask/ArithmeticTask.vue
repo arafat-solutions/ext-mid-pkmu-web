@@ -5,12 +5,18 @@
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
         <button class="btn-answer" :class="{
-          'can-press': canPressAnswer,
-          'answered': !canAnswer
-        }" @click="handleAnswer(index)" @touchstart="handleAnswer(index)">
+          'correct': showFeedback && choice === problem.correctAnswer,
+          'incorrect': showFeedback && selectedAnswer === index && choice !== problem.correctAnswer,
+          'disabled': !canAnswer
+        }" @click="chooseAnswer(index)" :disabled="!canAnswer">
           {{ isActive ? choice : '?' }}
         </button>
       </div>
+    </div>
+    <div v-if="showFeedback" class="feedback">
+      <p v-if="selectedAnswer === null">Waktu Habis! Jawaban yang benar adalah {{ problem.correctAnswer }}</p>
+      <p v-else-if="problem.choices[selectedAnswer] === problem.correctAnswer">Benar!</p>
+      <p v-else>Salah! Jawaban yang benar adalah {{ problem.correctAnswer }}</p>
     </div>
   </div>
 </template>
@@ -30,6 +36,12 @@ export default {
         answerTimes: [],
         problems: [],
       },
+      questionTimer: null,
+      intervalTimer: null,
+      isQuestionActive: false,
+      canAnswer: true,
+      selectedAnswer: null,
+      showFeedback: false
     };
   },
   props: {
@@ -44,14 +56,20 @@ export default {
   },
   mounted() {
     if ((this.useSound && this.allowSound) || (!this.useSound || !this.isActive)) {
-      this.generateProblem();
+      this.startQuestionCycle();
+    }
+    window.addEventListener('keyup', this.handleKeyPress);
+  },
+  beforeUnmount() {
+    if (this.questionTimer) clearTimeout(this.questionTimer);
+    if (this.intervalTimer) clearTimeout(this.intervalTimer);
+    window.removeEventListener('keyup', this.handleKeyPress);
+    if (this.useSound) {
+      window.speechSynthesis.cancel();
     }
   },
   created() {
     window.addEventListener('keyup', this.handleKeyPress);
-  },
-  beforeUnmount() {
-    window.removeEventListener('keyup', this.handleKeyPress);
   },
   computed: {
     correctResponse() {
@@ -81,35 +99,42 @@ export default {
   },
   methods: {
     startQuestionCycle() {
+      // Don't start if test is paused or ended
+      if (this.isPause || this.isTimesUp || !this.isActive) return;
+
+      // Clear any existing timers
+      if (this.questionTimer) clearTimeout(this.questionTimer);
+      if (this.intervalTimer) clearTimeout(this.intervalTimer);
+
+      // Reset state for new question
       this.isQuestionActive = true;
       this.canAnswer = true;
+      this.selectedAnswer = null;
+      this.showFeedback = false;
+
+      // Generate new problem
       this.generateProblem();
 
       // Question display timer (15 seconds)
       this.questionTimer = setTimeout(() => {
-        if (this.canAnswer) { // If no answer was given
+        if (this.canAnswer) {
           this.handleNoAnswer();
         }
-        this.isQuestionActive = false;
+        this.showFeedback = true;
 
-        // Start 20 second interval before next question
-        this.intervalTimer = setTimeout(() => {
+        // Wait 5 seconds to show feedback, then start next question
+        setTimeout(() => {
           this.startQuestionCycle();
-        }, 20000);
+        }, 5000);
       }, 15000);
     },
 
-    handleNoAnswer() {
-      this.result.wrong++;
-      this.result.answerTimes.push(Date.now());
-      this.result.problems.push(this.problem);
-    },
-
+    // Update chooseAnswer to respect props:
     chooseAnswer(index) {
-      if (!this.canAnswer || !this.isQuestionActive) return;
+      if (!this.canAnswer || !this.isQuestionActive || this.isPause || this.isTimesUp || !this.isActive) return;
 
       this.canAnswer = false;
-      clearTimeout(this.questionTimer);
+      this.selectedAnswer = index;
 
       if (this.useSound) {
         window.speechSynthesis.cancel();
@@ -122,19 +147,34 @@ export default {
         this.result.wrong++;
       }
       this.result.problems.push(this.problem);
-    },
+      this.showFeedback = true;
 
-    mounted() {
-      if ((this.useSound && this.allowSound) || (!this.useSound || !this.isActive)) {
-        this.startQuestionCycle();
-      }
-    },
-
-    beforeUnmount() {
+      // Clear current question timer and set timeout for next question
       clearTimeout(this.questionTimer);
-      clearTimeout(this.intervalTimer);
-      window.removeEventListener('keyup', this.handleKeyPress);
+      setTimeout(() => {
+        this.startQuestionCycle();
+      }, 5000);
     },
+
+    // Add method to restart questions
+    restartQuestions() {
+      this.result = {
+        correct: 0,
+        wrong: 0,
+        answerTimes: [],
+        problems: [],
+      };
+      this.startQuestionCycle();
+    },
+
+    handleNoAnswer() {
+      this.canAnswer = false;
+      this.result.wrong++;
+      this.result.answerTimes.push(Date.now());
+      this.result.problems.push(this.problem);
+      this.showFeedback = true;
+    },
+
     handleKeyPress(event) {
       if (this.isPause || this.isTimesUp || !this.isActive || this.canPressAnswer) {
         return;
@@ -216,7 +256,7 @@ export default {
         return;
       }
 
-      if ('speechSynthesis' in window) {
+      if ('speechSynthesis' in window && this.allowSound) {
         const utterance = new SpeechSynthesisUtterance(`${this.problem.num1} ${this.getSoundOperator(this.problem.operator)} ${this.problem.num2} =`);
         utterance.lang = 'id-ID';
         utterance.rate = 1.0; // Atur kecepatan bicara ke nilai yang lebih tinggi jika perlu
@@ -351,5 +391,33 @@ export default {
     cursor: not-allowed;
     opacity: 0.7;
   }
+}
+
+.btn-answer.correct {
+  background-color: #4CAF50 !important;
+  color: white;
+}
+
+.btn-answer.incorrect {
+  background-color: #f44336 !important;
+  color: white;
+}
+
+.btn-answer.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.feedback {
+  margin-top: 20px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.feedback p {
+  margin: 0;
+  padding: 10px;
+  border-radius: 5px;
 }
 </style>

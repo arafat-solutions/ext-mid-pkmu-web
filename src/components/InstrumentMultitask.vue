@@ -12,12 +12,8 @@
           </b>
         </h2>
 
-        <p
-          style="font-size: 20px"
-          class="flex flex-col items-center"
-          v-if="!trainingCompleted"
-          v-html="instructionModalContent"
-        ></p>
+        <p style="font-size: 20px" class="flex flex-col items-center" v-if="!trainingCompleted"
+          v-html="instructionModalContent"></p>
         <p v-else>Apakah Anda Yakin <br />akan memulai ujian {{ testName }}?</p>
 
         <button @click="startTrainingTask">
@@ -31,58 +27,26 @@
         Time: {{ formattedTime }}
       </div>
       <div class="column-45 mt-3" v-show="!isTimesUp">
-        <HorizonTest
-          ref="horizonTaskRef"
-          :speed="config.horizon.speed"
-          :minuteTime="minuteTime"
-          :isTimesUp="isTimesUp"
-          :isPause="isPauseHorizon"
-          :isActive="config.horizon.isActive"
-          v-if="config.horizon.isActive"
-          @getResult="horizonResult"
-        />
-        <ArithmeticTask
-          ref="arithmeticTaskRef"
-          :isTimesUp="isTimesUp"
-          :difficulty="config.arithmetic.difficulty"
-          :minuteTime="minuteTime"
-          :isPause="isPauseArithmetic"
-          :isActive="config.arithmetic.isActive"
-          v-if="config.arithmetic.isActive"
-          :useSound="config.arithmetic.useSound"
-          :canPressAnswer="config.arithmetic.canPressAnswer"
-          :allowSound="allowSound"
-          @getResult="arithmeticResult"
-        />
+        <HorizonTest ref="horizonTaskRef" :speed="config.horizon.speed" :minuteTime="minuteTime" :isTimesUp="isTimesUp"
+          :isPause="isPauseHorizon" :isActive="config.horizon.isActive" v-if="config.horizon.isActive"
+          @getResult="horizonResult" />
+        <ArithmeticTask ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetic.difficulty"
+          :minuteTime="minuteTime" :isPause="isPauseArithmetic" :isActive="config.arithmetic.isActive"
+          v-if="config.arithmetic.isActive" :useSound="config.arithmetic.useSound"
+          :canPressAnswer="config.arithmetic.canPressAnswer" :allowSound="allowSound" @getResult="arithmeticResult" />
       </div>
       <div class="column-10 mt-3" v-show="!isTimesUp">
-        <AlertLights
-          :speed="config.alertLight.speed"
-          :isTimesUp="isTimesUp"
-          :frequency="config.alertLight.frequency"
-          :isPause="isPauseAlertLight"
-          :isActive="config.alertLight.isActive"
-          v-if="config.alertLight.isActive"
-          @getResult="alertLightResult"
-        />
+        <AlertLights :speed="config.alertLight.speed" :isTimesUp="isTimesUp" :frequency="config.alertLight.frequency"
+          :isPause="isPauseAlertLight" :isActive="config.alertLight.isActive" v-if="config.alertLight.isActive"
+          @getResult="alertLightResult" />
       </div>
       <div class="column-45 mt-3 text-left" v-show="!isTimesUp">
-        <GaugesMeter
-          :isTimesUp="isTimesUp"
-          :isPause="isPauseGaugesMeter"
-          :frequency="config.gaugesMeter.frequency"
-          :isActive="config.gaugesMeter.isActive"
-          v-if="config.gaugesMeter.isActive"
-          @getResult="gaugesMeterResult"
-          :size="50"
-        />
+        <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPauseGaugesMeter" :frequency="config.gaugesMeter.frequency"
+          :isActive="config.gaugesMeter.isActive" v-if="config.gaugesMeter.isActive" @getResult="gaugesMeterResult"
+          :size="50" />
       </div>
     </div>
-    <button
-      v-if="!trainingCompleted"
-      @click="endTrainingTask"
-      class="finish-button"
-    >
+    <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
       Selesai Latihan
     </button>
     <div v-if="isLoading" class="loading-container">
@@ -215,10 +179,10 @@ export default {
           this.minuteTime = instrumentMultitaskConfig.duration;
           this.timeLeft = this.minuteTime * 60;
 
-          this.minuteTest = 0;
-          for (const i in this.configs) {
-            this.minuteTest += parseInt(this.configs[i].duration);
-          }
+          this.minuteTest = 0.1;
+          // for (const i in this.configs) {
+          //   this.minuteTest += parseInt(this.configs[i].duration);
+          // }
 
           this.config.arithmetic.difficulty =
             instrumentMultitaskConfig.arithmetics.difficulty;
@@ -284,15 +248,19 @@ export default {
       } else {
         switch (this.currentTrainingTask) {
           case "gaugesMeter":
+            // stop audio
+            this.allowSound = false;
             this.startGaugesMeterTraining();
             break;
           case "arithmetic":
             this.startArithmeticTraining();
             break;
           case "alertLight":
+            this.allowSound = false;
             this.startAlertLightTraining();
             break;
           case "horizon":
+            this.allowSound = false;
             this.startHorizonTraining();
             break;
           case "combined":
@@ -332,12 +300,15 @@ export default {
       this.config.horizon.isActive = false;
 
       this.allowSound = true;
-      if (this.config.arithmetic.isActive) {
-        this.$refs.arithmeticTaskRef.generateProblem();
+
+      // Restart arithmetic questions
+      if (this.$refs.arithmeticTaskRef) {
+        this.$refs.arithmeticTaskRef.restartQuestions();
       }
 
       this.startCountdown();
     },
+
     startAlertLightTraining() {
       this.minuteTime = 99999;
       this.timeLeft = this.minuteTime * 60;
@@ -383,7 +354,7 @@ export default {
 
       this.allowSound = true;
 
-      if (this.config.arithmetic.isActive) {
+      if (this.config.arithmetic.isActive && this.$refs.arithmeticTaskRef) {
         this.$refs.arithmeticTaskRef.generateProblem();
       }
 
@@ -443,9 +414,14 @@ export default {
       };
 
       this.interval = null;
-
       this.minuteTime = this.minuteTest;
       this.timeLeft = this.minuteTime * 60;
+
+      // Reset all components to active state
+      this.isPauseHorizon = false;
+      this.isPauseAlertLight = false;
+      this.isPauseArithmetic = false;
+      this.isPauseGaugesMeter = false;
 
       this.config.horizon.isActive = true;
       this.config.alertLight.isActive = true;
@@ -453,8 +429,14 @@ export default {
       this.config.gaugesMeter.isActive = true;
 
       this.allowSound = true;
-      this.$refs.arithmeticTaskRef.generateProblem();
-      this.$refs.horizonTaskRef.startAnimation();
+
+      // Restart all components
+      if (this.$refs.arithmeticTaskRef) {
+        this.$refs.arithmeticTaskRef.restartQuestions();
+      }
+      if (this.$refs.horizonTaskRef) {
+        this.$refs.horizonTaskRef.startAnimation();
+      }
 
       this.startCountdown();
     },
@@ -495,11 +477,15 @@ export default {
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+      const config = scheduleData.tests.find(
+        (t) => t.name === this.testName
+      )
+      console.log(config, 'scheduleData');
       const payload = {
         testSessionId: scheduleData.sessionId,
         userId: scheduleData.userId,
         moduleId: scheduleData.moduleId,
-        batteryTestConfigId: scheduleData.testId,
+        batteryTestId: config.id,
         refreshCount: parseInt(
           localStorage.getItem("reloadCountInstrumentMultitask")
         ),
@@ -532,6 +518,7 @@ export default {
         this.isLoading = true;
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = this.generatePayloadForSubmit();
+        console.log(payload);
         const response = await fetch(`${API_URL}/api/submission`, {
           method: "POST",
           headers: {
