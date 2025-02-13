@@ -162,12 +162,14 @@ export default {
                 const joystickState = navigator.getGamepads()[joystick.index];
                 if (joystickState) {
                     const axes = joystickState.axes;
-                    const newX = dotX + axes[0] * 2;
-                    const newY = dotY + axes[1] * 2;
+                    dotX += axes[0] * 2;
+                    dotY += axes[1] * 2;
+                    const angle = Math.atan2(dotY - centerY, dotX - centerX);
+                    dotX += Math.cos(angle) * 0.5;
+                    dotY += Math.sin(angle) * 0.5;
+                    dotX = Math.max(0, Math.min(500, dotX));
+                    dotY = Math.max(0, Math.min(500, dotY));
 
-                    // Update position within canvas bounds
-                    dotX = Math.max(0, Math.min(500, newX));
-                    dotY = Math.max(0, Math.min(500, newY));
                 }
             }
         };

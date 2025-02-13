@@ -480,9 +480,9 @@ export default {
   opacity: 1;
 }
 
-.option-button.selected .option-answer {
+/* .option-button.selected .option-answer {
   background-color: #45a049;
-}
+} */
 
 .option-answer {
   background-color: #333;
@@ -516,7 +516,7 @@ export default {
   color: #f44336;
 }
 
-.clickable:not(:disabled):hover {
+/* .clickable:not(:disabled):hover {
   background-color: #e0e0e0;
   transform: scale(1.05);
 }
@@ -524,5 +524,5 @@ export default {
 .clickable.selected:not(:disabled):hover {
   background-color: #45a049;
   transform: scale(1.05);
-}
+} */
 </style>
