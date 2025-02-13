@@ -2,7 +2,7 @@
   <div class="simulation-container">
     <div class="timer" v-if="timeRemaining > 0">{{ formattedTime }}</div>
     <canvas ref="canvas" :width="canvasWidth" :height="canvasHeight"></canvas>
-    <div v-if="showModal" class="modal">
+    <!-- <div v-if="showModal" class="modal">
       <div class="modal-content">
         <h2>Simulation Results</h2>
         <p>Average Response Time: {{ averageResponseTime.toFixed(2) }} ms</p>
@@ -14,24 +14,32 @@
         <p>Right Segment Aimed Time: {{ rightAimedTime.toFixed(2) }} seconds</p>
         <button @click="closeModal">Close</button>
       </div>
-    </div>
+    </div> -->
     <div v-if="showInstructionModal" class="instruction-modal">
       <div class="instruction-modal-content">
         <h2 style="font-size: 24px">
-          <b>{{
+          <b v-if="!trainingCompleted">{{
             currentTrainingTask
               ? "Latihan: " + currentTrainingTask
               : "Instruksi"
           }}</b>
         </h2>
-        <p style="font-size: 20px" class="flex flex-col items-center" v-html="instructionModalContent"></p>
-        <button @click="startTrainingTask">
+        <p
+          style="font-size: 20px"
+          class="flex flex-col items-center"
+          v-html="instructionModalContent"
+        ></p>
+        <button @click="startTest">
           {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
         </button>
       </div>
     </div>
   </div>
-  <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
+  <button
+    v-if="!trainingCompleted"
+    @click="endTrainingTask"
+    class="finish-button"
+  >
     Selesai Latihan
   </button>
 </template>
@@ -128,7 +136,7 @@ export default {
       ];
       return allResponses.length
         ? allResponses.reduce((a, b) => a + b.responseTime, 0) /
-        allResponses.length
+            allResponses.length
         : 0;
     },
     formattedTime() {
@@ -188,8 +196,8 @@ export default {
           light.state === "red"
             ? "red"
             : light.state === "yellow"
-              ? "yellow"
-              : "grey";
+            ? "yellow"
+            : "grey";
         ctx.fillRect(x, y, lightSize, lightSize);
       });
     },
@@ -256,12 +264,16 @@ export default {
           const x = startX + colIndex * (keyWidth + 10) + 5;
           const y = startY + rowIndex * (keyHeight + 10);
 
-          ctx.fillStyle = key === "Hapus" || key === "Kirim" ? "#4a4a4a" : "#333";
+          ctx.fillStyle =
+            key === "Hapus" || key === "Kirim" ? "#4a4a4a" : "#333";
           ctx.fillRect(x, y, keyWidth, keyHeight);
 
           // Adjust font size for numbers and text buttons
           ctx.fillStyle = "white";
-          ctx.font = key === "Hapus" || key === "Kirim" ? "bold 20px Arial" : "bold 28px Arial";
+          ctx.font =
+            key === "Hapus" || key === "Kirim"
+              ? "bold 20px Arial"
+              : "bold 28px Arial";
 
           // Draw text centered both horizontally and vertically
           ctx.fillText(key, x + keyWidth / 2, y + keyHeight / 2);
@@ -291,7 +303,7 @@ export default {
     },
 
     handleVirtualKeyboardClick(x, y) {
-      if (this.answerState) return
+      if (this.answerState) return;
       const keyboardWidth = (this.canvasWidth - this.canvasWidth * 0.15) * 0.6;
       const keyboardHeight = this.topSectionHeight;
       const numRows = 2;
@@ -366,6 +378,7 @@ export default {
 
     moveTargets() {
       // Move left target
+      console.log(this.targetSpeed)
       this.leftTarget.y += this.leftTargetDirection.y * this.targetSpeed;
 
       // Move right target
@@ -401,7 +414,7 @@ export default {
       const leftDeviation = Math.abs(this.leftCursor.y - this.leftTarget.y);
       const rightDeviation = Math.sqrt(
         Math.pow(this.rightCursor.x - this.rightTarget.x, 2) +
-        Math.pow(this.rightCursor.y - this.rightTarget.y, 2)
+          Math.pow(this.rightCursor.y - this.rightTarget.y, 2)
       );
 
       this.navigationResponses.push({
@@ -604,12 +617,21 @@ export default {
         navigation:
           "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU.<img src='devices/omt.png'/>",
         math: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar. <img src='devices/omt.png'/>",
-        alertLight: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar dan memilih LAMPU berwarna MERAH di layar. <img src='devices/omt.png'/>",
+        alertLight:
+          "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar dan memilih LAMPU berwarna MERAH di layar. <img src='devices/omt.png'/>",
         combined: "Latihan gabungan dari ketiga tugas sebelumnya.",
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
       this.showInstructionModal = true;
+    },
+
+    startTest() {
+      if (!this.trainingCompleted) {
+        this.startTrainingTask();
+      } else {
+        this.startActualTest();
+      }
     },
 
     startTrainingTask() {
@@ -712,6 +734,7 @@ export default {
     },
 
     startActualTest() {
+      this.showInstructionModal = false;
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: true, alertLight: true };
       setInterval(this.activateRandomLight, 5000);
@@ -764,9 +787,10 @@ export default {
 
       if (this.thrusterIndex !== null && gamepads[this.thrusterIndex]) {
         const thruster = gamepads[this.thrusterIndex];
+
         const throttleY = thruster.axes[2];
 
-        this.leftCursor.y += throttleY * 5;
+        this.leftCursor.y += throttleY * 10;
 
         // Constrain left cursor within its quadrant
         this.leftCursor.y = Math.max(
@@ -811,7 +835,7 @@ export default {
         // start over for actual test
       }
       clearInterval(this.drawInterval);
-      this.showModal = true;
+      // this.showModal = true;
       try {
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
@@ -880,7 +904,7 @@ export default {
     this.config.sessionId = scheduleData.sessionId;
     this.config.userId = scheduleData.userId;
     this.config.batteryTestConfigId = config?.id;
-    this.targetSpeed = this.getSpeed("fast");
+    this.targetSpeed = this.getSpeed("medium");
     this.duration = config.duration * 60; // Default to 5 minutes if not specified
 
     console.log(

@@ -255,13 +255,10 @@ export default {
             }
         },
         handleVirtualKeyPress({ key }) {
-            if (!this.focus) {
                 if (key === '↵') {
                     this.focus = true;
                     this.$refs.callsignInput.focus();
                 }
-                return;
-            }
 
 
             if (key >= '0' && key <= '9') {
