@@ -7,13 +7,13 @@
           Memory?</strong
         >
       </p>
-      <p style="font-size: 20px; max-width: 80%;">
+      <p style="font-size: 20px; max-width: 80%">
         Anda diminta untuk mendengarkan rangkaian huruf referensi yang terdiri
         dari 3 urutan. Setiap urutan terdiri dari 1 sampai 3 huruf. Anda harus
         mengingat variasi huruf tadi dan mencontreng kotak yang sesuai dengan
         menyentuh layar monitor.
       </p>
-      <img src="devices/amt.png"/>
+      <img src="devices/amt.png" />
       <div>
         <button @click="startTest()">Mulai Latihan</button>
       </div>
@@ -27,13 +27,15 @@
           >Apakah Anda Yakin <br />akan memulai ujian Accoustic Memory?</strong
         >
       </p>
-      <button @click="exit()" style="margin-right: 20px">Batal</button>
-      <button @click="startTest()">Ya</button>
+      <div>
+        <button @click="exit()" style="margin-right: 20px">Batal</button>
+        <button @click="startTest()">Ya</button>
+      </div>
     </div>
   </div>
 
   <div class="main-view" v-if="isConfigLoaded">
-    <div class="timer-container">Task: {{ taskNow }} / {{ numberOfTask }}</div>
+    <div class="timer-container">Soal: {{ taskNow }} / {{ numberOfTask }}</div>
     <div class="checkbox-grid">
       <div
         v-for="(row, rowIndex) in totalRow"
@@ -423,6 +425,7 @@ export default {
       this.$router.push("module");
     },
     startTest() {
+      this.currentRowDisabled = false;
       if (!this.isTrainingCompleted) {
         this.numberOfTask = this.configs[0].number_of_task ?? 10;
       } else {

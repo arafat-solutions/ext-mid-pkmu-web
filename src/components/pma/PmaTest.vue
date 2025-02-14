@@ -231,6 +231,7 @@
               :key="'string'"
               :training-mode="false"
               @update-score="updateStringScore"
+              :isActualTest="true"
             />
             <AudioInformation
               v-if="currentSubtask === 'audio'"
