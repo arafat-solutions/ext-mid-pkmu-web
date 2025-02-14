@@ -44,7 +44,7 @@
         :style="{
           position: 'fixed',
           left: '50%',
-          top: '50%',
+          top: '35%',
           transform: 'translate(-50%, -50%)',
         }"
       >
@@ -70,7 +70,12 @@
           <div class="northIndicatorMaze">U</div>
         </div>
       </div>
+      <p class="text-2xl centered-component" style="top: 70%; position: fixed">
+        Setelah tugas berhasil dilakukan, apabila dianggap sudah memadai tekan
+        tombol selesai latihan menuju ke test actual
+      </p>
     </div>
+
     <button v-if="isTraining" @click="finishTraining" class="finish-button">
       Selesai Latihan
     </button>
