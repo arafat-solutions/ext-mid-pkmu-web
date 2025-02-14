@@ -73,6 +73,8 @@ export default {
         // Start a 10-second timer to trigger the next question if no option is selected
         timeoutId = setTimeout(() => {
           // Automatically trigger next question if no option is selected within 10 seconds
+          showOptions.value = false;
+          correct.value = false;
           nextQuestion();
         }, 10000); // 10 seconds
       }, 5000); // Show string for 5 seconds

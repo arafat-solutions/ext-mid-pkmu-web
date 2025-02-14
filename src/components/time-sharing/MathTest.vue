@@ -29,6 +29,10 @@ export default {
     isTrainingMode: {
       type: Boolean,
       default: false
+    },
+    isCombined: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props, { emit }) {
@@ -181,7 +185,7 @@ export default {
     }
 
     const handleKeydown = (event) => {
-      if (event.key === ' ' && !props.isTrainingMode) {
+      if (event.key === ' ' ) {
         emit('switch-task');
       }
     };
@@ -193,7 +197,7 @@ export default {
 
     onBeforeUnmount(() => {
       window.removeEventListener('keydown', handleKeydown);
-      if (props.isTrainingMode) {
+      if (props.isTrainingMode && props.isCombined) {
         emit('test-finished');
       }
     });

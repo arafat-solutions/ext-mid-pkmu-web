@@ -48,11 +48,11 @@
     <!-- Test Confirmation Modal -->
     <modal v-if="showTestModal" @close="startTest">
       <div class="p-6 max-w-2xl w-full mx-auto bg-white rounded-lg">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Mulai Ujian</h2>
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Mulai tes</h2>
 
         <div class="space-y-4 mb-6">
           <p class="text-lg text-gray-700">
-            Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai ujian.
+            Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai tes.
             <span class="font-semibold">
               Test ini akan berlangsung selama
               {{ currentConfig.timePerQuestion }} detik per soal.
@@ -75,7 +75,7 @@
             @click="startTest"
             class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
           >
-            Mulai Ujian
+            Mulai tes
           </button>
         </div>
       </div>
@@ -481,7 +481,6 @@ export default {
       ctx.rect(-35, -35, 70, 70);
     }
 
-
     function generateOctagon(ctx) {
       for (let i = 0; i < 8; i++) {
         const angle = (i * Math.PI) / 4;
@@ -493,7 +492,6 @@ export default {
       ctx.closePath();
     }
 
-
     function generateParallelogram(ctx) {
       ctx.beginPath();
       ctx.moveTo(-40, -20);
@@ -502,7 +500,6 @@ export default {
       ctx.lineTo(-20, 20);
       ctx.closePath();
     }
-
 
     function generateHexagon(ctx) {
       ctx.beginPath();
@@ -515,7 +512,6 @@ export default {
       }
       ctx.closePath();
     }
-
 
     function generateChevronLeft(ctx) {
       ctx.save();
@@ -612,8 +608,9 @@ export default {
       currentConfig.value = {
         ...configShapeRecognition.configs[currentConfigIndex.value],
         numberOfQuestion:
-          configShapeRecognition.configs[currentConfigIndex.value].duration ??
-          10,
+          configShapeRecognition.configs
+          .map((c) => c.duration ?? 10)
+          .reduce((a, b) => Number(a) + Number(b), 0),
         timePerQuestion:
           configShapeRecognition.configs[currentConfigIndex.value]
             .time_per_question,
