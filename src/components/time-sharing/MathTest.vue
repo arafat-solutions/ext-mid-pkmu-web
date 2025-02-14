@@ -1,7 +1,7 @@
 <template>
   <div class="math-test-container">
     <div class="instructions" v-if="!isTrainingMode">Press 'Space bar' to switch tasks</div>
-    <div v-if="showQuestion" class="question">{{ currentQuestion }}</div>
+    <div v-if="showQuestion" class="question">{{ displayQuestion }}</div>
     <div v-else class="waiting">Waiting for next question...</div>
     <input v-model="userInput" class="input-box" readonly :disabled="!showQuestion" />
     <div class="virtual-keyboard">
@@ -38,6 +38,7 @@ export default {
   setup(props, { emit }) {
     const userInput = ref('');
     const currentQuestion = ref('');
+    const displayQuestion = ref('');
     const questionTimeShown = ref(null);
     const correctAnswer = ref(null);
     const showQuestion = ref(true);
@@ -127,7 +128,9 @@ export default {
       } while (correctAnswer.value < 0 || correctAnswer.value % 1 !== 0);
 
       const question = `${num1} ${operationSpoken} ${num2}`;
+      displayQuestion.value = `${num1} ${operation} ${num2}`;
       currentQuestion.value = question;
+      
 
       if (config.output === 'sound' || config.output === 'sound_and_visual') {
         speakQuestion(question);
@@ -205,6 +208,7 @@ export default {
     return {
       userInput,
       currentQuestion,
+      displayQuestion,
       showQuestion,
       appendNumber,
       clearInput,
@@ -216,38 +220,54 @@ export default {
 </script>
 
 <style scoped>
-.math-test-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* background-color: red; */
-  padding-top: 3rem
-}
-
-.instructions,
-.question,
-.waiting {
-  margin-bottom: 20px;
-}
-
 .input-box {
   font-size: 24px;
-  padding: 10px;
-  margin-bottom: 20px;
-  width: 200px;
-  text-align: right;
+  padding: 12px;
+  width: 100%;
+  max-width: 320px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background-color: white;
+  min-height: 56px;
 }
 
 .virtual-keyboard {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
 }
 
 .virtual-keyboard button {
   font-size: 20px;
-  padding: 10px;
-  width: 60px;
-  height: 60px;
+  padding: 16px;
+  background-color: #475569;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  height: 56px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.math-test-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.virtual-keyboard button:hover {
+  background-color: #2d3748;
+}
+
+.virtual-keyboard button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
 }
 </style>
