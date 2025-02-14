@@ -79,7 +79,6 @@
           <h2>LATIHAN MEMORI</h2>
 
           <div class="instruction-content">
-            <p>Serangkaian alphanumeric akan diperlihatkan</p>
             <div
               style="
                 display: flex;
@@ -96,15 +95,26 @@
               />
             </div>
             <p>
-              Akan terdapat opsi jawaban berupa bagian - bagian kecil dari
-              alfanumerik yang telah di perlihatkan sebelumnya
+              Perhatikan deret aplhanumeric, pada contoh <b>7506AMOV</b> dan
+              anda harus mengingat deret tersebut. <br />Setelah beberapa saat,
+              deret tersebut tertutup dan disajikan pilihan jawaban. Tugas anda
+              adalah menentukan huruf dan angka mana yang terkandung pada deret
+              alphanumeric yang telah anda ingat sebelumnya.
             </p>
-            <p>
-              Tugas anda adalah memilih dari opsi jawaban tersebut dimana bagian
-              kecil tersebut diperlihatkan
-            </p>
+
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                width: 100%;
+                margin-top: 4px;
+                margin-bottom: 4px;
+              "
+            >
+              <img :src="'devices/memory.png'" class="center" alt="Joystick" />
+            </div>
+            <p>Dari contoh diatas, jawaban yang benar adalah <b>7506</b></p>
           </div>
-          <img :src="'devices/memory.png'" class="center" alt="Joystick" />
           <button @click="startString" class="start-btn">
             Mulai latihan Memory
           </button>
@@ -177,6 +187,7 @@
                 v-if="currentSubtask === 'string'"
                 :training-mode="true"
                 @update-score="updateStringScore"
+                :isActualTest="isActualTest"
               />
             </div>
           </div>
@@ -203,6 +214,7 @@
                 :key="'string'"
                 :training-mode="true"
                 @update-score="updateStringScore"
+                :isActualTest="isActualTest"
               />
             </div>
 
@@ -231,7 +243,7 @@
               :key="'string'"
               :training-mode="false"
               @update-score="updateStringScore"
-              :isActualTest="true"
+              :isActualTest="isActualTest"
             />
             <AudioInformation
               v-if="currentSubtask === 'audio'"

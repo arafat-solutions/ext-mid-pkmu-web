@@ -55,7 +55,11 @@
             <strong> {{ config.targetShape }} </strong>
             muncul di radar.
           </p>
-          <p class="feedback-text" :style="{ color: feedbackColor }">
+          <p
+            v-if="!isTrainingCompleted"
+            class="feedback-text"
+            :style="{ color: feedbackColor }"
+          >
             {{ feedbackText }}
           </p>
         </div>
