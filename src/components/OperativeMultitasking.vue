@@ -20,7 +20,7 @@
         <h2 style="font-size: 24px">
           <b v-if="!trainingCompleted">{{
             currentTrainingTask
-              ? "Latihan: " + currentTrainingTask
+              ? "Latihan: " + getTitleModal(currentTrainingTask)
               : "Instruksi"
           }}</b>
         </h2>
@@ -179,6 +179,19 @@ export default {
       }
       if (this.activeTasks.navigation) {
         this.drawNavigationTasks(ctx);
+      }
+    },
+    getTitleModal(string) {
+      switch (string) {
+        case "navigation":
+          return "navigasi";
+        case "math":
+          return "Matematika";
+        case "alertLight":
+          return "Lampu Peringatan";
+        case "combined":
+          return "Gabungan";
+          break;
       }
     },
 
@@ -378,7 +391,7 @@ export default {
 
     moveTargets() {
       // Move left target
-      console.log(this.targetSpeed)
+      console.log(this.targetSpeed);
       this.leftTarget.y += this.leftTargetDirection.y * this.targetSpeed;
 
       // Move right target
@@ -501,6 +514,7 @@ export default {
     },
 
     handleLightClick(event) {
+      console.log("aku disni");
       const canvas = this.$refs.canvas;
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
