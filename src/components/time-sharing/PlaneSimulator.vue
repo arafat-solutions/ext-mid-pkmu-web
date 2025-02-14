@@ -103,7 +103,7 @@ export default {
       },
       isPaused: false,
       isCollision: false,
-      obstacleSpeed: 2,
+      obstacleSpeed: 0.5,
       obstacleDensity: "medium",
       controlPerspective: "cockpit_crew",
       gaugeTimers: {
@@ -204,10 +204,10 @@ export default {
 
       switch (speed) {
         case "very_slow":
-          this.obstacleSpeed = 1;
+          this.obstacleSpeed = 0.5;
           break;
         case "slow":
-          this.obstacleSpeed = 1.5;
+          this.obstacleSpeed = 1;
           break;
         case "medium":
           this.obstacleSpeed = 2;
@@ -219,6 +219,8 @@ export default {
           this.obstacleSpeed = 3;
           break;
       }
+
+      console.log(speed, this.obstacleSpeed);
 
       // gauge cluster
       this.gaugeSpeed = this.config.observer.speed;
@@ -673,6 +675,7 @@ export default {
     },
 
     startTimer() {
+      clearInterval(this.timerInterval);
       this.timerInterval = setInterval(() => {
         if (this.isPaused) return;
         if (this.remainingTime > 0) {
