@@ -31,7 +31,8 @@
       v-if="
         targetMessage &&
         isTraining &&
-        (currentTrainingTask == 'tracking' || currentTrainingTask == 'combined')
+        (currentTrainingTask == 'tracking' ||
+          currentTrainingTask == 'keseluruhan')
       "
       class="absolute bottom-[9.5rem] w-full flex justify-center"
     >
@@ -49,7 +50,8 @@
     <div
       v-if="
         isTraining &&
-        (currentTrainingTask == 'button' || currentTrainingTask == 'combined')
+        (currentTrainingTask == 'button' ||
+          currentTrainingTask == 'keseluruhan')
       "
       class="absolute bottom-[7.5rem] w-full flex justify-center"
     >
@@ -68,7 +70,8 @@
       v-if="
         acousticMessage &&
         isTraining &&
-        (currentTrainingTask == 'acoustic' || currentTrainingTask == 'combined')
+        (currentTrainingTask == 'acoustic' ||
+          currentTrainingTask == 'keseluruhan')
       "
       class="absolute bottom-[5.5rem] w-full flex justify-center"
     >
@@ -126,7 +129,7 @@ const refreshCount = ref(0);
 const userInputs = ref([]);
 const isTraining = ref(true);
 const currentTrainingTask = ref("tracking");
-const trainingTasks = ["tracking", "button", "acoustic", "combined"];
+const trainingTasks = ["tracking", "button", "acoustic", "keseluruhan"];
 const trainingDuration = 99999; // 60 seconds for each training session
 const acousticMessage = ref("");
 const acousticMessageColor = ref("");
@@ -209,8 +212,8 @@ function getModalMessage() {
         return "Anda diminta untuk MENYENTUH LAYAR KOTAK BIRU yang muncul.";
       case "acoustic":
         return "Anda diminta untuk menekan tuas pada bagian DEPAN JOYSTICK bila mendengar audio serupa, sebanyak 3 kali  berturut-turut. (Contoh: BEEP – BEEP – BEEP, maka anda harus menekan tuas untuk merespon audio tersebut).";
-      case "combined":
-        return "Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.";
+      case "keseluruhan":
+        return "Anda akan melakukan tugas secara bersamaan yaitu pelacakan, penekanan tombol, dan identifikasi suara.";
     }
   }
   return "Apakah Anda siap untuk memulai tes?";
@@ -233,20 +236,20 @@ function startTrainingSession() {
 
   if (
     currentTrainingTask.value === "tracking" ||
-    currentTrainingTask.value === "combined"
+    currentTrainingTask.value === "keseluruhan"
   ) {
     gameState.value.lastFrameTime = performance.now();
     requestAnimationFrame(gameLoop);
   }
   if (
     currentTrainingTask.value === "button" ||
-    currentTrainingTask.value === "combined"
+    currentTrainingTask.value === "keseluruhan"
   ) {
     initRectangleInterval();
   }
   if (
     currentTrainingTask.value === "acoustic" ||
-    currentTrainingTask.value === "combined"
+    currentTrainingTask.value === "keseluruhan"
   ) {
     playRandomSounds();
   }
@@ -800,11 +803,11 @@ function handleGamepadPress(gamepad) {
   if (triggerPressed && gameState.value.acousticAnswerAllowed) {
     if (isSoundSame.value) {
       metrics.value.acoustic_task.correct_answer++;
-      drawText({ text: "Respons benar", color: "green" });
+      drawText({ text: "Respons audio benar", color: "green" });
     } else {
       metrics.value.acoustic_task.incorrect_answer++;
       drawText({
-        text: "Response salah. Bukan pada urutan audio yang benar",
+        text: "Response audio salah. Bukan pada urutan audio yang benar",
         color: "red",
       });
     }

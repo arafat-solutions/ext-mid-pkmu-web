@@ -54,7 +54,7 @@
         </div>
       </div>
       <div class="collision-count" v-if="config.subtask.navigation">
-        Collisions: {{ collisionCount }}
+        Hindari pesawat jangan sampai menabrak garis
       </div>
     </div>
   </div>
