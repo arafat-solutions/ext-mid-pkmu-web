@@ -64,8 +64,14 @@
         />
       </div>
       <div class="font-bold text-lg text-center mt-5">
-        <span class="text-red-600" v-if="isWrongAnswer">Salah</span>
-        <span class="text-green-600" v-if="isCorrectAnswer">Benar</span>
+        <span class="text-red-600" v-if="isWrongAnswer && !isTrainingCompleted"
+          >Salah</span
+        >
+        <span
+          class="text-green-600"
+          v-if="isCorrectAnswer && !isTrainingCompleted"
+          >Benar</span
+        >
       </div>
     </div>
   </div>
@@ -98,9 +104,9 @@ export default {
         blue: "",
       },
       ruleOptions: [
-        'Klik blok yang menyala',
-        'Klik blok yang sejajar vertikal',
-        'Klik blok yang sejajar horizontal'
+        "Klik blok yang menyala",
+        "Klik blok yang sejajar vertikal",
+        "Klik blok yang sejajar horizontal",
       ],
       currentRuleSet: {
         red: 0,
