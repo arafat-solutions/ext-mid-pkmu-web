@@ -2,12 +2,12 @@
   <div class="tracking-test">
     <!-- Start Modal -->
     <Transition name="modal">
-      <div v-if="showStartModal" class="modal-overlay">
+      <div v-if="showStartModal && !trainingMode" class="modal-overlay">
         <div class="modal-container">
           <div class="modal-content">
             <h2 class="modal-title">PFD Tracking Test</h2>
             <div class="modal-body">
-              <p>Dala ujian ini, anda perlu:</p>
+              <p>Dalam ujian ini, anda perlu:</p>
               <ul class="modal-list">
                 <li>Mengendalikan indikator pesawat menggunakan joystick dan thruster</li>
                 <li>Menjaga indikator dalam rentang target</li>
@@ -23,8 +23,55 @@
       </div>
     </Transition>
 
+    <!-- Training Instructions Modal -->
+    <Transition name="modal">
+      <div v-if="trainingMode && showInstructions" class="modal-overlay">
+        <div class="modal-container">
+          <div class="modal-content">
+            <h2 class="modal-title">{{ trainingSteps[trainingStep].title }}</h2>
+            <div class="modal-body">
+              <img :src="trainingSteps[trainingStep].imagePath" alt="Training instruction"
+                class="w-full h-auto max-h-64 object-contain mb-4 rounded">
+              <p class="text-lg">{{ trainingSteps[trainingStep].instruction }}</p>
+
+              <!-- Step-specific tips -->
+              <div v-if="trainingStep === 0" class="mt-4">
+                <p class="font-bold">Tips Kendali Arah:</p>
+                <ul class="list-disc pl-6">
+                  <li>Gerakkan joystick kiri/kanan untuk mengontrol arah</li>
+                  <li>Tampilan arah menunjukkan derajat (0-360°)</li>
+                  <li>Jaga indikator arah dalam rentang ±5° dari target</li>
+                </ul>
+              </div>
+              <div v-if="trainingStep === 1" class="mt-4">
+                <p class="font-bold">Tips Ketinggian:</p>
+                <ul class="list-disc pl-6">
+                  <li>Tarik ke belakang untuk naik, dorong ke depan untuk turun</li>
+                  <li>Perhatikan kecepatan vertikal - hindari perubahan mendadak</li>
+                  <li>Jaga ketinggian dalam rentang ±100ft dari target</li>
+                </ul>
+              </div>
+              <div v-if="trainingStep === 2" class="mt-4">
+                <p class="font-bold">Tips Kecepatan:</p>
+                <ul class="list-disc pl-6">
+                  <li>Gunakan throttle untuk mengontrol daya mesin</li>
+                  <li>Perubahan ketinggian akan mempengaruhi kecepatan</li>
+                  <li>Jaga kecepatan dalam rentang ±5 knot dari target</li>
+                </ul>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="modal-button mr-4 bg-green-500" @click="startTrainingStep">Mulai Latihan</button>
+              <button v-if="completedTraining" class="modal-button bg-blue-500" @click="startExam">Mulai Test</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Timer -->
-    <div class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
+    <div v-if="!trainingMode" class="countdown-timer">{{ formatTime(timeRemaining) }}</div>
+
     <!-- Control Mode Toggle -->
     <div class="control-mode-toggle">
       <button @click="toggleControlMode">
@@ -43,16 +90,21 @@
     </div>
 
     <!-- Main Indicators -->
-    <div class="indicators-container">
+    <div class="indicators-container" :class="{ 'training-mode': trainingMode }">
       <div class="indicators-row">
         <!-- Speed Indicator -->
-        <div class="indicator-group overflow-hidden" :class="{ 'blink': isAirspeedOutOfTarget }">
+        <div v-if="!trainingMode || trainingSteps[trainingStep].activeIndicators.includes('airspeed')"
+          class="indicator-group overflow-hidden" :class="{
+            'blink': isAirspeedOutOfTarget && examRunning,
+            'inactive': trainingMode && !trainingSteps[trainingStep].activeIndicators.includes('airspeed')
+          }">
           <div class="indicator-label">SPEED</div>
           <div class="indicator vertical">
             <LinearGauge label="Airspeed" :value="airspeed" :target="airspeedTarget" :min="MOVEMENT_SPEED.MIN_AIRSPEED"
               :max="MOVEMENT_SPEED.MAX_AIRSPEED" :isVertical="true" :step="5" />
             <!-- Thrust Control -->
-            <div class="thruster-indicator">
+            <div class="thruster-indicator"
+              :class="{ 'highlight': trainingMode && trainingSteps[trainingStep].activeIndicators.includes('airspeed') }">
               <div class="thruster-bar">
                 <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
               </div>
@@ -62,7 +114,11 @@
         </div>
 
         <!-- Heading Indicator -->
-        <div class="indicator-group overflow-hidden" :class="{ 'blink': isHeadingOutOfTarget }">
+        <div v-if="!trainingMode || trainingSteps[trainingStep].activeIndicators.includes('heading')"
+          class="indicator-group overflow-hidden" :class="{
+            'blink': isHeadingOutOfTarget && examRunning,
+            'inactive': trainingMode && !trainingSteps[trainingStep].activeIndicators.includes('heading')
+          }">
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
             <LinearGauge label="compass" :value="heading" :target="headingTarget" :min="0" :max="360"
@@ -71,22 +127,50 @@
         </div>
 
         <!-- Altitude Indicator -->
-        <div class="indicator-group overflow-hidden" :class="{ 'blink': isAltitudeOutOfTarget }">
+        <div v-if="!trainingMode || trainingSteps[trainingStep].activeIndicators.includes('altitude')"
+          class="indicator-group overflow-hidden" :class="{
+            'blink': isAltitudeOutOfTarget && examRunning,
+            'inactive': trainingMode && !trainingSteps[trainingStep].activeIndicators.includes('altitude')
+          }">
           <div class="indicator-label">ALTITUDE</div>
           <div class="indicator vertical">
             <LinearGauge label="altitude" :value="altitude" :target="altitudeTarget" :min="0" :max="10000"
               :isVertical="true" :step="500" />
-
-            <div class="thruster-indicator hidden">
-            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Score Display -->
-    <div v-if="examRunning" class="score-display">
-      Score: {{ score }}
+      <!-- Training Progress Indicator -->
+      <div v-if="trainingMode" class="training-progress">
+        <div class="progress-steps">
+          <div v-for="(step, index) in trainingSteps" :key="index" class="progress-step" :class="{
+            'completed': index < trainingStep,
+            'active': index === trainingStep,
+            'pending': index > trainingStep
+          }">
+            <div class="step-number">{{ index + 1 }}</div>
+            <div class="step-label">{{ step.title }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Training Mode Controls -->
+      <!-- Add this near your training controls -->
+      <div v-if="trainingMode && !showInstructions" class="training-controls">
+        <!-- <button class="training-button mr-4" @click="showInstructions = true">
+          <Info class="w-4 h-4 mr-2" />
+          Show Instructions
+        </button> -->
+        <button class="training-button bg-green-500" @click="moveToNextTraining">
+          Latihan Selanjutnya
+          <ChevronRight class="w-4 h-4 ml-2" />
+        </button>
+      </div>
+
+      <!-- Score Display -->
+      <div v-if="examRunning" class="score-display">
+        Score: {{ score }}
+      </div>
     </div>
   </div>
 </template>
@@ -169,6 +253,74 @@ const config = ref({
   totalDuration: 0
 });
 const lastRecordedTime = ref(Date.now());
+// Add to your state declarations
+const trainingMode = ref(true);
+const trainingStep = ref(0);
+const completedTraining = ref(false);
+const showInstructions = ref(true);
+// Training steps configuration
+// Modify the trainingSteps array
+// Complete trainingSteps array
+const trainingSteps = [
+  {
+    title: "Heading Control Training",
+    instruction: "Lakukan latihan mengontrol arah pesawat menggunakan gerakan joystick kiri/kanan. Jaga dalam rentang ±5° dari target.",
+    activeIndicators: ['heading'],
+    content: `
+      <div class="space-y-4">
+        <img src="/devices/joystick.png" alt="Heading Control Diagram" class="rounded-lg w-full">
+        <div class="bg-gray-800 p-4 rounded-lg">
+            <h3 class="text-lg font-bold mb-2">Kontrol Joystick:</h3>
+            <ul class="list-disc pl-6 space-y-2">
+            <li>Gerakkan joystick ke <span class="font-bold text-blue-400">KIRI</span> untuk menambah angka arah</li>
+            <li>Gerakkan joystick ke <span class="font-bold text-blue-400">KANAN</span> untuk mengurangi angka arah</li>
+            <li>Arah saat ini ditampilkan dalam derajat (0-360°)</li>
+            <li>Penanda biru menunjukkan target arah Anda</li>
+            </ul>
+        </div>
+      </div>
+    `
+  },
+  {
+    title: "Altitude Control Training",
+    instruction: "Lakukan latihan mengontrol ketinggian pesawat menggunakan gerakan joystick maju/mundur. Jaga dalam rentang ±100ft dari target.",
+    activeIndicators: ['altitude'],
+    content: `
+      <div class="space-y-4">
+        <img src="/devices/thruster.png" alt="Altitude Control Diagram" class="rounded-lg w-full">
+        <div class="bg-gray-800 p-4 rounded-lg">
+            <h3 class="text-lg font-bold mb-2">Kontrol Joystick:</h3>
+            <ul class="list-disc pl-6 space-y-2">
+            <li>Tarik joystick ke <span class="font-bold text-blue-400">BELAKANG</span> untuk menambah ketinggian</li>
+            <li>Dorong joystick ke <span class="font-bold text-blue-400">DEPAN</span> untuk menurunkan ketinggian</li>
+            <li>Ketinggian ditampilkan dalam satuan kaki (0-10.000ft)</li>
+            <li>Penanda biru menunjukkan target ketinggian Anda</li>
+            </ul>
+        </div>
+      </div>
+    `
+  },
+  {
+    title: "Airspeed Control Training",
+    instruction: "Lakukan latihan mengontrol kecepatan pesawat menggunakan throttle. Jaga dalam rentang ±5 knots dari target.",
+    activeIndicators: ['airspeed'],
+    content: `
+      <div class="space-y-4">
+        <img src="/api/placeholder/600/300" alt="Airspeed Control Diagram" class="rounded-lg w-full">
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <h3 class="text-lg font-bold mb-2">Kontrol Throttle:</h3>
+          <ul class="list-disc pl-6 space-y-2">
+            <li>Gerakkan throttle ke <span class="font-bold text-blue-400">DEPAN</span> untuk menambah kecepatan</li>
+            <li>Gerakkan throttle ke <span class="font-bold text-blue-400">BELAKANG</span> untuk mengurangi kecepatan</li>
+            <li>Kecepatan ditampilkan dalam knot (60-160 knot)</li>
+            <li>Ingat: Perubahan kecepatan bersifat bertahap dan dipengaruhi oleh ketinggian</li>
+          </ul>
+        </div>
+      </div>
+    `
+  }
+];
+
 
 // Computed properties
 const isAirspeedOutOfTarget = computed(() => {
@@ -204,6 +356,39 @@ const formatTime = (time) => {
   const seconds = Math.floor(time % 60);
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
+
+const headingInputDuration = ref(0);
+const altitudeInputDuration = ref(0);
+
+// Add the moveToNextTraining function
+const moveToNextTraining = () => {
+  if (trainingStep.value < trainingSteps.length - 1) {
+    trainingStep.value++;
+    showInstructions.value = true;
+    headingInputDuration.value = 0;
+    altitudeInputDuration.value = 0;
+
+    // Reset relevant parameters for new training step
+    if (trainingSteps[trainingStep.value].activeIndicators.includes('heading')) {
+      heading.value = 180;
+      headingTarget.value = 270;
+    }
+    if (trainingSteps[trainingStep.value].activeIndicators.includes('altitude')) {
+      altitude.value = 5000;
+      altitudeTarget.value = 6000;
+    }
+    if (trainingSteps[trainingStep.value].activeIndicators.includes('airspeed')) {
+      airspeed.value = 100;
+      airspeedTarget.value = 120;
+      thrustLevel.value = 50;
+    }
+  } else {
+    completedTraining.value = true;
+    trainingMode.value = false;
+    startExam();
+  }
+};
+
 
 const initSounds = () => {
   try {
@@ -385,6 +570,46 @@ const updateSounds = () => {
   );
 };
 
+const isOutOfTarget = (indicator) => {
+  let diff;
+  switch (indicator) {
+    case 'heading':
+      diff = Math.abs(heading.value - headingTarget.value);
+      return Math.min(diff, 360 - diff) > 5;
+    case 'altitude':
+      return Math.abs(altitude.value - altitudeTarget.value) > 100;
+    case 'airspeed':
+      return Math.abs(airspeed.value - airspeedTarget.value) > 5;
+    default:
+      return false;
+  }
+};
+
+// Training progress monitoring
+const timeOnTarget = ref(0);
+const MASTERY_TIME = 5; // 5 seconds to master each control
+
+const checkTrainingProgress = () => {
+  const activeIndicators = trainingSteps[trainingStep.value].activeIndicators;
+  let allOnTarget = true;
+
+  for (const indicator of activeIndicators) {
+    if (isOutOfTarget(indicator)) {
+      allOnTarget = false;
+      timeOnTarget.value = 0;
+      break;
+    }
+  }
+
+  if (allOnTarget) {
+    timeOnTarget.value += 1 / 60; // Assuming 60 FPS
+    if (timeOnTarget.value >= MASTERY_TIME) {
+      completeTrainingStep();
+      timeOnTarget.value = 0;
+    }
+  }
+};
+
 // Gamepad handling
 const checkGamepadConnection = () => {
   const gamepads = navigator.getGamepads();
@@ -415,34 +640,54 @@ const onGamepadDisconnected = (e) => {
   }
 };
 
-// Update the plane position function
+
+// Complete updatePlanePosition function
 const updatePlanePosition = () => {
   lastAltitude.value = altitude.value;
 
-  // Handle joystick controls...
+  // Handle joystick controls
   if (gamepad.value) {
     const stick = navigator.getGamepads()[gamepad.value.index];
     if (stick) {
-      const headingChange = stick.axes[0] * MOVEMENT_SPEED.HEADING;
-      heading.value = (heading.value + headingChange + 360) % 360;
+      // Apply deadzone and get raw values with reduced sensitivity
+      const applyDeadzone = (value, threshold = 0.05) => {
+        const absValue = Math.abs(value);
+        if (absValue < threshold) return 0;
+        // Add non-linear response for finer control
+        const normalized = (absValue - threshold) / (1 - threshold);
+        return value > 0 ? normalized : -normalized;
+      };
 
-      const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
-      altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
+      // Handle heading (X-axis) with reduced speed
+      const rawX = applyDeadzone(stick.axes[0], 0.1);
+      if ((!trainingMode.value || trainingSteps[trainingStep.value].activeIndicators.includes('heading'))) {
+        const headingChange = rawX * MOVEMENT_SPEED.HEADING * 1.5; // Reduced from 5 to 1.5
+        if (rawX !== 0) {
+          heading.value = (heading.value - headingChange + 360) % 360;
+        }
+      }
+
+      // Handle altitude (Y-axis) with reduced speed
+      const rawY = applyDeadzone(stick.axes[1], 0.1);
+      if ((!trainingMode.value || trainingSteps[trainingStep.value].activeIndicators.includes('altitude'))) {
+        const altitudeChange = rawY * MOVEMENT_SPEED.ALTITUDE * 1.5; // Reduced from 5 to 1.5
+        if (rawY !== 0) {
+          altitude.value = Math.max(0, Math.min(10000, altitude.value - altitudeChange));
+        }
+      }
     }
   }
 
-  // Update thrust...
+  // Handle throttle
   if (thruster.value) {
     const throttle = navigator.getGamepads()[thruster.value.index];
-    if (throttle) {
+    if (throttle && (!trainingMode.value || trainingSteps[trainingStep.value].activeIndicators.includes('airspeed'))) {
       thrustLevel.value = (1 - throttle.axes[2]) * 100;
     }
   }
 
-  // Calculate air density factor (thinner air at higher altitudes)
-  const altitudeFactor = 1 - (altitude.value / 20000); // Simplified air density calculation
-
-  // Calculate drag (increases with speed)
+  // Calculate air density factor
+  const altitudeFactor = 1 - (altitude.value / 20000);
   const dragForce = Math.pow(airspeed.value / 100, 2) * MOVEMENT_SPEED.DRAG_COEFFICIENT * altitudeFactor;
 
   // Calculate vertical speed effects
@@ -456,23 +701,21 @@ const updatePlanePosition = () => {
   targetSpeed.value = MOVEMENT_SPEED.MIN_AIRSPEED +
     ((MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) * (thrustLevel.value / 100));
 
-  // Calculate acceleration more realistically
+  // Calculate acceleration with improved response
   const speedDifference = targetSpeed.value - airspeed.value;
   const accelerationRate = speedDifference > 0 ?
-    MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor :
-    MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
+    MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor * 2 : // Doubled for better response
+    MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor * 2;
 
   // Update acceleration with momentum
   currentAcceleration.value += speedDifference * accelerationRate;
-  currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;  // Maintain momentum
+  currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;
 
-  // Apply drag
+  // Apply forces
   currentAcceleration.value -= dragForce;
-
-  // Apply altitude effects
   currentAcceleration.value -= clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
 
-  // Update airspeed
+  // Update final airspeed
   airspeed.value = Math.max(
     MOVEMENT_SPEED.MIN_AIRSPEED,
     Math.min(
@@ -480,17 +723,6 @@ const updatePlanePosition = () => {
       airspeed.value + currentAcceleration.value
     )
   );
-
-  // Debug logging - remove in production
-  if (Math.random() < 0.01) { // Log only occasionally to avoid spam
-    console.log({
-      currentSpeed: Math.round(airspeed.value),
-      targetSpeed: Math.round(targetSpeed.value),
-      acceleration: currentAcceleration.value,
-      drag: dragForce,
-      altitudeEffect: clampedAltitudeEffect
-    });
-  }
 };
 
 
@@ -571,15 +803,19 @@ const updatePerformanceData = () => {
 
 const updateLoop = () => {
   checkGamepadConnection();
-  if (examRunning.value) {
+  if (examRunning.value || trainingMode.value) {  // Modified to run in training mode too
     updatePlanePosition();
     if (mode.value === 'moving') {
       updateTargets();
     }
-    updateScore();
-    updateTime();
-    updatePerformanceData();
-    updateSounds(); // Add sound updates
+    if (examRunning.value) {
+      updateScore();
+      updateTime();
+      updatePerformanceData();
+    } else if (trainingMode.value) {
+      checkTrainingProgress();  // New function to monitor training progress
+    }
+    updateSounds();
   }
   requestAnimationFrame(updateLoop);
 };
@@ -634,137 +870,123 @@ const updateTargets = () => {
   }
 };
 
+
+// Update the updateIndicator function for gradual target movement
 const updateIndicator = (indicator, mode) => {
   if (mode === 'inactive' || mode === 'keep_indicator') {
-    console.log(`${indicator} is inactive or set to keep_indicator. Skipping update.`);
     return;
   }
 
   const currentTime = Date.now();
-  let lastUpdateTime;
+  let lastUpdateTime = indicator === 'airspeed' ? lastAirspeedUpdate.value :
+    indicator === 'heading' ? lastHeadingUpdate.value :
+      lastAltitudeUpdate.value;
 
-  // Determine which lastUpdateTime to use
-  switch (indicator) {
-    case 'airspeed':
-      lastUpdateTime = lastAirspeedUpdate.value;
-      break;
-    case 'heading':
-      lastUpdateTime = lastHeadingUpdate.value;
-      break;
-    case 'altitude':
-      lastUpdateTime = lastAltitudeUpdate.value;
-      break;
-    default:
-      return;
-  }
-
-  // Check if it's time to update the target
   if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
-    console.log(`Skipping ${indicator} update: too soon since last update.`);
     return;
   }
 
-  // Update the lastUpdateTime for this indicator
-  switch (indicator) {
-    case 'airspeed':
-      lastAirspeedUpdate.value = currentTime;
-      break;
-    case 'heading':
-      lastHeadingUpdate.value = currentTime;
-      break;
-    case 'altitude':
-      lastAltitudeUpdate.value = currentTime;
-      break;
-  }
+  // Update the last update time
+  if (indicator === 'airspeed') lastAirspeedUpdate.value = currentTime;
+  if (indicator === 'heading') lastHeadingUpdate.value = currentTime;
+  if (indicator === 'altitude') lastAltitudeUpdate.value = currentTime;
 
-  let currentTarget, minValue, maxValue;
+  // Get current values
+  const currentValue = indicator === 'airspeed' ? airspeed.value :
+    indicator === 'heading' ? heading.value :
+      altitude.value;
 
-  switch (indicator) {
-    case 'airspeed':
-      currentTarget = airspeedTarget.value;
-      minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
-      maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
-      break;
-    case 'heading':
-      currentTarget = headingTarget.value;
-      minValue = 0;
-      maxValue = 360;
-      break;
-    case 'altitude':
-      currentTarget = altitudeTarget.value;
-      minValue = 1000;
-      maxValue = 9000;
-      break;
-    default:
-      return;
-  }
+  const currentTarget = indicator === 'airspeed' ? airspeedTarget.value :
+    indicator === 'heading' ? headingTarget.value :
+      altitudeTarget.value;
 
-  // console.log(`Updating ${indicator} target. Current target: ${currentTarget}`);
-
-  // Calculate the maximum change amount
-  let maxChange;
-
+  // Calculate new target with gradual movement
+  let newTarget;
   if (indicator === 'heading') {
-    // Use a larger percentage (e.g., 30%) or a fixed value for heading
-    maxChange = currentTarget * 0.3; // 30% of current value
-    // Alternatively, use a fixed value for heading changes
-    // maxChange = 30; // Fixed change of 30 degrees
+    // For heading, we need to handle the 0-360 wrap
+    const diff = ((currentValue - currentTarget + 180 + 360) % 360) - 180;
+    const moveAmount = Math.min(Math.abs(diff), 45) * Math.sign(diff);
+    newTarget = (currentTarget + moveAmount + 360) % 360;
   } else {
-    // Use 20% for airspeed and altitude
-    maxChange = currentTarget * 0.2;
+    // For altitude and airspeed
+    const range = indicator === 'altitude' ? 500 : 10;
+    const diff = currentValue - currentTarget;
+    const moveAmount = Math.min(Math.abs(diff), range) * Math.sign(diff);
+
+    if (indicator === 'altitude') {
+      newTarget = Math.max(1000, Math.min(9000, currentTarget + moveAmount));
+    } else {
+      newTarget = Math.max(MOVEMENT_SPEED.MIN_AIRSPEED,
+        Math.min(MOVEMENT_SPEED.MAX_AIRSPEED, currentTarget + moveAmount));
+    }
   }
 
-  // Ensure a minimum change for heading when currentTarget is 0
-  if (indicator === 'heading' && currentTarget === 0) {
-    maxChange = 30; // Minimum change of 30 degrees
+  // Update the target value
+  if (indicator === 'airspeed') airspeedTarget.value = newTarget;
+  if (indicator === 'heading') headingTarget.value = newTarget;
+  if (indicator === 'altitude') altitudeTarget.value = newTarget;
+};
+
+const startTrainingStep = () => {
+  showInstructions.value = false;
+  const activeIndicators = trainingSteps[trainingStep.value].activeIndicators;
+
+  // Reset parameters based on active indicators
+  if (activeIndicators.includes('heading')) {
+    heading.value = 180;
+    headingTarget.value = 270;
   }
-
-  // Generate a random change within the range of -maxChange to +maxChange
-  const changeAmount = (Math.random() * 2 - 1) * maxChange; // Random value between -maxChange and +maxChange
-
-  // Calculate the new target value
-  let newTarget = currentTarget + changeAmount;
-
-  // Handle wrapping for heading (0-360 degrees)
-  if (indicator === 'heading') {
-    newTarget = (newTarget + 360) % 360; // Wrap around at 0 and 360
-  } else {
-    // Clamp newTarget within min and max values
-    newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
+  if (activeIndicators.includes('altitude')) {
+    altitude.value = 5000;
+    altitudeTarget.value = 6000;
   }
-
-  // console.log(`New ${indicator} target: ${newTarget}`);
-
-  // Update the target
-  switch (indicator) {
-    case 'airspeed':
-      airspeedTarget.value = newTarget;
-      break;
-    case 'heading':
-      headingTarget.value = newTarget;
-      break;
-    case 'altitude':
-      altitudeTarget.value = newTarget;
-      break;
+  if (activeIndicators.includes('airspeed')) {
+    airspeed.value = 100;
+    airspeedTarget.value = 120;
+    thrustLevel.value = 50;
   }
 };
 
+const completeTrainingStep = () => {
+  // Check if current step is mastered (within target for 5 seconds)
+  const activeIndicators = trainingSteps[trainingStep.value].activeIndicators;
+  let stepMastered = true;
+
+  for (const indicator of activeIndicators) {
+    if (isOutOfTarget(indicator)) {
+      stepMastered = false;
+      break;
+    }
+  }
+
+  if (stepMastered) {
+    if (trainingStep.value < trainingSteps.length - 1) {
+      trainingStep.value++;
+      showInstructions.value = true;
+    } else {
+      completedTraining.value = true;
+      trainingMode.value = false;
+      startExam();
+    }
+  }
+};
+
+
+
 const startExam = () => {
+  if (trainingMode.value && !completedTraining.value) {
+    showInstructions.value = true;
+    return;
+  }
+
   examRunning.value = true;
   score.value = 0;
   currentConfigIndex.value = 0;
 
-  // Log the configs and their durations
-  // console.log('Configurations:', config.value.configs);
-
-  // Calculate total duration of all configs
   const totalDur = config.value.configs.reduce((acc, cfg) => acc + Number(cfg.duration), 0);
-  // console.log('Total Duration (minutes):', totalDur);
+  timeRemaining.value = totalDur * 60;
 
-  timeRemaining.value = totalDur * 60; // Convert minutes to seconds
-  // console.log('Initial timeRemaining (seconds):', timeRemaining.value);
-
-  // Reset performance tracking
+  // Reset all parameters
   airspeed.value = 120;
   heading.value = 0;
   altitude.value = 5000;
@@ -777,13 +999,12 @@ const startExam = () => {
   timeOnTargetHeading.value = 0;
   timeOnTargetAltitude.value = 0;
 
-  // Reset audio test data
   audioResponses.value = [];
   displayedNumbers.value = [];
 
-  // Initialize sound system
   initSounds();
 };
+
 
 // Modify endExam to cleanup sounds
 const endExam = () => {
@@ -927,6 +1148,7 @@ const handleKeyDown = (event) => {
 // Lifecycle hooks
 onMounted(() => {
   initConfig();
+  showInstructions.value = true; // Ensure instructions show on mount
   window.addEventListener('gamepadconnected', onGamepadConnected);
   window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
   window.addEventListener('keydown', handleKeyDown);
@@ -1275,5 +1497,114 @@ onUnmounted(() => {
 
 .manual-control-instructions li {
   margin-bottom: 5px;
+}
+
+.training-mode {
+  position: relative;
+}
+
+.training-progress {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(44, 62, 80, 0.9);
+  padding: 15px;
+  border-radius: 8px;
+  z-index: 1000;
+}
+
+.progress-steps {
+  display: flex;
+  gap: 20px;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.progress-step.active {
+  opacity: 1;
+}
+
+.progress-step.completed {
+  opacity: 0.8;
+}
+
+.step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.step-label {
+  font-size: 14px;
+}
+
+.training-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.training-button {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #4a5568;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.training-button:hover {
+  background: #2d3748;
+}
+
+.highlight {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(66, 153, 225, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
+  }
+}
+
+.indicator-group.inactive {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.modal-container {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-body img {
+  max-height: 300px;
+  object-fit: contain;
+  margin: 0 auto;
 }
 </style>
