@@ -191,7 +191,6 @@ export default {
           return "Lampu Peringatan";
         case "combined":
           return "Gabungan";
-          break;
       }
     },
 
