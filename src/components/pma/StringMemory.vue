@@ -12,7 +12,7 @@
       </button>
     </div>
     <div v-else-if="!isActualTest" class="result">
-      {{ correct ? "Correct!" : "Incorrect" }}
+      {{ correct ? "Benar!" : "Salah Pilihan anda, tidak terdapat pada referensi" }}
     </div>
   </div>
 </template>
