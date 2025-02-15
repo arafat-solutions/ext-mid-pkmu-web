@@ -88,7 +88,8 @@
       {{ nextStepButtonText }}
     </button>
 
-    <div class="countdown-timer">{{ formatTime(config.totalDuration) }}</div>
+    <!-- Update this part in the template -->
+    <div class="countdown-timer" v-if="!trainingMode">{{ formatTime(config.totalDuration) }}</div>
     <div class="control-mode-toggle">
       <!-- <button @click="toggleControlMode">
         {{
@@ -240,7 +241,6 @@ const lastAltitude = ref(altitude.value);
 const thrustLevel = ref(0);
 const currentConfigIndex = ref(0);
 const lastUpdateTime = ref(Date.now());
-const targetUpdateInterval = ref(50); // Update every 50ms
 const audioContext = ref(null);
 const engineGain = ref(null);
 const baseOscillator = ref(null);
@@ -274,7 +274,6 @@ const currentTrainingStep = ref(0);
 const showFeedback = ref(false);
 const feedbackMessage = ref('');
 const userFollowingDirection = ref(false);
-const lastTargetDirection = ref(null);
 const currentStep = ref(null);
 const performanceMetrics = ref({});
 const showTrainingModal = ref(false); // Training step modal
@@ -749,7 +748,7 @@ const cancelAudioSequence = () => {
 const updatePlanePosition = () => {
   lastAltitude.value = altitude.value;
 
-  // Handle joystick controls...
+  // Handle joystick controls
   if (controlMode.value === "joystick") {
     if (gamepad.value) {
       const stick = navigator.getGamepads()[gamepad.value.index];
@@ -758,10 +757,7 @@ const updatePlanePosition = () => {
         heading.value = (heading.value + headingChange + 360) % 360;
 
         const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
-        altitude.value = Math.max(
-          0,
-          Math.min(10000, altitude.value + altitudeChange)
-        );
+        altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
       }
     }
 
@@ -811,67 +807,54 @@ const updatePlanePosition = () => {
     }
   }
 
-  // Calculate air density factor (thinner air at higher altitudes)
-  const altitudeFactor = 1 - altitude.value / 20000; // Simplified air density calculation
+// Calculate air density factor (thinner air at higher altitudes)
+const altitudeFactor = 1 - altitude.value / 20000;
 
-  // Calculate drag (increases with speed)
-  const dragForce =
-    Math.pow(airspeed.value / 100, 2) *
-    MOVEMENT_SPEED.DRAG_COEFFICIENT *
-    altitudeFactor;
+// Calculate drag (increases with speed)
+const dragForce = Math.pow(airspeed.value / 100, 2) * 
+  MOVEMENT_SPEED.DRAG_COEFFICIENT * 
+  altitudeFactor;
 
-  // Calculate vertical speed effects
-  const altitudeEffect =
-    verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
-  const clampedAltitudeEffect = Math.max(
-    -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
-    Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
-  );
+// Calculate vertical speed effects
+const altitudeEffect = verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
+const clampedAltitudeEffect = Math.max(
+  -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
+  Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
+);
 
-  // Calculate target speed based on thrust
-  targetSpeed.value =
-    MOVEMENT_SPEED.MIN_AIRSPEED +
+// Set minimum airspeed based on altitude (higher minimum speed at higher altitudes)
+const minimumAirspeed = MOVEMENT_SPEED.MIN_AIRSPEED + (altitude.value / 10000) * 20;
+
+// Calculate target speed based on thrust with minimum speed
+targetSpeed.value = Math.max(
+  minimumAirspeed,
+  MOVEMENT_SPEED.MIN_AIRSPEED +
     (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
-    (thrustLevel.value / 100);
+    (thrustLevel.value / 100)
+);
 
-  // Calculate acceleration more realistically
-  const speedDifference = targetSpeed.value - airspeed.value;
-  const accelerationRate =
-    speedDifference > 0
-      ? MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor
-      : MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
+// Calculate acceleration
+const speedDifference = targetSpeed.value - airspeed.value;
+const accelerationRate = speedDifference > 0
+  ? MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor
+  : MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
 
-  // Update acceleration with momentum
-  currentAcceleration.value += speedDifference * accelerationRate;
-  currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION; // Maintain momentum
+// Update acceleration with momentum
+currentAcceleration.value += speedDifference * accelerationRate;
+currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;
 
-  // Apply drag
-  currentAcceleration.value -= dragForce;
+// Apply drag and altitude effects
+currentAcceleration.value -= dragForce;
+currentAcceleration.value -= clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
 
-  // Apply altitude effects
-  currentAcceleration.value -=
-    clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
-
-  // Update airspeed
-  airspeed.value = Math.max(
-    MOVEMENT_SPEED.MIN_AIRSPEED,
-    Math.min(
-      MOVEMENT_SPEED.MAX_AIRSPEED,
-      airspeed.value + currentAcceleration.value
-    )
-  );
-
-  // Debug logging - remove in production
-  if (Math.random() < 0.01) {
-    // Log only occasionally to avoid spam
-    console.log({
-      currentSpeed: Math.round(airspeed.value),
-      targetSpeed: Math.round(targetSpeed.value),
-      acceleration: currentAcceleration.value,
-      drag: dragForce,
-      altitudeEffect: clampedAltitudeEffect,
-    });
-  }
+// Update airspeed with minimum speed enforcement
+airspeed.value = Math.max(
+  minimumAirspeed,
+  Math.min(
+    MOVEMENT_SPEED.MAX_AIRSPEED,
+    airspeed.value + currentAcceleration.value
+  )
+);
 };
 
 const updateScore = () => {
@@ -962,119 +945,55 @@ const updateTime = () => {
 
 const updateTargets = () => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
-  lastTargetDirection.value = {
-    airspeed: airspeedChangeDirection.value,
-    heading: headingChangeDirection.value,
-    altitude: altitudeChangeDirection.value
-  };
-
-  if (Math.random() < 0.3) {
-    updateIndicator("airspeed", currentConfig?.airspeed);
-    updateIndicator("heading", currentConfig?.compass);
-    updateIndicator("altitude", currentConfig?.altimeter);
-  }
-};
-
-const updateIndicator = (indicator, mode) => {
-  // if (mode === 'inactive' || mode === 'keep_indicator') {
-  //     console.log(`${indicator} is inactive or set to keep_indicator`);
-  //     return;
-  // }
   const currentTime = Date.now();
-  if (currentTime - lastUpdateTime.value < targetUpdateInterval.value) {
-    // console.log(`${indicator} update skipped due to interval`);
+  
+  // Only update every 10 seconds
+  if (currentTime - lastUpdateTime.value < 10000) {
     return;
   }
-
+  
   lastUpdateTime.value = currentTime;
 
-  if (mode === "adjust_for_consistent_updates") {
-    let currentTarget, minValue, maxValue;
+  // Generate smooth, gradual changes for each indicator
+  if (currentConfig?.airspeed !== 'inactive') {
+    // Calculate new airspeed target with 5% maximum change
+    const maxAirspeedChange = airspeedTarget.value * 0.05;
+    const airspeedChange = (Math.random() * 2 - 1) * maxAirspeedChange;
+    const newAirspeedTarget = Math.max(
+      MOVEMENT_SPEED.MIN_AIRSPEED + 20, // Minimum target speed
+      Math.min(
+        MOVEMENT_SPEED.MAX_AIRSPEED - 20, // Maximum target speed
+        airspeedTarget.value + airspeedChange
+      )
+    );
+    
+    airspeedTarget.value = newAirspeedTarget;
+    airspeedChangeDirection.value = airspeedChange > 0 ? 'up' : 'down';
+  }
 
-    switch (indicator) {
-      case "airspeed":
-        currentTarget = airspeedTarget.value;
-        minValue = MOVEMENT_SPEED.MIN_AIRSPEED;
-        maxValue = MOVEMENT_SPEED.MAX_AIRSPEED;
-        break;
-      case "heading":
-        currentTarget = headingTarget.value;
-        minValue = 0;
-        maxValue = 360;
-        break;
-      case "altitude":
-        currentTarget = altitudeTarget.value;
-        minValue = 1000;
-        maxValue = 9000;
-        break;
-    }
+  if (currentConfig?.compass !== 'inactive') {
+    // Calculate new heading target with 10-degree maximum change
+    const headingChange = (Math.random() * 2 - 1) * 10;
+    const newHeadingTarget = (headingTarget.value + headingChange + 360) % 360;
+    
+    headingTarget.value = newHeadingTarget;
+    headingChangeDirection.value = headingChange > 0 ? 'up' : 'down';
+  }
 
-    // console.log(`Updating ${indicator} target from ${currentTarget}`);
-
-    // Calculate maximum change based on 5% of current value
-    const maxChange = currentTarget * 0.05;
-
-    // Randomize the magnitude of the change (between 10% and 20% of current value)
-    const changeMagnitude = maxChange * (0.5 + Math.random() * 0.5);
-
-    // Randomize the direction of the change
-    // const changeDirection = Math.random() > 0.5 ? 1 : -1;
-    const changeDirection = 1;
-
-    // Calculate new target
-    let newTarget = currentTarget + changeDirection * changeMagnitude;
-
-    // Ensure the new target stays within bounds
-    newTarget = Math.max(minValue, Math.min(maxValue, newTarget));
-
-    console.log(`New ${indicator} target: ${newTarget}`);
-
-    // Update the target
-    switch (indicator) {
-      case "airspeed":
-        airspeedTarget.value = newTarget;
-        airspeedChangeDirection.value = changeDirection > 0 ? "up" : "down";
-
-        // Adjust altitude inversely
-        if (
-          config.value.configs[currentConfigIndex.value]?.altimeter !==
-          "inactive"
-        ) {
-          const altitudeChange = -changeMagnitude * 0.5; // Adjust altitude by half the speed change
-          altitudeTarget.value = Math.max(
-            1000,
-            Math.min(9000, altitudeTarget.value + altitudeChange)
-          );
-          altitudeChangeDirection.value = altitudeChange > 0 ? "up" : "down";
-        }
-        break;
-
-      case "heading":
-        headingTarget.value = newTarget;
-        headingChangeDirection.value = changeDirection > 0 ? "up" : "down";
-        break;
-
-      case "altitude":
-        altitudeTarget.value = newTarget;
-        altitudeChangeDirection.value = changeDirection > 0 ? "up" : "down";
-
-        // Adjust speed inversely
-        if (
-          config.value.configs[currentConfigIndex.value]?.airspeed !==
-          "inactive"
-        ) {
-          const airspeedChange = -changeMagnitude * 0.5; // Adjust speed by half the altitude change
-          airspeedTarget.value = Math.max(
-            MOVEMENT_SPEED.MIN_AIRSPEED,
-            Math.min(
-              MOVEMENT_SPEED.MAX_AIRSPEED,
-              airspeedTarget.value + airspeedChange
-            )
-          );
-          airspeedChangeDirection.value = airspeedChange > 0 ? "up" : "down";
-        }
-        break;
-    }
+  if (currentConfig?.altimeter !== 'inactive') {
+    // Calculate new altitude target with 3% maximum change
+    const maxAltitudeChange = altitudeTarget.value * 0.03;
+    const altitudeChange = (Math.random() * 2 - 1) * maxAltitudeChange;
+    const newAltitudeTarget = Math.max(
+      1000, // Minimum altitude
+      Math.min(
+        9000, // Maximum altitude
+        altitudeTarget.value + altitudeChange
+      )
+    );
+    
+    altitudeTarget.value = newAltitudeTarget;
+    altitudeChangeDirection.value = altitudeChange > 0 ? 'up' : 'down';
   }
 };
 
@@ -1207,7 +1126,7 @@ const monitorPerformance = () => {
     }
   };
 
-  // If in training mode, provide feedback
+  // Only show feedback during training mode
   if (trainingMode.value) {
     const isFollowingDirection = checkDirectionFollowing();
 
@@ -1282,7 +1201,7 @@ const moveToNextTrainingStep = () => {
 const startActualExam = async () => {
   // Close confirmation modal
   showExamConfirmModal.value = false;
-  
+
   // Reset everything
   examRunning.value = false;
   trainingMode.value = false;
@@ -1299,21 +1218,21 @@ const startActualExam = async () => {
   headingTarget.value = 0;
   altitudeTarget.value = 5000;
   thrustLevel.value = 60;
-  
+
   // Reset audio
   cancelAudioSequence();
   audioResponses.value = [];
   displayedNumbers.value = [];
-  
+
   // Reset performance data
   headingPerformanceData.value = [];
   airspeedPerformanceData.value = [];
   altitudePerformanceData.value = [];
   userInputs.value = [];
-  
+
   // Reinitialize config
   await initConfig();
-  
+
   // Make sure all controls are active
   config.value.configs = config.value.configs.map(cfg => ({
     ...cfg,
@@ -1321,7 +1240,7 @@ const startActualExam = async () => {
     airspeed: 'adjust_for_consistent_updates',
     altimeter: 'adjust_for_consistent_updates'
   }));
-  
+
   // Start the exam
   startExam();
 };
@@ -1447,7 +1366,7 @@ const sendPerformanceData = async () => {
 };
 
 // Add this to your state declarations
-const showStartModal = ref(true);
+const showStartModal = ref(false);
 
 
 const handleKeyDown = (event) => {
@@ -1509,6 +1428,7 @@ onMounted(() => {
   updateLoop();
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("keyup", handleKeyUp);
+  handleStartExam();
 });
 
 const cleanupSounds = () => {
