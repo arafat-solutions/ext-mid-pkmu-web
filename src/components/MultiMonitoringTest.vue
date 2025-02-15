@@ -84,7 +84,7 @@
         </p>
       </div>
     </div>
-    <button v-if="isTraining" @click="endTrainingSession" class="finish-button">
+    <button v-if="isTraining" @click="endTrainingSession" class="finish-button" style="width: 200px; height: 70px;;">
       Selesai Latihan
     </button>
     <div
@@ -213,7 +213,7 @@ function getModalMessage() {
       case "acoustic":
         return "Anda diminta untuk menekan tuas pada bagian DEPAN JOYSTICK bila mendengar audio serupa, sebanyak 3 kali  berturut-turut. (Contoh: BEEP – BEEP – BEEP, maka anda harus menekan tuas untuk merespon audio tersebut).";
       case "keseluruhan":
-        return "Anda akan melakukan tugas secara bersamaan yaitu pelacakan, penekanan tombol, dan identifikasi suara.";
+        return "Anda akan melalui semua latihan sebelumnya, yaitu Tracking, Button, dan Acoustic. Apakah Anda siap untuk memulai tes?";
     }
   }
   return "Apakah Anda siap untuk memulai tes?";
@@ -257,6 +257,7 @@ function startTrainingSession() {
 
 function startFullTest() {
   initConfig();
+  updateCircleSpeed();
   countDownTestTime();
   gameState.value.lastFrameTime = performance.now();
   requestAnimationFrame(gameLoop);
@@ -432,7 +433,9 @@ function formatTime(seconds) {
 }
 
 function updateCircleSpeed() {
-  gameState.value.baseSpeed = speedMap[config.value.speed] || speedMap.normal;
+  gameState.value.baseSpeed = isTraining.value
+    ? 1
+    : speedMap[config.value.speed] || speedMap.medium;
   gameState.value.currentSpeed = gameState.value.baseSpeed;
 }
 
