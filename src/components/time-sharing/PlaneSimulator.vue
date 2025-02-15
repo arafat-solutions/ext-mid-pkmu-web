@@ -10,6 +10,10 @@
       >
         Press 'Space bar' to switch tasks
       </div>
+
+      <p v-if="getInstrumentErrorKey() && config.duration === 99999">
+        Tekan Huruf <b>{{ getInstrumentErrorKey() }}</b>
+      </p>
       <div class="game-content">
         <div class="instruments-left" v-if="config.subtask.observer">
           <div
@@ -220,7 +224,6 @@ export default {
           break;
       }
 
-      console.log(speed, this.obstacleSpeed);
 
       // gauge cluster
       this.gaugeSpeed = this.config.observer.speed;
@@ -458,6 +461,13 @@ export default {
             break;
         }
       }
+    },
+    getInstrumentErrorKey() {
+      return this.instrumentsLeft
+        .concat(this.instrumentsRight)
+        .filter((instrument) => instrument.value >= this.redZoneThreshold)
+        .map((instrument) => instrument.key)
+        .join(", ");
     },
     handleInstrumentClick(key) {
       const instrument = [
