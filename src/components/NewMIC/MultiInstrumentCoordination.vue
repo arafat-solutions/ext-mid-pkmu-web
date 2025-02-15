@@ -881,11 +881,12 @@ const updateScore = () => {
 
 const moveToNextConfig = () => {
   const nextIndex = currentConfigIndex.value + 1;
-  console.log(nextIndex, config.value.configs.length, "<< nextIndex");
+  // This condition means it will only end when totalDuration is 0 or negative
   if (config.value.totalDuration <= 0) {
     endExam();
     return;
   }
+  // But we're checking if nextIndex is within bounds, which might never be true
   if (nextIndex <= config.value.configs.length) {
     currentConfigIndex.value = nextIndex;
     // Reset targets for new config
@@ -908,8 +909,6 @@ const updateLoop = () => {
       updateTargets();
     }
     monitorPerformance();
-    // Remove checkTrainingProgress() here
-    config.value.totalDuration -= 1 / 60;
     updateScore();
     updateTime();
     updatePerformanceData();
@@ -926,6 +925,13 @@ const updateTime = () => {
   if (trainingMode.value) return;
 
   timeRemaining.value -= 1 / 60;
+  config.value.totalDuration -= 1 / 60;
+
+  // Add explicit check for exam end
+  if (config.value.totalDuration <= 0) {
+    endExam();
+    return;
+  }
 
   if (timeRemaining.value <= 0) {
     const currentConfig = config.value.configs[currentConfigIndex.value];
