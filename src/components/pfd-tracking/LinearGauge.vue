@@ -1,32 +1,41 @@
 <template>
     <div class="gauge-container" :class="{ vertical: isVertical }" :style="gaugeStyle">
-        <div class="gauge-track" :style="trackStyle">
-            <!-- Single scale section from min to max -->
-            <div class="scale-section">
-                <div class="scale-lines">
-                    <div v-for="value in scaleValues" :key="value" class="scale-mark" :style="getScaleMarkStyle(value)">
-                        <span class="scale-label" :style="getLabelStyle(value)">
+        <!-- Background scale marks -->
+        <div class="scale-background">
+            <div v-for="n in totalTicks" :key="`bg-${n}`" 
+                class="scale-mark" 
+                :class="{ major: n % 5 === 0 }">
+            </div>
+        </div>
+
+        <!-- Main gauge window with scrolling content -->
+        <div class="gauge-window">
+            <!-- Center line indicator -->
+            <div class="center-pointer"></div>
+
+            <!-- Scrolling track with values -->
+            <div class="gauge-track" :style="trackStyle">
+                <div class="scale-section">
+                    <div v-for="value in scaleValues" :key="value" 
+                        class="scale-label-container"
+                        :style="getScaleLabelStyle(value)">
+                        <div class="scale-mark" :class="{ 
+                            major: value % (isVertical ? step : 45) === 0,
+                            current: isCurrentValue(value)
+                        }"></div>
+                        <span class="scale-label" :class="{ highlight: isCurrentValue(value) }">
                             {{ formatLabel(value) }}
                         </span>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="gauge-window">
-            <!-- Fixed center pointer (red line) -->
-            <div class="center-pointer"></div>
-
-            <!-- Scrolling track -->
-            <div class="gauge-track" :style="trackStyle">
-                <!-- Single scale section from min to max -->
-                <div class="scale-section">
-                    <!-- Target marker -->
+                    
+                    <!-- Target indicator -->
                     <div class="target-marker" :style="getTargetStyle"></div>
                 </div>
             </div>
         </div>
     </div>
 </template>
+
 
 <script setup>
 import { computed, defineProps } from 'vue';
@@ -62,40 +71,46 @@ const props = defineProps({
     },
 });
 
-// Calculate the range (difference between max and min)
+const totalTicks = computed(() => {
+    return props.isVertical ? 50 : 36; // 50 marks for vertical, 36 for heading (every 10 degrees)
+});
+
 const range = computed(() => props.max - props.min);
 
-// Normalize the value to ensure it stays within the range
 const normalizedValue = computed(() => {
     let normalized = props.value;
-    while (normalized > props.max) normalized -= range.value;
-    while (normalized < props.min) normalized += range.value;
+    if (!props.isVertical) {
+        // For heading, wrap around 0-360
+        normalized = ((normalized % 360) + 360) % 360;
+    } else {
+        // For vertical gauges, clamp to min/max
+        normalized = Math.max(props.min, Math.min(props.max, normalized));
+    }
     return normalized;
 });
 
 const scaleValues = computed(() => {
     const values = [];
     const currentValue = Math.round(normalizedValue.value);
-
+    
     if (props.isVertical) {
         // For vertical gauges (altitude and airspeed)
-        const baseStep = props.step;
-        // Get the centered value (rounded to nearest step)
-        const centerValue = Math.round(currentValue / baseStep) * baseStep;
+        const centerValue = Math.round(currentValue / props.step) * props.step;
         
-        // For altitude/airspeed, show 5 values with current in middle
-        for (let i = 2; i >= -2; i--) {  // Descending order for vertical gauges
-            const value = centerValue + (i * baseStep);
+        // Show more values for better scale density
+        for (let i = 6; i >= -6; i--) {
+            const value = centerValue + (i * props.step);
             if (value >= props.min && value <= props.max) {
                 values.push(value);
             }
         }
     } else {
         // For heading (horizontal)
-        const baseStep = 45;
+        const baseStep = 45; // Major divisions every 45 degrees
         const centerValue = Math.round(currentValue / baseStep) * baseStep;
         
-        for (let i = -2; i <= 2; i++) {
+        // Show values covering full 360° view
+        for (let i = -4; i <= 4; i++) {
             let value = centerValue + (i * baseStep);
             value = ((value % 360) + 360) % 360;
             values.push(value);
@@ -105,12 +120,9 @@ const scaleValues = computed(() => {
     return props.isVertical ? values : values.sort((a, b) => a - b);
 });
 
-// Track style for proper positioning
 const trackStyle = computed(() => {
     const currentValue = normalizedValue.value;
-    const centerOffset = props.isVertical ? 50 : 50; // Center point percentage
-    
-    // Calculate how far we need to move to center the current value
+    const centerOffset = 50; // Center point percentage
     const valueOffset = ((currentValue - props.min) / range.value) * 100;
     const movement = centerOffset - valueOffset;
     
@@ -119,122 +131,91 @@ const trackStyle = computed(() => {
         : { transform: `translateX(${movement}%)` };
 });
 
-// Helper to check if value is current
-const isCurrentValue = (value) => {
-    return Math.abs(value - normalizedValue.value) < props.step / 2;
-};
-
-// Scale mark style with proper positioning and highlight
-const getScaleMarkStyle = (value) => {
+const getScaleLabelStyle = (value) => {
     const percentage = ((value - props.min) / range.value) * 100;
-    
-    if (props.isVertical) {
-        return {
-            position: 'absolute',
-            bottom: `${percentage}%`,
-            left: '-15px',
-            width: '15px',
-            height: '2px',
-            backgroundColor: isCurrentValue(value) ? '#2ecc71' : 'rgba(255, 255, 255, 0.8)',
-            transform: 'translateY(50%)'
-        };
-    } else {
-        return {
-            position: 'absolute',
-            left: `${percentage}%`,
-            top: '-15px',
-            width: '2px',
-            height: '15px',
-            backgroundColor: isCurrentValue(value) ? '#2ecc71' : 'rgba(255, 255, 255, 0.8)',
-            transform: 'translateX(-50%)'
-        };
-    }
-};
-
-// Label style with proper positioning and formatting
-const getLabelStyle = (value) => {
-    const percentage = ((value - props.min) / range.value) * 100;
-    
     const baseStyle = {
         position: 'absolute',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        padding: '2px 6px',
-        borderRadius: '3px',
-        fontSize: '14px',
-        fontWeight: isCurrentValue(value) ? 'bold' : 'normal',
-        color: isCurrentValue(value) ? '#2ecc71' : 'white',
-        fontFamily: 'monospace'
+        [props.isVertical ? 'bottom' : 'left']: `${percentage}%`,
+        transform: props.isVertical ? 'translateY(50%)' : 'translateX(-50%)',
     };
     
-    if (props.isVertical) {
-        return {
-            ...baseStyle,
+    return baseStyle;
+};
+
+const getTargetStyle = computed(() => {
+    const percentage = ((props.target - props.min) / range.value) * 100;
+    return props.isVertical
+        ? {
             bottom: `${percentage}%`,
-            left: '-50px',
-            transform: 'translateY(50%)'
-        };
-    } else {
-        return {
-            ...baseStyle,
+            left: '50%',
+            transform: 'translate(-50%, 50%)'
+        }
+        : {
             left: `${percentage}%`,
-            bottom: '-30px',
-            transform: 'translateX(-50%)'
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
         };
+});
+
+const isCurrentValue = (value) => {
+    if (props.isVertical) {
+        return Math.abs(value - normalizedValue.value) < props.step / 2;
+    } else {
+        const diff = Math.abs(value - normalizedValue.value);
+        return Math.min(diff, 360 - diff) < 22.5; // Half of 45° for heading
     }
 };
 
-// Target marker positioning
-const getTargetStyle = computed(() => {
-    const targetPercentage = ((props.target - props.min) / range.value) * 100;
-    return props.isVertical
-        ? { 
-            bottom: `${targetPercentage}%`,
-            left: '50%',
-            transform: 'translate(-50%, 50%)'
-          }
-        : { 
-            left: `${targetPercentage}%`,
-            top: '50%',
-            transform: 'translate(-50%, -50%)'
-          };
-});
-
-// Format labels (especially for heading)
 const formatLabel = (value) => {
     if (!props.isVertical) {
+        // Format heading values
         switch (value) {
             case 0: return 'N';
             case 90: return 'E';
             case 180: return 'S';
             case 270: return 'W';
-            case 360: return 'N';
-            default: return value;
+            default: return value.toString();
         }
     }
-    return value;
+    return value.toString();
 };
 
-// CSS variables for spacing
 const gaugeStyle = computed(() => ({
-    '--num-steps': Math.floor((props.max - props.min) / props.step) + 1
+    '--num-steps': totalTicks.value
 }));
 </script>
+
 
 <style scoped>
 .gauge-container {
     position: relative;
     width: 300px;
     height: 40px;
-    margin: 10px;
-    background: rgba(29, 35, 42, 0.95);
-    border-radius: 4px;
-    padding: 10px;
+    background: rgba(24, 28, 31, 0.95);
+    border-radius: 2px;
+    overflow: hidden;
 }
 
 .gauge-container.vertical {
     width: 40px;
     height: 300px;
-    margin-left: 60px;
+}
+
+.scale-background {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.vertical .scale-background {
+    flex-direction: column;
+}
+
+.horizontal .scale-background {
+    flex-direction: row;
 }
 
 .gauge-window {
@@ -242,8 +223,6 @@ const gaugeStyle = computed(() => ({
     width: 100%;
     height: 100%;
     overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
 }
 
 .gauge-track {
@@ -253,39 +232,70 @@ const gaugeStyle = computed(() => ({
     transition: transform 0.1s linear;
 }
 
-.gauge-container.vertical .gauge-track {
-    height: 200%;
-}
-
-.gauge-container.horizontal .gauge-track {
-    width: 200%;
-}
-
 .scale-section {
-    position: absolute;
+    position: relative;
     width: 100%;
     height: 100%;
 }
 
-.scale-lines {
+.scale-label-container {
     position: absolute;
+    display: flex;
+    align-items: center;
+}
+
+.vertical .scale-label-container {
+    flex-direction: row;
+    left: 0;
     width: 100%;
+}
+
+.horizontal .scale-label-container {
+    flex-direction: column;
+    top: 0;
     height: 100%;
 }
 
 .scale-mark {
+    background: rgba(255, 255, 255, 0.3);
     transition: all 0.2s ease;
 }
 
+.vertical .scale-mark {
+    width: 10px;
+    height: 1px;
+    margin-right: 5px;
+}
+
+.horizontal .scale-mark {
+    width: 1px;
+    height: 10px;
+    margin-bottom: 5px;
+}
+
+.scale-mark.major {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.scale-mark.current {
+    background: #2ecc71;
+}
+
 .scale-label {
-    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-family: monospace;
     transition: all 0.2s ease;
-    z-index: 2;
+}
+
+.scale-label.highlight {
+    color: #2ecc71;
+    font-weight: bold;
 }
 
 .center-pointer {
     position: absolute;
-    z-index: 3;
+    z-index: 10;
     background: rgba(255, 59, 48, 0.9);
     box-shadow: 0 0 3px rgba(255, 59, 48, 0.5);
 }
@@ -299,8 +309,8 @@ const gaugeStyle = computed(() => ({
 }
 
 .horizontal .center-pointer {
-    left: 50%;
     top: 0;
+    left: 50%;
     width: 2px;
     height: 100%;
     transform: translateX(-50%);
@@ -308,11 +318,11 @@ const gaugeStyle = computed(() => ({
 
 .target-marker {
     position: absolute;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     background: #2ecc71;
     border-radius: 50%;
-    z-index: 1;
+    z-index: 5;
     box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
 }
 </style>
