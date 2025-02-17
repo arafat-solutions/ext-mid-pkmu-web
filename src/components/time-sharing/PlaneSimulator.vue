@@ -4,11 +4,8 @@
       <div class="timer" v-if="config.duration !== 99999">
         {{ formatTime(remainingTime) }}
       </div>
-      <div
-        class="instructions"
-        v-if="config.subtask.navigation && config.subtask.observer"
-      >
-        Press 'Space bar' to switch tasks
+      <div class="instructions" v-if="config.subtask.navigation && config.subtask.observer">
+        Tekan 'Spasi' untuk menukar tugas
       </div>
 
       <p v-if="getInstrumentErrorKey() && config.duration === 99999">
@@ -16,21 +13,12 @@
       </p>
       <div class="game-content">
         <div class="instruments-left" v-if="config.subtask.observer">
-          <div
-            class="instrument"
-            v-for="(instrument, index) in instrumentsLeft"
-            :key="index"
-            @click="handleInstrumentClick(instrument.key)"
-          >
-            <svg
-              :ref="'gauge' + index"
-              width="120"
-              height="120"
-              viewBox="0 0 120 120"
-            ></svg>
+          <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index"
+            @click="handleInstrumentClick(instrument.key)">
+            <svg :ref="'gauge' + index" width="120" height="120" viewBox="0 0 120 120"></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
             <div class="wrong-inputs">
-              Wrong: {{ wrongInputs[instrument.key] }}
+              Salah: {{ wrongInputs[instrument.key] }}
             </div>
           </div>
         </div>
@@ -38,21 +26,12 @@
           <canvas ref="simulationCanvas" width="800" height="500"></canvas>
         </div>
         <div class="instruments-right" v-if="config.subtask.observer">
-          <div
-            class="instrument"
-            v-for="(instrument, index) in instrumentsRight"
-            :key="index"
-            @click="handleInstrumentClick(instrument.key)"
-          >
-            <svg
-              :ref="'gauge' + (index + 2)"
-              width="120"
-              height="120"
-              viewBox="0 0 120 120"
-            ></svg>
+          <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index"
+            @click="handleInstrumentClick(instrument.key)">
+            <svg :ref="'gauge' + (index + 2)" width="120" height="120" viewBox="0 0 120 120"></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
             <div class="wrong-inputs">
-              Wrong: {{ wrongInputs[instrument.key] }}
+              Salah: {{ wrongInputs[instrument.key] }}
             </div>
           </div>
         </div>
@@ -185,17 +164,17 @@ export default {
       window.removeEventListener("keydown", this.handleKeydown);
     },
     pauseGame() {
-      this.isPaused = true;
-      clearInterval(this.obstacleInterval);
-      clearInterval(this.generationInterval);
-      clearInterval(this.gaugeInterval);
-      clearInterval(this.randomGaugeInterval);
-      clearInterval(this.timerInterval);
+      this.isPaused = false;
+      //clearInterval(this.obstacleInterval);
+      //clearInterval(this.generationInterval);
+      //clearInterval(this.gaugeInterval);
+      //clearInterval(this.randomGaugeInterval);
+      //clearInterval(this.timerInterval);
       this.removeEventListeners();
     },
     resumeGame() {
       this.isPaused = false;
-      this.startGameLoops();
+      //this.startGameLoops();
       this.setupEventListeners();
     },
     setRandomObstacleConfig() {
@@ -286,25 +265,40 @@ export default {
       const canvas = this.$refs.simulationCanvas;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
-      const img = new Image();
-      img.src = require("@/assets/top-view.png");
-      img.onload = () => {
-        const animate = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          this.updatePlanePosition();
+      // Preload images
+      const imgNormal = new Image();
+      const imgCollision = new Image();
+      imgNormal.src = require("@/assets/top-view.png");
+      imgCollision.src = require("@/assets/top-view-red.png");
 
-          ctx.save();
-          ctx.translate(this.plane.x, this.plane.y);
-          ctx.rotate((this.plane.angle * Math.PI) / 180);
-          ctx.drawImage(img, -30, -30, 60, 60);
-          ctx.restore();
-          this.drawObstacles(ctx);
-
-          this.checkCollision();
+      // Ensure images are fully loaded before animation starts
+      let imagesLoaded = 0;
+      const onImageLoad = () => {
+        imagesLoaded++;
+        if (imagesLoaded === 2) {
           requestAnimationFrame(animate);
-        };
-        animate();
+        }
+      };
+
+      imgNormal.onload = onImageLoad;
+      imgCollision.onload = onImageLoad;
+
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.updatePlanePosition();
+
+        const img = this.isCollision ? imgCollision : imgNormal;
+
+        ctx.save();
+        ctx.translate(this.plane.x, this.plane.y);
+        ctx.rotate((this.plane.angle * Math.PI) / 180);
+        ctx.drawImage(img, -30, -30, 60, 60);
+        ctx.restore();
+
+        this.drawObstacles(ctx);
+        this.checkCollision();
+        requestAnimationFrame(animate);
       };
     },
     drawObstacles(ctx) {
