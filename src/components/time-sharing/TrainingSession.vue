@@ -22,7 +22,7 @@
           tes yang sebenarnya?
         </p>
         <button @click="startActualTest" class="button start-button">
-          Start Test
+          Mulai Tes
         </button>
       </div>
     </div>
