@@ -199,7 +199,7 @@ export default {
         return 1;
       }
 
-      return Math.ceil((this.minuteTime * 60) / this.displayDuration);
+      return 999;
     },
     currentQuestion() {
       if (!this.displayDuration) {
@@ -530,8 +530,8 @@ export default {
         very_easy: { red: 5, green: 3, blue: 2 },
         easy: { red: 3, green: 4, blue: 3 },
         medium: { red: 2, green: 5, blue: 3 },
-        difficult: { red: 1, green: 6, blue: 3 },
-        very_difficult: { red: 1, green: 7, blue: 4 },
+        hard: { red: 1, green: 6, blue: 3 },
+        very_hard: { red: 1, green: 7, blue: 4 },
       };
 
       const levelWeights = weights[level];
@@ -554,8 +554,8 @@ export default {
         very_easy: 0.1,
         easy: 0.2,
         medium: 0.3,
-        difficult: 0.4,
-        very_difficult: 0.5,
+        hard: 0.4,
+        very_hard: 0.5,
       };
 
       const changeChance = levelChangeProbability[level];
