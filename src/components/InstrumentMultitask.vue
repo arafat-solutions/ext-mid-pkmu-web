@@ -6,14 +6,18 @@
           <b>
             {{
               currentTrainingTask
-                ? "Latihan: " + currentTrainingTask
+                ? "Latihan: " + getCurrentTrainingTask()
                 : "Instruksi"
             }}
           </b>
         </h2>
 
-        <p style="font-size: 20px" class="flex flex-col items-center" v-if="!trainingCompleted"
-          v-html="instructionModalContent"></p>
+        <p
+          style="font-size: 20px"
+          class="flex flex-col items-center"
+          v-if="!trainingCompleted"
+          v-html="instructionModalContent"
+        ></p>
         <p v-else>Apakah Anda Yakin <br />akan memulai ujian {{ testName }}?</p>
 
         <button @click="startTrainingTask">
@@ -64,6 +68,7 @@
           :frequency="config.alertLight.frequency"
           :isPause="isPauseAlertLight"
           :isActive="config.alertLight.isActive"
+          :isTraining="!trainingCompleted"
           v-if="config.alertLight.isActive"
           @getResult="alertLightResult"
         />
@@ -83,7 +88,11 @@
         />
       </div>
     </div>
-    <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
+    <button
+      v-if="!trainingCompleted"
+      @click="endTrainingTask"
+      class="finish-button"
+    >
       Selesai Latihan
     </button>
     <div v-if="isLoading" class="loading-container">
@@ -197,6 +206,20 @@ export default {
     },
   },
   methods: {
+    getCurrentTrainingTask() {
+      switch (this.currentTrainingTask) {
+        case "horizon":
+          return "Horizon";
+        case "alertLight":
+          return "Alert Light";
+        case "arithmetic":
+          return "Arithmetic";
+        case "gaugesMeter":
+          return "Gauges Meter";
+        case "combined":
+          return "Kombinasi";
+      }
+    },
     initConfig() {
       const data = localStorage.getItem("scheduleData");
       if (data) {
@@ -216,10 +239,9 @@ export default {
           this.minuteTime = instrumentMultitaskConfig.duration;
           this.timeLeft = this.minuteTime * 60;
 
-          this.minuteTest = 0.1;
-          // for (const i in this.configs) {
-          //   this.minuteTest += parseInt(this.configs[i].duration);
-          // }
+          for (const i in this.configs) {
+            this.minuteTest += parseInt(this.configs[i].duration);
+          }
 
           this.config.arithmetic.difficulty =
             instrumentMultitaskConfig.arithmetics.difficulty;
@@ -385,6 +407,9 @@ export default {
       this.startCountdown();
     },
     startCombinedTraining() {
+      this.minuteTime = 99999;
+      this.timeLeft = this.minuteTime * 60;
+
       this.isPauseHorizon = false;
       this.isPauseAlertLight = false;
       this.isPauseArithmetic = false;
@@ -401,8 +426,6 @@ export default {
         this.$refs.arithmeticTaskRef.generateProblem();
       }
 
-      this.minuteTime = 1;
-      this.timeLeft = this.minuteTime * 60;
       clearInterval(this.interval);
       this.interval = null;
       this.startCountdown();
@@ -492,7 +515,6 @@ export default {
       this.startCountdown();
     },
     startCountdown() {
-      console.log(this.interval);
       this.interval = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft -= 1;
@@ -529,10 +551,7 @@ export default {
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
-      const config = scheduleData.tests.find(
-        (t) => t.name === this.testName
-      )
-      console.log(config, 'scheduleData');
+      const config = scheduleData.tests.find((t) => t.name === this.testName);
       const payload = {
         testSessionId: scheduleData.sessionId,
         userId: scheduleData.userId,
