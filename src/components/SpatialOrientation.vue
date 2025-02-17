@@ -216,9 +216,7 @@ export default {
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
 
-      setTimeout(() => {
         this.generateCoordinat();
-      }, 1000);
     },
     endGame() {
       clearInterval(this.tailRemoveInterval);
@@ -773,6 +771,7 @@ export default {
       this.isButtonDisabled = true;
       this.responseTime = Date.now();
 
+      console.log(this.answer)
       if (this.answer === this.selectedAnswer) {
         this.correctAnswer++;
         this.userInputs.push({
