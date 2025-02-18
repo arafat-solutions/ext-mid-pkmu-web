@@ -28,60 +28,63 @@
 
     <!-- target message -->
     <div
-      v-if="targetMessage"
-      class="absolute bottom-10 w-full flex justify-center"
+      v-if="
+        targetMessage &&
+        isTraining &&
+        (currentTrainingTask == 'tracking' ||
+          currentTrainingTask == 'keseluruhan')
+      "
+      class="absolute bottom-[9.5rem] w-full flex justify-center"
     >
       <div
-        class="text-xl flex justify-center items-center space-x-2"
+        class="flex justify-center items-center space-x-2"
         style="color: green"
       >
-        <p class="flex items-center">
-          <span class="mr-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="1em"
-              height="1em"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fill="currentColor"
-                d="M11 5.07A7.005 7.005 0 0 0 5.07 11H7v2H5.07A7 7 0 0 0 11 18.93V17h2v1.93A7 7 0 0 0 18.93 13H17v-2h1.93A7 7 0 0 0 13 5.07V7h-2zM3.055 11A9.004 9.004 0 0 1 11 3.055V1h2v2.055A9.004 9.004 0 0 1 20.945 11H23v2h-2.055A9.004 9.004 0 0 1 13 20.945V23h-2v-2.055A9.004 9.004 0 0 1 3.055 13H1v-2zM15 12a3 3 0 1 1-6 0a3 3 0 0 1 6 0"
-              />
-            </svg>
-          </span>
+        <p class="text-3xl flex items-center">
           {{ targetMessage }}
+        </p>
+      </div>
+    </div>
+
+    <!-- button message -->
+    <div
+      v-if="
+        isTraining &&
+        (currentTrainingTask == 'button' ||
+          currentTrainingTask == 'keseluruhan')
+      "
+      class="absolute bottom-[7.5rem] w-full flex justify-center"
+    >
+      <div
+        class="flex justify-center items-center space-x-2"
+        style="color: green"
+      >
+        <p class="text-3xl flex items-center">
+          Hilangkan kotak biru atau merah dengan menekan layar sentuh.
         </p>
       </div>
     </div>
 
     <!-- acoustic message -->
     <div
-      v-if="acousticMessage"
-      class="absolute bottom-3 w-full flex justify-center"
+      v-if="
+        acousticMessage &&
+        isTraining &&
+        (currentTrainingTask == 'acoustic' ||
+          currentTrainingTask == 'keseluruhan')
+      "
+      class="absolute bottom-[5.5rem] w-full flex justify-center"
     >
       <div
-        class="text-xl flex justify-center items-center space-x-2"
+        class="flex justify-center items-center space-x-2"
         :style="{ color: acousticMessageColor }"
       >
-        <p class="flex items-center">
-          <span class="mr-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="1em"
-              height="1em"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fill="currentColor"
-                d="M5 7h2v10H5zm-4 3h2v4H1zm8-8h2v18H9zm4 2h2v18h-2zm4 3h2v10h-2zm4 3h2v4h-2z"
-              />
-            </svg>
-          </span>
+        <p class="text-3xl flex items-center">
           {{ acousticMessage }}
         </p>
       </div>
     </div>
-    <button v-if="isTraining" @click="endTrainingSession" class="finish-button">
+    <button v-if="isTraining" @click="endTrainingSession" class="finish-button" style="width: 200px; height: 70px;;">
       Selesai Latihan
     </button>
     <div
@@ -92,17 +95,6 @@
         class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"
       ></div>
       <p class="mt-12 text-2xl">Your result is submitting...</p>
-    </div>
-    <div
-      class="absolute left-0 top-0 h-full w-48 bg-gray-950 text-left text-white pt-20 pl-2"
-    >
-      <p>Waktu Benar: {{ metrics.tracking_task.correctTime.toFixed(2) }} s</p>
-      <p>Button:</p>
-      <p>Benar: {{ metrics.button_task.correct_answer }}</p>
-      <p>Acoustic:</p>
-      <p>Benar: {{ metrics.acoustic_task.correct_answer }}</p>
-      <p>Salah: {{ metrics.acoustic_task.incorrect_answer }}</p>
-      <p>total: {{ metrics.acoustic_task.total_question }}</p>
     </div>
   </div>
 </template>
@@ -137,7 +129,7 @@ const refreshCount = ref(0);
 const userInputs = ref([]);
 const isTraining = ref(true);
 const currentTrainingTask = ref("tracking");
-const trainingTasks = ["tracking", "button", "acoustic", "combined"];
+const trainingTasks = ["tracking", "button", "acoustic", "keseluruhan"];
 const trainingDuration = 99999; // 60 seconds for each training session
 const acousticMessage = ref("");
 const acousticMessageColor = ref("");
@@ -220,8 +212,8 @@ function getModalMessage() {
         return "Anda diminta untuk MENYENTUH LAYAR KOTAK BIRU yang muncul.";
       case "acoustic":
         return "Anda diminta untuk menekan tuas pada bagian DEPAN JOYSTICK bila mendengar audio serupa, sebanyak 3 kali  berturut-turut. (Contoh: BEEP – BEEP – BEEP, maka anda harus menekan tuas untuk merespon audio tersebut).";
-      case "combined":
-        return "Lakukan semua tugas secara bersamaan: pelacakan, penekanan tombol, dan identifikasi suara.";
+      case "keseluruhan":
+        return "Anda akan melalui semua latihan sebelumnya, yaitu Tracking, Button, dan Acoustic. Apakah Anda siap untuk memulai tes?";
     }
   }
   return "Apakah Anda siap untuk memulai tes?";
@@ -244,20 +236,20 @@ function startTrainingSession() {
 
   if (
     currentTrainingTask.value === "tracking" ||
-    currentTrainingTask.value === "combined"
+    currentTrainingTask.value === "keseluruhan"
   ) {
     gameState.value.lastFrameTime = performance.now();
     requestAnimationFrame(gameLoop);
   }
   if (
     currentTrainingTask.value === "button" ||
-    currentTrainingTask.value === "combined"
+    currentTrainingTask.value === "keseluruhan"
   ) {
     initRectangleInterval();
   }
   if (
     currentTrainingTask.value === "acoustic" ||
-    currentTrainingTask.value === "combined"
+    currentTrainingTask.value === "keseluruhan"
   ) {
     playRandomSounds();
   }
@@ -265,6 +257,7 @@ function startTrainingSession() {
 
 function startFullTest() {
   initConfig();
+  updateCircleSpeed();
   countDownTestTime();
   gameState.value.lastFrameTime = performance.now();
   requestAnimationFrame(gameLoop);
@@ -440,7 +433,9 @@ function formatTime(seconds) {
 }
 
 function updateCircleSpeed() {
-  gameState.value.baseSpeed = speedMap[config.value.speed] || speedMap.normal;
+  gameState.value.baseSpeed = isTraining.value
+    ? 1
+    : speedMap[config.value.speed] || speedMap.medium;
   gameState.value.currentSpeed = gameState.value.baseSpeed;
 }
 
@@ -568,11 +563,11 @@ function handleKeydown(event) {
     if (gameState.value.acousticAnswerAllowed) {
       if (isSoundSame.value) {
         metrics.value.acoustic_task.correct_answer++;
-        drawText({ text: "Respons benar", color: "green" });
+        drawText({ text: "Respons audio benar", color: "green" });
       } else {
         metrics.value.acoustic_task.incorrect_answer++;
         drawText({
-          text: "Response salah. Bukan pada urutan audio yang benar",
+          text: "Response audio salah. Bukan pada urutan audio yang benar",
           color: "red",
         });
       }
@@ -649,11 +644,11 @@ function checkAimCollision(timestamp) {
       currentTimeInSeconds - metrics.value.tracking_task.lastCheckTime;
     metrics.value.tracking_task.correctTime += elapsedTime;
     aim.color = "yellow";
-    targetMessage.value =
-      "Pertahankan objek putih tetap berada di objek kuning selama mungkin..";
+    targetMessage.value = "";
   } else {
     aim.color = "red";
-    targetMessage.value = "";
+    targetMessage.value =
+      "Pertahankan objek putih tetap berada di objek kuning selama mungkin..";
   }
   metrics.value.tracking_task.lastCheckTime = currentTimeInSeconds;
 }
@@ -811,11 +806,11 @@ function handleGamepadPress(gamepad) {
   if (triggerPressed && gameState.value.acousticAnswerAllowed) {
     if (isSoundSame.value) {
       metrics.value.acoustic_task.correct_answer++;
-      drawText({ text: "Respons benar", color: "green" });
+      drawText({ text: "Respons audio benar", color: "green" });
     } else {
       metrics.value.acoustic_task.incorrect_answer++;
       drawText({
-        text: "Response salah. Bukan pada urutan audio yang benar",
+        text: "Response audio salah. Bukan pada urutan audio yang benar",
         color: "red",
       });
     }

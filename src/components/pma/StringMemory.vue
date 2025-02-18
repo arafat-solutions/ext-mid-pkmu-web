@@ -11,8 +11,12 @@
         {{ option }}
       </button>
     </div>
-    <div v-else-if="!isActualTest" class="result">
-      {{ correct ? "Benar!" : "Salah Pilihan anda, tidak terdapat pada referensi" }}
+    <div v-else class="result">
+      <P v-if="!isActualTest">{{
+        correct
+          ? "Benar, jawaban yang anda pilih ADA pada soal"
+          : "Salah, jawaban yang anda pilih TIDAK ADA pada soal atau anda kehabisan waktu untuk menjawab"
+      }}</P>
     </div>
   </div>
 </template>
@@ -22,10 +26,10 @@ import { ref, onMounted } from "vue";
 
 export default {
   name: "StringMemorization",
-  emits: ["update-score"],
   props: {
     isActualTest: Boolean,
   },
+  emits: ["update-score"],
   setup(props, { emit }) {
     const showString = ref(true);
     const showOptions = ref(false);
@@ -86,6 +90,7 @@ export default {
     };
 
     const nextQuestion = () => {
+      correct.value = false;
       showOptions.value = false; // Hide the options
       setTimeout(startTest, 2000); // Start the next round after a brief delay
     };

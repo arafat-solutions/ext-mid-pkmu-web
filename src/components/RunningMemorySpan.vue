@@ -1,18 +1,18 @@
 <template>
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
-      <p style="font-size: 24px;">
+      <p style="font-size: 24px">
         <strong>Apakah anda yakin akan memulai latihan ?</strong>
       </p>
-      <p style="font-size: 20px;">
+      <p style="font-size: 20px">
         Pada tes ini, Anda harus menggunakan headset dan layar sentuh. Anda akan
         mendengarkan serangkaian angka yang harus Anda ingat. Kemudian, Anda
         diminta memasukkan serangkaian angka tersebut secara terbalik
         menggunakan layar sentuh. Anda wajib memasukkan mouse dan keyboard ke
         dalam laci.
       </p>
-      <img src="devices/rmt.png"/>
-      
+      <img src="devices/rmt.png" />
+
       <div>
         <button @click="startTest()">Mulai Latihan</button>
       </div>
@@ -25,7 +25,6 @@
         <strong>Apakah anda yakin akan memulai test?</strong>
       </p>
       <div>
-        
         <button @click="startTest()">Mulai Test</button>
       </div>
     </div>
@@ -46,7 +45,7 @@
         <div class="question">
           <p class="text-question">Urutkan dari angka terakhir</p>
           <p
-            v-if="showFeedback"
+            v-if="showFeedback && !isTrainingCompleted"
             :class="{
               'feedback-correct': lastAnswerCorrect,
               'feedback-wrong': !lastAnswerCorrect,
@@ -190,6 +189,7 @@ export default {
   },
   methods: {
     startTest() {
+      this.cleanUp();
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
 
@@ -232,6 +232,7 @@ export default {
       }
     },
     finishTraining() {
+      this.cleanUp()
       this.isTrainingCompleted = true;
       completeTrainingTestAndUpdateLocalStorage("Running Memory Span Test");
 
@@ -323,7 +324,7 @@ export default {
       }));
 
       this.result.graph_data = this.userInputs;
-
+      this.cleanUp();
       this.submitResult();
     },
     async submitResult() {
@@ -364,17 +365,8 @@ export default {
       }
     },
     setLength() {
-      if (this.config.broadcastLength === "short") {
-        return 5;
-      }
-
-      if (this.config.broadcastLength === "medium") {
-        return 7;
-      }
-
-      if (this.config.broadcastLength === "long") {
-        return 9;
-      }
+      let basePattern = [5, 5, 5, 6, 6, 6, 7, 7, 8, 8, 9, 9];
+      return basePattern[this.totalQuestion % basePattern.length] ?? 9;
     },
     generateAudio() {
       this.setConfig(this.configs[this.indexConfig]);

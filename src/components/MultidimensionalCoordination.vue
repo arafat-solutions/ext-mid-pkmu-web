@@ -3,7 +3,7 @@
     <div class="countdown" v-if="!isTrainingMode">{{ formattedTime }}</div>
     <canvas ref="canvas"></canvas>
     <div class="position-feedback" :class="{ 'feedback-visible': isAligned }">
-      Perfect Position!
+      Sempurna!
     </div>
     <img src="@/assets/airplane-icon.png" alt="Airplane" :style="airplaneStyle" class="airplane"
       :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }" />
@@ -11,7 +11,7 @@
     <!-- Training Modal -->
     <div v-if="showTrainingModal" class="modal">
       <div class="modal-content">
-        <h2 style="font-size: 24px"><b>Training Mode</b></h2>
+        <h2 style="font-size: 24px"><b>Mode Latihan</b></h2>
         <p style="font-size: 20px; width: 80%">
           Pada tes ini, anda diminta untuk mengendalikan pesawat yang mengalami
           turbulansi dengan menggunakan JOYSTICK hingga kursor berwarna KUNING
@@ -19,7 +19,7 @@
         </p>
         <img src="devices/mct.png" />
         <button @click="startTraining" class="modal-button">
-          Mulai Training
+          Mulai Latihan
         </button>
       </div>
     </div>
@@ -27,16 +27,16 @@
     <!-- Test Start Modal -->
     <div v-if="showTestModal" class="modal">
       <div class="modal-content">
-        <h2 style="font-size: 24px">Mulai Ujian</h2>
+        <h2 style="font-size: 24px">Mulai Test</h2>
         <p style="font-size: 20px">
-          Latihan telah selesai! Anda akan memulai ujian yang sebenarnya.
+          Latihan telah selesai! Anda akan memulai tes yang sebenarnya.
         </p>
         <p style="font-size: 20px">
-          Ujian akan berlangsung sesuai dengan waktu yang ditentukan.
+          Tes akan berlangsung sesuai dengan waktu yang ditentukan.
         </p>
         <p style="font-size: 20px">Ingat untuk tetap fokus dan konsentrasi.</p>
         <button @click="startActualTest" class="modal-button">
-          Mulai Ujian
+          Mulai Tes
         </button>
       </div>
     </div>
@@ -198,10 +198,10 @@ export default {
 
       return {
         transform: `translate3d(${airplanePosition.value.x * 50}px, ${airplanePosition.value.y * -50
-          }px, ${airplanePosition.value.z * -10}px) 
-    rotateZ(${airplaneRotation.value.z}rad) 
-    rotateX(${airplaneRotation.value.x}rad) 
-    rotateY(${airplaneRotation.value.y}rad) 
+          }px, ${airplanePosition.value.z * -10}px)
+    rotateZ(${airplaneRotation.value.z}rad)
+    rotateX(${airplaneRotation.value.x}rad)
+    rotateY(${airplaneRotation.value.y}rad)
     scale(${finalScale})`
       };
     });
