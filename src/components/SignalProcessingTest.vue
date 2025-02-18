@@ -28,14 +28,11 @@
       </p>
 
       <div class="flex justify-center space-x-4">
-        <button @click="exit()" class="bg-red-500 text-white px-4 py-2 rounded">
-          Batal
-        </button>
         <button
           @click="startTest()"
           class="bg-green-500 text-white px-4 py-2 rounded"
         >
-          Ya
+          Ya, Mulai {{ isTrainingCompleted ? "tes" : "latihan" }}
         </button>
       </div>
     </div>
