@@ -162,7 +162,7 @@
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
             <LinearGauge label="compass" :value="heading" :target="headingTarget" :min="0" :max="360"
-              :isVertical="false" />
+              :isVertical="false" :step="10" />
           </div>
         </div>
 
@@ -229,8 +229,8 @@ const router = useRouter();
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
-  HEADING: 0.2,
-  ALTITUDE: 2,
+  HEADING: 3,
+  ALTITUDE: 20,
   THRUST_RESPONSE: 1,
   MIN_AIRSPEED: 60,
   MAX_AIRSPEED: 160,
@@ -719,6 +719,7 @@ const updatePlanePosition = () => {
   // Handle joystick controls
   if (gamepad.value) {
     const stick = navigator.getGamepads()[gamepad.value.index];
+
     if (stick) {
       // Apply deadzone and get raw values with reduced sensitivity
       const applyDeadzone = (value, threshold = 0.05) => {

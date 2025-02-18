@@ -106,6 +106,7 @@ const scaleValues = computed(() => {
         }
     } else {
         // For heading (horizontal)
+        //NOTE: change this to change step
         const baseStep = 45; // Major divisions every 45 degrees
         const centerValue = Math.round(currentValue / baseStep) * baseStep;
         
@@ -124,11 +125,12 @@ const trackStyle = computed(() => {
     const currentValue = normalizedValue.value;
     const centerOffset = 50; // Center point percentage
     const valueOffset = ((currentValue - props.min) / range.value) * 100;
-    const movement = centerOffset - valueOffset;
+    const movementX =  valueOffset-centerOffset;
+    const movementY =  centerOffset-valueOffset;
     
     return props.isVertical
-        ? { transform: `translateY(${movement}%)` }
-        : { transform: `translateX(${movement}%)` };
+        ? { transform: `translateY(${movementY}%)` }
+        : { transform: `translateX(${movementX}%)` };
 });
 
 const getScaleLabelStyle = (value) => {

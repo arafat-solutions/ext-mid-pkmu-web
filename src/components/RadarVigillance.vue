@@ -174,6 +174,7 @@ export default {
   },
   methods: {
     startTest() {
+      clearInterval(this.countdownInterval);
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
 
@@ -183,7 +184,7 @@ export default {
 
         this.durationTest = 0;
         for (const i in this.configs) {
-          this.durationTest += this.configs[i].duration * 60;
+          this.durationTest += this.configs[i]?.duration * 60;
         }
 
         this.config.duration = this.configs[this.indexConfig].duration * 60;
