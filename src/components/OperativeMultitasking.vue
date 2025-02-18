@@ -732,7 +732,7 @@ export default {
       this.updateLocalStorage();
       this.showInstructionModal = true;
       this.instructionModalContent =
-        "Training completed! The actual test will begin now.";
+        "Latiihan selesai! Tes akan dimulai sekarang.";
     },
 
     updateLocalStorage() {

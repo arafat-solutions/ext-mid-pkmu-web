@@ -7,7 +7,7 @@
           class="text-2xl font-bold mb-4 text-gray-800"
           style="font-size: 24px"
         >
-          Training Session
+        Latihan
         </h2>
 
         <div class="mb-6">
