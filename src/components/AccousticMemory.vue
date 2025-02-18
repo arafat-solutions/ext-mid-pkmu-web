@@ -24,7 +24,7 @@
     <div class="modal-content">
       <p>
         <strong
-          >Apakah Anda Yakin <br />akan memulai ujian Accoustic Memory?</strong
+          >Apakah Anda Yakin <br />akan memulai tes Accoustic Memory?</strong
         >
       </p>
       <div>
