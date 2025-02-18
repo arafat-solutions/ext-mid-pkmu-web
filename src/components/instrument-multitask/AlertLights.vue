@@ -105,7 +105,7 @@ export default {
   },
   methods: {
     startLights() {
-      this.intervalId = setInterval(this.randomLight, this.getInterval());
+      this.intervalId = setInterval(this.randomLight(), this.getInterval());
     },
     clearAllIntervals() {
       clearInterval(this.intervalId);
@@ -113,18 +113,17 @@ export default {
       this.lightTimeouts = [];
     },
     getInterval() {
-      // Adjust ranges based on difficulty level
       switch (this.speed) {
         case "very_slow":
-          return 21000;
-        case "slow":
-          return 19000;
-        case "medium":
           return 15000;
-        case "fast":
-          return 13000;
-        case "very_fast":
+        case "slow":
           return 10000;
+        case "medium":
+          return 7000;
+        case "fast":
+          return 5000;
+        case "very_fast":
+          return 3000;
         default:
           return 5000;
       }
@@ -191,7 +190,7 @@ export default {
             }
             this.result.answerTimes.push(null);
           }
-        }, 10000);
+        }, 5000);
 
         this.lightTimeouts.push(timeout);
       }

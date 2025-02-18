@@ -6,7 +6,7 @@
           <b>
             {{
               currentTrainingTask
-                ? "Latihan: " + getCurrentTrainingTask()
+                ? "Latihan"
                 : "Instruksi"
             }}
           </b>
@@ -18,7 +18,7 @@
           v-if="!trainingCompleted"
           v-html="instructionModalContent"
         ></p>
-        <p v-else>Apakah Anda Yakin <br />akan memulai ujian {{ testName }}?</p>
+        <p v-else>Apakah Anda Yakin <br />akan memulai tes?</p>
 
         <button @click="startTrainingTask">
           {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
