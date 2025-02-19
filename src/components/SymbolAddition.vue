@@ -57,7 +57,7 @@
           </div>
         </div>
       </div>
-      <div class="inline-block text-red-600 font-bold text-lg text-left ml-6 mt-5" v-if="currentWrong">{{ currentWrong }} answer{{ currentWrong > 1 ? 's' : '' }} wrong</div>
+      <div class="inline-block text-red-600 font-bold text-lg text-left ml-6 mt-5" v-if="currentWrong&&!isTrainingCompleted">{{ currentWrong }} answer{{ currentWrong > 1 ? 's' : '' }} wrong</div>
     </div>
   </div>
   <button
@@ -99,7 +99,7 @@ export default {
       totalRow: 8,
       choicesLength: 8,
       durationAnswer: 20, // in seconds
-      timeLeftAnswer: 20, // in seconds
+      timeLeftAnswer: 40, // in seconds
       moveNextTaskDuration: 5, // in seconds
       queryBars: [],
       questions: [],
