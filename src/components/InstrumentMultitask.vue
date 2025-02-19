@@ -56,6 +56,7 @@
           :canPressAnswer="config.arithmetic.canPressAnswer"
           :allowSound="allowSound"
           @getResult="arithmeticResult"
+          :isTraining="!trainingCompleted"
         />
       </div>
       <div

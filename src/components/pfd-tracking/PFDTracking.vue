@@ -187,18 +187,18 @@
       </div>
 
       <!-- Training Progress Indicator -->
-      <div v-if="trainingMode" class="training-progress">
-        <div class="progress-steps">
-          <div v-for="(step, index) in trainingSteps" :key="index" class="progress-step" :class="{
-            completed: index < trainingStep,
-            active: index === trainingStep,
-            pending: index > trainingStep,
-          }">
-            <div class="step-number">{{ index + 1 }}</div>
-            <div class="step-label">{{ step.title }}</div>
-          </div>
-        </div>
-      </div>
+      <!-- <div v-if="trainingMode" class="training-progress"> -->
+      <!--   <div class="progress-steps"> -->
+      <!--     <div v-for="(step, index) in trainingSteps" :key="index" class="progress-step" :class="{ -->
+      <!--       completed: index < trainingStep, -->
+      <!--       active: index === trainingStep, -->
+      <!--       pending: index > trainingStep, -->
+      <!--     }"> -->
+      <!--       <div class="step-number">{{ index + 1 }}</div> -->
+      <!--       <div class="step-label">{{ step.title }}</div> -->
+      <!--     </div> -->
+      <!--   </div> -->
+      <!-- </div> -->
 
       <!-- Training Mode Controls -->
       <!-- Add this near your training controls -->
@@ -214,7 +214,7 @@
       </div>
 
       <!-- Score Display -->
-      <div v-if="examRunning" class="score-display">Score: {{ score }}</div>
+      <div v-if="examRunning && !completedTraining" class="score-display">Score: {{ score }}</div>
     </div>
   </div>
 </template>
@@ -310,9 +310,9 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol arah pesawat menggunakan gerakan joystick kiri/kanan. Jaga dalam rentang ±5° dari target.",
     activeIndicators: ["heading"],
+    imagePath:'/devices/joystick.png',
     content: `
       <div class="space-y-4">
-        <img src="/devices/joystick.png" alt="Heading Control Diagram" class="rounded-lg w-full">
         <div class="bg-gray-800 p-4 rounded-lg">
             <h3 class="text-lg font-bold mb-2">Kontrol Joystick:</h3>
             <ul class="list-disc pl-6 space-y-2">
@@ -330,9 +330,9 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol ketinggian pesawat menggunakan gerakan joystick maju/mundur. Jaga dalam rentang ±100ft dari target.",
     activeIndicators: ["altitude"],
+    imagePath:'/devices/thruster.png',
     content: `
       <div class="space-y-4">
-        <img src="/devices/thruster.png" alt="Altitude Control Diagram" class="rounded-lg w-full">
         <div class="bg-gray-800 p-4 rounded-lg">
             <h3 class="text-lg font-bold mb-2">Kontrol Joystick:</h3>
             <ul class="list-disc pl-6 space-y-2">
@@ -350,9 +350,9 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol kecepatan pesawat menggunakan throttle. Jaga dalam rentang ±5 knots dari target.",
     activeIndicators: ["airspeed"],
+    imagePath:'/devices/thruster.png',
     content: `
       <div class="space-y-4">
-        <img src="/api/placeholder/600/300" alt="Airspeed Control Diagram" class="rounded-lg w-full">
         <div class="bg-gray-800 p-4 rounded-lg">
           <h3 class="text-lg font-bold mb-2">Kontrol Throttle:</h3>
           <ul class="list-disc pl-6 space-y-2">
@@ -657,7 +657,7 @@ const isOutOfTarget = (indicator) => {
 
 // Training progress monitoring
 const timeOnTarget = ref(0);
-const MASTERY_TIME = 5; // 5 seconds to master each control
+const MASTERY_TIME = 9999999; // 5 seconds to master each control
 
 const checkTrainingProgress = () => {
   const activeIndicators = trainingSteps[trainingStep.value].activeIndicators;
@@ -1472,6 +1472,7 @@ onUnmounted(() => {
 
 /* Modal styles */
 .modal-overlay {
+  z-index: 9999;
   position: fixed;
   top: 0;
   left: 0;
@@ -1481,15 +1482,27 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
 }
 
+/*.modal-container {*/
+/*  background-color: #2c3e50;*/
+/*  border-radius: 8px;*/
+/*  padding: 30px;*/
+/*  max-width: 500px;*/
+/*  width: 90%;*/
+/*}*/
+
 .modal-container {
-  background-color: #2c3e50;
-  border-radius: 8px;
-  padding: 30px;
-  max-width: 500px;
-  width: 90%;
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-title {
@@ -1499,7 +1512,7 @@ onUnmounted(() => {
 }
 
 .modal-body {
-  color: #ecf0f1;
+  color: black;
 }
 
 .modal-list {
@@ -1514,7 +1527,7 @@ onUnmounted(() => {
 
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   margin-top: 20px;
 }
 
@@ -1675,8 +1688,8 @@ onUnmounted(() => {
 
 .training-controls {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  bottom: 40px;
+  left: 46%;
   z-index: 1000;
 }
 
@@ -1718,12 +1731,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.modal-container {
-  max-width: 800px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
 
 .modal-body img {
   max-height: 300px;

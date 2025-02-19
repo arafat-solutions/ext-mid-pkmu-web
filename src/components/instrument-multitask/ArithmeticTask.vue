@@ -5,15 +5,16 @@
     <div class="choices">
       <div v-for="(choice, index) in problem.choices" :key="index" class="choice">
         <button class="btn-answer" :class="{
-          'correct': showFeedback && choice === problem.correctAnswer,
-          'incorrect': showFeedback && selectedAnswer === index && choice !== problem.correctAnswer,
+          'correct': showFeedback && choice === problem.correctAnswer&&isTraining,
+          'incorrect': showFeedback && selectedAnswer === index && choice !== problem.correctAnswer&&isTraining,
+          'selected': showFeedback && selectedAnswer === index && !isTraining,
           'disabled': !canAnswer
         }" @click="chooseAnswer(index)" :disabled="!canAnswer">
           {{ isActive ? choice : '?' }}
         </button>
       </div>
     </div>
-    <div v-if="showFeedback" class="feedback">
+    <div v-if="showFeedback&& isTraining" class="feedback">
       <p v-if="selectedAnswer === null">Waktu Habis! Jawaban yang benar adalah {{ problem.correctAnswer }}</p>
       <p v-else-if="problem.choices[selectedAnswer] === problem.correctAnswer">Benar!</p>
       <p v-else>Salah! Jawaban yang benar adalah {{ problem.correctAnswer }}</p>
@@ -50,6 +51,7 @@ export default {
     isPause: Boolean,
     minuteTime: Number,
     isActive: Boolean,
+    isTraining: Boolean,
     useSound: Boolean,
     allowSound: Boolean,
     canPressAnswer: Boolean,
@@ -333,8 +335,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 15px;
-  width: 100%;
-  max-width: 400px;
+  /*width: 200px;*/
   /* Limit maximum width for larger screens */
 }
 
@@ -363,7 +364,7 @@ export default {
 
 .btn-answer:hover,
 .btn-answer:active {
-  background-color: #45a049;
+  background-color: #2196F3;
 }
 
 .label-choice {
@@ -400,6 +401,11 @@ export default {
 
 .btn-answer.incorrect {
   background-color: #f44336 !important;
+  color: white;
+}
+
+.btn-answer.selected {
+  background-color: #2196F3 !important;
   color: white;
 }
 

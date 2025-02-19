@@ -2,6 +2,10 @@
   <div class="simulation-container">
     <div class="timer" v-if="timeRemaining > 0">{{ formattedTime }}</div>
     <canvas ref="canvas" :width="canvasWidth" :height="canvasHeight"></canvas>
+
+    <div v-if="feedbackMessage" class="feedback-message">
+      {{ feedbackMessage }}
+    </div>
     <!-- <div v-if="showModal" class="modal">
       <div class="modal-content">
         <h2>Simulation Results</h2>
@@ -53,6 +57,7 @@ import {
 export default {
   data() {
     return {
+      feedbackMessage: "",
       canvasWidth: 1000,
       canvasHeight: 600,
       backgroundColor: "black",
@@ -513,7 +518,6 @@ export default {
     },
 
     handleLightClick(event) {
-      console.log("aku disni");
       const canvas = this.$refs.canvas;
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
@@ -628,10 +632,10 @@ export default {
     showTrainingInstructions() {
       const instructions = {
         navigation:
-          "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU.<img src='devices/omt.png'/>",
-        math: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar. <img src='devices/omt.png'/>",
+          "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU.<img src='devices/omt_4.png'/>",
+        math: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar. <img src='devices/omt_3.png'/>",
         alertLight:
-          "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar dan memilih LAMPU berwarna MERAH di layar. <img src='devices/omt.png'/>",
+          "Pada latihan ini anda  akan diminta menekan LAMPU PERINGATAN yang menyala dengan warna MERAH. <img src='devices/omt_2.png'/>",
         combined: "Latihan gabungan dari ketiga tugas sebelumnya.",
       };
 
