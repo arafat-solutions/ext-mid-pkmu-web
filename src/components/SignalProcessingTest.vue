@@ -2,7 +2,7 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <h2 class="text-xl font-bold mb-4" style="font-size: 24px">
-        {{ isTrainingCompleted ? "Konfirmasi Ujian" : "Konfirmasi latihan" }}
+        {{ isTrainingCompleted ? "Konfirmasi Tes" : "Konfirmasi latihan" }}
       </h2>
 
       <div class="mb-4" style="font-size: 20px">
@@ -23,7 +23,7 @@
       <p class="mb-4 text-center" style="font-size: 20px">
         <strong>
           Apakah Anda yakin akan memulai
-          {{ isTrainingCompleted ? "ujian" : "latihan" }} Signal Processing?
+          {{ isTrainingCompleted ? "tes" : "latihan" }} 
         </strong>
       </p>
 
@@ -32,10 +32,7 @@
           @click="startTest()"
           class="bg-green-500 text-white px-4 py-2 rounded"
         >
-          Ya
-        </button>
-        <button @click="exit()" class="bg-red-500 text-white px-4 py-2 rounded">
-          Batal
+          Ya, Mulai {{ isTrainingCompleted ? "tes" : "latihan" }}
         </button>
       </div>
     </div>

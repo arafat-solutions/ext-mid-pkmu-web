@@ -3,8 +3,7 @@
     <div class="modal-content">
       <p style="font-size: 24px">
         <strong
-          >Apakah Anda Yakin <br />akan memulai latihan Accoustic
-          Memory?</strong
+          >Apakah Anda Yakin <br />akan memulai latihan?</strong
         >
       </p>
       <p style="font-size: 20px; max-width: 80%">
@@ -24,7 +23,7 @@
     <div class="modal-content">
       <p>
         <strong
-          >Apakah Anda Yakin <br />akan memulai ujian Accoustic Memory?</strong
+          >Apakah Anda Yakin <br />akan memulai tes?</strong
         >
       </p>
       <div>
