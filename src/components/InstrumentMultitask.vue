@@ -41,7 +41,6 @@
           :isTimesUp="isTimesUp"
           :isPause="isPauseHorizon"
           :isActive="config.horizon.isActive"
-          v-if="config.horizon.isActive"
           @getResult="horizonResult"
         />
         <ArithmeticTask
@@ -434,6 +433,17 @@ export default {
     endTrainingTask() {
       clearInterval(this.interval);
       this.interval = null;
+      this.isPauseHorizon = true;
+      this.isPauseAlertLight = true;
+      this.isPauseArithmetic = true;
+      this.isPauseGaugesMeter = true;
+
+      this.config.horizon.isActive = false;
+      this.config.alertLight.isActive = false;
+      this.config.arithmetic.isActive = false;
+      this.config.gaugesMeter.isActive = false;
+
+      this.allowSound = true;
       if (this.config.arithmetic.isActive) {
         this.$refs.arithmeticTaskRef.stop();
       }
