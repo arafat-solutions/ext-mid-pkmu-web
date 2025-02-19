@@ -673,6 +673,7 @@ const checkTrainingProgress = () => {
 
   if (allOnTarget) {
     timeOnTarget.value += 1 / 60; // Assuming 60 FPS
+    randomizeTargets(); // Randomize targets when the user hits the target
     if (timeOnTarget.value >= MASTERY_TIME) {
       completeTrainingStep();
       timeOnTarget.value = 0;
@@ -1053,6 +1054,12 @@ const startTrainingStep = () => {
     airspeedTarget.value = 120;
     thrustLevel.value = 50;
   }
+};
+
+const randomizeTargets = () => {
+  airspeedTarget.value = Math.floor(Math.random() * (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED + 1)) + MOVEMENT_SPEED.MIN_AIRSPEED;
+  headingTarget.value = Math.floor(Math.random() * 360);
+  altitudeTarget.value = Math.floor(Math.random() * 10000);
 };
 
 const completeTrainingStep = () => {

@@ -1,8 +1,5 @@
 <template>
-  <canvas ref="horizonCanvas"
-    :width="horizonWidth"
-    :height="horizonHeight"
-  >
+  <canvas ref="horizonCanvas" :width="horizonWidth" :height="horizonHeight" :class="{ 'hidden-canvas': !isActive }">
   </canvas>
 </template>
 
@@ -13,7 +10,7 @@ export default {
       horizonWidth: 450,
       horizonHeight: 350,
       greenLineStartTime: null,
-			greenLineDuration: 0,
+      greenLineDuration: 0,
       config: {
         x: 10,
         y: 5,
@@ -50,20 +47,20 @@ export default {
     window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected);
   },
   watch: {
-		isTimesUp() {
-			this.$emit('getResult', {
+    isTimesUp() {
+      this.$emit('getResult', {
         accuracy: Number(((this.greenLineDuration / (this.minuteTime * 60)) * 100).toFixed(2)),
-				correctTime: this.greenLineDuration,
-			});
-		},
-		isPause() {
-			if (this.isPause) {
+        correctTime: this.greenLineDuration,
+      });
+    },
+    isPause() {
+      if (this.isPause) {
         this.stopAnimation();
-			} else {
-				this.startAnimation();
-			}
-		},
-	},
+      } else {
+        this.startAnimation();
+      }
+    },
+  },
   methods: {
     initHorizon() {
       this.initVisual();
@@ -78,6 +75,9 @@ export default {
     },
     initVisual() {
       const canvas = this.$refs.horizonCanvas;
+      if (!canvas) {
+        return;
+      }
       canvas.width = this.horizonWidth;
       canvas.height = this.horizonHeight;
       this.ctx = canvas.getContext('2d');
@@ -327,6 +327,7 @@ export default {
       requestAnimationFrame(this.checkGamepad);
     },
     handleGamepadInput(gamepad) {
+      if (!gamepad || !gamepad.connected) return;
       const [leftStickX, leftStickY] = gamepad.axes;
       if (!this.$refs.horizonCanvas) {
         return;
@@ -354,5 +355,9 @@ canvas {
   margin-bottom: 20px;
   margin-top: -20px;
   margin-right: 10px;
+}
+
+.hidden-canvas {
+  display: none;
 }
 </style>
