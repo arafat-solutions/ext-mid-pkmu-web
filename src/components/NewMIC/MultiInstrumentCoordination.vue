@@ -9,18 +9,6 @@
             <h1 class="modal-title">Mulai Tes</h1>
             <div class="modal-body">
               <p class="mb-4">Anda akan memulai tes sesungguhnya. Dalam tes ini:</p>
-              <ul class="modal-list">
-                <li>Kontrol semua aspek pesawat menggunakan joystick dan throttle:</li>
-                <ul class="ml-8 mb-4">
-                  <li>Heading (arah) menggunakan gerakan kiri-kanan joystick</li>
-                  <li>Altitude (ketinggian) menggunakan gerakan atas-bawah joystick</li>
-                  <li>Airspeed (kecepatan) menggunakan throttle</li>
-                </ul>
-                <li>Jaga semua indikator dalam rentang target yang ditentukan</li>
-                <li>Bersamaan dengan itu, dengarkan urutan angka dan identifikasi apakah semuanya ganjil atau genap</li>
-                <li>Durasi tes: {{ Math.round(config.totalDuration / 60) }} menit</li>
-              </ul>
-              <p class="mt-4 text-red-600 font-bold">Pastikan Anda sudah siap sebelum memulai tes!</p>
             </div>
             <div class="modal-footer">
               <button class="modal-button bg-gray-500 mr-4" @click="showExamConfirmModal = false">
@@ -42,7 +30,7 @@
             <div class="modal-body">
               <p>Dalam tes ini, Anda perlu:</p>
               <ul class="modal-list">
-                <li>Mengendalikan indikator pesawat menggunakan joystick dan throttle</li>
+                <li>Mengendalikan indikator pesawat menggunakan joystick dan thruster</li>
                 <li>Menjaga indikator dalam rentang target</li>
                 <li>Mendengarkan urutan angka dan mengidentifikasi apakah semuanya ganjil atau genap</li>
               </ul>
@@ -139,7 +127,7 @@
       </div>
 
       <!-- Analog Clock - always shown -->
-      <div class="indicator-wrapper col-span-1">
+      <div class="indicator-wrapper col-span-1" v-if='!trainingMode'>
         <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
       </div>
 
@@ -190,7 +178,7 @@ const MOVEMENT_SPEED = {
   HEADING: 0.2,
   ALTITUDE: 2,
   THRUST_RESPONSE: 1,
-  MIN_AIRSPEED: 60,
+  MIN_AIRSPEED: -10,
   MAX_AIRSPEED: 160,
   GRAVITY_EFFECT: 0.08,
   VERTICAL_SPEED_MULTIPLIER: 1.2,
@@ -282,33 +270,38 @@ const showExamConfirmModal = ref(false);
 const TRAINING_STEPS = [
   {
     id: 'joystick',
-    title: 'Latihan Kontrol Joystick',
+    title: 'LATIHAN',
     instructions: `
       <div class="training-instructions">
-        <h2>Latihan Menggunakan Joystick</h2>
-        <img src="/devices/joystick.png" alt="Panduan Joystick" class="instruction-image" style="display: block; margin: 0 auto;" />
-        <ul>
-          <li>Gunakan joystick untuk mengontrol heading dan altitude pesawat</li>
-          <li>Perhatikan target yang ditampilkan</li>
-          <li>Cobalah untuk mengarahkan pesawat sesuai dengan target</li>
-        </ul>
+        <img src="/devices/mic.png" alt="Panduan Joystick" class="instruction-image" style="display: block; margin: 0 auto;" />
+<p>
+Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
-    activeControls: ['compass', 'altimeter'],
+    activeControls: ['compass'],
     feedbackThreshold: 5 // seconds to maintain correct direction before positive feedback
   },
   {
-    id: 'throttle',
-    title: 'Latihan Kontrol Throttle',
+    id: 'joystick2',
+    title: 'LATIHAN',
     instructions: `
       <div class="training-instructions">
-        <h2>Latihan Menggunakan Throttle</h2>
-      <img src="/devices/thruster.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
-        <ul>
-          <li>Gunakan throttle untuk mengontrol kecepatan pesawat</li>
-          <li>Perhatikan indikator airspeed</li>
-          <li>Sesuaikan throttle untuk mencapai target kecepatan</li>
-        </ul>
+      <img src="/devices/mic_2.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
+<p>Pada latihan ini Anda diminta untuk menggerakan JOYSTICK ATAS atau BAWAH untuk menyesuaikan target yang ditentukan.
+</p>
+      </div>
+    `,
+    activeControls: ['altimeter'],
+    feedbackThreshold: 3
+  },
+
+  {
+    id: 'throttle',
+    title: 'LATIHAN',
+    instructions: `
+      <div class="training-instructions">
+      <img src="/devices/mic_3.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
+<p>Pada latihan ini Anda diminta untuk menggerakan THRUSTER DEPAN atau BELAKANG untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
     activeControls: ['airspeed'],
@@ -319,12 +312,9 @@ const TRAINING_STEPS = [
     title: 'Latihan Tes Angka',
     instructions: `
       <div class="training-instructions">
-        <h2>Latihan Mendengarkan dan Mengidentifikasi Angka</h2>
-        <ul>
-          <li>Anda akan mendengar serangkaian angka</li>
-          <li>Tentukan apakah semua angka yang Anda dengar ganjil atau genap</li>
-          <li>Tekan tombol yang sesuai untuk menjawab</li>
-        </ul>
+      <img src="/devices/mic_4.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
+<p>Pada latihan ini Anda diminta untuk mendengarkan urutan angka, bila mendengar 3 urutan GENAP atau GANJIL. Maka pilihlah jawaban yang sesuai.
+(contoh: 3 – 7 – 11, maka jawabannya GANJIL).</p>
       </div>
     `,
     activeControls: ['audio'],
@@ -332,7 +322,7 @@ const TRAINING_STEPS = [
   },
   {
     id: 'combined',
-    title: 'Latihan Gabungan',
+    title: 'LATIHAN',
     instructions: `
       <div class="training-instructions">
         <h2>Latihan Semua Kontrol</h2>
@@ -383,6 +373,7 @@ const isHeadingOutOfTarget = computed(() => {
 });
 
 const isAltitudeOutOfTarget = computed(() => {
+  console.log(Math.abs(altitude.value - altitudeTarget.value),altitude.value , altitudeTarget.value)
   const currentConfig = config.value.configs[currentConfigIndex.value];
   if (currentConfig?.altimeter === "inactive") return false;
   return Math.abs(altitude.value - altitudeTarget.value) > 100;
@@ -404,6 +395,9 @@ const nextStepButtonText = computed(() => {
 
 // Utility functions
 const formatTime = (time) => {
+  if (time <= 0) {
+    return "00:00";
+  }
   const minutes = Math.floor(time / 60);
   const seconds = Math.floor(time % 60);
   return `${minutes.toString().padStart(2, "0")}:${seconds
@@ -811,8 +805,8 @@ const updatePlanePosition = () => {
 const altitudeFactor = 1 - altitude.value / 20000;
 
 // Calculate drag (increases with speed)
-const dragForce = Math.pow(airspeed.value / 100, 2) * 
-  MOVEMENT_SPEED.DRAG_COEFFICIENT * 
+const dragForce = Math.pow(airspeed.value / 100, 2) *
+  MOVEMENT_SPEED.DRAG_COEFFICIENT *
   altitudeFactor;
 
 // Calculate vertical speed effects
@@ -952,12 +946,12 @@ const updateTime = () => {
 const updateTargets = () => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
   const currentTime = Date.now();
-  
+
   // Only update every 10 seconds
   if (currentTime - lastUpdateTime.value < 10000) {
     return;
   }
-  
+
   lastUpdateTime.value = currentTime;
 
   // Generate smooth, gradual changes for each indicator
@@ -972,7 +966,7 @@ const updateTargets = () => {
         airspeedTarget.value + airspeedChange
       )
     );
-    
+
     airspeedTarget.value = newAirspeedTarget;
     airspeedChangeDirection.value = airspeedChange > 0 ? 'up' : 'down';
   }
@@ -981,7 +975,7 @@ const updateTargets = () => {
     // Calculate new heading target with 10-degree maximum change
     const headingChange = (Math.random() * 2 - 1) * 10;
     const newHeadingTarget = (headingTarget.value + headingChange + 360) % 360;
-    
+
     headingTarget.value = newHeadingTarget;
     headingChangeDirection.value = headingChange > 0 ? 'up' : 'down';
   }
@@ -997,7 +991,7 @@ const updateTargets = () => {
         altitudeTarget.value + altitudeChange
       )
     );
-    
+
     altitudeTarget.value = newAltitudeTarget;
     altitudeChangeDirection.value = altitudeChange > 0 ? 'up' : 'down';
   }
@@ -1276,9 +1270,9 @@ const initConfig = async () => {
   config.value = {
     configs: configMIC.configs,
     totalDuration: configMIC.configs.reduce(
-      (acc, curr) => acc + curr.duration,
+      (acc, curr) => acc + Number(curr.duration),
       0
-    ),
+    ) * 60,
     sessionId: scheduleData.sessionId,
     userId: scheduleData.userId,
     batteryTestId: configMIC.id,
