@@ -355,13 +355,7 @@ export default {
           if (gameState.value === "training") {
             endTraining();
           } else {
-            if (currentConfigIndex.value === 2) {
-              submitResult();
-            } else {
-              currentConfigIndex.value++;
-              initConfig();
-              drawQuestions();
-            }
+            submitResult();
           }
         }
       }, 1000);
