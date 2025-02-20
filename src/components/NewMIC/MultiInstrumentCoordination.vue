@@ -8,7 +8,9 @@
           <div class="modal-content">
             <h1 class="modal-title">Mulai Tes</h1>
             <div class="modal-body">
-              <p class="mb-4">Anda akan memulai tes sesungguhnya. Dalam tes ini:</p>
+              <p class="mb-4">
+                Anda akan memulai tes sesungguhnya. Dalam tes ini:
+              </p>
             </div>
             <div class="modal-footer">
               <button class="modal-button bg-gray-500 mr-4" @click="showExamConfirmModal = false">
@@ -30,14 +32,20 @@
             <div class="modal-body">
               <p>Dalam tes ini, Anda perlu:</p>
               <ul class="modal-list">
-                <li>Mengendalikan indikator pesawat menggunakan joystick dan thruster</li>
+                <li>
+                  Mengendalikan indikator pesawat menggunakan joystick dan
+                  thruster
+                </li>
                 <li>Menjaga indikator dalam rentang target</li>
-                <li>Mendengarkan urutan angka dan mengidentifikasi apakah semuanya ganjil atau genap</li>
+                <li>
+                  Mendengarkan urutan angka dan mengidentifikasi apakah semuanya
+                  ganjil atau genap
+                </li>
               </ul>
             </div>
             <div class="modal-footer">
               <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">
-                {{ trainingMode ? 'Mulai Latihan' : 'Mulai Tes' }}
+                {{ trainingMode ? "Mulai Latihan" : "Mulai Tes" }}
               </button>
             </div>
           </div>
@@ -49,11 +57,13 @@
       <div v-if="showTrainingModal" class="modal-overlay">
         <div class="modal-container">
           <div class="modal-content">
-            <h1 class="modal-title">{{ currentTrainingStep < TRAINING_STEPS.length ?
-              TRAINING_STEPS[currentTrainingStep].title : '' }}</h1>
-                <div class="modal-body"
-                  v-html="currentTrainingStep < TRAINING_STEPS.length ? TRAINING_STEPS[currentTrainingStep].instructions : ''">
-                </div>
+            <h1 class="modal-title">
+              {{
+                currentTrainingStep < TRAINING_STEPS.length ? TRAINING_STEPS[currentTrainingStep].title : "" }} </h1>
+                <div class="modal-body" v-html="currentTrainingStep < TRAINING_STEPS.length
+                    ? TRAINING_STEPS[currentTrainingStep].instructions
+                    : ''
+                  "></div>
                 <div class="modal-footer">
                   <button class="modal-button bg-green-500" @click="startTrainingStep">
                     Mulai
@@ -66,8 +76,8 @@
 
     <!-- Feedback Message -->
     <Transition name="fade">
-      <div v-if="showFeedback" class="feedback-message"
-        :class="userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'">
+      <div v-if="showFeedback" class="feedback-message" :class="userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
+        ">
         {{ feedbackMessage }}
       </div>
     </Transition>
@@ -77,7 +87,9 @@
     </button>
 
     <!-- Update this part in the template -->
-    <div class="countdown-timer" v-if="!trainingMode">{{ formatTime(config.totalDuration) }}</div>
+    <div class="countdown-timer" v-if="!trainingMode">
+      {{ formatTime(config.totalDuration) }}
+    </div>
     <div class="control-mode-toggle">
       <!-- <button @click="toggleControlMode">
         {{
@@ -97,9 +109,13 @@
     </div>
     <div class="indicators place-items-center">
       <!-- Heading - only show during joystick training -->
-      <div
-        v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('compass'))"
-        class="indicator-wrapper col-span-3" :class="{ blink: isHeadingOutOfTarget }">
+      <div v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+            'compass'
+          ))
+      " class="indicator-wrapper col-span-3" :class="{ blink: isHeadingOutOfTarget }">
         <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
         <div class="target-text">
           Target: {{ Math.round(headingTarget) }}°
@@ -108,9 +124,13 @@
       </div>
 
       <!-- Airspeed/Thrust - only show during throttle training -->
-      <div
-        v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('airspeed'))"
-        class="indicator-wrapper col-span-1" :class="{ blink: isAirspeedOutOfTarget }">
+      <div v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+            'airspeed'
+          ))
+      " class="indicator-wrapper col-span-1" :class="{ blink: isAirspeedOutOfTarget }">
         <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
         <div class="thruster-indicator">
           <div class="thruster-bar">
@@ -127,14 +147,18 @@
       </div>
 
       <!-- Analog Clock - always shown -->
-      <div class="indicator-wrapper col-span-1" v-if='!trainingMode'>
+      <div class="indicator-wrapper col-span-1" v-if="!trainingMode">
         <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
       </div>
 
       <!-- Altimeter - only show during joystick training -->
-      <div
-        v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('altimeter'))"
-        class="indicator-wrapper col-span-1" :class="{ blink: isAltitudeOutOfTarget }">
+      <div v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+            'altimeter'
+          ))
+      " class="indicator-wrapper col-span-1" :class="{ blink: isAltitudeOutOfTarget }">
         <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
         <div class="target-text">
           Target: {{ Math.round(altitudeTarget) }} ft
@@ -145,8 +169,11 @@
 
     <!-- Audio Test Controls -->
     <!-- Audio Test Controls -->
-    <div class="audio-test"
-      v-if="!trainingMode || (trainingMode && TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))">
+    <div class="audio-test" v-if="
+      !trainingMode ||
+      (trainingMode &&
+        TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))
+    ">
       <div class="number-display">
         Dengarkan dan pilih apakah semua angka yang Anda dengar adalah genap
         atau ganjil.
@@ -260,7 +287,7 @@ const userInputs = ref([]);
 const trainingMode = ref(true);
 const currentTrainingStep = ref(0);
 const showFeedback = ref(false);
-const feedbackMessage = ref('');
+const feedbackMessage = ref("");
 const userFollowingDirection = ref(false);
 const currentStep = ref(null);
 const performanceMetrics = ref({});
@@ -269,8 +296,8 @@ const showExamConfirmModal = ref(false);
 
 const TRAINING_STEPS = [
   {
-    id: 'joystick',
-    title: 'LATIHAN',
+    id: "joystick",
+    title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
         <img src="/devices/mic.png" alt="Panduan Joystick" class="instruction-image" style="display: block; margin: 0 auto;" />
@@ -278,12 +305,12 @@ const TRAINING_STEPS = [
 Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
-    activeControls: ['compass'],
-    feedbackThreshold: 5 // seconds to maintain correct direction before positive feedback
+    activeControls: ["compass"],
+    feedbackThreshold: 5, // seconds to maintain correct direction before positive feedback
   },
   {
-    id: 'joystick2',
-    title: 'LATIHAN',
+    id: "joystick2",
+    title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
       <img src="/devices/mic_2.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
@@ -291,25 +318,25 @@ Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk m
 </p>
       </div>
     `,
-    activeControls: ['altimeter'],
-    feedbackThreshold: 3
+    activeControls: ["altimeter"],
+    feedbackThreshold: 3,
   },
 
   {
-    id: 'throttle',
-    title: 'LATIHAN',
+    id: "throttle",
+    title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
       <img src="/devices/mic_3.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
 <p>Pada latihan ini Anda diminta untuk menggerakan THRUSTER DEPAN atau BELAKANG untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
-    activeControls: ['airspeed'],
-    feedbackThreshold: 3
+    activeControls: ["airspeed"],
+    feedbackThreshold: 3,
   },
   {
-    id: 'numbers',
-    title: 'Latihan Tes Angka',
+    id: "numbers",
+    title: "Latihan Tes Angka",
     instructions: `
       <div class="training-instructions">
       <img src="/devices/mic_4.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
@@ -317,12 +344,12 @@ Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk m
 (contoh: 3 – 7 – 11, maka jawabannya GANJIL).</p>
       </div>
     `,
-    activeControls: ['audio'],
-    feedbackThreshold: 2
+    activeControls: ["audio"],
+    feedbackThreshold: 2,
   },
   {
-    id: 'combined',
-    title: 'LATIHAN',
+    id: "combined",
+    title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
         <h2>Latihan Semua Kontrol</h2>
@@ -333,25 +360,27 @@ Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk m
         </ul>
       </div>
     `,
-    activeControls: ['compass', 'altimeter', 'airspeed', 'audio'],
-    feedbackThreshold: 8
-  }
+    activeControls: ["compass", "altimeter", "airspeed", "audio"],
+    feedbackThreshold: 8,
+  },
 ];
 
 const checkDirectionFollowing = () => {
   const currentStep = TRAINING_STEPS[currentTrainingStep.value];
 
-  if (currentStep.activeControls.includes('compass')) {
+  if (currentStep.activeControls.includes("compass")) {
     const headingDiff = heading.value - headingTarget.value;
-    const isCorrectDirection = (headingChangeDirection.value === 'up' && headingDiff < 0) ||
-      (headingChangeDirection.value === 'down' && headingDiff > 0);
+    const isCorrectDirection =
+      (headingChangeDirection.value === "up" && headingDiff < 0) ||
+      (headingChangeDirection.value === "down" && headingDiff > 0);
     return isCorrectDirection;
   }
 
-  if (currentStep.activeControls.includes('airspeed')) {
+  if (currentStep.activeControls.includes("airspeed")) {
     const speedDiff = airspeed.value - airspeedTarget.value;
-    const isCorrectDirection = (airspeedChangeDirection.value === 'up' && speedDiff < 0) ||
-      (airspeedChangeDirection.value === 'down' && speedDiff > 0);
+    const isCorrectDirection =
+      (airspeedChangeDirection.value === "up" && speedDiff < 0) ||
+      (airspeedChangeDirection.value === "down" && speedDiff > 0);
     return isCorrectDirection;
   }
 
@@ -384,8 +413,8 @@ const verticalSpeed = computed(() => {
 
 const nextStepButtonText = computed(() => {
   return currentTrainingStep.value === TRAINING_STEPS.length - 1
-    ? 'Mulai Tes'
-    : 'Lanjut ke Latihan Berikutnya';
+    ? "Mulai Tes"
+    : "Lanjut ke Latihan Berikutnya";
 });
 
 // const toggleControlMode = () => {
@@ -418,9 +447,6 @@ const speakNumber = (number) => {
 
   // Speak the new number
   synthesis.speak(utterance);
-
-  // Log for debugging
-  console.log("Speaking number:", number);
 };
 
 // const initSounds = () => {
@@ -650,8 +676,10 @@ const AUDIO_TEST = {
 const startAudioSequence = () => {
   if (!examRunning.value) return;
 
-  if (trainingMode.value &&
-    !TRAINING_STEPS[currentTrainingStep.value].activeControls.includes('audio')) {
+  if (
+    trainingMode.value &&
+    !TRAINING_STEPS[currentTrainingStep.value].activeControls.includes("audio")
+  ) {
     return;
   }
 
@@ -750,14 +778,17 @@ const updatePlanePosition = () => {
         heading.value = (heading.value + headingChange + 360) % 360;
 
         const altitudeChange = -stick.axes[1] * MOVEMENT_SPEED.ALTITUDE;
-        altitude.value = Math.max(0, Math.min(10000, altitude.value + altitudeChange));
+        altitude.value = Math.max(
+          0,
+          Math.min(10000, altitude.value + altitudeChange)
+        );
       }
     }
 
     if (thruster.value) {
       const throttle = navigator.getGamepads()[thruster.value.index];
       if (throttle) {
-        thrustLevel.value = (1 - throttle.axes[2]) * 100;
+        thrustLevel.value = (0.5 - throttle.axes[2] / 2) * 100;
       }
     }
   } else if (controlMode.value === "manual") {
@@ -800,54 +831,59 @@ const updatePlanePosition = () => {
     }
   }
 
-// Calculate air density factor (thinner air at higher altitudes)
-const altitudeFactor = 1 - altitude.value / 20000;
+  // Calculate air density factor (thinner air at higher altitudes)
+  const altitudeFactor = 1 - altitude.value / 20000;
 
-// Calculate drag (increases with speed)
-const dragForce = Math.pow(airspeed.value / 100, 2) *
-  MOVEMENT_SPEED.DRAG_COEFFICIENT *
-  altitudeFactor;
+  // Calculate drag (increases with speed)
+  const dragForce =
+    Math.pow(airspeed.value / 100, 2) *
+    MOVEMENT_SPEED.DRAG_COEFFICIENT *
+    altitudeFactor;
 
-// Calculate vertical speed effects
-const altitudeEffect = verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
-const clampedAltitudeEffect = Math.max(
-  -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
-  Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
-);
+  // Calculate vertical speed effects
+  const altitudeEffect =
+    verticalSpeed.value * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
+  const clampedAltitudeEffect = Math.max(
+    -MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT,
+    Math.min(MOVEMENT_SPEED.MAX_ALTITUDE_EFFECT, altitudeEffect)
+  );
 
-// Set minimum airspeed based on altitude (higher minimum speed at higher altitudes)
-const minimumAirspeed = MOVEMENT_SPEED.MIN_AIRSPEED + (altitude.value / 10000) * 20;
+  // Set minimum airspeed based on altitude (higher minimum speed at higher altitudes)
+  const minimumAirspeed =
+    MOVEMENT_SPEED.MIN_AIRSPEED + (altitude.value / 10000) * 20;
 
-// Calculate target speed based on thrust with minimum speed
-targetSpeed.value = Math.max(
-  minimumAirspeed,
-  MOVEMENT_SPEED.MIN_AIRSPEED +
+  // Calculate target speed based on thrust with minimum speed
+  targetSpeed.value = Math.max(
+    minimumAirspeed,
+    MOVEMENT_SPEED.MIN_AIRSPEED +
     (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
     (thrustLevel.value / 100)
-);
+  );
 
-// Calculate acceleration
-const speedDifference = targetSpeed.value - airspeed.value;
-const accelerationRate = speedDifference > 0
-  ? MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor
-  : MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
+  // Calculate acceleration
+  const speedDifference = targetSpeed.value - airspeed.value;
+  const accelerationRate =
+    speedDifference > 0
+      ? MOVEMENT_SPEED.ACCELERATION_RATE * altitudeFactor
+      : MOVEMENT_SPEED.DECELERATION_RATE * altitudeFactor;
 
-// Update acceleration with momentum
-currentAcceleration.value += speedDifference * accelerationRate;
-currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;
+  // Update acceleration with momentum
+  currentAcceleration.value += speedDifference * accelerationRate;
+  currentAcceleration.value *= MOVEMENT_SPEED.MOMENTUM_RETENTION;
 
-// Apply drag and altitude effects
-currentAcceleration.value -= dragForce;
-currentAcceleration.value -= clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
+  // Apply drag and altitude effects
+  currentAcceleration.value -= dragForce;
+  currentAcceleration.value -=
+    clampedAltitudeEffect * MOVEMENT_SPEED.ALTITUDE_EFFECT_RATE;
 
-// Update airspeed with minimum speed enforcement
-airspeed.value = Math.max(
-  minimumAirspeed,
-  Math.min(
-    MOVEMENT_SPEED.MAX_AIRSPEED,
-    airspeed.value + currentAcceleration.value
-  )
-);
+  // Update airspeed with minimum speed enforcement
+  airspeed.value = Math.max(
+    minimumAirspeed,
+    Math.min(
+      MOVEMENT_SPEED.MAX_AIRSPEED,
+      airspeed.value + currentAcceleration.value
+    )
+  );
 };
 
 const updateScore = () => {
@@ -893,7 +929,6 @@ const moveToNextConfig = () => {
   }
 };
 
-
 const updateLoop = () => {
   checkGamepadConnection();
   if (examRunning.value) {
@@ -909,7 +944,6 @@ const updateLoop = () => {
   }
   requestAnimationFrame(updateLoop);
 };
-
 
 const updateTime = () => {
   if (!examRunning.value) return;
@@ -954,7 +988,7 @@ const updateTargets = () => {
   lastUpdateTime.value = currentTime;
 
   // Generate smooth, gradual changes for each indicator
-  if (currentConfig?.airspeed !== 'inactive') {
+  if (currentConfig?.airspeed !== "inactive") {
     // Calculate new airspeed target with 5% maximum change
     const maxAirspeedChange = airspeedTarget.value * 0.05;
     const airspeedChange = (Math.random() * 2 - 1) * maxAirspeedChange;
@@ -967,19 +1001,19 @@ const updateTargets = () => {
     );
 
     airspeedTarget.value = newAirspeedTarget;
-    airspeedChangeDirection.value = airspeedChange > 0 ? 'up' : 'down';
+    airspeedChangeDirection.value = airspeedChange > 0 ? "up" : "down";
   }
 
-  if (currentConfig?.compass !== 'inactive') {
+  if (currentConfig?.compass !== "inactive") {
     // Calculate new heading target with 10-degree maximum change
     const headingChange = (Math.random() * 2 - 1) * 10;
     const newHeadingTarget = (headingTarget.value + headingChange + 360) % 360;
 
     headingTarget.value = newHeadingTarget;
-    headingChangeDirection.value = headingChange > 0 ? 'up' : 'down';
+    headingChangeDirection.value = headingChange > 0 ? "up" : "down";
   }
 
-  if (currentConfig?.altimeter !== 'inactive') {
+  if (currentConfig?.altimeter !== "inactive") {
     // Calculate new altitude target with 3% maximum change
     const maxAltitudeChange = altitudeTarget.value * 0.03;
     const altitudeChange = (Math.random() * 2 - 1) * maxAltitudeChange;
@@ -992,12 +1026,11 @@ const updateTargets = () => {
     );
 
     altitudeTarget.value = newAltitudeTarget;
-    altitudeChangeDirection.value = altitudeChange > 0 ? 'up' : 'down';
+    altitudeChangeDirection.value = altitudeChange > 0 ? "up" : "down";
   }
 };
 
 const startExam = () => {
-  console.log("Starting exam...");
   // Common initialization regardless of mode
   examRunning.value = true;
   currentConfigIndex.value = 0;
@@ -1026,23 +1059,31 @@ const startExam = () => {
 
     // Create a training config based on active controls
     config.value = {
-      configs: [{
-        id: `training-${currentStep.id}`,
-        duration: currentStep.feedbackThreshold,
-        compass: currentStep.activeControls.includes('compass') ? 'adjust_for_consistent_updates' : 'inactive',
-        airspeed: currentStep.activeControls.includes('airspeed') ? 'adjust_for_consistent_updates' : 'inactive',
-        altimeter: currentStep.activeControls.includes('altimeter') ? 'adjust_for_consistent_updates' : 'inactive'
-      }],
+      configs: [
+        {
+          id: `training-${currentStep.id}`,
+          duration: currentStep.feedbackThreshold,
+          compass: currentStep.activeControls.includes("compass")
+            ? "adjust_for_consistent_updates"
+            : "inactive",
+          airspeed: currentStep.activeControls.includes("airspeed")
+            ? "adjust_for_consistent_updates"
+            : "inactive",
+          altimeter: currentStep.activeControls.includes("altimeter")
+            ? "adjust_for_consistent_updates"
+            : "inactive",
+        },
+      ],
       totalDuration: currentStep.feedbackThreshold * 60, // Convert to seconds
-      sessionId: 'training-session',
-      userId: 'training-user'
+      sessionId: "training-session",
+      userId: "training-user",
     };
 
     currentConfigIndex.value = 0;
     timeRemaining.value = currentStep.feedbackThreshold * 60;
 
     // Only start audio sequence if it's part of current training step
-    if (currentStep.activeControls.includes('audio')) {
+    if (currentStep.activeControls.includes("audio")) {
       startAudioSequence();
     }
 
@@ -1053,23 +1094,20 @@ const startExam = () => {
   } else {
     // Regular exam mode initialization
     currentConfigIndex.value = 0;
-    config.value.configs = config.value.configs.map(cfg => ({
+    config.value.configs = config.value.configs.map((cfg) => ({
       ...cfg,
-      compass: 'adjust_for_consistent_updates',
-      airspeed: 'adjust_for_consistent_updates',
-      altimeter: 'adjust_for_consistent_updates'
+      compass: "adjust_for_consistent_updates",
+      airspeed: "adjust_for_consistent_updates",
+      altimeter: "adjust_for_consistent_updates",
     }));
 
     // Initialize with first config duration
     if (config.value.configs && config.value.configs.length > 0) {
-      timeRemaining.value = config.value.configs.reduce((acc, cfg) => acc + cfg.duration, 0) * 60;
+      timeRemaining.value =
+        config.value.configs.reduce((acc, cfg) => acc + cfg.duration, 0) * 60;
       startAudioSequence();
     }
   }
-
-  // Log mode start
-  console.log(`Starting ${trainingMode.value ? 'training' : 'exam'} mode`);
-  console.log('Initial config:', config.value.configs[currentConfigIndex.value]);
 };
 
 // Update these functions:
@@ -1085,7 +1123,6 @@ const handleStartExam = () => {
   initAudioContext();
 };
 
-
 const startTrainingStep = () => {
   showTrainingModal.value = false;
 
@@ -1094,16 +1131,24 @@ const startTrainingStep = () => {
 
   // Create a training config based on active controls
   config.value = {
-    configs: [{
-      id: `training-${currentStep.id}`,
-      duration: 999999, // Very long duration for training
-      compass: currentStep.activeControls.includes('compass') ? 'adjust_for_consistent_updates' : 'inactive',
-      airspeed: currentStep.activeControls.includes('airspeed') ? 'adjust_for_consistent_updates' : 'inactive',
-      altimeter: currentStep.activeControls.includes('altimeter') ? 'adjust_for_consistent_updates' : 'inactive'
-    }],
+    configs: [
+      {
+        id: `training-${currentStep.id}`,
+        duration: 999999, // Very long duration for training
+        compass: currentStep.activeControls.includes("compass")
+          ? "adjust_for_consistent_updates"
+          : "inactive",
+        airspeed: currentStep.activeControls.includes("airspeed")
+          ? "adjust_for_consistent_updates"
+          : "inactive",
+        altimeter: currentStep.activeControls.includes("altimeter")
+          ? "adjust_for_consistent_updates"
+          : "inactive",
+      },
+    ],
     totalDuration: 999999, // Very long duration for training
-    sessionId: 'training-session',
-    userId: 'training-user'
+    sessionId: "training-session",
+    userId: "training-user",
   };
 
   startExam();
@@ -1121,8 +1166,8 @@ const monitorPerformance = () => {
     targets: {
       heading: headingTarget.value,
       airspeed: airspeedTarget.value,
-      altitude: altitudeTarget.value
-    }
+      altitude: altitudeTarget.value,
+    },
   };
 
   // Only show feedback during training mode
@@ -1134,7 +1179,8 @@ const monitorPerformance = () => {
       showFeedback.value = true;
       userFollowingDirection.value = true;
     } else if (!isFollowingDirection && userFollowingDirection.value) {
-      feedbackMessage.value = "Perhatikan arah pergerakan target dan coba kontrol pesawat anda ke arah target";
+      feedbackMessage.value =
+        "Perhatikan arah pergerakan target dan coba kontrol pesawat anda ke arah target";
       showFeedback.value = true;
       userFollowingDirection.value = false;
     }
@@ -1157,20 +1203,20 @@ const updatePerformanceData = () => {
         type: isHeadingOutOfTarget.value ? "wrong" : "correct",
         deviations: heading.value - headingTarget.value,
         timestamp: currentTime,
-        configIndex: currentConfigIndex.value
+        configIndex: currentConfigIndex.value,
       },
       airspeed: {
         type: isAirspeedOutOfTarget.value ? "wrong" : "correct",
         deviations: airspeed.value - airspeedTarget.value,
         timestamp: currentTime,
-        configIndex: currentConfigIndex.value
+        configIndex: currentConfigIndex.value,
       },
       altitude: {
         type: isAltitudeOutOfTarget.value ? "wrong" : "correct",
         deviations: altitude.value - altitudeTarget.value,
         timestamp: currentTime,
-        configIndex: currentConfigIndex.value
-      }
+        configIndex: currentConfigIndex.value,
+      },
     };
 
     // Use these metrics to update the performance data arrays
@@ -1195,7 +1241,6 @@ const moveToNextTrainingStep = () => {
     showExamConfirmModal.value = true;
   }
 };
-
 
 const startActualExam = async () => {
   // Close confirmation modal
@@ -1233,11 +1278,11 @@ const startActualExam = async () => {
   await initConfig();
 
   // Make sure all controls are active
-  config.value.configs = config.value.configs.map(cfg => ({
+  config.value.configs = config.value.configs.map((cfg) => ({
     ...cfg,
-    compass: 'adjust_for_consistent_updates',
-    airspeed: 'adjust_for_consistent_updates',
-    altimeter: 'adjust_for_consistent_updates'
+    compass: "adjust_for_consistent_updates",
+    airspeed: "adjust_for_consistent_updates",
+    altimeter: "adjust_for_consistent_updates",
   }));
 
   // Start the exam
@@ -1258,7 +1303,6 @@ const initConfig = async () => {
   const configMIC = scheduleData.tests.find(
     (t) => t.testUrl === "monitoring-instrument-coordination-test"
   );
-  console.log(configMIC, "config");
 
   if (!configMIC || !configMIC.configs) {
     console.error("Invalid configuration data");
@@ -1268,10 +1312,9 @@ const initConfig = async () => {
   // Store all configs and calculate total duration
   config.value = {
     configs: configMIC.configs,
-    totalDuration: configMIC.configs.reduce(
-      (acc, curr) => acc + Number(curr.duration),
-      0
-    ) * 60,
+    totalDuration:
+      configMIC.configs.reduce((acc, curr) => acc + Number(curr.duration), 0) *
+      60,
     sessionId: scheduleData.sessionId,
     userId: scheduleData.userId,
     batteryTestId: configMIC.id,
@@ -1305,7 +1348,6 @@ const sendPerformanceData = async () => {
       };
     });
 
-    console.log('config:', config.value);
     const payload = {
       testSessionId: config.value.sessionId,
       userId: config.value.userId,
@@ -1356,7 +1398,7 @@ const sendPerformanceData = async () => {
       "Monitoring & Instrument Koordination"
     );
     localStorage.removeItem("refreshCountShapeRecognition");
-    router.push('/module');
+    router.push("/module");
   } catch (error) {
     console.log("error submit:", error);
   } finally {
@@ -1366,7 +1408,6 @@ const sendPerformanceData = async () => {
 
 // Add this to your state declarations
 const showStartModal = ref(false);
-
 
 const handleKeyDown = (event) => {
   if (controlMode.value === "manual") {
@@ -1830,7 +1871,7 @@ onUnmounted(() => {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   padding: 15px 30px;
   border: none;
