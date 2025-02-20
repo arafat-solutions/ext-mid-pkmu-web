@@ -401,7 +401,10 @@ export default {
       this.setTrainingConfig(this.currentTraining);
       this.countDownTime();
 
-      if (this.currentTraining === "callsign") {
+      if (
+        this.currentTraining === "callsign" ||
+        this.currentTraining === "combined"
+      ) {
         this.$refs.callSignTest?.startSpeechTest();
       }
     },
