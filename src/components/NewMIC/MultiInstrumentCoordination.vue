@@ -176,7 +176,7 @@ import { useRouter } from "vue-router";
 // Constants for movement speed
 const MOVEMENT_SPEED = {
   HEADING: 0.2,
-  ALTITUDE: 2,
+  ALTITUDE: 5,
   THRUST_RESPONSE: 1,
   MIN_AIRSPEED: -10,
   MAX_AIRSPEED: 160,
@@ -373,7 +373,6 @@ const isHeadingOutOfTarget = computed(() => {
 });
 
 const isAltitudeOutOfTarget = computed(() => {
-  console.log(Math.abs(altitude.value - altitudeTarget.value),altitude.value , altitudeTarget.value)
   const currentConfig = config.value.configs[currentConfigIndex.value];
   if (currentConfig?.altimeter === "inactive") return false;
   return Math.abs(altitude.value - altitudeTarget.value) > 100;
