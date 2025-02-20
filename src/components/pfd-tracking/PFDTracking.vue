@@ -94,15 +94,15 @@
     </div>
 
     <!-- Control Mode Toggle -->
-    <div class="control-mode-toggle">
-      <button @click="toggleControlMode">
-        {{
-          controlMode === "joystick"
-            ? "Switch to Manual Control"
-            : "Switch to Joystick Control"
-        }}
-      </button>
-    </div>
+    <!-- <div class="control-mode-toggle"> -->
+    <!--   <button @click="toggleControlMode"> -->
+    <!--     {{ -->
+    <!--       controlMode === "joystick" -->
+    <!--         ? "Switch to Manual Control" -->
+    <!--         : "Switch to Joystick Control" -->
+    <!--     }} -->
+    <!--   </button> -->
+    <!-- </div> -->
 
     <!-- Manual Control Instructions -->
     <div class="manual-control-instructions" v-if="controlMode === 'manual'">
@@ -391,9 +391,9 @@ const verticalSpeed = computed(() => {
   return altitude.value - lastAltitude.value;
 });
 
-const toggleControlMode = () => {
-  controlMode.value = controlMode.value === "joystick" ? "manual" : "joystick";
-};
+//const toggleControlMode = () => {
+//  controlMode.value = controlMode.value === "joystick" ? "manual" : "joystick";
+//};
 
 // Utility functions
 const formatTime = (time) => {
