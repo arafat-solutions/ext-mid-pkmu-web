@@ -7,7 +7,7 @@
           class="text-2xl font-bold mb-4 text-gray-800"
           style="font-size: 24px"
         >
-        Latihan
+          Latihan
         </h2>
 
         <div class="mb-6">
@@ -110,15 +110,21 @@
             class="answer-button"
             :class="{
               correct:
+                gameState === 'training' &&
                 feedbackState?.show &&
                 ((feedbackState.selectedIndex === index &&
                   feedbackState.isCorrect) ||
                   (feedbackState.correctIndex === index &&
                     !feedbackState.isCorrect)),
               incorrect:
+                gameState === 'training' &&
                 feedbackState?.show &&
                 feedbackState.selectedIndex === index &&
                 !feedbackState.isCorrect,
+              selected:
+                gameState === 'test' &&
+                feedbackState?.show &&
+                feedbackState.selectedIndex === index,
             }"
           >
             {{ ["A", "B", "C", "D", "E"][index] }}
@@ -126,11 +132,11 @@
               v-if="feedbackState?.show"
               class="button-highlight"
               :class="{
-                correct: feedbackState.correctIndex === index,
-                incorrect:
-                  feedbackState.selectedIndex === index &&
-                  !feedbackState.isCorrect,
-              }"
+              correct: feedbackState.correctIndex === index && gameState === 'training',
+              incorrect: gameState === 'training' &&
+                feedbackState.selectedIndex === index &&
+                !feedbackState.isCorrect,
+            }"
             ></div>
           </button>
         </div>
@@ -601,8 +607,7 @@ export default {
 
       currentConfig.value = {
         ...configShapeRecognition.configs[currentConfigIndex.value],
-        numberOfQuestion:
-          configShapeRecognition.configs
+        numberOfQuestion: configShapeRecognition.configs
           .map((c) => c.duration ?? 10)
           .reduce((a, b) => Number(a) + Number(b), 0),
         timePerQuestion:
@@ -888,11 +893,11 @@ export default {
 }
 
 .button-highlight.correct {
-  border-color: #4caf50;
+  /*border-color: #4caf50;*/
 }
 
 .button-highlight.incorrect {
-  border-color: #f44336;
+  /*border-color: #f44336;*/
 }
 
 @keyframes spin {
@@ -931,5 +936,10 @@ export default {
 .loadingContainer p {
   margin-top: 50px;
   font-size: 24px;
+}
+
+.selected {
+  background-color: #5b4ac4;
+  color: white;
 }
 </style>
