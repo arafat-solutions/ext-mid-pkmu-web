@@ -216,7 +216,7 @@ export default {
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
 
-        this.generateCoordinat();
+      this.generateCoordinat();
     },
     endGame() {
       clearInterval(this.tailRemoveInterval);
@@ -442,6 +442,7 @@ export default {
         this.lines = choosenlines[randomIndex];
 
         this.lines = this.limitTurns(this.lines, this.config.max_turns);
+        //console.log(this.lines)
 
         this.generateLines();
         this.startQuestionTimer();
@@ -556,31 +557,18 @@ export default {
     countTurns(index) {
       if (index <= 0 || index >= this.lines.length - 1) return;
 
-      const prevDirection = this.lines[index - 1];
-      const currDirection = this.lines[index];
-      const nextDirection = this.lines[index + 1];
+      const prev = this.lines[index - 1];
+      const curr = this.lines[index];
+      const next = this.lines[index + 1];
 
-      if (prevDirection.x < currDirection.x) {
-        this.rightTurns++;
-      }
-      if (prevDirection.x > currDirection.x) {
+      const cross =
+        (curr.x - prev.x) * (next.y - curr.y) -
+        (curr.y - prev.y) * (next.x - curr.x);
+
+      if (cross > 0) {
         this.leftTurns++;
-      }
-
-      if (
-        prevDirection.x < currDirection.x &&
-        prevDirection.y === currDirection.y &&
-        currDirection.y === nextDirection.y
-      ) {
-        this.rightTurns--;
-      }
-
-      if (
-        prevDirection.x > currDirection.x &&
-        prevDirection.y === currDirection.y &&
-        currDirection.y === nextDirection.y
-      ) {
-        this.leftTurns--;
+      } else if (cross < 0) {
+        this.rightTurns++;
       }
     },
     setAnswerOption() {
