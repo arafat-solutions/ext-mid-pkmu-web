@@ -20,7 +20,10 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button class="modal-button mr-4 bg-green-500" @click="handleStartExam">
+              <button
+                class="modal-button mr-4 bg-green-500"
+                @click="handleStartExam"
+              >
                 YA
               </button>
               <button class="modal-button bg-red-500" @click="handleCancel">
@@ -39,8 +42,11 @@
           <div class="modal-content">
             <h2 class="modal-title">{{ trainingSteps[trainingStep].title }}</h2>
             <div class="modal-body">
-              <img :src="trainingSteps[trainingStep].imagePath" alt="Training instruction"
-                class="w-full h-auto max-h-64 object-contain mb-4 rounded" />
+              <img
+                :src="trainingSteps[trainingStep].imagePath"
+                alt="Training instruction"
+                class="w-full h-auto max-h-64 object-contain mb-4 rounded"
+              />
               <p class="text-lg">
                 {{ trainingSteps[trainingStep].instruction }}
               </p>
@@ -76,10 +82,17 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="modal-button mr-4 bg-green-500" @click="startTrainingStep">
+              <button
+                class="modal-button mr-4 bg-green-500"
+                @click="startTrainingStep"
+              >
                 Mulai Latihan
               </button>
-              <button v-if="completedTraining" class="modal-button bg-blue-500" @click="startExam">
+              <button
+                v-if="completedTraining"
+                class="modal-button bg-blue-500"
+                @click="startExam"
+              >
                 Mulai Test
               </button>
             </div>
@@ -115,34 +128,55 @@
     </div>
 
     <!-- Main Indicators -->
-    <div class="indicators-container" :class="{ 'training-mode': trainingMode }">
+    <div
+      class="indicators-container"
+      :class="{ 'training-mode': trainingMode }"
+    >
       <div class="indicators-row">
         <!-- Speed Indicator -->
-        <div v-if="
-          !trainingMode ||
-          trainingSteps[trainingStep].activeIndicators.includes('airspeed')
-        " class="indicator-group overflow-hidden" :class="{
-          blink: isAirspeedOutOfTarget && examRunning,
-          inactive:
-            trainingMode &&
-            !trainingSteps[trainingStep].activeIndicators.includes(
-              'airspeed'
-            ),
-        }">
+        <div
+          v-if="
+            !trainingMode ||
+            trainingSteps[trainingStep].activeIndicators.includes('airspeed')
+          "
+          class="indicator-group overflow-hidden"
+          :class="{
+            blink: isAirspeedOutOfTarget && examRunning,
+            inactive:
+              trainingMode &&
+              !trainingSteps[trainingStep].activeIndicators.includes(
+                'airspeed'
+              ),
+          }"
+        >
           <div class="indicator-label">SPEED</div>
           <div class="indicator vertical">
-            <LinearGauge label="Airspeed" :value="airspeed" :target="airspeedTarget" :min="MOVEMENT_SPEED.MIN_AIRSPEED"
-              :max="MOVEMENT_SPEED.MAX_AIRSPEED" :isVertical="true" :step="5" />
+            <LinearGauge
+              label="Airspeed"
+              :value="airspeed"
+              :target="airspeedTarget"
+              :min="MOVEMENT_SPEED.MIN_AIRSPEED"
+              :max="MOVEMENT_SPEED.MAX_AIRSPEED"
+              :isVertical="true"
+              :step="1"
+              :isSpeed="true"
+            />
             <!-- Thrust Control -->
-            <div class="thruster-indicator" :class="{
-              highlight:
-                trainingMode &&
-                trainingSteps[trainingStep].activeIndicators.includes(
-                  'airspeed'
-                ),
-            }">
+            <div
+              class="thruster-indicator"
+              :class="{
+                highlight:
+                  trainingMode &&
+                  trainingSteps[trainingStep].activeIndicators.includes(
+                    'airspeed'
+                  ),
+              }"
+            >
               <div class="thruster-bar">
-                <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
+                <div
+                  class="thruster-fill"
+                  :style="{ height: `${thrustLevel}%` }"
+                ></div>
               </div>
               <div class="thruster-value">{{ Math.round(thrustLevel) }}%</div>
             </div>
@@ -150,38 +184,60 @@
         </div>
 
         <!-- Heading Indicator -->
-        <div v-if="
-          !trainingMode ||
-          trainingSteps[trainingStep].activeIndicators.includes('heading')
-        " class="indicator-group overflow-hidden" :class="{
-          blink: isHeadingOutOfTarget && examRunning,
-          inactive:
-            trainingMode &&
-            !trainingSteps[trainingStep].activeIndicators.includes('heading'),
-        }">
+        <div
+          v-if="
+            !trainingMode ||
+            trainingSteps[trainingStep].activeIndicators.includes('heading')
+          "
+          class="indicator-group overflow-hidden"
+          :class="{
+            blink: isHeadingOutOfTarget && examRunning,
+            inactive:
+              trainingMode &&
+              !trainingSteps[trainingStep].activeIndicators.includes('heading'),
+          }"
+        >
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
-            <LinearGauge label="compass" :value="heading" :target="headingTarget" :min="0" :max="360"
-              :isVertical="false" :step="10" />
+            <LinearGauge
+              label="compass"
+              :value="heading"
+              :target="headingTarget"
+              :min="0"
+              :max="360"
+              :isVertical="false"
+              :step="1"
+            />
           </div>
         </div>
 
         <!-- Altitude Indicator -->
-        <div v-if="
-          !trainingMode ||
-          trainingSteps[trainingStep].activeIndicators.includes('altitude')
-        " class="indicator-group overflow-hidden" :class="{
-          blink: isAltitudeOutOfTarget && examRunning,
-          inactive:
-            trainingMode &&
-            !trainingSteps[trainingStep].activeIndicators.includes(
-              'altitude'
-            ),
-        }">
+        <div
+          v-if="
+            !trainingMode ||
+            trainingSteps[trainingStep].activeIndicators.includes('altitude')
+          "
+          class="indicator-group overflow-hidden"
+          :class="{
+            blink: isAltitudeOutOfTarget && examRunning,
+            inactive:
+              trainingMode &&
+              !trainingSteps[trainingStep].activeIndicators.includes(
+                'altitude'
+              ),
+          }"
+        >
           <div class="indicator-label">ALTITUDE</div>
           <div class="indicator vertical">
-            <LinearGauge label="altitude" :value="altitude" :target="altitudeTarget" :min="0" :max="10000"
-              :isVertical="true" :step="500" />
+            <LinearGauge
+              label="altitude"
+              :value="altitude"
+              :target="altitudeTarget"
+              :min="0"
+              :max="16000"
+              :isVertical="true"
+              :step="20"
+            />
           </div>
         </div>
       </div>
@@ -207,14 +263,18 @@
           <Info class="w-4 h-4 mr-2" />
           Show Instructions
         </button> -->
-        <button class="training-button bg-green-500" @click="moveToNextTraining">
+        <button
+          class="training-button bg-green-500"
+          @click="moveToNextTraining"
+        >
           Latihan Selanjutnya
-          <ChevronRight class="w-4 h-4 ml-2" />
         </button>
       </div>
 
       <!-- Score Display -->
-      <div v-if="examRunning && !completedTraining" class="score-display">Score: {{ score }}</div>
+      <div v-if="examRunning && !completedTraining" class="score-display">
+        Score: {{ score }}
+      </div>
     </div>
   </div>
 </template>
@@ -229,8 +289,8 @@ const router = useRouter();
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
-  HEADING: 3,
-  ALTITUDE: 20,
+  HEADING: 0.5,
+  ALTITUDE: 10,
   THRUST_RESPONSE: 1,
   MIN_AIRSPEED: 60,
   MAX_AIRSPEED: 160,
@@ -310,7 +370,7 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol arah pesawat menggunakan gerakan joystick kiri/kanan. Jaga dalam rentang ±5° dari target.",
     activeIndicators: ["heading"],
-    imagePath:'/devices/joystick.png',
+    imagePath: "/devices/joystick.png",
     content: `
       <div class="space-y-4">
         <div class="bg-gray-800 p-4 rounded-lg">
@@ -330,7 +390,7 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol ketinggian pesawat menggunakan gerakan joystick maju/mundur. Jaga dalam rentang ±100ft dari target.",
     activeIndicators: ["altitude"],
-    imagePath:'/devices/thruster.png',
+    imagePath: "/devices/thruster.png",
     content: `
       <div class="space-y-4">
         <div class="bg-gray-800 p-4 rounded-lg">
@@ -350,7 +410,7 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol kecepatan pesawat menggunakan throttle. Jaga dalam rentang ±5 knots dari target.",
     activeIndicators: ["airspeed"],
-    imagePath:'/devices/thruster.png',
+    imagePath: "/devices/thruster.png",
     content: `
       <div class="space-y-4">
         <div class="bg-gray-800 p-4 rounded-lg">
@@ -588,7 +648,7 @@ const updateSounds = () => {
   // Calculate RPM factor based on actual airspeed rather than thrust
   const rpmFactor = Math.pow(
     (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
-    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
+      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
     0.8
   );
 
@@ -673,7 +733,7 @@ const checkTrainingProgress = () => {
 
   if (allOnTarget) {
     timeOnTarget.value += 1 / 60; // Assuming 60 FPS
-    randomizeTargets(); // Randomize targets when the user hits the target
+    //randomizeTargets(); // Randomize targets when the user hits the target
     if (timeOnTarget.value >= MASTERY_TIME) {
       completeTrainingStep();
       timeOnTarget.value = 0;
@@ -739,7 +799,10 @@ const updatePlanePosition = () => {
       ) {
         const headingChange = rawX * MOVEMENT_SPEED.HEADING * 1.5; // Reduced from 5 to 1.5
         if (rawX !== 0) {
-          heading.value = (heading.value - headingChange + 360) % 360;
+          heading.value = (heading.value + headingChange) % 360;
+          if (heading.value < 0) {
+            heading.value += 360;
+          }
         }
       }
 
@@ -751,10 +814,13 @@ const updatePlanePosition = () => {
       ) {
         const altitudeChange = rawY * MOVEMENT_SPEED.ALTITUDE * 1.5; // Reduced from 5 to 1.5
         if (rawY !== 0) {
-          altitude.value = Math.max(
-            0,
-            Math.min(10000, altitude.value - altitudeChange)
-          );
+          altitude.value = altitude.value - altitudeChange;
+          if (altitude.value > 16000) {
+            altitude.value = 0;
+          }
+          if (altitude.value < 0) {
+            altitude.value = 16000;
+          }
         }
       }
     }
@@ -768,7 +834,12 @@ const updatePlanePosition = () => {
       (!trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("airspeed"))
     ) {
-      thrustLevel.value = (1 - throttle.axes[2]) * 100;
+    const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
+    altitude.value = Math.max(
+      0,
+      Math.min(10000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
+    );
+      thrustLevel.value = 100 - ((throttle.axes[2] + 1) * 100) / 2;
     }
   }
 
@@ -791,7 +862,7 @@ const updatePlanePosition = () => {
   targetSpeed.value =
     MOVEMENT_SPEED.MIN_AIRSPEED +
     (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
-    (thrustLevel.value / 100);
+      (thrustLevel.value / 100);
 
   // Calculate acceleration with improved response
   const speedDifference = targetSpeed.value - airspeed.value;
@@ -980,8 +1051,8 @@ const updateIndicator = (indicator, mode) => {
     indicator === "airspeed"
       ? lastAirspeedUpdate.value
       : indicator === "heading"
-        ? lastHeadingUpdate.value
-        : lastAltitudeUpdate.value;
+      ? lastHeadingUpdate.value
+      : lastAltitudeUpdate.value;
 
   if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
     return;
@@ -997,15 +1068,15 @@ const updateIndicator = (indicator, mode) => {
     indicator === "airspeed"
       ? airspeed.value
       : indicator === "heading"
-        ? heading.value
-        : altitude.value;
+      ? heading.value
+      : altitude.value;
 
   const currentTarget =
     indicator === "airspeed"
       ? airspeedTarget.value
       : indicator === "heading"
-        ? headingTarget.value
-        : altitudeTarget.value;
+      ? headingTarget.value
+      : altitudeTarget.value;
 
   // Calculate new target with gradual movement
   let newTarget;
@@ -1032,8 +1103,8 @@ const updateIndicator = (indicator, mode) => {
 
   // Update the target value
   if (indicator === "airspeed") airspeedTarget.value = newTarget;
-  if (indicator === "heading") headingTarget.value = newTarget;
-  if (indicator === "altitude") altitudeTarget.value = newTarget;
+  //if (indicator === "heading") headingTarget.value = newTarget;
+  //if (indicator === "altitude") altitudeTarget.value = newTarget;
 };
 
 const startTrainingStep = () => {
@@ -1057,9 +1128,21 @@ const startTrainingStep = () => {
 };
 
 const randomizeTargets = () => {
-  airspeedTarget.value = Math.floor(Math.random() * (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED + 1)) + MOVEMENT_SPEED.MIN_AIRSPEED;
-  headingTarget.value = Math.floor(Math.random() * 360);
-  altitudeTarget.value = Math.floor(Math.random() * 10000);
+  //decrease -10 all target and if target reach 0 randomize target
+  if (
+    //airspeedTarget.value <= 0 ||
+    headingTarget.value <= 0 ||
+    altitudeTarget.value <= 0
+  ) {
+    //airspeedTarget.value = Math.floor(Math.random() * (160 - 60 + 1)) + 60;
+    headingTarget.value = Math.floor(Math.random() * (360 - 0 + 1)) + 0;
+    altitudeTarget.value =
+      Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000;
+  } else {
+    //airspeedTarget.value -= 10;
+    headingTarget.value -= 5;
+    altitudeTarget.value -= 10;
+  }
 };
 
 const completeTrainingStep = () => {
@@ -1096,7 +1179,10 @@ const startExam = () => {
   score.value = 0;
   currentConfigIndex.value = 0;
 
-  const totalDur = config.value.configs.reduce((acc, cfg) => acc + Number(cfg.duration), 0);
+  const totalDur = config.value.configs.reduce(
+    (acc, cfg) => acc + Number(cfg.duration),
+    0
+  );
   timeRemaining.value = totalDur * 60;
 
   // Reset all parameters
@@ -1282,6 +1368,7 @@ onMounted(() => {
   window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
   window.addEventListener("keydown", handleKeyDown);
   checkGamepadConnection();
+  setInterval(randomizeTargets, 1000);
   updateLoop();
 });
 
@@ -1316,8 +1403,7 @@ onUnmounted(() => {
   window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);
   window.removeEventListener("keydown", handleKeyDown);
 
-  cleanupSounds()
-
+  cleanupSounds();
 });
 </script>
 
@@ -1737,7 +1823,6 @@ onUnmounted(() => {
   opacity: 0.3;
   pointer-events: none;
 }
-
 
 .modal-body img {
   max-height: 300px;

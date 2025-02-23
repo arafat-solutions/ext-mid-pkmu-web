@@ -5,14 +5,14 @@
     :style="gaugeStyle"
   >
     <!-- Background scale marks -->
-    <div class="scale-background">
-      <div
-        v-for="n in totalTicks"
-        :key="`bg-${n}`"
-        class="scale-mark"
-        :class="{ major: n % 5 === 0 }"
-      ></div>
-    </div>
+    <!-- <div class="scale-background"> -->
+    <!--   <div -->
+    <!--     v-for="n in totalTicks" -->
+    <!--     :key="`bg-${n}`" -->
+    <!--     class="scale-mark" -->
+    <!--     :class="{ major: n % 5 === 0 }" -->
+    <!--   ></div> -->
+    <!-- </div> -->
 
     <!-- Main gauge window with scrolling content -->
     <div class="gauge-window">
@@ -31,11 +31,12 @@
             <div
               class="scale-mark"
               :class="{
-                major: value % (isVertical ? step : 45) === 0,
-                current: isCurrentValue(value),
+                major: value % (props.step * 5) === 0,
+                //current: isCurrentValue(value),
               }"
             ></div>
             <span
+              v-if="value % (props.step * 5) === 0"
               class="scale-label"
               :class="{ highlight: isCurrentValue(value) }"
             >
@@ -55,6 +56,10 @@
 import { computed, defineProps } from "vue";
 
 const props = defineProps({
+  isSpeed: {
+    type: Boolean,
+    default: false,
+  },
   value: {
     type: Number,
     required: true,
@@ -86,7 +91,11 @@ const props = defineProps({
 });
 
 const totalTicks = computed(() => {
-  return props.isVertical ? 50 : 36; // 50 marks for vertical, 36 for heading (every 10 degrees)
+  if (props.isVertical) {
+    return Math.floor((props.max - props.min) / props.step) + 1;
+  } else {
+    return Math.floor(360 / props.step) + 1;
+  }
 });
 
 const range = computed(() => props.max - props.min);
@@ -105,53 +114,32 @@ const normalizedValue = computed(() => {
 
 const scaleValues = computed(() => {
   const values = [];
-  const currentValue = Math.round(normalizedValue.value);
-
-  if (props.isVertical) {
-    // For vertical gauges (altitude and airspeed)
-    const centerValue = Math.round(currentValue / props.step) * props.step;
-
-    // Show more values for better scale density
-    for (let i = 6; i >= -6; i--) {
-      const value = centerValue + i * props.step;
-      if (value >= props.min && value <= props.max) {
-        values.push(value);
-      }
-    }
-  } else {
-    // For heading (horizontal)
-    //NOTE: change this to change step
-    const baseStep = 45; // Major divisions every 45 degrees
-    //const centerValue = Math.round(currentValue / baseStep) * baseStep;
-
-    // Show values covering full 360° view
-    for (let i = 0; i <= 360; i += baseStep) {
-      values.push(i);
-    }
-
-    //for (let i = -4; i <= 4; i++) {
-    //    let value = centerValue + (i * baseStep);
-    //    value = ((value % 360) + 360) % 360;
-    //    values.push(value);
-    //}
+  for (let i = props.min; i <= props.max; i += props.step) {
+    values.push(i);
   }
-
-  return props.isVertical ? values : values.sort((a, b) => a - b);
+  return values;
 });
 
 const trackStyle = computed(() => {
   const currentValue = normalizedValue.value;
   const centerOffset = 50; // Center point percentage
   const valueOffset = ((currentValue - props.min) / range.value) * 100;
-  const movementX = valueOffset - centerOffset;
-  const movementY = centerOffset - valueOffset;
+  const movementX = centerOffset - valueOffset - 46;
+  const movementY = valueOffset - centerOffset -(props.isSpeed ?35:48) ;
 
   return props.isVertical
-    ? { transform: `translateY(${movementY}%)` }
-    : { transform: `translateX(${movementX}%)` };
+    ? {
+        transform: `translateY(${movementY}%)`,
+        height: `${scaleValues.value.length * 10}px`,
+      }
+    : {
+        transform: `translateX(${movementX}%)`,
+        width: `${scaleValues.value.length * 10}px`,
+      };
 });
 
 const getScaleLabelStyle = (value) => {
+  //make the scaleValues part of formula percentage like trackstyle
   const percentage = ((value - props.min) / range.value) * 100;
   const baseStyle = {
     position: "absolute",
@@ -221,7 +209,7 @@ const gaugeStyle = computed(() => ({
 }
 
 .gauge-container.vertical {
-  width: 40px;
+  width: 70px;
   height: 300px;
 }
 
@@ -266,6 +254,7 @@ const gaugeStyle = computed(() => ({
   position: absolute;
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
 .vertical .scale-label-container {
@@ -289,6 +278,14 @@ const gaugeStyle = computed(() => ({
   width: 10px;
   height: 1px;
   margin-right: 5px;
+}
+
+.vertical .scale-mark.major {
+  width: 15px;
+}
+
+.horizontal .scale-mark.major {
+  height: 15px;
 }
 
 .horizontal .scale-mark {

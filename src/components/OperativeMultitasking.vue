@@ -3,7 +3,7 @@
     <div class="timer" v-if="timeRemaining > 0">{{ formattedTime }}</div>
     <canvas ref="canvas" :width="canvasWidth" :height="canvasHeight"></canvas>
 
-    <div v-if="feedbackMessage" class="feedback-message">
+    <div v-if="feedbackMessage&&!trainingCompleted" class="feedback">
       {{ feedbackMessage }}
     </div>
     <!-- <div v-if="showModal" class="modal">
@@ -28,22 +28,14 @@
               : "Instruksi"
           }}</b>
         </h2>
-        <p
-          style="font-size: 20px"
-          class="flex flex-col items-center"
-          v-html="instructionModalContent"
-        ></p>
+        <p style="font-size: 20px" class="flex flex-col items-center" v-html="instructionModalContent"></p>
         <button @click="startTest">
           {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
         </button>
       </div>
     </div>
   </div>
-  <button
-    v-if="!trainingCompleted"
-    @click="endTrainingTask"
-    class="finish-button"
-  >
+  <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
     Selesai Latihan
   </button>
 </template>
@@ -141,7 +133,7 @@ export default {
       ];
       return allResponses.length
         ? allResponses.reduce((a, b) => a + b.responseTime, 0) /
-            allResponses.length
+        allResponses.length
         : 0;
     },
     formattedTime() {
@@ -213,8 +205,8 @@ export default {
           light.state === "red"
             ? "red"
             : light.state === "yellow"
-            ? "yellow"
-            : "grey";
+              ? "yellow"
+              : "grey";
         ctx.fillRect(x, y, lightSize, lightSize);
       });
     },
@@ -315,6 +307,7 @@ export default {
       ) {
         this.handleVirtualKeyboardClick(x - leftSectionWidth, y);
       } else if (y < this.topSectionHeight && x < leftSectionWidth) {
+        console.log(x, y);
         this.handleLightClick(x, y);
       }
     },
@@ -395,7 +388,6 @@ export default {
 
     moveTargets() {
       // Move left target
-      console.log(this.targetSpeed);
       this.leftTarget.y += this.leftTargetDirection.y * this.targetSpeed;
 
       // Move right target
@@ -431,7 +423,7 @@ export default {
       const leftDeviation = Math.abs(this.leftCursor.y - this.leftTarget.y);
       const rightDeviation = Math.sqrt(
         Math.pow(this.rightCursor.x - this.rightTarget.x, 2) +
-          Math.pow(this.rightCursor.y - this.rightTarget.y, 2)
+        Math.pow(this.rightCursor.y - this.rightTarget.y, 2)
       );
 
       this.navigationResponses.push({
@@ -516,12 +508,23 @@ export default {
         light.state = "off";
       }, 10000);
     },
+    showFeedback(message) {
+      this.feedbackMessage = message;
+      console.log("lah");
 
-    handleLightClick(event) {
+      // Clear existing timeout (if any) to prevent overlapping feedbacks
+      if (this.feedbackTimeout) clearTimeout(this.feedbackTimeout);
+
+      // Hide feedback after 1.5 seconds
+      this.feedbackTimeout = setTimeout(() => {
+        this.feedbackMessage = "";
+      }, 1500);
+    },
+    handleLightClick(x, y) {
       const canvas = this.$refs.canvas;
       const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+      //const x = event.clientX - rect.left;
+      //const y = event.clientY - rect.top;
 
       const lightSize = 60;
       const padding = 10;
@@ -532,27 +535,30 @@ export default {
         const lightX = padding + col * (lightSize + padding);
         const lightY = padding + row * (lightSize + padding);
 
+        //console.log(x,lightX,lightY,lightSize)
+        console.log(rect.left, event.clientX);
         if (
           x >= lightX &&
           x <= lightX + lightSize &&
           y >= lightY &&
           y <= lightY + lightSize
         ) {
+          console.log("masuk");
+          let message = "";
+
           if (light.state === "red") {
-            this.recordAlertResponse(
-              light.id,
-              "correct",
-              Date.now() - light.timer.getTimestamp()
-            );
+            this.recordAlertResponse(light.id, "correct", Date.now());
             this.correctPresses++;
+            message = "✔ Benar!";
           } else if (light.state === "yellow") {
-            this.recordAlertResponse(
-              light.id,
-              "wrong",
-              Date.now() - light.timer.getTimestamp()
-            );
+            this.recordAlertResponse(light.id, "wrong", Date.now());
             this.mispresses++;
+            message = "✖ Salah!";
           }
+
+          // Show feedback
+          this.showFeedback(message);
+
           clearTimeout(light.timer);
           light.state = "off";
         }
@@ -576,8 +582,8 @@ export default {
     },
 
     generateNewQuestion() {
-      const num1 = Math.floor(Math.random() * 100);
-      const num2 = Math.floor(Math.random() * 100);
+      const num1 = Math.floor(Math.random() * 10);
+      const num2 = Math.floor(Math.random() * 10);
       this.question = `${num1} + ${num2} = ?`;
       this.currentAnswer = num1 + num2;
       this.userAnswer = "";
@@ -805,20 +811,28 @@ export default {
       if (this.thrusterIndex !== null && gamepads[this.thrusterIndex]) {
         const thruster = gamepads[this.thrusterIndex];
 
+        // throttleY range: -1 to 1
         const throttleY = thruster.axes[2];
 
-        this.leftCursor.y += throttleY * 10;
+        // Define limits
+        const minimumLimit = this.topSectionHeight + 10;
+        const maximumLimit = this.canvasHeight - 10;
 
-        // Constrain left cursor within its quadrant
-        this.leftCursor.y = Math.max(
-          this.topSectionHeight + 10,
-          Math.min(this.canvasHeight - 10, this.leftCursor.y)
-        );
+        // Sensitivity factor (0 < sensitivity <= 1 for slower response)
+        const sensitivity = 0.1; // Lower = smoother, but still reaches min/max
+
+        // Apply smooth scaling function
+        const adjustedThrottle =
+          Math.tanh(throttleY * sensitivity) / Math.tanh(sensitivity);
+
+        // Map adjustedThrottle to range [160, 590]
+        this.leftCursor.y =
+          minimumLimit +
+          ((adjustedThrottle + 1) / 2) * (maximumLimit - minimumLimit);
       }
     },
 
     getSpeed(speed) {
-      console.log(speed, "speed");
       if (speed === "slow") {
         return 1;
       } else if (speed === "medium") {
@@ -1072,5 +1086,32 @@ button:hover {
 
 .instruction-modal-content button:hover {
   background-color: #0056b3;
+}
+
+.feedback {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 5px;
+  animation: fadeOut 1.5s ease-in-out;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 </style>
