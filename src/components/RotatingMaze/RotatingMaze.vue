@@ -70,9 +70,10 @@
           <div class="northIndicatorMaze">U</div>
         </div>
       </div>
-      <p class="text-2xl centered-component" style="top: 70%; position: fixed">
+      <p v-if="isTraining" class="text-2xl centered-component" style="top: 70%; position: fixed">
+        anda akan dinilai berdasarkan akurasi dan kecepatan menuju target.<br/>
         Setelah tugas berhasil dilakukan, apabila dianggap sudah memadai tekan
-        tombol selesai latihan menuju ke test actual
+        tombol selesai latihan menuju ke tes aktual
       </p>
     </div>
 
