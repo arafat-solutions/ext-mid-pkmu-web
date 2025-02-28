@@ -2,9 +2,7 @@
   <div v-if="isModalTrainingVisible" class="modal-overlay">
     <div class="modal-content">
       <p style="font-size: 24px">
-        <strong
-          >Apakah Anda Yakin <br />akan memulai latihan?</strong
-        >
+        <strong>Apakah Anda Yakin <br />akan memulai latihan?</strong>
       </p>
       <p style="font-size: 20px; max-width: 80%">
         Anda diminta untuk mendengarkan rangkaian huruf referensi yang terdiri
@@ -22,9 +20,7 @@
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
       <p>
-        <strong
-          >Apakah Anda Yakin <br />akan memulai tes?</strong
-        >
+        <strong>Apakah Anda Yakin <br />akan memulai tes?</strong>
       </p>
       <div>
         <button @click="exit()" style="margin-right: 20px">Batal</button>
@@ -87,8 +83,8 @@
         </div>
       </div>
     </div>
-    <div class="wrong-text" v-if="wrong">
-      {{ wrong }} answer{{ wrong > 1 ? "s" : "" }} wrong
+    <div class="wrong-text" v-if="wrong && !isTrainingCompleted">
+      {{ wrong }} jawaban salah
     </div>
     <button class="btn-continue" v-show="canContinue" @click="continueTask">
       Lanjutkan
@@ -436,10 +432,10 @@ export default {
         this.result.wrong = 0;
         this.result.problems = [];
 
-        this.numberOfTask = 0;
-        for (const i in this.configs) {
-          this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10);
-        }
+        this.numberOfTask = 10;
+        //for (const i in this.configs) {
+        //  this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10);
+        //}
       }
 
       this.isModalTrainingVisible = false;
@@ -583,8 +579,10 @@ export default {
   --t-fast: 0.2s;
   --e-in: ease-in;
   --e-out: cubic-bezier(0.11, 0.29, 0.18, 0.98);
-  --c-disabled-bg: #d3d3d3; /* Light gray background for disabledValues */
-  --c-disabled-border: #a9a9a9; /* Dark gray border for disabled checkboxes */
+  --c-disabled-bg: #d3d3d3;
+  /* Light gray background for disabledValues */
+  --c-disabled-border: #a9a9a9;
+  /* Dark gray border for disabled checkboxes */
 }
 
 .checkbox-wrapper .visuallyhidden {
@@ -688,8 +686,10 @@ export default {
 }
 
 .checkbox-wrapper .checkbox__trigger.wrong-answer + .checkbox__symbol {
-  border-color: red; /* Change border color to red for wrong answer */
-  transition: border-color var(--t-base) var(--e-out); /* Smooth transition */
+  border-color: red;
+  /* Change border color to red for wrong answer */
+  transition: border-color var(--t-base) var(--e-out);
+  /* Smooth transition */
   box-shadow: 0 0 0 0.25em rgb(255 0 0 / 20%);
 }
 
@@ -698,8 +698,10 @@ export default {
   + .checkbox__symbol
   .icon-checkbox
   path {
-  stroke: red; /* Change checkbox icon color to red for wrong answer */
-  transition: stroke var(--t-base) var(--e-out); /* Smooth transition */
+  stroke: red;
+  /* Change checkbox icon color to red for wrong answer */
+  transition: stroke var(--t-base) var(--e-out);
+  /* Smooth transition */
 }
 
 @-webkit-keyframes ripple {
@@ -707,6 +709,7 @@ export default {
     transform: scale(0);
     opacity: 1;
   }
+
   to {
     opacity: 0;
     transform: scale(20);
@@ -718,6 +721,7 @@ export default {
     transform: scale(0);
     opacity: 1;
   }
+
   to {
     opacity: 0;
     transform: scale(20);

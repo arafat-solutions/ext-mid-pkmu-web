@@ -7,7 +7,7 @@
       <p style="font-size: 20px; max-width: 80%">
         Dalam tes ini anda akan menggunakan Joystick. Gambar di bawah
         menunjukkan RADAR sebuah pesawat. Anda diminta untuk MENEKAN tombol
-        Trigger pada Joystick saat objek “circle putih” muncul dalam radar.
+        Trigger pada Joystick saat objek “lingkaran putih” muncul dalam radar.
       </p>
 
       <div style="display: flex">
@@ -52,7 +52,7 @@
         <div class="col-12">
           <p class="m-3">
             Tekan "Trigger Pada Joystick" jika bentuk
-            <strong> {{ config.targetShape }} </strong>
+            <strong> {{ getTargetShape() }} </strong>
             muncul di radar.
           </p>
           <p
@@ -173,6 +173,20 @@ export default {
     this.initConfig();
   },
   methods: {
+    getTargetShape() {
+      console.log(this.config.targetShape)
+      switch (this.config.targetShape) {
+        case "circle":
+          return "lingkaran";
+        case "rectangle":
+          return "persegi panjang";
+        case "triangle":
+          return "segitiga";
+
+        default:
+          break;
+      }
+    },
     startTest() {
       clearInterval(this.countdownInterval);
       if (!this.isTrainingCompleted) {
@@ -930,6 +944,7 @@ export default {
   gap: 20px;
   margin: 60px auto;
 }
+
 .modal-overlay {
   display: flex;
   justify-content: center;
@@ -955,6 +970,7 @@ export default {
   justify-content: center;
   align-items: center;
 }
+
 .modal-content button {
   background-color: #6200ee;
   color: white;
@@ -963,9 +979,11 @@ export default {
   border: none;
   cursor: pointer;
 }
+
 .modal-content button:hover {
   background-color: #5e37a6;
 }
+
 .timer-container {
   position: absolute;
   top: 0;
@@ -978,16 +996,19 @@ export default {
   border-bottom-left-radius: 15px;
   border-bottom-right-radius: 15px;
 }
+
 .radar-container {
   display: flex;
   align-items: center;
 }
+
 canvas {
   margin-top: 15px !important;
   display: block;
   margin: 0 auto;
   background-color: black;
 }
+
 .loading-container {
   /* Add your loading indicator styles here */
   position: absolute;
@@ -1004,6 +1025,7 @@ canvas {
   z-index: 1000;
   /* Ensure it is above other content */
 }
+
 .spinner {
   border: 8px solid rgba(255, 255, 255, 0.3);
   /* Light border */
@@ -1014,6 +1036,7 @@ canvas {
   height: 60px;
   animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -1023,6 +1046,7 @@ canvas {
     transform: rotate(360deg);
   }
 }
+
 .text {
   color: #ffffff;
   margin-top: 20px;
@@ -1032,8 +1056,10 @@ canvas {
 .finish-button {
   position: fixed;
   bottom: 20px;
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to truly center */
+  left: 50%;
+  /* Center horizontally */
+  transform: translateX(-50%);
+  /* Adjust to truly center */
   padding: 10px 20px;
   font-size: 16px;
   background-color: #007bff;

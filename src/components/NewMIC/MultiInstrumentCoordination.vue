@@ -252,14 +252,14 @@
           @click="handleAudioResponse('odd')"
           :disabled="!canRespond"
         >
-          Ganjil
+          {{trainingMode ? 'Ganjil' : ''}}
         </button>
         <button
           class="btn-green"
           @click="handleAudioResponse('even')"
           :disabled="!canRespond"
         >
-          Genap
+          {{trainingMode ? 'Genap' : ''}}
         </button>
       </div>
     </div>
