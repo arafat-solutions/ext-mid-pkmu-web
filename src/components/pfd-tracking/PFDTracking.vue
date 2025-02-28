@@ -390,7 +390,7 @@ const trainingSteps = [
     instruction:
       "Lakukan latihan mengontrol ketinggian pesawat menggunakan gerakan joystick maju/mundur. Jaga dalam rentang ±100ft dari target.",
     activeIndicators: ["altitude"],
-    imagePath: "/devices/thruster.png",
+    imagePath: "/devices/joystick.png",
     content: `
       <div class="space-y-4">
         <div class="bg-gray-800 p-4 rounded-lg">
