@@ -3,7 +3,7 @@
     <div class="timer" v-if="timeRemaining > 0">{{ formattedTime }}</div>
     <canvas ref="canvas" :width="canvasWidth" :height="canvasHeight"></canvas>
 
-    <div v-if="feedbackMessage&&!trainingCompleted" class="feedback">
+    <div v-if="feedbackMessage && !trainingCompleted" class="feedback">
       {{ feedbackMessage }}
     </div>
     <!-- <div v-if="showModal" class="modal">
@@ -236,7 +236,7 @@ export default {
       ctx.fillStyle = "white";
       ctx.fillText(
         `${this.userAnswer}`,
-        leftSectionWidth + keyboardWidth + 30,
+        leftSectionWidth + keyboardWidth + 50,
         95
       );
       // Draw question
@@ -307,7 +307,6 @@ export default {
       ) {
         this.handleVirtualKeyboardClick(x - leftSectionWidth, y);
       } else if (y < this.topSectionHeight && x < leftSectionWidth) {
-        console.log(x, y);
         this.handleLightClick(x, y);
       }
     },
@@ -582,15 +581,36 @@ export default {
     },
 
     generateNewQuestion() {
-      const num1 = Math.floor(Math.random() * 10);
-      const num2 = Math.floor(Math.random() * 10);
-      this.question = `${num1} + ${num2} = ?`;
-      this.currentAnswer = num1 + num2;
+      let num1 = Math.floor(Math.random() * 100);
+      let num2 = Math.floor(Math.random() * 100) || 1; // Avoid division by zero
+      const operators = ["+", "-", "*", "/"];
+      const operator = operators[Math.floor(Math.random() * operators.length)];
+
+      let correctAnswer;
+
+      switch (operator) {
+        case "+":
+          correctAnswer = num1 + num2;
+          break;
+        case "-":
+          if (num1 < num2) [num1, num2] = [num2, num1]; // Ensure non-negative result
+          correctAnswer = num1 - num2;
+          break;
+        case "*":
+          correctAnswer = num1 * num2;
+          break;
+        case "/":
+          num1 = num2 * Math.floor(Math.random() * 100); // Ensure perfect division
+          correctAnswer = num1 / num2;
+          break;
+      }
+
+      this.question = `${num1} ${operator} ${num2} = ?`;
+      this.currentAnswer = correctAnswer;
       this.userAnswer = "";
     },
-
     addToAnswer(digit) {
-      if (this.userAnswer.length < 3) {
+      if (this.userAnswer.length < 4) {
         this.userAnswer += digit;
       }
     },
