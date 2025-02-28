@@ -2,7 +2,7 @@
   <div ref="container" class="coordination-test">
     <div class="countdown" v-if="!isTrainingMode">{{ formattedTime }}</div>
     <canvas ref="canvas"></canvas>
-    <div class="position-feedback" :class="{ 'feedback-visible': isAligned }">
+    <div class="position-feedback" v-if="isTrainingMode" :class="{ 'feedback-visible': isAligned }">
       Sempurna!
     </div>
     <img src="@/assets/airplane-icon.png" alt="Airplane" :style="airplaneStyle" class="airplane"
