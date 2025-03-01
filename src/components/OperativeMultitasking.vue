@@ -3,9 +3,6 @@
     <div class="timer" v-if="timeRemaining > 0">{{ formattedTime }}</div>
     <canvas ref="canvas" :width="canvasWidth" :height="canvasHeight"></canvas>
 
-    <div v-if="feedbackMessage && !trainingCompleted" class="feedback">
-      {{ feedbackMessage }}
-    </div>
     <!-- <div v-if="showModal" class="modal">
       <div class="modal-content">
         <h2>Simulation Results</h2>
@@ -35,6 +32,9 @@
       </div>
     </div>
   </div>
+  <div v-if="feedbackMessage && !trainingCompleted" :class="{ feedback: true, correct: isCorrect, wrong: !isCorrect }">
+    {{ feedbackMessage }}
+  </div>
   <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
     Selesai Latihan
   </button>
@@ -42,7 +42,6 @@
 
 <script>
 import {
-  completeTrainingTestAndUpdateLocalStorage,
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils";
 
@@ -50,6 +49,8 @@ export default {
   data() {
     return {
       feedbackMessage: "",
+      isCorrect: null,
+      isPressed: null,
       canvasWidth: 1000,
       canvasHeight: 600,
       backgroundColor: "black",
@@ -105,7 +106,7 @@ export default {
       showVirtualKeyboard: false,
       leftTargetDirection: { x: 0, y: 1 }, // Initially moving down
       rightTargetDirection: { x: 1, y: 1 }, // Initially moving down-right
-      directionChangeInterval: 3000, // Change direction every 3 seconds
+      directionChangeInterval: 5000, // Change direction every 3 seconds
       targetRadius: 10, // Increased target size
       topSectionHeight: 150, // Reduced top section height
       cursorRadius: 15, // Increased cursor size
@@ -194,7 +195,7 @@ export default {
     drawAlertLights(ctx) {
       const lightSize = 60;
       const padding = 10;
-      // const leftSectionWidth = this.canvasWidth * 0.15;
+
       this.lights.forEach((light, index) => {
         const row = Math.floor(index / 2);
         const col = index % 2;
@@ -208,9 +209,14 @@ export default {
               ? "yellow"
               : "grey";
         ctx.fillRect(x, y, lightSize, lightSize);
+
+        if (this.isPressed && (light.state === 'yellow' || light.state === 'red')) {
+          ctx.strokeStyle = "grey"; // Border color
+          ctx.lineWidth = 4; // Border thickness
+          ctx.strokeRect(x, y, lightSize, lightSize);
+        }
       });
     },
-
     drawMathTask(ctx) {
       const keyboardHeight = this.topSectionHeight;
 
@@ -488,6 +494,7 @@ export default {
     },
 
     activateRandomLight() {
+      this.isPressed = false;
       // Turn off all lights
       this.lights.forEach((light) => {
         light.state = "off";
@@ -507,23 +514,25 @@ export default {
         light.state = "off";
       }, 10000);
     },
-    showFeedback(message) {
-      this.feedbackMessage = message;
-      console.log("lah");
+    showFeedback() {
+      this.feedbackMessage = this.isCorrect? "✔ Benar!" : "✖ Salah!";
 
       // Clear existing timeout (if any) to prevent overlapping feedbacks
       if (this.feedbackTimeout) clearTimeout(this.feedbackTimeout);
 
       // Hide feedback after 1.5 seconds
       this.feedbackTimeout = setTimeout(() => {
+        this.isCorrect = null;
         this.feedbackMessage = "";
       }, 1500);
     },
     handleLightClick(x, y) {
+      this.isPressed = true;
       const canvas = this.$refs.canvas;
       const rect = canvas.getBoundingClientRect();
       //const x = event.clientX - rect.left;
       //const y = event.clientY - rect.top;
+      console.log(rect)
 
       const lightSize = 60;
       const padding = 10;
@@ -534,32 +543,28 @@ export default {
         const lightX = padding + col * (lightSize + padding);
         const lightY = padding + row * (lightSize + padding);
 
-        //console.log(x,lightX,lightY,lightSize)
-        console.log(rect.left, event.clientX);
         if (
           x >= lightX &&
           x <= lightX + lightSize &&
           y >= lightY &&
           y <= lightY + lightSize
         ) {
-          console.log("masuk");
-          let message = "";
-
           if (light.state === "red") {
             this.recordAlertResponse(light.id, "correct", Date.now());
             this.correctPresses++;
-            message = "✔ Benar!";
+            this.isCorrect = true;
           } else if (light.state === "yellow") {
             this.recordAlertResponse(light.id, "wrong", Date.now());
             this.mispresses++;
-            message = "✖ Salah!";
+            this.isCorrect = false;
           }
 
           // Show feedback
-          this.showFeedback(message);
-
-          clearTimeout(light.timer);
-          light.state = "off";
+          setTimeout(() => {
+            this.showFeedback();
+            clearTimeout(light.timer);
+            light.state = "off";
+          }, 1500);
         }
       });
     },
@@ -716,7 +721,7 @@ export default {
     startAlertLightTraining() {
       this.resetSimulation();
       this.activeTasks = { navigation: false, math: false, alertLight: true };
-      setInterval(this.activateRandomLight, 5000);
+      setInterval(this.activateRandomLight, 10000);
       this.gameLoop(performance.now());
       setTimeout(() => this.endTrainingTask(), this.trainingDuration);
     },
@@ -724,7 +729,7 @@ export default {
     startCombinedTraining() {
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: true, alertLight: true };
-      setInterval(this.activateRandomLight, 5000);
+      setInterval(this.activateRandomLight, 10000);
       setInterval(this.moveTargets, 50);
       setInterval(this.changeTargetDirections, this.directionChangeInterval);
       this.generateNewQuestion();
@@ -780,7 +785,7 @@ export default {
       this.showInstructionModal = false;
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: true, alertLight: true };
-      setInterval(this.activateRandomLight, 5000);
+      setInterval(this.activateRandomLight, 10000);
       setInterval(this.moveTargets, 50);
       setInterval(this.changeTargetDirections, this.directionChangeInterval);
       this.generateNewQuestion();
@@ -878,13 +883,13 @@ export default {
     },
 
     async endSimulation() {
-      if (!this.trainingCompleted) {
-        this.trainingCompleted = true;
-        completeTrainingTestAndUpdateLocalStorage(
-          "Test For Operative Multitasking"
-        );
-        // start over for actual test
-      }
+      //if (!this.trainingCompleted) {
+      //  this.trainingCompleted = true;
+      //  completeTrainingTestAndUpdateLocalStorage(
+      //    "Test For Operative Multitasking"
+      //  );
+      //  // start over for actual test
+      //}
       clearInterval(this.drawInterval);
       // this.showModal = true;
       try {
@@ -1108,17 +1113,28 @@ button:hover {
   background-color: #0056b3;
 }
 
-.feedback {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 10px 20px;
-  font-size: 18px;
+.feedback.correct {
+  background-color: #4caf50;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.2em;
+  padding: 8px;
   border-radius: 5px;
-  animation: fadeOut 1.5s ease-in-out;
+}
+
+.feedback.wrong {
+  padding: 8px;
+  border-radius: 5px;
+  background-color: #f44336;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.2em;
+}
+
+.feedback {
+  position: fixed;
+  bottom: 100px;
+  left: 48%;
 }
 
 @keyframes fadeOut {
