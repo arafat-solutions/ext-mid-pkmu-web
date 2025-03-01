@@ -132,11 +132,14 @@
               v-if="feedbackState?.show"
               class="button-highlight"
               :class="{
-              correct: feedbackState.correctIndex === index && gameState === 'training',
-              incorrect: gameState === 'training' &&
-                feedbackState.selectedIndex === index &&
-                !feedbackState.isCorrect,
-            }"
+                correct:
+                  feedbackState.correctIndex === index &&
+                  gameState === 'training',
+                incorrect:
+                  gameState === 'training' &&
+                  feedbackState.selectedIndex === index &&
+                  !feedbackState.isCorrect,
+              }"
             ></div>
           </button>
         </div>
@@ -244,7 +247,7 @@ export default {
       // generateS,
       generateL,
       generateTriangle,
-      generateSquare,
+      //generateSquare,
       // generateCircle,
     ];
 
@@ -601,15 +604,20 @@ export default {
           configShapeRecognition.configs[currentConfigIndex.value]
             .time_per_question,
         numberOfQuestion:
-          configShapeRecognition.configs[currentConfigIndex.value].duration ??
-          10,
+          gameState.value === "training"
+            ? 9999
+            : configShapeRecognition.configs[currentConfigIndex.value]
+                .duration ?? 10,
       };
 
       currentConfig.value = {
         ...configShapeRecognition.configs[currentConfigIndex.value],
-        numberOfQuestion: configShapeRecognition.configs
-          .map((c) => c.duration ?? 10)
-          .reduce((a, b) => Number(a) + Number(b), 0),
+        numberOfQuestion:
+          gameState.value === "training"
+            ? 9999
+            : configShapeRecognition.configs
+                .map((c) => c.duration ?? 10)
+                .reduce((a, b) => Number(a) + Number(b), 0),
         timePerQuestion:
           configShapeRecognition.configs[currentConfigIndex.value]
             .time_per_question,
