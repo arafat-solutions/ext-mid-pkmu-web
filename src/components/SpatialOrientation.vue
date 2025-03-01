@@ -277,7 +277,7 @@ export default {
       }
     },
     setConfig(config) {
-      console.log("Setting Config", config);
+      //console.log("Setting Config", config);
       this.config.difficultyLevel = config?.difficulty_level;
       this.config.full_image = config?.full_image;
       this.config.left_turn = config?.left_turn;
@@ -561,15 +561,16 @@ export default {
       const curr = this.lines[index];
       const next = this.lines[index + 1];
 
-      const cross =
+      const crossProduct =
         (curr.x - prev.x) * (next.y - curr.y) -
         (curr.y - prev.y) * (next.x - curr.x);
 
-      if (cross > 0) {
-        this.leftTurns++;
-      } else if (cross < 0) {
-        this.rightTurns++;
+      if (crossProduct > 0) {
+        this.rightTurns += 1;
+      } else if (crossProduct < 0) {
+        this.leftTurns += 1;
       }
+      //console.log(crossProduct,crossProduct > 0 ?'belok kanan':'belok kiri',this.leftTurns,this.rightTurns)
     },
     setAnswerOption() {
       if (this.config.left_turn && this.config.right_turn) {
@@ -581,6 +582,7 @@ export default {
       }
 
       this.answer = this.question === "left" ? this.leftTurns : this.rightTurns;
+      console.log('jawaban',this.answer,this.question === "left" ? this.leftTurns : this.rightTurns)
 
       const totalOptions = 10;
       this.optionAnswers = [];
@@ -650,15 +652,16 @@ export default {
       ctx.closePath();
       ctx.fill();
 
-      if (isInit) {
-        if (start.x < end.x) {
-          this.rightTurns++;
-        }
-
-        if (start.x > end.x) {
-          this.leftTurns++;
-        }
-      }
+      //if (isInit) {
+      //  if (start.x < end.x) {
+      //    this.rightTurns++;
+      //  }
+      //
+      //  if (start.x > end.x) {
+      //    this.leftTurns++;
+      //  }
+      //}
+      console.log(isInit)
     },
     startTailDisappearance(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;
@@ -759,7 +762,6 @@ export default {
       this.isButtonDisabled = true;
       this.responseTime = Date.now();
 
-      console.log(this.answer)
       if (this.answer === this.selectedAnswer) {
         this.correctAnswer++;
         this.userInputs.push({
