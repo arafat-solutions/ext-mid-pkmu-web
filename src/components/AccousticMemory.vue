@@ -89,6 +89,13 @@
     <button class="btn-continue" v-show="canContinue" @click="continueTask">
       Lanjutkan
     </button>
+    <button
+      v-if="!isTrainingCompleted"
+      @click="endTraining"
+      class="finish-button"
+    >
+      Selesai Latihan
+    </button>
   </div>
   <div v-if="isLoading" class="loading-container">
     <div class="loading-spinner"></div>
@@ -421,22 +428,19 @@ export default {
     },
     startTest() {
       this.currentRowDisabled = false;
-      if (!this.isTrainingCompleted) {
-        this.numberOfTask = this.configs[0].number_of_task ?? 10;
-      } else {
-        this.canContinue = false;
-        this.wrong = null;
-        this.taskNow = 1;
-        this.currentTask = 1;
-        this.result.correct = 0;
-        this.result.wrong = 0;
-        this.result.problems = [];
+      this.numberOfTask = 10;
+      this.canContinue = false;
+      this.wrong = null;
+      this.taskNow = 1;
+      this.currentTask = 1;
+      this.result.correct = 0;
+      this.result.wrong = 0;
+      this.result.problems = [];
 
-        this.numberOfTask = 10;
-        //for (const i in this.configs) {
-        //  this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10);
-        //}
-      }
+      this.numberOfTask = 10;
+      //for (const i in this.configs) {
+      //  this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10);
+      //}
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -448,6 +452,11 @@ export default {
       setTimeout(() => {
         this.generateProblem();
       }, 1000);
+    },
+    endTraining() {
+      this.isTrainingCompleted = true;
+      completeTrainingTestAndUpdateLocalStorage("Acoustic Memory Test");
+      this.isModalVisible = true;
     },
     continueTask() {
       if (this.taskNow >= this.numberOfTask) {
