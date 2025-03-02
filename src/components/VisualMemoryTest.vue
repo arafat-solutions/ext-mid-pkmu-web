@@ -949,38 +949,38 @@ export default {
       const number = Math.floor(Math.random() * 90) + 10; // Generates a number between 10 and 99
       return { type: "number", text: number };
     },
-    getRandomShape() {
-      const shapes = [
-        "triangle",
-        "rectangle",
-        "arrow",
-        "circle",
-        "octagon",
-        "star",
-        "parallelogram",
-        "leftArrow",
-        "hexagon",
-        "chevronLeft",
-        "plane",
-        "returnArrow",
-        "heart",
-        "s",
-        "l",
-        "t",
-      ];
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
-      const commonAttributes = {
-        type: "shape",
-        shapeName: shape,
-        color: this.getRandomColor(),
-      };
-
-      return { type: "text", text: result };
-    },
-    generateRandomNumbers() {
-      const number = Math.floor(Math.random() * 90) + 10; // Generates a number between 10 and 99
-      return { type: "number", text: number };
-    },
+    //getRandomShape() {
+    //  const shapes = [
+    //    "triangle",
+    //    "rectangle",
+    //    "arrow",
+    //    "circle",
+    //    "octagon",
+    //    "star",
+    //    "parallelogram",
+    //    "leftArrow",
+    //    "hexagon",
+    //    "chevronLeft",
+    //    "plane",
+    //    "returnArrow",
+    //    "heart",
+    //    "s",
+    //    "l",
+    //    "t",
+    //  ];
+    //  const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    //  const commonAttributes = {
+    //    type: "shape",
+    //    shapeName: shape,
+    //    color: this.getRandomColor(),
+    //  };
+    //
+    //  return { type: "text", text: result };
+    //},
+    //generateRandomNumbers() {
+    //  const number = Math.floor(Math.random() * 90) + 10; // Generates a number between 10 and 99
+    //  return { type: "number", text: number };
+    //},
     getRandomShape() {
       const shapes = [
         "triangle",
