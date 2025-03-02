@@ -7,7 +7,7 @@
       @confirm="handleConfirm"
       @clickPlaySound="playExampleSound"
       @cancel="handleCancel"
-      :isAcoustic="currentTrainingTask === 'acoustic'"
+      :isAcoustic="currentTrainingTask==='acoustic'"
     />
     <div class="bg-black h-full w-full flex justify-center items-center">
       <canvas

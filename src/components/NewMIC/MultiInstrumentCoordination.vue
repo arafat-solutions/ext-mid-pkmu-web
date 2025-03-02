@@ -13,10 +13,16 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button class="modal-button bg-gray-500 mr-4" @click="showExamConfirmModal = false">
+              <button
+                class="modal-button bg-gray-500 mr-4"
+                @click="showExamConfirmModal = false"
+              >
                 Kembali
               </button>
-              <button class="modal-button bg-green-500" @click="startActualExam">
+              <button
+                class="modal-button bg-green-500"
+                @click="startActualExam"
+              >
                 Mulai Tes
               </button>
             </div>
@@ -44,7 +50,10 @@
               </ul>
             </div>
             <div class="modal-footer">
-              <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">
+              <button
+                class="modal-button bg-green-500 mr-4"
+                @click="handleStartExam"
+              >
                 {{ trainingMode ? "Mulai Latihan" : "Mulai Tes" }}
               </button>
             </div>
@@ -59,16 +68,27 @@
           <div class="modal-content">
             <h1 class="modal-title">
               {{
-                currentTrainingStep < TRAINING_STEPS.length ? TRAINING_STEPS[currentTrainingStep].title : "" }} </h1>
-                <div class="modal-body" v-html="currentTrainingStep < TRAINING_STEPS.length
+                currentTrainingStep < TRAINING_STEPS.length
+                  ? TRAINING_STEPS[currentTrainingStep].title
+                  : ""
+              }}
+            </h1>
+            <div
+              class="modal-body"
+              v-html="
+                currentTrainingStep < TRAINING_STEPS.length
                   ? TRAINING_STEPS[currentTrainingStep].instructions
                   : ''
-                  "></div>
-                <div class="modal-footer">
-                  <button class="modal-button bg-green-500" @click="startTrainingStep">
-                    Mulai
-                  </button>
-                </div>
+              "
+            ></div>
+            <div class="modal-footer">
+              <button
+                class="modal-button bg-green-500"
+                @click="startTrainingStep"
+              >
+                Mulai
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -76,13 +96,22 @@
 
     <!-- Feedback Message -->
     <Transition name="fade">
-      <div v-if="showFeedback" class="feedback-message" :class="userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
-        ">
+      <div
+        v-if="showFeedback"
+        class="feedback-message"
+        :class="
+          userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
+        "
+      >
         {{ feedbackMessage }}
       </div>
     </Transition>
 
-    <button v-if="trainingMode && examRunning" class="next-step-button" @click="moveToNextTrainingStep">
+    <button
+      v-if="trainingMode && examRunning"
+      class="next-step-button"
+      @click="moveToNextTrainingStep"
+    >
       {{ nextStepButtonText }}
     </button>
 
@@ -109,32 +138,54 @@
     </div>
     <div class="indicators place-items-center">
       <!-- Heading - only show during joystick training -->
-      <div v-if="
-        !trainingMode ||
-        (trainingMode &&
-          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
-            'compass'
-          ))
-      " class="indicator-wrapper col-span-3" :class="{ blink: isHeadingOutOfTarget }">
-        <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
+      <div
+        v-if="
+          !trainingMode ||
+          (trainingMode &&
+            TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+              'compass'
+            ))
+        "
+        class="indicator-wrapper col-span-3"
+        :class="{ blink: isHeadingOutOfTarget }"
+      >
+        <Heading
+          class="indicator-bg"
+          :size="200"
+          :heading="Math.round(heading)"
+        />
         <div class="target-text">
           Target: {{ Math.round(headingTarget) }}°
-          <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
+          <span
+            v-if="headingChangeDirection"
+            :class="['direction-indicator', headingChangeDirection]"
+          ></span>
         </div>
       </div>
 
       <!-- Airspeed/Thrust - only show during throttle training -->
-      <div v-if="
-        !trainingMode ||
-        (trainingMode &&
-          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
-            'airspeed'
-          ))
-      " class="indicator-wrapper col-span-1" :class="{ blink: isAirspeedOutOfTarget }">
-        <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
+      <div
+        v-if="
+          !trainingMode ||
+          (trainingMode &&
+            TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+              'airspeed'
+            ))
+        "
+        class="indicator-wrapper col-span-1"
+        :class="{ blink: isAirspeedOutOfTarget }"
+      >
+        <Airspeed
+          class="indicator-bg"
+          :size="200"
+          :airspeed="Math.round(airspeed)"
+        />
         <div class="thruster-indicator">
           <div class="thruster-bar">
-            <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
+            <div
+              class="thruster-fill"
+              :style="{ height: `${thrustLevel}%` }"
+            ></div>
           </div>
           <div class="thruster-value">
             Thrust: {{ Math.round(thrustLevel) }}%
@@ -142,47 +193,77 @@
         </div>
         <div class="target-text">
           Target: {{ Math.round(airspeedTarget) }} knots
-          <span v-if="airspeedChangeDirection" :class="['direction-indicator', airspeedChangeDirection]"></span>
+          <span
+            v-if="airspeedChangeDirection"
+            :class="['direction-indicator', airspeedChangeDirection]"
+          ></span>
         </div>
       </div>
 
       <!-- Analog Clock - always shown -->
-      <div class="indicator-wrapper col-span-1" v-if="!trainingMode">
+      <div
+        class="indicator-wrapper col-span-1"
+        v-if="
+          !trainingMode || TRAINING_STEPS[currentTrainingStep]?.id === 'combined'
+        "
+      >
         <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
       </div>
 
       <!-- Altimeter - only show during joystick training -->
-      <div v-if="
-        !trainingMode ||
-        (trainingMode &&
-          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
-            'altimeter'
-          ))
-      " class="indicator-wrapper col-span-1" :class="{ blink: isAltitudeOutOfTarget }">
-        <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
+      <div
+        v-if="
+          !trainingMode ||
+          (trainingMode &&
+            TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+              'altimeter'
+            ))
+        "
+        class="indicator-wrapper col-span-1"
+        :class="{ blink: isAltitudeOutOfTarget }"
+      >
+        <Altimeter
+          class="indicator-bg"
+          :size="200"
+          :altitude="Math.round(altitude)"
+        />
         <div class="target-text">
           Target: {{ Math.round(altitudeTarget) }} ft
-          <span v-if="altitudeChangeDirection" :class="['direction-indicator', altitudeChangeDirection]"></span>
+          <span
+            v-if="altitudeChangeDirection"
+            :class="['direction-indicator', altitudeChangeDirection]"
+          ></span>
         </div>
       </div>
     </div>
 
     <!-- Audio Test Controls -->
     <!-- Audio Test Controls -->
-    <div class="audio-test" v-if="
-      !trainingMode ||
-      (trainingMode &&
-        TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))
-    ">
+    <div
+      class="audio-test"
+      v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))
+      "
+    >
       <div class="number-display">
         Dengarkan dan pilih apakah semua angka yang Anda dengar adalah genap
         atau ganjil.
       </div>
       <div class="response-buttons">
-        <button class="btn-red" @click="handleAudioResponse('odd')" :disabled="!canRespond">
+        <button
+          class="btn-red"
+          @click="handleAudioResponse('odd')"
+          :disabled="!canRespond"
+        >
           {{ trainingMode ? "Ganjil" : "" }}
         </button>
-        <button class="btn-green" @click="handleAudioResponse('even')" :disabled="!canRespond">
+        <button
+          class="btn-green"
+          @click="handleAudioResponse('even')"
+          :disabled="!canRespond"
+        >
           {{ trainingMode ? "Genap" : "" }}
         </button>
       </div>
@@ -581,7 +662,7 @@ const updateSounds = () => {
   // Calculate RPM factor based on actual airspeed rather than thrust
   const rpmFactor = Math.pow(
     (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
-    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
+      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
     0.8
   );
 
@@ -784,10 +865,7 @@ const updatePlanePosition = () => {
           0,
           Math.min(10000, altitude.value + altitudeChange)
         );
-        airspeed.value = Math.max(
-          0,
-          airspeed.value + stick.axes[1]
-        );
+        airspeed.value = Math.max(0, airspeed.value + stick.axes[1]);
       }
     }
 
@@ -862,8 +940,8 @@ const updatePlanePosition = () => {
   targetSpeed.value = Math.max(
     minimumAirspeed,
     MOVEMENT_SPEED.MIN_AIRSPEED +
-    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
-    (thrustLevel.value / 100)
+      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
+        (thrustLevel.value / 100)
   );
 
   // Calculate acceleration
@@ -1009,7 +1087,8 @@ const updateHeadingTarget = () => {
     headingChangeDirection.value = randomDirection();
 
     if (headingChangeDirection.value !== "stay") {
-      let newHeadingTarget = headingTarget.value + (headingChangeDirection.value === "up" ? 1 : -1);
+      let newHeadingTarget =
+        headingTarget.value + (headingChangeDirection.value === "up" ? 1 : -1);
       if (newHeadingTarget < 0) newHeadingTarget = 360;
       if (newHeadingTarget > 360) newHeadingTarget = 0;
       headingTarget.value = newHeadingTarget;
@@ -1020,7 +1099,9 @@ const updateHeadingTarget = () => {
     altitudeChangeDirection.value = randomDirection();
 
     if (altitudeChangeDirection.value !== "stay") {
-      let newAltitudeTarget = altitudeTarget.value + (altitudeChangeDirection.value === "up" ? 1 : -1);
+      let newAltitudeTarget =
+        altitudeTarget.value +
+        (altitudeChangeDirection.value === "up" ? 1 : -1);
       if (newAltitudeTarget < 0) newAltitudeTarget = 10000;
       altitudeTarget.value = newAltitudeTarget;
     }
