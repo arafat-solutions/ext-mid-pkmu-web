@@ -834,11 +834,11 @@ const updatePlanePosition = () => {
       (!trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("airspeed"))
     ) {
-    const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
-    altitude.value = Math.max(
-      0,
-      Math.min(16000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
-    );
+      const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
+      altitude.value = Math.max(
+        0,
+        Math.min(16000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
+      );
       thrustLevel.value = 100 - ((throttle.axes[2] + 1) * 100) / 2;
     }
   }
@@ -1140,8 +1140,16 @@ const randomizeTargets = () => {
       Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000;
   } else {
     //airspeedTarget.value -= 10;
-    headingTarget.value -= 1;
-    altitudeTarget.value -= 10;
+    //make it randomize it can be decrease, increase or stay
+    const getRandomChange = (range) => {
+      const random = Math.random();
+      if (random < 1 / 3) return range; // Increase
+      if (random < 2 / 3) return -range; // Decrease
+      return 0; // Stay the same
+    };
+
+    headingTarget.value += getRandomChange(1); // -1, 0, or +1
+    altitudeTarget.value += getRandomChange(10);
   }
 };
 
