@@ -4,20 +4,12 @@
       <div class="instruction-modal-content">
         <h2 style="font-size: 24px" v-if="!trainingCompleted">
           <b>
-            {{
-              currentTrainingTask
-                ? "Latihan"
-                : "Instruksi"
-            }}
+            {{ currentTrainingTask ? "Latihan" : "Instruksi" }}
           </b>
         </h2>
 
-        <p
-          style="font-size: 20px"
-          class="flex flex-col items-center"
-          v-if="!trainingCompleted"
-          v-html="instructionModalContent"
-        ></p>
+        <p style="font-size: 20px" class="flex flex-col items-center" v-if="!trainingCompleted"
+          v-html="instructionModalContent"></p>
         <p v-else>Apakah Anda Yakin <br />akan memulai tes?</p>
 
         <button @click="startTrainingTask">
@@ -30,69 +22,41 @@
       <div v-if="timeLeft > 0 && trainingCompleted" class="timer-container">
         Time: {{ formattedTime }}
       </div>
-      <div
-        :class="trainingCompleted ? 'column-45 mt-3' : ''"
-        v-show="!isTimesUp"
-      >
-        <HorizonTest
-          ref="horizonTaskRef"
-          :speed="config.horizon.speed"
-          :minuteTime="minuteTime"
-          :isTimesUp="isTimesUp"
-          :isPause="isPauseHorizon"
-          :isActive="config.horizon.isActive"
-          @getResult="horizonResult"
-        />
-        <ArithmeticTask
-          ref="arithmeticTaskRef"
-          :isTimesUp="isTimesUp"
-          :difficulty="config.arithmetic.difficulty"
-          :minuteTime="minuteTime"
-          :isPause="isPauseArithmetic"
-          :isActive="config.arithmetic.isActive"
-          v-if="config.arithmetic.isActive"
-          :useSound="config.arithmetic.useSound"
-          :canPressAnswer="config.arithmetic.canPressAnswer"
-          :allowSound="allowSound"
-          @getResult="arithmeticResult"
-          :isTraining="!trainingCompleted"
-        />
+      <div v-show="!isTimesUp" :class="[
+        trainingCompleted ? 'column-45 mt-3' : '',
+        getCurrentTrainingTask() === 'Arithmetic' ? 'arithmetic' : '',
+      ]">
+        <HorizonTest ref="horizonTaskRef" :speed="config.horizon.speed" :minuteTime="minuteTime" :isTimesUp="isTimesUp"
+          :isPause="isPauseHorizon" :isActive="config.horizon.isActive" @getResult="horizonResult" />
+        <ArithmeticTask ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetic.difficulty"
+          :minuteTime="minuteTime" :isPause="isPauseArithmetic" :isActive="config.arithmetic.isActive"
+          v-if="config.arithmetic.isActive" :useSound="config.arithmetic.useSound"
+          :canPressAnswer="config.arithmetic.canPressAnswer" :allowSound="allowSound" @getResult="arithmeticResult"
+          :isTraining="!trainingCompleted" />
       </div>
-      <div
-        :class="trainingCompleted ? 'column-10 mt-3' : ''"
-        v-show="!isTimesUp"
-      >
-        <AlertLights
-          :speed="config.alertLight.speed"
-          :isTimesUp="isTimesUp"
-          :frequency="config.alertLight.frequency"
-          :isPause="isPauseAlertLight"
-          :isActive="config.alertLight.isActive"
-          :isTraining="!trainingCompleted"
-          v-if="config.alertLight.isActive"
-          @getResult="alertLightResult"
-        />
+      <div :class="trainingCompleted ? 'column-10 mt-3' : ''" :style="getCurrentTrainingTask() === 'Alert Light'
+          ? 'margin-right: 110px;'
+          : ''
+        " v-show="!isTimesUp">
+        <AlertLights :speed="config.alertLight.speed" :isTimesUp="isTimesUp" :frequency="config.alertLight.frequency"
+          :isPause="isPauseAlertLight" :isActive="config.alertLight.isActive" :isTraining="!trainingCompleted"
+          v-if="config.alertLight.isActive" @getResult="alertLightResult" />
       </div>
-      <div
-        :class="trainingCompleted ? 'column-45 mt-3 text-left' : ''"
-        v-show="!isTimesUp"
+      <div :class="[trainingCompleted ? 'column-45 mt-3 text-left' : '',
+
+      getCurrentTrainingTask() === 'Gauges Meter' ? 'gauges-meter' : '',
+      ]" v-show="!isTimesUp"
+:style="getCurrentTrainingTask() === 'Kombinasi'
+          ? 'max-width: 440px;'
+          : ''
+        "
       >
-        <GaugesMeter
-          :isTimesUp="isTimesUp"
-          :isPause="isPauseGaugesMeter"
-          :frequency="config.gaugesMeter.frequency"
-          :isActive="config.gaugesMeter.isActive"
-          v-if="config.gaugesMeter.isActive"
-          @getResult="gaugesMeterResult"
-          :size="50"
-        />
+        <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPauseGaugesMeter" :frequency="config.gaugesMeter.frequency"
+          :isActive="config.gaugesMeter.isActive" v-if="config.gaugesMeter.isActive" @getResult="gaugesMeterResult"
+          :size="50" />
       </div>
     </div>
-    <button
-      v-if="!trainingCompleted"
-      @click="endTrainingTask"
-      class="finish-button"
-    >
+    <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
       Selesai Latihan
     </button>
     <div v-if="isLoading" class="loading-container">
@@ -873,5 +837,14 @@ h3 {
 
 .instruction-modal-content button:hover {
   background-color: #0056b3;
+}
+
+.gauges-meter {
+  max-width: 500px;
+  margin-right: 170px;
+}
+
+.arithmetic {
+  margin-right: 75px;
 }
 </style>
