@@ -89,7 +89,7 @@ export default {
           alphanumeric: true,
           shape: true,
         },
-        questionInterval: 30,
+        questionInterval: 45,
         testId: "",
         moduleId: "",
         sessionId: "",
@@ -216,10 +216,11 @@ export default {
         },
       };
 
+      console.log(number_of_question)
       if (this.isTraining) {
         this.testTime = 99999;
       } else {
-        this.testTime = number_of_question * 10;
+        this.testTime = number_of_question * interval;
       }
       this.memoryTime = interval;
     },
@@ -707,7 +708,8 @@ export default {
           clearInterval(this.timerInterval);
 
           while (this.questionMarkPositions.length < 2) {
-            const randomIndex = Math.floor(Math.random() * 8);
+            // make sure its odd number
+            const randomIndex = Math.floor(Math.random() * 4) * 2 + 1;
             if (
               this.innerConfig[randomIndex].type === "text" ||
               this.innerConfig[randomIndex].type === "number"
@@ -902,52 +904,34 @@ export default {
       }
     },
     createRandomQuestion() {
-      const { display } = this.configBe;
+      //const { display } = this.configBe;
       const arrQuestion = [];
-      let textOrNumberCount = 0;
 
       for (let i = 0; i < 8; i++) {
-        if (display.alphanumeric && display.shape) {
-          if (Math.random() < 0.5 || textOrNumberCount < 2) {
-            if (Math.random() < 0.5) {
-              const number = this.generateRandomNumbers();
-              arrQuestion.push(number);
-            } else {
-              const text = this.generateRandomLetters();
-              arrQuestion.push(text);
-            }
-            textOrNumberCount++;
-          } else {
-            const shape = this.getRandomShape();
-            arrQuestion.push(shape);
-          }
-        } else if (display.alphanumeric) {
+        //if index odd assign number else assign either text or symbol
+        if (i % 2 !== 0) {
+          arrQuestion.push(this.generateRandomNumbers());
+        } else {
           if (Math.random() < 0.5) {
-            const number = this.generateRandomNumbers();
-            arrQuestion.push(number);
+            arrQuestion.push(this.getRandomShape());
           } else {
-            const text = this.generateRandomLetters();
-            arrQuestion.push(text);
+            arrQuestion.push(this.generateRandomLetters());
           }
-          textOrNumberCount++;
-        } else if (display.shape) {
-          const shape = this.getRandomShape();
-          arrQuestion.push(shape);
         }
       }
 
       // Ensure at least 2 text or number elements
-      while (textOrNumberCount < 2) {
-        const randomIndex = Math.floor(Math.random() * 8);
-        if (arrQuestion[randomIndex].type === "shape") {
-          if (Math.random() < 0.5) {
-            arrQuestion[randomIndex] = this.generateRandomNumbers();
-          } else {
-            arrQuestion[randomIndex] = this.generateRandomLetters();
-          }
-          textOrNumberCount++;
-        }
-      }
+      //while (textOrNumberCount < 2) {
+      //  const randomIndex = Math.floor(Math.random() * 8);
+      //  if (arrQuestion[randomIndex].type === "shape") {
+      //    if (Math.random() < 0.5) {
+      //      arrQuestion[randomIndex] = this.generateRandomNumbers();
+      //    } else {
+      //      arrQuestion[randomIndex] = this.generateRandomLetters();
+      //    }
+      //    textOrNumberCount++;
+      //  }
+      //}
 
       this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
       this.questions = JSON.parse(JSON.stringify(arrQuestion));
@@ -958,6 +942,38 @@ export default {
       for (let i = 0; i < 2; i++) {
         result += letters.charAt(Math.floor(Math.random() * letters.length));
       }
+
+      return { type: "text", text: result };
+    },
+    generateRandomNumbers() {
+      const number = Math.floor(Math.random() * 90) + 10; // Generates a number between 10 and 99
+      return { type: "number", text: number };
+    },
+    getRandomShape() {
+      const shapes = [
+        "triangle",
+        "rectangle",
+        "arrow",
+        "circle",
+        "octagon",
+        "star",
+        "parallelogram",
+        "leftArrow",
+        "hexagon",
+        "chevronLeft",
+        "plane",
+        "returnArrow",
+        "heart",
+        "s",
+        "l",
+        "t",
+      ];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      const commonAttributes = {
+        type: "shape",
+        shapeName: shape,
+        color: this.getRandomColor(),
+      };
 
       return { type: "text", text: result };
     },
