@@ -480,9 +480,9 @@ export default {
       ctx.closePath();
     }
 
-    function generateSquare(ctx) {
-      ctx.rect(-35, -35, 70, 70);
-    }
+    //function generateSquare(ctx) {
+    //  ctx.rect(-35, -35, 70, 70);
+    //}
 
     function generateOctagon(ctx) {
       for (let i = 0; i < 8; i++) {
