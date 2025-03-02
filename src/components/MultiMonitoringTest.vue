@@ -7,7 +7,7 @@
       @confirm="handleConfirm"
       @clickPlaySound="playExampleSound"
       @cancel="handleCancel"
-      :isAcoustic="currentTrainingTask==='acoustic'"
+      :isAcoustic="currentTrainingTask === 'acoustic'"
     />
     <div class="bg-black h-full w-full flex justify-center items-center">
       <canvas
@@ -86,7 +86,12 @@
         </p>
       </div>
     </div>
-    <button v-if="isTraining" @click="endTrainingSession" class="finish-button" style="width: 200px; height: 70px;;">
+    <button
+      v-if="isTraining"
+      @click="endTrainingSession"
+      class="finish-button"
+      style="width: 200px; height: 70px"
+    >
       Selesai Latihan
     </button>
     <div
@@ -205,9 +210,13 @@ function getModalTitle() {
   return "Mulai Test";
 }
 
-  function playExampleSound() {
-    playSound('1000', 0.2);
+function playExampleSound() {
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      playSound("1000", 0.2);
+    }, i * (0.2 * 1000 + 1000));
   }
+}
 
 function getModalMessage() {
   if (isTraining.value) {
@@ -312,9 +321,7 @@ function endTrainingSession() {
 
   if (currentTrainingTask.value === "keseluruhan") {
     completeTrainingTestAndUpdateLocalStorage("Multi Monitoring Test");
-
   }
-
 }
 
 function moveCircle(deltaTime) {
@@ -745,14 +752,15 @@ function playRandomSounds() {
 
     // Check if user didn't answer the previous question
     setTimeout(() => {
-    if (gameState.value.acousticAnswerAllowed) {
-      if (isSoundSame.value) {
-        metrics.value.acoustic_task.incorrect_answer++;
-        drawText({
-          text: "Urutan suara terlewat tiga detik yang lalu",
-          color: "red",
-        });
-      }     }
+      if (gameState.value.acousticAnswerAllowed) {
+        if (isSoundSame.value) {
+          metrics.value.acoustic_task.incorrect_answer++;
+          drawText({
+            text: "Urutan suara terlewat tiga detik yang lalu",
+            color: "red",
+          });
+        }
+      }
     }, 6000);
 
     setTimeout(() => {
