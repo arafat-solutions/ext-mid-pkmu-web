@@ -5,7 +5,9 @@
       :title="getModalTitle()"
       :message="getModalMessage()"
       @confirm="handleConfirm"
+      @clickPlaySound="playExampleSound"
       @cancel="handleCancel"
+      :isAcoustic="currentTrainingTask==='acoustic'"
     />
     <div class="bg-black h-full w-full flex justify-center items-center">
       <canvas
@@ -203,6 +205,10 @@ function getModalTitle() {
   return "Mulai Test";
 }
 
+  function playExampleSound() {
+    playSound('1000', 0.2);
+  }
+
 function getModalMessage() {
   if (isTraining.value) {
     switch (currentTrainingTask.value) {
@@ -304,7 +310,11 @@ function endTrainingSession() {
   // metrics.value.button_task.incorrect_answer = 0;
   userInputs.value = [];
 
-  completeTrainingTestAndUpdateLocalStorage("Multi Monitoring Test");
+  if (currentTrainingTask.value === "keseluruhan") {
+    completeTrainingTestAndUpdateLocalStorage("Multi Monitoring Test");
+
+  }
+
 }
 
 function moveCircle(deltaTime) {
@@ -734,6 +744,7 @@ function playRandomSounds() {
     }
 
     // Check if user didn't answer the previous question
+    setTimeout(() => {
     if (gameState.value.acousticAnswerAllowed) {
       if (isSoundSame.value) {
         metrics.value.acoustic_task.incorrect_answer++;
@@ -741,14 +752,11 @@ function playRandomSounds() {
           text: "Urutan suara terlewat tiga detik yang lalu",
           color: "red",
         });
-      } else {
-        metrics.value.acoustic_task.correct_answer++;
-        drawText({ text: "Respons benar", color: "green" });
-      }
-    }
+      }     }
+    }, 6000);
 
     setTimeout(() => {
-      gameState.value.acousticAnswerAllowed = true;
+      //gameState.value.acousticAnswerAllowed = true;
       gameState.value.lastAcousticPlayTime = Date.now();
     }, 3000);
   }
@@ -814,7 +822,7 @@ function handleGamepadPress(gamepad) {
         color: "red",
       });
     }
-    isSoundSame.value = false;
+    //isSoundSame.value = false;
     gameState.value.acousticAnswerAllowed = false;
   }
 }
