@@ -21,8 +21,12 @@
     </div>
   </div>
 
-  <div class='timer-container' v-if="!isTimesUp&&isTrainingCompleted">
+  <div class='timer-container'>
+    <span v-if="!isTimesUp&&isTrainingCompleted">
     Task: {{ currentTask }} / {{ numberOfTask }}
+    <br/>
+      </span>
+    Timer: {{ timeLeftAnswer }}s
   </div>
   <div v-if="!isTimesUp">
     <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
@@ -96,10 +100,10 @@ export default {
       isConfigLoaded: false,
       radioValues: [],
       start: 0,
-      totalRow: 8,
+      totalRow: 5,
       choicesLength: 8,
-      durationAnswer: 20, // in seconds
-      timeLeftAnswer: 40, // in seconds
+      durationAnswer: 45, // in seconds
+      timeLeftAnswer: 45, // in seconds
       moveNextTaskDuration: 5, // in seconds
       queryBars: [],
       questions: [],
@@ -228,6 +232,7 @@ export default {
       this.isTrainingCompleted = configData.trainingCompleted;
 
       if (!this.isTrainingCompleted) {
+        this.timeLeftAnswer = 60;
         this.isModalTrainingVisible = true;
       } else {
         this.isModalVisible = true;
@@ -237,7 +242,12 @@ export default {
       this.selectedSymbols = config.symbols;
       this.resetQueryBarPerRow = config.resetQueryBar;
       this.varianceSymbols = this.getVariation(config.variation);
-      this.numberOfTaskInConfig = config.numberOfQuestion
+      // check if its training
+      if (!this.isTrainingCompleted) {
+        this.numberOfTaskInConfig = 60
+      } else {
+        this.numberOfTaskInConfig = config.numberOfQuestion
+      }
 
       this.isConfigLoaded = true;
     },
@@ -255,7 +265,13 @@ export default {
         this.currentRowDisabled = false;
         this.currentWrong = null;
         this.currentTask++;
-        this.timeLeftAnswer = this.durationAnswer;
+        // check is training
+
+        if (!this.isTrainingCompleted) {
+          this.timeLeftAnswer = 60;
+        } else {
+          this.timeLeftAnswer = this.durationAnswer;
+        }
       }
       await this.delay(1000);
 
@@ -323,7 +339,7 @@ export default {
         this.questions[this.start] = [];
         const symbolsLength = this.currentQueryBar.length;
 
-        for (let j = 0; j < this.totalRow; j++) {
+        for (let j = 0; j < 8; j++) {
           // Add a random symbol
           const randomSymbolIndex = Math.floor(Math.random() * symbolsLength);
           this.questions[this.start].push(this.currentQueryBar[randomSymbolIndex]);

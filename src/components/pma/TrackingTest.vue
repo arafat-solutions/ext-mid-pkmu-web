@@ -8,17 +8,12 @@
           {{ getCurrentModeStatus }}
       </div> -->
   </div>
-  <div
-    class="centered-component"
-    style="height: 120px; width: 500px; bottom: 20% !important"
-  >
-    <p
-      v-if="
-        !isActualTest &&
-        (isCircleRed || isPillRed) &&
-        (currentTraining == 'thruster' || currentTraining == 'all')
-      "
-    >
+  <div class="centered-component" style="height: 120px; width: 500px; bottom: 20% !important">
+    <p v-if="
+      !isActualTest &&
+      (isCircleRed || isPillRed) &&
+      (currentTraining == 'thruster' || currentTraining == 'all')
+    ">
       ⚠️ Perhatian! ⚠️<br />Upayakan lingkaran potong berwarna
 
       <b>BIRU</b> dengan mengarahkan ke target lingkaran bergaris putus-putus
@@ -26,13 +21,11 @@
       mengarahkan ke target menggunakan <b>PEDAL</b>
     </p>
 
-    <p
-      v-else-if="
-        !isActualTest &&
-        isPointRed &&
-        (currentTraining == 'joystick' || currentTraining == 'all')
-      "
-    >
+    <p v-else-if="
+      !isActualTest &&
+      isPointRed &&
+      (currentTraining == 'joystick' || currentTraining == 'all')
+    ">
       ⚠️ Perhatian! ⚠️<br />Upayakan titik potong berwarna <b>HIJAU</b> dengan
       mengarahkan titik ke dalam target lingkaran menggunakan <b>JOYSTICK</b>
     </p>
@@ -178,15 +171,13 @@ export default {
       ctx.restore();
     };
 
-    const getPillColor = () => {
-      const absAngle = Math.abs(pillAngle % (Math.PI * 2));
-      return absAngle <= Math.PI / 4 ||
-        absAngle >= (Math.PI * 7) / 4 ||
-        (absAngle > Math.PI / 4 && absAngle < (Math.PI * 3) / 4)
-        ? "red"
-        : "yellow";
-    };
+const getPillColor = () => {
+  const absAngle = Math.abs(pillAngle % (Math.PI * 2));
 
+  const isAtTwelve =  Math.abs(absAngle - (Math.PI * 3) / 2) < 0.1;
+
+  return isAtTwelve ? "yellow" : "red";
+};
     const drawTrackingTest = () => {
       ctx.clearRect(0, 0, 500, 500);
       drawCrosshair();

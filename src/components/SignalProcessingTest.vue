@@ -23,7 +23,7 @@
       <p class="mb-4 text-center" style="font-size: 20px">
         <strong>
           Apakah Anda yakin akan memulai
-          {{ isTrainingCompleted ? "tes" : "latihan" }} 
+          {{ isTrainingCompleted ? "tes" : "latihan" }}
         </strong>
       </p>
 

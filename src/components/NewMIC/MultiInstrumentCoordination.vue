@@ -1,6 +1,6 @@
 <template>
   <div class="pilot-exam">
-    <!-- In your template -->]
+    <!-- In your template -->
     <!-- Final Exam Confirmation Modal -->
     <Transition name="modal">
       <div v-if="showExamConfirmModal" class="modal-overlay">
@@ -13,16 +13,10 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button
-                class="modal-button bg-gray-500 mr-4"
-                @click="showExamConfirmModal = false"
-              >
+              <button class="modal-button bg-gray-500 mr-4" @click="showExamConfirmModal = false">
                 Kembali
               </button>
-              <button
-                class="modal-button bg-green-500"
-                @click="startActualExam"
-              >
+              <button class="modal-button bg-green-500" @click="startActualExam">
                 Mulai Tes
               </button>
             </div>
@@ -50,10 +44,7 @@
               </ul>
             </div>
             <div class="modal-footer">
-              <button
-                class="modal-button bg-green-500 mr-4"
-                @click="handleStartExam"
-              >
+              <button class="modal-button bg-green-500 mr-4" @click="handleStartExam">
                 {{ trainingMode ? "Mulai Latihan" : "Mulai Tes" }}
               </button>
             </div>
@@ -68,27 +59,16 @@
           <div class="modal-content">
             <h1 class="modal-title">
               {{
-                currentTrainingStep < TRAINING_STEPS.length
-                  ? TRAINING_STEPS[currentTrainingStep].title
-                  : ""
-              }}
-            </h1>
-            <div
-              class="modal-body"
-              v-html="
-                currentTrainingStep < TRAINING_STEPS.length
+                currentTrainingStep < TRAINING_STEPS.length ? TRAINING_STEPS[currentTrainingStep].title : "" }} </h1>
+                <div class="modal-body" v-html="currentTrainingStep < TRAINING_STEPS.length
                   ? TRAINING_STEPS[currentTrainingStep].instructions
                   : ''
-              "
-            ></div>
-            <div class="modal-footer">
-              <button
-                class="modal-button bg-green-500"
-                @click="startTrainingStep"
-              >
-                Mulai
-              </button>
-            </div>
+                  "></div>
+                <div class="modal-footer">
+                  <button class="modal-button bg-green-500" @click="startTrainingStep">
+                    Mulai
+                  </button>
+                </div>
           </div>
         </div>
       </div>
@@ -96,22 +76,13 @@
 
     <!-- Feedback Message -->
     <Transition name="fade">
-      <div
-        v-if="showFeedback"
-        class="feedback-message"
-        :class="
-          userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
-        "
-      >
+      <div v-if="showFeedback" class="feedback-message" :class="userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
+        ">
         {{ feedbackMessage }}
       </div>
     </Transition>
 
-    <button
-      v-if="trainingMode && examRunning"
-      class="next-step-button"
-      @click="moveToNextTrainingStep"
-    >
+    <button v-if="trainingMode && examRunning" class="next-step-button" @click="moveToNextTrainingStep">
       {{ nextStepButtonText }}
     </button>
 
@@ -138,54 +109,32 @@
     </div>
     <div class="indicators place-items-center">
       <!-- Heading - only show during joystick training -->
-      <div
-        v-if="
-          !trainingMode ||
-          (trainingMode &&
-            TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
-              'compass'
-            ))
-        "
-        class="indicator-wrapper col-span-3"
-        :class="{ blink: isHeadingOutOfTarget }"
-      >
-        <Heading
-          class="indicator-bg"
-          :size="200"
-          :heading="Math.round(heading)"
-        />
+      <div v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+            'compass'
+          ))
+      " class="indicator-wrapper col-span-3" :class="{ blink: isHeadingOutOfTarget }">
+        <Heading class="indicator-bg" :size="200" :heading="Math.round(heading)" />
         <div class="target-text">
           Target: {{ Math.round(headingTarget) }}°
-          <span
-            v-if="headingChangeDirection"
-            :class="['direction-indicator', headingChangeDirection]"
-          ></span>
+          <span v-if="headingChangeDirection" :class="['direction-indicator', headingChangeDirection]"></span>
         </div>
       </div>
 
       <!-- Airspeed/Thrust - only show during throttle training -->
-      <div
-        v-if="
-          !trainingMode ||
-          (trainingMode &&
-            TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
-              'airspeed'
-            ))
-        "
-        class="indicator-wrapper col-span-1"
-        :class="{ blink: isAirspeedOutOfTarget }"
-      >
-        <Airspeed
-          class="indicator-bg"
-          :size="200"
-          :airspeed="Math.round(airspeed)"
-        />
+      <div v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+            'airspeed'
+          ))
+      " class="indicator-wrapper col-span-1" :class="{ blink: isAirspeedOutOfTarget }">
+        <Airspeed class="indicator-bg" :size="200" :airspeed="Math.round(airspeed)" />
         <div class="thruster-indicator">
           <div class="thruster-bar">
-            <div
-              class="thruster-fill"
-              :style="{ height: `${thrustLevel}%` }"
-            ></div>
+            <div class="thruster-fill" :style="{ height: `${thrustLevel}%` }"></div>
           </div>
           <div class="thruster-value">
             Thrust: {{ Math.round(thrustLevel) }}%
@@ -193,73 +142,51 @@
         </div>
         <div class="target-text">
           Target: {{ Math.round(airspeedTarget) }} knots
-          <span
-            v-if="airspeedChangeDirection"
-            :class="['direction-indicator', airspeedChangeDirection]"
-          ></span>
+          <span v-if="airspeedChangeDirection" :class="['direction-indicator', airspeedChangeDirection]"></span>
         </div>
       </div>
 
       <!-- Analog Clock - always shown -->
-      <div class="indicator-wrapper col-span-1" v-if="!trainingMode">
+      <div class="indicator-wrapper col-span-1" v-if="
+        !trainingMode ||
+        TRAINING_STEPS[currentTrainingStep]?.id === 'combined'
+      ">
         <AnalogClock class="indicator-bg" style="padding: 20px" size="200" />
       </div>
 
       <!-- Altimeter - only show during joystick training -->
-      <div
-        v-if="
-          !trainingMode ||
-          (trainingMode &&
-            TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
-              'altimeter'
-            ))
-        "
-        class="indicator-wrapper col-span-1"
-        :class="{ blink: isAltitudeOutOfTarget }"
-      >
-        <Altimeter
-          class="indicator-bg"
-          :size="200"
-          :altitude="Math.round(altitude)"
-        />
+      <div v-if="
+        !trainingMode ||
+        (trainingMode &&
+          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes(
+            'altimeter'
+          ))
+      " class="indicator-wrapper col-span-1" :class="{ blink: isAltitudeOutOfTarget }">
+        <Altimeter class="indicator-bg" :size="200" :altitude="Math.round(altitude)" />
         <div class="target-text">
           Target: {{ Math.round(altitudeTarget) }} ft
-          <span
-            v-if="altitudeChangeDirection"
-            :class="['direction-indicator', altitudeChangeDirection]"
-          ></span>
+          <span v-if="altitudeChangeDirection" :class="['direction-indicator', altitudeChangeDirection]"></span>
         </div>
       </div>
     </div>
 
     <!-- Audio Test Controls -->
     <!-- Audio Test Controls -->
-    <div
-      class="audio-test"
-      v-if="
-        !trainingMode ||
-        (trainingMode &&
-          TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))
-      "
-    >
+    <div class="audio-test" v-if="
+      !trainingMode ||
+      (trainingMode &&
+        TRAINING_STEPS[currentTrainingStep]?.activeControls.includes('audio'))
+    ">
       <div class="number-display">
         Dengarkan dan pilih apakah semua angka yang Anda dengar adalah genap
         atau ganjil.
       </div>
       <div class="response-buttons">
-        <button
-          class="btn-red"
-          @click="handleAudioResponse('odd')"
-          :disabled="!canRespond"
-        >
-          {{trainingMode ? 'Ganjil' : ''}}
+        <button class="btn-red" @click="handleAudioResponse('odd')" :disabled="!canRespond">
+          {{ trainingMode ? "Ganjil" : "" }}
         </button>
-        <button
-          class="btn-green"
-          @click="handleAudioResponse('even')"
-          :disabled="!canRespond"
-        >
-          {{trainingMode ? 'Genap' : ''}}
+        <button class="btn-green" @click="handleAudioResponse('even')" :disabled="!canRespond">
+          {{ trainingMode ? "Genap" : "" }}
         </button>
       </div>
     </div>
@@ -657,7 +584,7 @@ const updateSounds = () => {
   // Calculate RPM factor based on actual airspeed rather than thrust
   const rpmFactor = Math.pow(
     (airspeed.value - MOVEMENT_SPEED.MIN_AIRSPEED) /
-      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
+    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED),
     0.8
   );
 
@@ -744,7 +671,7 @@ const onGamepadDisconnected = (e) => {
 // Constants for audio test
 const AUDIO_TEST = {
   SEQUENCE_PAUSE: 15000,
-  NUMBER_INTERVAL: 1000,
+  NUMBER_INTERVAL: 2000,
   RESPONSE_WINDOW: 15000,
 };
 
@@ -759,35 +686,31 @@ const startAudioSequence = () => {
     return;
   }
 
-  const numbers = [
-    generateRandomNumber(),
-    generateRandomNumber(),
-    generateRandomNumber(),
-  ];
-  displayedNumbers.value = numbers;
+  displayedNumbers.value = [];
+  canRespond.value = true;
+  currentAudioStart.value = Date.now();
 
-  let index = 0;
-  const speakNextNumber = () => {
-    if (index < numbers.length) {
-      speakNumber(numbers[index]);
-      index++;
-      setTimeout(speakNextNumber, AUDIO_TEST.NUMBER_INTERVAL);
-    } else {
-      canRespond.value = true;
-      currentAudioStart.value = Date.now();
+  // Start an interval instead of recursive timeouts
+  audioTimeout.value = setInterval(() => {
+    const number = generateRandomNumber();
+    displayedNumbers.value.push(number);
 
-      audioTimeout.value = setTimeout(() => {
-        if (canRespond.value) {
-          handleNoResponse();
-        }
-      }, AUDIO_TEST.RESPONSE_WINDOW);
+    // Keep only the last 3 numbers
+    if (displayedNumbers.value.length > 3) {
+      displayedNumbers.value.shift();
     }
-  };
 
-  speakNextNumber();
-};
+    speakNumber(number);
+  }, AUDIO_TEST.NUMBER_INTERVAL);
 
-const handleAudioResponse = (response) => {
+  // Set a response timeout
+  //responseTimeout.value = setTimeout(() => {
+  //  if (canRespond.value) {
+  //    handleNoResponse();
+  //    clearInterval(audioTimeout.value); // Stop the interval when no response
+  //  }
+  //}, AUDIO_TEST.RESPONSE_WINDOW);
+}; const handleAudioResponse = (response) => {
   if (!canRespond.value) return;
 
   clearTimeout(audioTimeout.value);
@@ -814,25 +737,29 @@ const handleAudioResponse = (response) => {
   });
 
   canRespond.value = false;
-  displayedNumbers.value = [];
+  setTimeout(() => {
 
-  setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
+    canRespond.value = true;
+    displayedNumbers.value = [];
+  }, 1000);
+
+  //setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
 };
 
-const handleNoResponse = () => {
-  audioResponses.value.push({
-    numbers: [...displayedNumbers.value],
-    response: "none",
-    responseTime: AUDIO_TEST.RESPONSE_WINDOW,
-    correct: false,
-    configIndex: currentConfigIndex.value,
-  });
-
-  canRespond.value = false;
-  displayedNumbers.value = [];
-
-  setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
-};
+//const handleNoResponse = () => {
+//  audioResponses.value.push({
+//    numbers: [...displayedNumbers.value],
+//    response: "none",
+//    responseTime: AUDIO_TEST.RESPONSE_WINDOW,
+//    correct: false,
+//    configIndex: currentConfigIndex.value,
+//  });
+//
+//  canRespond.value = false;
+//  displayedNumbers.value = [];
+//
+//  setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
+//};
 
 const cancelAudioSequence = () => {
   clearTimeout(audioTimeout.value);
@@ -849,6 +776,7 @@ const updatePlanePosition = () => {
   if (controlMode.value === "joystick") {
     if (gamepad.value) {
       const stick = navigator.getGamepads()[gamepad.value.index];
+      // Adjust airspeed based on altitude, when altitude increase airspeed, when decrease decrease airspeed
       if (stick) {
         const headingChange = stick.axes[0] * MOVEMENT_SPEED.HEADING;
         heading.value = (heading.value + headingChange + 360) % 360;
@@ -858,6 +786,7 @@ const updatePlanePosition = () => {
           0,
           Math.min(10000, altitude.value + altitudeChange)
         );
+        airspeed.value = Math.max(0, airspeed.value + stick.axes[1]);
       }
     }
 
@@ -932,8 +861,8 @@ const updatePlanePosition = () => {
   targetSpeed.value = Math.max(
     minimumAirspeed,
     MOVEMENT_SPEED.MIN_AIRSPEED +
-      (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
-        (thrustLevel.value / 100)
+    (MOVEMENT_SPEED.MAX_AIRSPEED - MOVEMENT_SPEED.MIN_AIRSPEED) *
+    (thrustLevel.value / 100)
   );
 
   // Calculate acceleration
@@ -961,15 +890,19 @@ const updatePlanePosition = () => {
     )
   );
 
-  // Adjust altitude based on thrust level
+  // Adjust airspeed based on altitude, when altitude increase airspeed, when decrease decrease airspeed
   //only applied when currentTrainingStep === combined
-  if(currentTrainingStep.value === 4||!trainingMode.value){
-    const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
-    altitude.value = Math.max(
-      0,
-      Math.min(10000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
-    );
-  }
+  //if (currentTrainingStep.value === 4 || !trainingMode.value) {
+  //  const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
+  //  const altitudeFactor = altitude.value ; // Adjust speed by altitude
+  //  console.log(
+  //    altitudeFactor,
+  //  );
+  //  airspeed.value = Math.max(
+  //    0,
+  //    airspeed.value + thrustEffect * altitudeFactor // Adjust airspeed based on altitude
+  //  );
+  //}
 };
 
 const updateScore = () => {
@@ -1064,23 +997,35 @@ const updateTime = () => {
 
 const updateHeadingTarget = () => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
+
+  // Randomize change direction including "stay"
+  const randomDirection = () => {
+    const choices = ["up", "down", "stay"];
+    return choices[Math.floor(Math.random() * choices.length)];
+  };
+
   if (currentConfig?.compass !== "inactive") {
-    // Decrease heading target by 10 every second
-    let newHeadingTarget = headingTarget.value - 10;
-    if (newHeadingTarget < 0) {
-      newHeadingTarget = Math.random() * 360;
+    headingChangeDirection.value = randomDirection();
+
+    if (headingChangeDirection.value !== "stay") {
+      let newHeadingTarget =
+        headingTarget.value + (headingChangeDirection.value === "up" ? 1 : -1);
+      if (newHeadingTarget < 0) newHeadingTarget = 360;
+      if (newHeadingTarget > 360) newHeadingTarget = 0;
+      headingTarget.value = newHeadingTarget;
     }
-    headingTarget.value = newHeadingTarget;
-    headingChangeDirection.value = "down";
   }
-  //update altitudeTarget -10
+
   if (currentConfig?.altimeter !== "inactive") {
-    let newAltitudeTarget = altitudeTarget.value - 10;
-    if (newAltitudeTarget < 0) {
-      newAltitudeTarget = Math.random() * 10000;
+    altitudeChangeDirection.value = randomDirection();
+
+    if (altitudeChangeDirection.value !== "stay") {
+      let newAltitudeTarget =
+        altitudeTarget.value +
+        (altitudeChangeDirection.value === "up" ? 1 : -1);
+      if (newAltitudeTarget < 0) newAltitudeTarget = 10000;
+      altitudeTarget.value = newAltitudeTarget;
     }
-    altitudeTarget.value = newAltitudeTarget;
-    altitudeChangeDirection.value = "down";
   }
 };
 const updateTargets = () => {
@@ -1138,6 +1083,8 @@ const updateTargets = () => {
 };
 
 const startExam = () => {
+
+  cancelAudioSequence()
   // Common initialization regardless of mode
   examRunning.value = true;
   currentConfigIndex.value = 0;
@@ -1345,6 +1292,7 @@ const moveToNextTrainingStep = () => {
     cancelAudioSequence(); // Stop any ongoing audio
   } else {
     // Show final exam confirmation modal
+    cancelAudioSequence(); // Stop any ongoing audio
     showExamConfirmModal.value = true;
   }
 };

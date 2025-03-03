@@ -1,86 +1,86 @@
 <template>
   <div class="math-test-container">
-    <div class="instructions" v-if="!isTrainingMode">Press 'Space bar' to switch tasks</div>
+    <div class="instructions" v-if="!isTrainingMode">
+      Tekan 'Spasi' untuk beralih tugas
+    </div>
     <div v-if="showQuestion" class="question">{{ displayQuestion }}</div>
-    <div v-else class="waiting">Waiting for next question...</div>
+    <div v-else class="waiting">Menunggu pertanyaan selanjutnya...</div>
     <input v-model="userInput" class="input-box" readonly :disabled="!showQuestion" />
     <div class="virtual-keyboard">
-      <button v-for="num in 10" :key="num" @click="appendNumber(num % 10)" :disabled="!showQuestion">{{ num % 10
-        }}</button>
+      <button v-for="num in 10" :key="num" @click="appendNumber(num % 10)" :disabled="!showQuestion">
+        {{ num % 10 }}
+      </button>
       <button @click="clearInput" :disabled="!showQuestion">Hapus</button>
       <button @click="submitAnswer" :disabled="!showQuestion">Kirim</button>
     </div>
-    <p v-if="answerIsRight === true" class="text-green-500 text-2xl">Benar!</p>
-    <p v-else-if="answerIsRight === false" class="text-red-500 text-2xl">Salah!</p>
+    <template v-if="isTrainingMode">
+      <p v-if="answerIsRight === true" class="text-green-500 text-2xl">
+        Benar!
+      </p>
+      <p v-else-if="answerIsRight === false" class="text-red-500 text-2xl">
+        Salah!
+      </p>
+    </template>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from "vue";
 
 export default {
-  name: 'MathTest',
-  emits: ['switch-task', 'question-result', 'test-finished'],
+  name: "MathTest",
+  emits: ["switch-task", "question-result", "test-finished"],
   props: {
     config: {
       type: Object,
-      default: () => ({})
+      default: () => ({}),
     },
     isTrainingMode: {
       type: Boolean,
-      default: false
+      default: false,
     },
     isCombined: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   setup(props, { emit }) {
-    const userInput = ref('');
-    const currentQuestion = ref('');
-    const displayQuestion = ref('');
+    const userInput = ref("");
+    const currentQuestion = ref("");
+    const displayQuestion = ref("");
     const questionTimeShown = ref(null);
     const correctAnswer = ref(null);
     const showQuestion = ref(true);
-    const operations = ['+', '-', '*', '/'];
-    const config = {
-      frequency: props.config.arithmetics.frequency, // medium
-      complexity: props.config.arithmetics.complexity, // medium
-      output: props.config.arithmetics.output, // auditory_and_visual
-    };
-    const answerIsRight = ref(null)
+    const answerIsRight = ref(null);
+    const operations = ["+", "-", "*", "/"];
+    let questionInterval = null; // Store the interval reference
 
-    const getIntervalTime = () => {
-      switch (config.frequency) {
-        case 'very_seldom': return 20000; // 20 seconds
-        case 'seldom': return 15000; // 15 seconds
-        case 'medium': return 10000; // 10 seconds
-        case 'often': return 5000; // 5 seconds
-        case 'very_often': return 2000; // 2 seconds
-        default: return 10000; // Default to 10 seconds
-      }
+    const config = {
+      frequency: props.config.arithmetics.frequency,
+      complexity: props.config.arithmetics.complexity,
+      output: props.config.arithmetics.output,
     };
 
     const generateNumbers = (complexity) => {
       let num1, num2;
       switch (complexity) {
-        case 'very_slow':
+        case "very_slow":
           num1 = Math.floor(Math.random() * 5) + 1;
           num2 = Math.floor(Math.random() * 5) + 1;
           break;
-        case 'easy':
+        case "easy":
           num1 = Math.floor(Math.random() * 10) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
-        case 'medium':
+        case "medium":
           num1 = Math.floor(Math.random() * 20) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
-        case 'high':
+        case "high":
           num1 = Math.floor(Math.random() * 50) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
-        case 'hard':
+        case "hard":
           num1 = Math.floor(Math.random() * 100) + 1;
           num2 = Math.floor(Math.random() * 10) + 1;
           break;
@@ -89,120 +89,96 @@ export default {
     };
 
     const generateQuestion = () => {
-      let operation, num1, num2;
-      let operationSpoken = ''
+      let operation,
+        num1,
+        num2,
+        operationSpoken = "";
 
       do {
         operation = operations[Math.floor(Math.random() * operations.length)];
         [num1, num2] = generateNumbers(config.complexity);
-
-        // Ensure num1 is always greater than or equal to num2 for subtraction and division
-        if (operation === '-' || operation === '/') {
+        if (operation === "-" || operation === "/")
           [num1, num2] = [Math.max(num1, num2), Math.min(num1, num2)];
-        }
+        if (operation === "/") num1 = num2 * Math.floor(num1 / num2);
 
-        // For division, ensure the result is a whole number
-        if (operation === '/') {
-          num1 = num2 * Math.floor(num1 / num2);
-        }
-
-        // Calculate the result
         switch (operation) {
-          case '+':
+          case "+":
             correctAnswer.value = num1 + num2;
-            operationSpoken = 'tambah';
+            operationSpoken = "tambah";
             break;
-          case '-':
+          case "-":
             correctAnswer.value = num1 - num2;
-            operationSpoken = 'kurang';
+            operationSpoken = "kurang";
             break;
-          case '*':
+          case "*":
             correctAnswer.value = num1 * num2;
-            operationSpoken = 'kali';
+            operationSpoken = "kali";
             break;
-          case '/':
+          case "/":
             correctAnswer.value = num1 / num2;
-            operationSpoken = 'bagi';
+            operationSpoken = "bagi";
             break;
         }
       } while (correctAnswer.value < 0 || correctAnswer.value % 1 !== 0);
 
       const question = `${num1} ${operationSpoken} ${num2}`;
       displayQuestion.value = `${num1} ${operation} ${num2}`;
-      currentQuestion.value = question;
-      
-
-      if (config.output === 'sound' || config.output === 'sound_and_visual') {
-        speakQuestion(question);
-      }
-
-      if (config.output === 'visual' || config.output === 'sound_and_visual') {
-        currentQuestion.value = question;
-      } else {
-        currentQuestion.value = 'Dengarkan pertanyaan';
-      }
-
+      currentQuestion.value =
+        config.output === "visual" || config.output === "sound_and_visual"
+          ? question
+          : "Dengarkan pertanyaan";
       showQuestion.value = true;
       questionTimeShown.value = Date.now();
+
+      if (config.output === "sound" || config.output === "sound_and_visual")
+        speakQuestion(question);
     };
 
     const speakQuestion = (question) => {
       const utterance = new SpeechSynthesisUtterance(question);
-      utterance.lang = 'id-ID';
+      utterance.lang = "id-ID";
       speechSynthesis.speak(utterance);
     };
 
-    const appendNumber = (num) => {
-      userInput.value += num;
-    };
-
-    const clearInput = () => {
-      userInput.value = '';
-    };
+    const appendNumber = (num) => (userInput.value += num);
+    const clearInput = () => (userInput.value = "");
 
     const submitAnswer = () => {
       const userAnswer = parseInt(userInput.value, 10);
       const responseTime = Date.now() - questionTimeShown.value;
-      const result = {
+      emit("question-result", {
         question: currentQuestion.value,
         userAnswer,
         correctAnswer: correctAnswer.value,
         isCorrect: userAnswer === correctAnswer.value,
-        responseTime
-      };
-      setAnswerIsRight(userAnswer)
-      questionTimeShown.value = null;
-      emit('question-result', result);
-      userInput.value = '';
+        responseTime,
+      });
+      setAnswerIsRight(userAnswer);
+      userInput.value = "";
       showQuestion.value = false;
-
-      // Set interval for next question
-      setTimeout(() => {
-        generateQuestion();
-      }, getIntervalTime());
     };
 
     const setAnswerIsRight = (userAnswer) => {
-      answerIsRight.value = userAnswer === correctAnswer.value
-      setTimeout(() => { answerIsRight.value = null }, 4000)
-    }
+      answerIsRight.value = userAnswer === correctAnswer.value;
+      setTimeout(() => {
+        answerIsRight.value = null;
+      }, 4000);
+    };
 
     const handleKeydown = (event) => {
-      if (event.key === ' ' ) {
-        emit('switch-task');
-      }
+      if (event.key === " ") emit("switch-task");
     };
 
     onMounted(() => {
-      window.addEventListener('keydown', handleKeydown);
+      window.addEventListener("keydown", handleKeydown);
       generateQuestion();
+      questionInterval = setInterval(generateQuestion, 10000); // Set interval to generate a new question every 10 seconds
     });
 
     onBeforeUnmount(() => {
-      window.removeEventListener('keydown', handleKeydown);
-      if (props.isTrainingMode && props.isCombined) {
-        emit('test-finished');
-      }
+      window.removeEventListener("keydown", handleKeydown);
+      clearInterval(questionInterval); // Clear the interval when component unmounts
+      if (props.isTrainingMode && props.isCombined) emit("test-finished");
     });
 
     return {
@@ -213,9 +189,9 @@ export default {
       appendNumber,
       clearInput,
       submitAnswer,
-      answerIsRight
+      answerIsRight,
     };
-  }
+  },
 };
 </script>
 

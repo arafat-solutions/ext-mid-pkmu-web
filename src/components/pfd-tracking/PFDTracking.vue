@@ -313,7 +313,7 @@ const mode = ref("moving");
 const examRunning = ref(false);
 const airspeed = ref(100);
 const heading = ref(0);
-const altitude = ref(5000);
+const altitude = ref(12000);
 // const currentTime = ref(new Date());
 const airspeedTarget = ref(140);
 const headingTarget = ref(150);
@@ -485,7 +485,7 @@ const moveToNextTraining = () => {
     if (
       trainingSteps[trainingStep.value].activeIndicators.includes("altitude")
     ) {
-      altitude.value = 5000;
+      altitude.value = 12000;
       altitudeTarget.value = 6000;
     }
     if (
@@ -834,11 +834,11 @@ const updatePlanePosition = () => {
       (!trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("airspeed"))
     ) {
-    const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
-    altitude.value = Math.max(
-      0,
-      Math.min(10000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
-    );
+      const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
+      altitude.value = Math.max(
+        0,
+        Math.min(16000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
+      );
       thrustLevel.value = 100 - ((throttle.axes[2] + 1) * 100) / 2;
     }
   }
@@ -1117,7 +1117,7 @@ const startTrainingStep = () => {
     headingTarget.value = 270;
   }
   if (activeIndicators.includes("altitude")) {
-    altitude.value = 5000;
+    altitude.value = 12000;
     altitudeTarget.value = 6000;
   }
   if (activeIndicators.includes("airspeed")) {
@@ -1140,8 +1140,16 @@ const randomizeTargets = () => {
       Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000;
   } else {
     //airspeedTarget.value -= 10;
-    headingTarget.value -= 5;
-    altitudeTarget.value -= 10;
+    //make it randomize it can be decrease, increase or stay
+    const getRandomChange = (range) => {
+      const random = Math.random();
+      if (random < 1 / 3) return range; // Increase
+      if (random < 2 / 3) return -range; // Decrease
+      return 0; // Stay the same
+    };
+
+    headingTarget.value += getRandomChange(1); // -1, 0, or +1
+    altitudeTarget.value += getRandomChange(10);
   }
 };
 
@@ -1188,7 +1196,7 @@ const startExam = () => {
   // Reset all parameters
   airspeed.value = 120;
   heading.value = 0;
-  altitude.value = 5000;
+  altitude.value = 12000;
   airspeedTarget.value = 120;
   headingTarget.value = 0;
   altitudeTarget.value = 5000;
@@ -1328,7 +1336,7 @@ const adjustHeading = (amount) => {
 };
 
 const adjustAltitude = (amount) => {
-  altitude.value = Math.max(0, Math.min(10000, altitude.value + amount));
+  altitude.value = Math.max(0, Math.min(12000, altitude.value + amount));
 };
 
 const adjustThrust = (amount) => {

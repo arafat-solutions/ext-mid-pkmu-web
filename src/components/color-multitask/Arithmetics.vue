@@ -16,11 +16,12 @@
               :class="{
                 clickable: isCanChooseAudio,
                 selected: selectedAnswer === option.key,
-                correct: hasAnswered && option.value === audio &&isTraining,
+                correct: hasAnswered && option.value === audio && isTraining,
                 incorrect:
                   hasAnswered &&
                   selectedAnswer === option.key &&
-                  option.value !== audio&&isTraining,
+                  option.value !== audio &&
+                  isTraining,
               }"
               @click="handleOptionClick(option.key)"
               :disabled="!isCanChooseAudio"
@@ -29,7 +30,7 @@
               <span class="option-value">{{ option.value }}</span>
             </button>
             <div
-              v-if="hasAnswered && selectedAnswer === option.key&&isTraining"
+              v-if="hasAnswered && selectedAnswer === option.key && isTraining"
               class="result-text"
               :class="{
                 'correct-text': option.value === audio,
@@ -264,23 +265,23 @@ export default {
       let correctLocationIndex = Math.floor(Math.random() * 4);
 
       this.optionAnswerAudios = Array(4)
-        .fill()
+        .fill(null)
         .map((_, index) => {
           if (index === correctLocationIndex) {
             return { key: index + 1, value: result };
-          } else {
-            let wrongAnswer;
-            do {
-              wrongAnswer = result + (Math.floor(Math.random() * 21) - 10);
-            } while (
-              wrongAnswer === result ||
-              wrongAnswer < 0 ||
-              this.optionAnswerAudios.some((opt) => opt.value === wrongAnswer)
-            );
-            return { key: index + 1, value: wrongAnswer };
           }
-        });
 
+          let wrongAnswer;
+          const usedValues = new Set([result]); // Track unique values, starting with the correct one
+
+          do {
+            wrongAnswer = result + (Math.floor(Math.random() * 21) - 10);
+          } while (wrongAnswer < 0 || usedValues.has(wrongAnswer)); // Ensure uniqueness
+
+          usedValues.add(wrongAnswer); // Store the used value
+
+          return { key: index + 1, value: wrongAnswer };
+        });
       await this.$nextTick();
       setTimeout(() => {
         this.startPlayback();
@@ -459,8 +460,10 @@ export default {
 }
 
 .option-button.selected {
-  background-color: #d3d3d3; /* Light gray background for selected */
-  border-color: #a0a0a0; /* A slightly darker gray border */
+  background-color: #d3d3d3;
+  /* Light gray background for selected */
+  border-color: #a0a0a0;
+  /* A slightly darker gray border */
   color: #333;
 }
 

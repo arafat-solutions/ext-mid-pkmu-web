@@ -2,11 +2,20 @@
   <div ref="container" class="coordination-test">
     <div class="countdown" v-if="!isTrainingMode">{{ formattedTime }}</div>
     <canvas ref="canvas"></canvas>
-    <div class="position-feedback" v-if="isTrainingMode" :class="{ 'feedback-visible': isAligned }">
+    <div
+      class="position-feedback"
+      v-if="isTrainingMode"
+      :class="{ 'feedback-visible': isAligned }"
+    >
       Sempurna!
     </div>
-    <img src="@/assets/airplane-icon.png" alt="Airplane" :style="airplaneStyle" class="airplane"
-      :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }" />
+    <img
+      src="@/assets/airplane-icon.png"
+      alt="Airplane"
+      :style="airplaneStyle"
+      class="airplane"
+      :class="{ 'out-of-target': !isAligned, 'in-target': isAligned }"
+    />
 
     <!-- Training Modal -->
     <div v-if="showTrainingModal" class="modal">
@@ -35,12 +44,30 @@
           Tes akan berlangsung sesuai dengan waktu yang ditentukan.
         </p>
         <p style="font-size: 20px">Ingat untuk tetap fokus dan konsentrasi.</p>
-        <button @click="startActualTest" class="modal-button">
-          Mulai Tes
-        </button>
+        <button @click="startActualTest" class="modal-button">Mulai Tes</button>
       </div>
     </div>
-    <button v-if="isTrainingMode" @click="openModalActualTest" class="finish-button">
+    <div
+      v-if="isTrainingMode"
+      style="
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 20px;
+        font-weight: bold;
+        z-index: 10;
+      "
+    >
+      Tetap Pertahankan Posisi Pesawat Ke titik kuning!
+    </div>
+    <button
+      v-if="isTrainingMode"
+      @click="openModalActualTest"
+      class="finish-button"
+    >
       Selesai Latihan
     </button>
   </div>
@@ -129,7 +156,7 @@ export default {
     const TURBULENCE_INTENSITY = {
       LOW: 0.0004,
       MEDIUM: 0.0007,
-      HIGH: 0.0012
+      HIGH: 0.0012,
     };
 
     // Animation timing
@@ -176,10 +203,23 @@ export default {
 
     // Computed properties
     const isAligned = computed(() => {
-      const adjustedX = airplanePosition.value.x - perspectiveOffset.value;
-      const dx = Math.abs(adjustedX - markerPosition.value.x);
-      const dy = Math.abs(airplanePosition.value.y - markerPosition.value.y);
-      return dx < CONFIG.ALIGNMENT_THRESHOLD && dy < CONFIG.ALIGNMENT_THRESHOLD;
+      const xDiff = Math.abs(
+        airplanePosition.value.x -
+          (markerPosition.value.x + perspectiveOffset.value)
+      );
+      const yDiff = Math.abs(airplanePosition.value.y - markerPosition.value.y);
+      const zDiff = Math.abs(airplanePosition.value.z - markerPosition.value.z);
+
+      const tilt = airplaneRotation.value.z;
+      return (
+        xDiff < 1.4 &&
+        xDiff > 0 &&
+        yDiff < 5.5 &&
+        yDiff > 4.2 &&
+        zDiff > 5.4 &&
+        tilt > -0.2 &&
+        tilt < 0.2
+      );
     });
 
     const formattedTime = computed(() => {
@@ -193,16 +233,17 @@ export default {
 
     const airplaneStyle = computed(() => {
       const baseScale = 5;
-      const zScale = Math.max(0.5, 1 - (airplanePosition.value.z / 5.5));
+      const zScale = Math.max(0.5, 1 - airplanePosition.value.z / 5.5);
       const finalScale = baseScale * zScale;
 
       return {
-        transform: `translate3d(${airplanePosition.value.x * 50}px, ${airplanePosition.value.y * -50
-          }px, ${airplanePosition.value.z * -10}px)
+        transform: `translate3d(${airplanePosition.value.x * 50}px, ${
+          airplanePosition.value.y * -50
+        }px, ${airplanePosition.value.z * -10}px)
     rotateZ(${airplaneRotation.value.z}rad)
     rotateX(${airplaneRotation.value.x}rad)
     rotateY(${airplaneRotation.value.y}rad)
-    scale(${finalScale})`
+    scale(${finalScale})`,
       };
     });
 
@@ -224,14 +265,30 @@ export default {
       // Create box geometry
       const geometry = new THREE.BufferGeometry();
       originalVertices = new Float32Array([
-        -12, -8, -8,  // Increased from -8, -5, -5
-        12, -8, -8,  // Front face
-        12, 8, -8,
-        -12, 8, -8,
-        -12, -8, 8,  // Back face
-        12, -8, 8,
-        12, 8, 8,
-        -12, 8, 8
+        -12,
+        -8,
+        -8, // Increased from -8, -5, -5
+        12,
+        -8,
+        -8, // Front face
+        12,
+        8,
+        -8,
+        -12,
+        8,
+        -8,
+        -12,
+        -8,
+        8, // Back face
+        12,
+        -8,
+        8,
+        12,
+        8,
+        8,
+        -12,
+        8,
+        8,
       ]);
       geometry.setAttribute(
         "position",
@@ -297,7 +354,7 @@ export default {
       marker.rotation.x = Math.PI;
       marker.position.set(
         markerPosition.value.x,
-        -6,  // Changed from -4.5 to -6 (or adjust this value as needed)
+        -6, // Changed from -4.5 to -6 (or adjust this value as needed)
         markerPosition.value.z
       );
       scene.add(marker);
@@ -413,19 +470,24 @@ export default {
       airplanePosition.value.y += yDrift;
 
       // Apply tilt based on drift direction
-      const driftTilt = xDrift * 2; // Multiply by 2 to make tilt more noticeable
+      const driftTilt = xDrift * 20; // Multiply by 2 to make tilt more noticeable
       airplaneRotation.value.z = driftTilt * (Math.PI / 4); // Maximum 45 degrees tilt
 
       // Clamp positions
-      airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
-      airplanePosition.value.y = Math.max(-4.5, Math.min(4.5, airplanePosition.value.y));
+      airplanePosition.value.x = Math.max(
+        -4.5,
+        Math.min(4.5, airplanePosition.value.x)
+      );
+      airplanePosition.value.y = Math.max(
+        -4.5,
+        Math.min(4.5, airplanePosition.value.y)
+      );
 
       // Regular backward drift
       if (airplanePosition.value.z < CONFIG.MAX_BACKWARD_POSITION) {
         airplanePosition.value.z += 0.015;
       }
     };
-
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const now = Date.now();
@@ -439,7 +501,7 @@ export default {
           (isTrainingMode.value
             ? CONFIG.TRAINING_DURATION
             : totalTestDuration) -
-          (now - startTime.value)
+            (now - startTime.value)
         );
 
         if (timeRemaining.value === 0) {
@@ -526,28 +588,43 @@ export default {
           // X-axis movement and tilt
           const xMovement = gp.axes[0] * xSensitivity;
           airplanePosition.value.x += xMovement;
-          airplanePosition.value.x = Math.max(-4.5, Math.min(4.5, airplanePosition.value.x));
+          airplanePosition.value.x = Math.max(
+            -4.5,
+            Math.min(4.5, airplanePosition.value.x)
+          );
 
           // Direct tilt based on joystick position (not movement)
-          airplaneRotation.value.z = gp.axes[0] * (Math.PI / 4); // Maximum 45 degrees tilt
+          //airplaneRotation.value.z = gp.axes[0] * (Math.PI / 4); // Maximum 45 degrees tilt
 
           // Y-axis movement
           const yMovement = gp.axes[1] * ySensitivity;
           airplanePosition.value.y += yMovement;
-          airplanePosition.value.y = Math.max(-6, Math.min(4.5, airplanePosition.value.y));
+          airplanePosition.value.y = Math.max(
+            -6,
+            Math.min(4.5, airplanePosition.value.y)
+          );
 
           // Pitch based on vertical movement
           airplaneRotation.value.x = gp.axes[1] * (Math.PI / 6); // Maximum 30 degrees pitch
         }
       }
 
-
       // Handle thruster input
       if (thrustConnected.value) {
         const gamepads = navigator.getGamepads();
         const th = gamepads[thruster.value.index];
-
         if (th) {
+          const pedal = th.axes[5]; // Get pedal input (-1 to 1)
+          const tiltSpeed = 0.5; // 🔥 Increase responsiveness (adjust as needed)
+
+          // Accumulate tilt changes faster
+          airplaneRotation.value.z += pedal * tiltSpeed;
+
+          // Limit tilt angle between -45° and 45°
+          airplaneRotation.value.z = Math.max(
+            -Math.PI / 4,
+            Math.min(Math.PI / 4, airplaneRotation.value.z)
+          );
           airplanePosition.value.z -= (th.axes[2] + 1) * 0.03;
           airplanePosition.value.z = Math.max(
             CONFIG.MIN_FORWARD_POSITION,

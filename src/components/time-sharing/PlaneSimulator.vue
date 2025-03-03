@@ -87,7 +87,7 @@ export default {
       isPaused: false,
       isCollision: false,
       obstacleSpeed: 0.5,
-      obstacleDensity: "medium",
+      obstacleDensity: "very_slow",
       controlPerspective: "cockpit_crew",
       gaugeTimers: {
         C: null,
@@ -210,15 +210,15 @@ export default {
     },
     getObstacleGenerationInterval() {
       switch (this.obstacleDensity) {
-        case "very_slow":
+        case "very_low":
           return 3000;
-        case "slow":
+        case "low":
           return 2500;
         case "medium":
           return 2000;
-        case "fast":
+        case "high":
           return 1500;
-        case "very_fast":
+        case "very_high":
           return 1000;
       }
     },

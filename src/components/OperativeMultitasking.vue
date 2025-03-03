@@ -25,25 +25,34 @@
               : "Instruksi"
           }}</b>
         </h2>
-        <p style="font-size: 20px" class="flex flex-col items-center" v-html="instructionModalContent"></p>
+        <p
+          style="font-size: 20px"
+          class="flex flex-col items-center"
+          v-html="instructionModalContent"
+        ></p>
         <button @click="startTest">
           {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
         </button>
       </div>
     </div>
   </div>
-  <div v-if="feedbackMessage && !trainingCompleted" :class="{ feedback: true, correct: isCorrect, wrong: !isCorrect }">
+  <div
+    v-if="feedbackMessage && !trainingCompleted"
+    :class="{ feedback: true, correct: isCorrect, wrong: !isCorrect }"
+  >
     {{ feedbackMessage }}
   </div>
-  <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
+  <button
+    v-if="!trainingCompleted"
+    @click="endTrainingTask"
+    class="finish-button"
+  >
     Selesai Latihan
   </button>
 </template>
 
 <script>
-import {
-  removeTestByNameAndUpdateLocalStorage,
-} from "@/utils";
+import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 
 export default {
   data() {
@@ -134,7 +143,7 @@ export default {
       ];
       return allResponses.length
         ? allResponses.reduce((a, b) => a + b.responseTime, 0) /
-        allResponses.length
+            allResponses.length
         : 0;
     },
     formattedTime() {
@@ -206,11 +215,14 @@ export default {
           light.state === "red"
             ? "red"
             : light.state === "yellow"
-              ? "yellow"
-              : "grey";
+            ? "yellow"
+            : "grey";
         ctx.fillRect(x, y, lightSize, lightSize);
 
-        if (this.isPressed && (light.state === 'yellow' || light.state === 'red')) {
+        if (
+          this.isPressed &&
+          (light.state === "yellow" || light.state === "red")
+        ) {
           ctx.strokeStyle = "grey"; // Border color
           ctx.lineWidth = 4; // Border thickness
           ctx.strokeRect(x, y, lightSize, lightSize);
@@ -428,7 +440,7 @@ export default {
       const leftDeviation = Math.abs(this.leftCursor.y - this.leftTarget.y);
       const rightDeviation = Math.sqrt(
         Math.pow(this.rightCursor.x - this.rightTarget.x, 2) +
-        Math.pow(this.rightCursor.y - this.rightTarget.y, 2)
+          Math.pow(this.rightCursor.y - this.rightTarget.y, 2)
       );
 
       this.navigationResponses.push({
@@ -515,7 +527,7 @@ export default {
       }, 10000);
     },
     showFeedback() {
-      this.feedbackMessage = this.isCorrect? "✔ Benar!" : "✖ Salah!";
+      this.feedbackMessage = this.isCorrect ? "✔ Benar!" : "✖ Salah!";
 
       // Clear existing timeout (if any) to prevent overlapping feedbacks
       if (this.feedbackTimeout) clearTimeout(this.feedbackTimeout);
@@ -532,7 +544,7 @@ export default {
       const rect = canvas.getBoundingClientRect();
       //const x = event.clientX - rect.left;
       //const y = event.clientY - rect.top;
-      console.log(rect)
+      console.log(rect);
 
       const lightSize = 60;
       const padding = 10;
@@ -586,8 +598,8 @@ export default {
     },
 
     generateNewQuestion() {
-      let num1 = Math.floor(Math.random() * 100);
-      let num2 = Math.floor(Math.random() * 100) || 1; // Avoid division by zero
+      let num1 = Math.floor(Math.random() * 99) + 1;
+      let num2 = Math.floor(Math.random() * 99) + 1 || 1; // Avoid division by zero
       const operators = ["+", "-", "*", "/"];
       const operator = operators[Math.floor(Math.random() * operators.length)];
 
@@ -605,7 +617,8 @@ export default {
           correctAnswer = num1 * num2;
           break;
         case "/":
-          num1 = num2 * Math.floor(Math.random() * 100); // Ensure perfect division
+          num2 = Math.floor(Math.random() * 9) + 1; // num2 between 1-9
+          num1 = num2 * Math.floor(Math.random() * Math.floor(99 / num2));
           correctAnswer = num1 / num2;
           break;
       }
