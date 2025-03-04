@@ -414,10 +414,7 @@ export default {
       this.isActualTest = true;
       this.setActualTestConfig(this.configs[this.indexConfig]);
       // sum durations from config.duration
-      this.testTime = this.configs.reduce(
-        (acc, curr) => acc + curr.duration,
-        0
-      );
+      this.testTime = 360;
       this.countDownTime();
 
       if (this.configBe.callsign.play) {
