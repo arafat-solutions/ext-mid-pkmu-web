@@ -2,10 +2,10 @@
   <div class="visual-container relative">
     <div>
       <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
-      <p v-if="answerIsRight === true" class="text-green-500 text-3xl mt-16">
+      <p v-if="answerIsRight === true&&isTraining" class="text-green-500 text-3xl mt-16">
         Benar!
       </p>
-      <p v-if="answerIsRight === false" class="text-red-500 text-3xl mt-16">
+      <p v-if="answerIsRight === false&&isTraining" class="text-red-500 text-3xl mt-16">
         Salah!
       </p>
     </div>
@@ -220,7 +220,7 @@ export default {
       if (this.isTraining) {
         this.testTime = 99999;
       } else {
-        this.testTime = number_of_question * interval;
+        this.testTime = 360;
       }
       this.memoryTime = interval;
     },
