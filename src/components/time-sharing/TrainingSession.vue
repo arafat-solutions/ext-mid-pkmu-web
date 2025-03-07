@@ -64,8 +64,9 @@ export default {
       currentTaskIndex: 0,
       showModal: true,
       showEndModal: false,
-      remainingTime: 60, // 1 minute
+      remainingTime: 99999, // 1 minute
       timerInterval: null,
+      isCombined: false,
     };
   },
   computed: {
@@ -164,6 +165,12 @@ export default {
     },
     handleTrainingFinished() {
       clearInterval(this.timerInterval);
+      if (this.isCombined) {
+        this.showEndModal = true;
+        return completeTrainingTestAndUpdateLocalStorage(
+          "Time Sharing Test 2023"
+        );
+      }
       this.currentTaskIndex++;
       if (this.currentTaskIndex < this.trainingTasks.length) {
         this.showModal = true;
@@ -180,7 +187,7 @@ export default {
     },
     handleSwitchTask() {
       if (this.currentTask === "combined" || this.currentTask === "math") {
-        // Switch between PlaneSimulator and MathTest
+        this.isCombined = true;
         if (this.currentTaskIndex === 3) {
           this.currentTaskIndex = 1;
         } else {
