@@ -1,11 +1,21 @@
 <template>
   <div class="visual-container relative">
     <div>
-      <canvas ref="visualCanvas" :width="canvasDimensions.width" :height="canvasDimensions.height"></canvas>
-      <p v-if="answerIsRight === true&&isTraining" class="text-green-500 text-3xl mt-16">
+      <canvas
+        ref="visualCanvas"
+        :width="canvasDimensions.width"
+        :height="canvasDimensions.height"
+      ></canvas>
+      <p
+        v-if="answerIsRight === true && isTraining"
+        class="text-green-500 text-3xl mt-16"
+      >
         Benar!
       </p>
-      <p v-if="answerIsRight === false&&isTraining" class="text-red-500 text-3xl mt-16">
+      <p
+        v-if="answerIsRight === false && isTraining"
+        class="text-red-500 text-3xl mt-16"
+      >
         Salah!
       </p>
     </div>
@@ -13,8 +23,18 @@
       <p>Waktu:</p>
       <p>{{ formatTime(testTime) }}</p>
     </div>
-    <input v-if="input.input1.visible" :style="input.input1.style" v-model="input.input1.userInput" ref="input1" />
-    <input v-if="input.input2.visible" :style="input.input2.style" v-model="input.input2.userInput" ref="input2" />
+    <input
+      v-if="input.input1.visible"
+      :style="input.input1.style"
+      v-model="input.input1.userInput"
+      ref="input1"
+    />
+    <input
+      v-if="input.input2.visible"
+      :style="input.input2.style"
+      v-model="input.input2.userInput"
+      ref="input2"
+    />
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
       <div class="loading-text">Your result is submitting</div>
@@ -50,6 +70,7 @@ export default {
       memoryTime: 0,
       testTime: 0,
       renderInput: 0,
+      taskNo: 0,
       input: {
         input1: {
           visible: false,
@@ -188,6 +209,8 @@ export default {
       this.countDownTestTime();
     },
     initializeTest() {
+      this.questions = [];
+      this.taskNo = 0;
       this.createRandomQuestion();
       this.initConfig();
       this.initVisual();
@@ -216,7 +239,6 @@ export default {
         },
       };
 
-      console.log(number_of_question)
       if (this.isTraining) {
         this.testTime = 99999;
       } else {
@@ -705,30 +727,47 @@ export default {
           this.memoryTime--;
           this.drawVisual();
         } else {
-          clearInterval(this.timerInterval);
+          if (this.taskNo < 2) {
+            this.memoryTime = this.configBe.questionInterval;
+            this.createRandomQuestion();
+          } else {
+            clearInterval(this.timerInterval);
 
-          while (this.questionMarkPositions.length < 2) {
-            // make sure its odd number
-            const randomIndex = Math.floor(Math.random() * 4) * 2 + 1;
-            if (
-              this.innerConfig[randomIndex].type === "text" ||
-              this.innerConfig[randomIndex].type === "number"
-            ) {
-              this.innerConfig[randomIndex] = {
-                type: "shape",
-                shapeName: "questionMark",
-              };
-              this.questionMarkPositions.push(randomIndex);
+            const newQuestion = this.createQuestion(4);
+            //get random 2 question
+            const randomQuestion = this.questions.splice(0, 4);
+            const targetIndexesQuestions = [0, 1, 4, 5];
+            const targetIndexesNewQuestions = [2, 3, 6, 7];
+            targetIndexesQuestions.forEach((index, i) => {
+              this.innerConfig[index] = newQuestion[i];
+            });
+            targetIndexesNewQuestions.forEach((index, i) => {
+              this.innerConfig[index] = randomQuestion[i];
+            });
+            this.questions.push(...newQuestion);
+            while (this.questionMarkPositions.length < 2) {
+              const randomIndex = Math.random() < 0.5 ? 3 : 7;
+              if (
+                this.innerConfig[randomIndex].type === "text" ||
+                this.innerConfig[randomIndex].type === "number"
+              ) {
+                this.innerConfig[randomIndex] = {
+                  type: "shape",
+                  shapeName: "questionMark",
+                  answer: this.innerConfig[randomIndex].text,
+                };
+                this.questionMarkPositions.push(randomIndex);
+              }
             }
+            this.questionMarkPositions = this.questionMarkPositions.sort(
+              (a, b) => a - b
+            );
+            this.canAnswer = true;
+            this.isQuestionMarkActive = true;
+            this.questionMarkStartTime = Date.now();
+            this.startQuestionMarkTimer();
+            this.drawVisual();
           }
-          this.questionMarkPositions = this.questionMarkPositions.sort(
-            (a, b) => a - b
-          );
-          this.canAnswer = true;
-          this.isQuestionMarkActive = true;
-          this.questionMarkStartTime = Date.now();
-          this.startQuestionMarkTimer();
-          this.drawVisual();
         }
       }, 1000);
     },
@@ -783,8 +822,9 @@ export default {
     formatTime(seconds) {
       const minutes = Math.floor(seconds / 60);
       const remainderSeconds = seconds % 60;
-      return `${minutes}:${remainderSeconds < 10 ? "0" : ""
-        }${remainderSeconds}`;
+      return `${minutes}:${
+        remainderSeconds < 10 ? "0" : ""
+      }${remainderSeconds}`;
     },
     handleGlobalKeydown(event) {
       if (this.memoryTime === 0 && this.canAnswer) {
@@ -825,44 +865,14 @@ export default {
             }
 
             // check if answer is correct
-            if (
-              this.questions[this.questionMarkPositions[0]].type === "number"
-            ) {
-              if (
-                Number(input1.userInput) ===
-                this.questions[this.questionMarkPositions[0]].text
-              ) {
-                resultQuestion1 = true;
-              }
-            } else if (
-              this.questions[this.questionMarkPositions[0]].type === "text"
-            ) {
-              if (
-                input1.userInput.toUpperCase() ===
-                this.questions[this.questionMarkPositions[0]].text
-              ) {
-                resultQuestion1 = true;
-              }
+            const answer1 = this.innerConfig[3].answer;
+            const answer2 = this.innerConfig[7].answer;
+            if (Number(input1.userInput) === answer1) {
+              resultQuestion1 = true;
             }
 
-            if (
-              this.questions[this.questionMarkPositions[1]].type === "number"
-            ) {
-              if (
-                Number(input2.userInput) ===
-                this.questions[this.questionMarkPositions[1]].text
-              ) {
-                resultQuestion2 = true;
-              }
-            } else if (
-              this.questions[this.questionMarkPositions[1]].type === "text"
-            ) {
-              if (
-                input2.userInput.toUpperCase() ===
-                this.questions[this.questionMarkPositions[1]].text
-              ) {
-                resultQuestion2 = true;
-              }
+            if (Number(input2.userInput) === answer2) {
+              resultQuestion2 = true;
             }
 
             if (resultQuestion1 && resultQuestion2) {
@@ -903,11 +913,10 @@ export default {
         }
       }
     },
-    createRandomQuestion() {
-      //const { display } = this.configBe;
+    createQuestion(count = 1) {
       const arrQuestion = [];
 
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < count; i++) {
         //if index odd assign number else assign either text or symbol
         if (i % 2 !== 0) {
           arrQuestion.push(this.generateRandomNumbers());
@@ -919,6 +928,12 @@ export default {
           }
         }
       }
+      return arrQuestion;
+    },
+
+    createRandomQuestion() {
+      //const { display } = this.configBe;
+      const arrQuestion = this.createQuestion(8);
 
       // Ensure at least 2 text or number elements
       //while (textOrNumberCount < 2) {
@@ -934,7 +949,8 @@ export default {
       //}
 
       this.innerConfig = JSON.parse(JSON.stringify(arrQuestion));
-      this.questions = JSON.parse(JSON.stringify(arrQuestion));
+      this.questions.push(...arrQuestion);
+      this.taskNo += 1;
     },
     generateRandomLetters() {
       const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
