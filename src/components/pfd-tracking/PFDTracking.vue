@@ -813,8 +813,11 @@ const updatePlanePosition = () => {
         trainingSteps[trainingStep.value].activeIndicators.includes("altitude")
       ) {
         const altitudeChange = rawY * MOVEMENT_SPEED.ALTITUDE * 1.5; // Reduced from 5 to 1.5
+        // i want it to affect the airspeed
         if (rawY !== 0) {
           altitude.value = altitude.value - altitudeChange;
+          //the change is too large, make it more smaller
+          airspeed.value = airspeed.value + altitudeChange / 20;
           if (altitude.value > 16000) {
             altitude.value = 0;
           }
@@ -834,11 +837,11 @@ const updatePlanePosition = () => {
       (!trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("airspeed"))
     ) {
-      const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
-      altitude.value = Math.max(
-        0,
-        Math.min(16000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
-      );
+      //const thrustEffect = (thrustLevel.value - 50) / 50; // Normalize thrust level to range -1 to 1
+      //altitude.value = Math.max(
+      //  0,
+      //  Math.min(16000, altitude.value + thrustEffect * MOVEMENT_SPEED.ALTITUDE)
+      //);
       thrustLevel.value = 100 - ((throttle.axes[2] + 1) * 100) / 2;
     }
   }
@@ -1100,9 +1103,10 @@ const updateIndicator = (indicator, mode) => {
       );
     }
   }
+  console.log(newTarget)
 
   // Update the target value
-  if (indicator === "airspeed") airspeedTarget.value = newTarget;
+  //if (indicator === "airspeed") airspeedTarget.value = newTarget;
   //if (indicator === "heading") headingTarget.value = newTarget;
   //if (indicator === "altitude") altitudeTarget.value = newTarget;
 };
@@ -1150,6 +1154,7 @@ const randomizeTargets = () => {
 
     headingTarget.value += getRandomChange(1); // -1, 0, or +1
     altitudeTarget.value += getRandomChange(10);
+    airspeedTarget.value +=Math.min(getRandomChange(1),160) ;
   }
 };
 
