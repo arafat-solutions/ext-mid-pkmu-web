@@ -4,7 +4,10 @@
       <div class="timer" v-if="config.duration !== 99999">
         {{ formatTime(remainingTime) }}
       </div>
-      <div class="instructions" v-if="config.subtask.navigation && config.subtask.observer">
+      <div
+        class="instructions"
+        v-if="config.subtask.navigation && config.subtask.observer"
+      >
         Tekan 'Spasi' untuk menukar tugas
       </div>
 
@@ -13,9 +16,18 @@
       </p>
       <div class="game-content">
         <div class="instruments-left" v-if="config.subtask.observer">
-          <div class="instrument" v-for="(instrument, index) in instrumentsLeft" :key="index"
-            @click="handleInstrumentClick(instrument.key)">
-            <svg :ref="'gauge' + index" width="120" height="120" viewBox="0 0 120 120"></svg>
+          <div
+            class="instrument"
+            v-for="(instrument, index) in instrumentsLeft"
+            :key="index"
+            @click="handleInstrumentClick(instrument.key)"
+          >
+            <svg
+              :ref="'gauge' + index"
+              width="120"
+              height="120"
+              viewBox="0 0 120 120"
+            ></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
             <div class="wrong-inputs">
               Salah: {{ wrongInputs[instrument.key] }}
@@ -26,9 +38,18 @@
           <canvas ref="simulationCanvas" width="800" height="500"></canvas>
         </div>
         <div class="instruments-right" v-if="config.subtask.observer">
-          <div class="instrument" v-for="(instrument, index) in instrumentsRight" :key="index"
-            @click="handleInstrumentClick(instrument.key)">
-            <svg :ref="'gauge' + (index + 2)" width="120" height="120" viewBox="0 0 120 120"></svg>
+          <div
+            class="instrument"
+            v-for="(instrument, index) in instrumentsRight"
+            :key="index"
+            @click="handleInstrumentClick(instrument.key)"
+          >
+            <svg
+              :ref="'gauge' + (index + 2)"
+              width="120"
+              height="120"
+              viewBox="0 0 120 120"
+            ></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
             <div class="wrong-inputs">
               Salah: {{ wrongInputs[instrument.key] }}
@@ -556,7 +577,8 @@ export default {
       const numberOfObstacles = Math.floor(Math.random() * 2) + 3; // 3 to 4 obstacles
       const minWidth = 40;
       const maxWidth = 120;
-      const minGap = 60;
+      const minGap = 200; // Increased horizontal gap
+      const maxGap = 250; // Added maximum horizontal gap for more randomness
       const canvasWidth = 800;
 
       let obstacleData = [];
@@ -564,8 +586,7 @@ export default {
 
       // Generate initial set of obstacles
       for (let i = 0; i < numberOfObstacles; i++) {
-        const width =
-          Math.floor(Math.random() * (maxWidth - minWidth)) + minWidth;
+        const width = Math.floor(Math.random() * (maxWidth - minWidth)) + minWidth;
         obstacleData.push({ width, x: 0 });
         totalWidth += width;
       }
@@ -581,10 +602,8 @@ export default {
         totalWidth = obstacleData.reduce((sum, o) => sum + o.width, 0);
       }
 
-      // Distribute obstacles across canvas width
+      // Distribute obstacles across canvas width with more space
       let availableSpace = canvasWidth - totalWidth;
-
-      // Randomly decide if we want an obstacle at the leftmost edge
       const startAtZero = Math.random() < 0.3; // 30% chance to start at zero
 
       for (let i = 0; i < numberOfObstacles; i++) {
@@ -594,10 +613,10 @@ export default {
           // For the first obstacle, if not starting at zero, position it randomly
           obstacleData[i].x = Math.floor(Math.random() * (availableSpace / 2));
         } else {
-          // For subsequent obstacles, ensure there's at least minGap space from the previous obstacle
-          const minX =
-            obstacleData[i - 1].x + obstacleData[i - 1].width + minGap;
-          const maxX = canvasWidth - obstacleData[i].width;
+          // For subsequent obstacles, ensure there's at least minGap to maxGap space from the previous one
+          const minX = obstacleData[i - 1].x + obstacleData[i - 1].width + minGap;
+          const maxX =
+            Math.min(canvasWidth - obstacleData[i].width, minX + maxGap);
           if (minX < maxX) {
             obstacleData[i].x =
               Math.floor(Math.random() * (maxX - minX + 1)) + minX;
