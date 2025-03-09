@@ -3,7 +3,9 @@
     <div v-if="showModal" class="modal">
       <div class="modal-content">
         <h2>
-          {{ currentTask.charAt(0).toUpperCase() + currentTask.slice(1) }}
+          {{
+            currentTask.charAt(0).toUpperCase() + currentTask.slice(1)
+          }}
           Training
         </h2>
         <p v-html="getInstructions()" class="flex flex-col items-center"></p>
@@ -26,19 +28,18 @@
         </button>
       </div>
     </div>
-    <div v-else>
-      <!-- <div class="timer">Time remaining: {{ formatTime(remainingTime) }}</div> -->
+    <KeepAlive v-else>
       <component
         :is="getComponentForTask(currentTask)"
         :config="getConfigForTask(currentTask)"
         :isTrainingMode="true"
         @test-finished="handleTrainingFinished"
-        @switch-task="handleSwitchTask"
         :isCombined="currentTaskIndex === 3"
       >
       </component>
-    </div>
+    </KeepAlive>
   </div>
+
   <button @click="handleTrainingFinished" class="finish-button">
     Selesai Latihan
   </button>
@@ -64,8 +65,9 @@ export default {
       currentTaskIndex: 0,
       showModal: true,
       showEndModal: false,
-      remainingTime: 60, // 1 minute
+      remainingTime: 99999, // 1 minute
       timerInterval: null,
+      isCombined: false,
     };
   },
   computed: {
@@ -75,29 +77,36 @@ export default {
   },
   mounted() {
     const completed = checkIfTrainingTestCompleted("Time Sharing Test 2023");
+      window.addEventListener("keydown", this.handleKeydown);
     if (completed) {
       this.$emit("training-completed");
     }
-    return completed;
   },
-
+  beforeUnmount() {
+    window.removeEventListener("keydown", this.handleKeydown);
+  },
   methods: {
     getInstructions() {
-      switch (this.currentTask) {
-        case "navigation":
-          return 'Anda diminta untuk mengarahkan pesawat untuk menghindari tabrakan dengan balok yang ada menggunakan keyboard (A atau D). Jika pesawat mengalami tabrakan, maka anda harus mengarahkan pesawat untuk menghindar.<img src="devices/tst_1.png"/>';
-        case "math":
-          return 'Pada latihan ini, anda diminta untuk menjawab soal perhitungan dasar dengan cara menyentuh layar. (Contoh: 20 – 3, maka anda harus menjawab 17)<img src="devices/tst_2.png"/>';
-        case "instrument":
-          return 'Anda diminta untuk merespon Instrumen yang indikatornya berwarna MERAH dengan menekan huruf (C N V B) pada KEYBOARD.<img src="devices/tst_3.png"/>';
-        case "combined":
-          return "Latih semua sub-tugas secara bersamaan. Beralih antara tugas dengan menggunakan tombol spasi.";
-        default:
-          return "";
-      }
+      const instructions = {
+        navigation:
+          'Anda diminta untuk mengarahkan pesawat untuk menghindari tabrakan dengan balok yang ada menggunakan keyboard (A atau D). Jika pesawat mengalami tabrakan, maka anda harus mengarahkan pesawat untuk menghindar.<img src="devices/tst_1.png"/>',
+        math: 'Pada latihan ini, anda diminta untuk menjawab soal perhitungan dasar dengan cara menyentuh layar. (Contoh: 20 – 3, maka anda harus menjawab 17)<img src="devices/tst_2.png"/>',
+        instrument:
+          'Anda diminta untuk merespon Instrumen yang indikatornya berwarna MERAH dengan menekan huruf (C N V B) pada KEYBOARD.<img src="devices/tst_3.png"/>',
+        combined:
+          "Latih semua sub-tugas secara bersamaan. Beralih antara tugas dengan menggunakan tombol spasi.",
+      };
+      return instructions[this.currentTask] || "";
     },
     startTraining() {
       this.showModal = false;
+      if(this.currentTask === 'combined'){
+        this.currentTaskIndex = 1;
+        setTimeout(() => {
+          this.currentTaskIndex = 3;
+        }, 1);
+
+      }
       this.startTimer();
     },
     handleCancel() {
@@ -118,18 +127,12 @@ export default {
       const remainingSeconds = seconds % 60;
       return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     },
-    getComponentForTask(task) {
-      if (task === "math") {
-        return "MathTest";
-      }
-      return "PlaneSimulator";
-    },
     getConfigForTask(task) {
       const baseConfig = {
         duration: 99999,
         navigation: {
-          speed: "medium",
-          density: "medium",
+          speed: "very_slow",
+          density: "very_low",
           control_perspective: "cockpit_crew",
         },
         observer: { speed: "medium", frequency: "medium" },
@@ -140,54 +143,63 @@ export default {
         },
       };
 
-      switch (task) {
-        case "navigation":
-          return {
-            ...baseConfig,
-            subtask: { navigation: true, observer: false },
-          };
-        case "instrument":
-          return {
-            ...baseConfig,
-            subtask: { navigation: false, observer: true },
-          };
-        case "math":
-          return baseConfig;
-        case "combined":
-          return {
-            ...baseConfig,
-            subtask: { navigation: true, observer: true },
-          };
-        default:
-          return baseConfig;
+      const taskConfigs = {
+        navigation: {
+          ...baseConfig,
+          subtask: { navigation: true, observer: false },
+        },
+        instrument: {
+          ...baseConfig,
+          subtask: { navigation: false, observer: true },
+        },
+        math: baseConfig,
+        combined: {
+          ...baseConfig,
+          subtask: { navigation: true, observer: true },
+        },
+      };
+
+      return taskConfigs[task] || baseConfig;
+    },
+
+    getComponentForTask(task) {
+      if (task === "math") {
+        return "MathTest";
       }
+      return "PlaneSimulator";
     },
     handleTrainingFinished() {
       clearInterval(this.timerInterval);
+      if (this.isCombined) {
+        this.showEndModal = true;
+        return completeTrainingTestAndUpdateLocalStorage(
+          "Time Sharing Test 2023"
+        );
+      }
       this.currentTaskIndex++;
+      if(this.currentTaskIndex === 3) {
+        this.isCombined = true;
+      }
       if (this.currentTaskIndex < this.trainingTasks.length) {
         this.showModal = true;
-        this.remainingTime = 60;
+        this.remainingTime = 99999;
       } else {
         this.showEndModal = true;
         completeTrainingTestAndUpdateLocalStorage("Time Sharing Test 2023");
       }
     },
-
     startActualTest() {
       this.showEndModal = false;
       this.$emit("training-completed");
     },
     handleSwitchTask() {
-      if (this.currentTask === "combined" || this.currentTask === "math") {
-        // Switch between PlaneSimulator and MathTest
-        if (this.currentTaskIndex === 3) {
-          this.currentTaskIndex = 1;
-        } else {
-          this.currentTaskIndex = 3;
-        }
+      if (this.currentTask === "combined" || (this.currentTask === "math"&&this.isCombined)) {
+        this.currentTaskIndex =  this.currentTaskIndex === 3 ? 1 : 3;
       }
     },
+     handleKeydown  (event)  {
+      if (event.key === " ") this.handleSwitchTask();
+    }
   },
 };
 </script>

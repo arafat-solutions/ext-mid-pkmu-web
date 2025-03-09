@@ -83,12 +83,18 @@
         </div>
       </div>
     </div>
-    <div class="wrong-text" v-if="wrong && !isTrainingCompleted">
-      {{ wrong }} jawaban salah
+    <!-- add justify between -->
+    <div
+      style="display: flex; justify-content: space-between; max-width: 924px"
+    >
+      <div class="wrong-text" v-if="wrong && !isTrainingCompleted">
+        {{ wrong }} jawaban salah
+      </div>
+      <div v-else></div>
+      <button class="btn-continue" v-show="canContinue" @click="continueTask">
+        Lanjutkan
+      </button>
     </div>
-    <button class="btn-continue" v-show="canContinue" @click="continueTask">
-      Lanjutkan
-    </button>
     <button
       v-if="!isTrainingCompleted"
       @click="endTraining"
@@ -833,7 +839,6 @@ export default {
   text-align: right !important;
   border-radius: 10px;
   border-width: 0;
-  margin-left: 670px;
 }
 
 .ml-4 {

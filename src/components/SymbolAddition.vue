@@ -172,7 +172,9 @@ export default {
   },
   methods: {
     finishTraining(){
+      this.stopCountdown()
       this.isTrainingCompleted = true;
+      this.timeLeftAnswer = 45;
       completeTrainingTestAndUpdateLocalStorage("Symbol Addition");
 
       //Start Exam After Training
@@ -251,31 +253,44 @@ export default {
 
       this.isConfigLoaded = true;
     },
-    async startCountdown() {
+  startCountdown() {
+    if (this.currentRowDisabled || this.isTimesUp) {
+      return;
+    }
+  
+    this.countdownInterval = setInterval(() => {
       if (this.currentRowDisabled || this.isTimesUp) {
+        clearInterval(this.countdownInterval);
         return;
       }
-
+  
       if (this.timeLeftAnswer > 0) {
         this.timeLeftAnswer--;
       } else {
         this.checkRowAnswers();
         this.currentRowDisabled = true;
-        await this.delay(this.moveNextTaskDuration * 1000);
-        this.currentRowDisabled = false;
-        this.currentWrong = null;
-        this.currentTask++;
-        // check is training
-
-        if (!this.isTrainingCompleted) {
-          this.timeLeftAnswer = 60;
-        } else {
-          this.timeLeftAnswer = this.durationAnswer;
-        }
+        clearInterval(this.countdownInterval); // Stop interval before async operations
+  
+        this.delay(this.moveNextTaskDuration * 1000).then(() => {
+          this.currentRowDisabled = false;
+          this.currentWrong = null;
+          this.currentTask++;
+  
+          // Check if training is completed
+          if (!this.isTrainingCompleted) {
+            this.timeLeftAnswer = 60;
+          } else {
+            this.timeLeftAnswer = this.durationAnswer;
+          }
+  
+          this.startCountdown(); // Restart countdown for next task
+        });
       }
-      await this.delay(1000);
+    }, 1000);
+  },
 
-      this.startCountdown();
+    stopCountdown() {
+      clearInterval(this.countdownInterval);
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));

@@ -1,21 +1,32 @@
 <template>
   <div>
     <training-session v-if="isTraining" @training-completed="startExam" />
-    <keep-alive v-else>
-      <component :is="currentComponent" @switch-task="switchTask" @question-result="handleQuestionResult"
-        :config="config" @test-finished="handleSubmitTest" />
-    </keep-alive>
+    <div v-else>
+      <PlaneSimulator
+        v-show="currentComponent === 'PlaneSimulator'"
+        :config="config"
+        @switch-task="switchTask"
+        ref="planeSimulatorRef"
+      />
+      <MathTest
+        v-show="currentComponent === 'MathTest'"
+        :config="config"
+        @question-result="handleQuestionResult"
+        @test-finished="handleSubmitTest"
+        ref="mathTestRef"
+      />
+    </div>
   </div>
 </template>
 <script>
-import PlaneSimulator from '@/components/time-sharing/PlaneSimulator.vue';
-import MathTest from '@/components/time-sharing/MathTest.vue';
-import TrainingSession from '@/components/time-sharing/TrainingSession.vue';
-import { getConfigs, getStoredIndices } from '@/utils/configs';
-import { removeTestByNameAndUpdateLocalStorage } from '@/utils';
+import PlaneSimulator from "@/components/time-sharing/PlaneSimulator.vue";
+import MathTest from "@/components/time-sharing/MathTest.vue";
+import TrainingSession from "@/components/time-sharing/TrainingSession.vue";
+import { getConfigs, getStoredIndices } from "@/utils/configs";
+import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 
 export default {
-  name: 'SimulatorParent',
+  name: "SimulatorParent",
   data() {
     return {
       isTraining: true,
@@ -27,19 +38,27 @@ export default {
       indexConfig: 0,
       indexTrainingConfig: 0,
       config: {
-        id: '',
-        arithmetics: { frequency: "medium", complexity: "medium", output: "sound" },
+        id: "",
+        arithmetics: {
+          frequency: "medium",
+          complexity: "medium",
+          output: "sound",
+        },
         difficultyLevel: "Mudah",
         duration: "2",
         engine_sound: 40,
-        navigation: { speed: "medium", density: "medium", control_perspective: "cockpit_crew" },
+        navigation: {
+          speed: "medium",
+          density: "medium",
+          control_perspective: "cockpit_crew",
+        },
         observer: { speed: "medium", frequency: "medium" },
         subtask: { navigation: true, observer: true },
       },
-      moduleId: '',
-      sessionId: '',
-      userId: '',
-      testId: '',
+      moduleId: "",
+      sessionId: "",
+      userId: "",
+      testId: "",
     };
   },
   mounted() {
@@ -47,9 +66,9 @@ export default {
   },
   methods: {
     initConfig() {
-      const configData = getConfigs('time-sharing-test');
+      const configData = getConfigs("time-sharing-test");
       if (!configData) {
-        this.$router.push('/module');
+        this.$router.push("/module");
         return;
       }
       this.configs = configData.configs;
@@ -59,13 +78,12 @@ export default {
       this.moduleId = configData.moduleId;
       this.sessionId = configData.sessionId;
       this.userId = configData.userId;
-      const savedIndices = getStoredIndices('index-config-call-sign');
+      const savedIndices = getStoredIndices("index-config-call-sign");
       if (savedIndices) {
         this.indexTrainingConfig = savedIndices.indexTrainingConfig;
         this.indexConfig = savedIndices.indexConfig;
       }
       this.isModalTrainingVisible = true;
-      // this.setConfig(getCurrentConfig(this.configs, this.trainingConfigs, this.indexTrainingConfig, this.indexConfig));
       this.setConfig(this.config);
     },
     startExam() {
