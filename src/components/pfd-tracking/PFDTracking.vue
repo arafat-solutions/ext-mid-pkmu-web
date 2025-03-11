@@ -199,15 +199,25 @@
         >
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
-            <LinearGauge
-              label="compass"
-              :value="heading"
-              :target="headingTarget"
-              :min="0"
-              :max="360"
-              :isVertical="false"
-              :step="1"
-            />
+            <!-- <LinearGauge -->
+            <!--   label="compass" -->
+            <!--   :value="heading" -->
+            <!--   :target="headingTarget" -->
+            <!--   :min="0" -->
+            <!--   :max="360" -->
+            <!--   :isVertical="false" -->
+            <!--   :step="1" -->
+            <!-- /> -->
+
+        <Heading
+          class="indicator-bg"
+          :size="200"
+          :heading="Math.round(heading)"
+        />
+<div class="target-text">
+          Target: {{ Math.round(headingTarget) }}°
+
+        </div>
           </div>
         </div>
 
@@ -285,6 +295,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import LinearGauge from "./LinearGauge.vue";
 
+import {  Heading } from "vue-flight-indicators";
+
 const router = useRouter();
 
 // Constants for movement speed
@@ -317,7 +329,7 @@ const altitude = ref(12000);
 // const currentTime = ref(new Date());
 const airspeedTarget = ref(140);
 const headingTarget = ref(150);
-const altitudeTarget = ref(8000);
+const altitudeTarget = ref(12000);
 const loading = ref(false);
 const timeOnTargetAirspeed = ref(0);
 const timeOnTargetHeading = ref(0);
@@ -466,6 +478,7 @@ const formatTime = (time) => {
 
 const headingInputDuration = ref(0);
 const altitudeInputDuration = ref(0);
+const generalDirection = ref(null);
 
 // Add the moveToNextTraining function
 const moveToNextTraining = () => {
@@ -486,7 +499,7 @@ const moveToNextTraining = () => {
       trainingSteps[trainingStep.value].activeIndicators.includes("altitude")
     ) {
       altitude.value = 12000;
-      altitudeTarget.value = 6000;
+      altitudeTarget.value = 12000;
     }
     if (
       trainingSteps[trainingStep.value].activeIndicators.includes("airspeed")
@@ -1122,7 +1135,7 @@ const startTrainingStep = () => {
   }
   if (activeIndicators.includes("altitude")) {
     altitude.value = 12000;
-    altitudeTarget.value = 6000;
+    altitudeTarget.value = 12000;
   }
   if (activeIndicators.includes("airspeed")) {
     airspeed.value = 100;
@@ -1140,21 +1153,22 @@ const randomizeTargets = () => {
   ) {
     //airspeedTarget.value = Math.floor(Math.random() * (160 - 60 + 1)) + 60;
     headingTarget.value = Math.floor(Math.random() * (360 - 0 + 1)) + 0;
-    altitudeTarget.value =
-      Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000;
+    //altitudeTarget.value =
+    //  Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000;
   } else {
     //airspeedTarget.value -= 10;
     //make it randomize it can be decrease, increase or stay
     const getRandomChange = (range) => {
-      const random = Math.random();
-      if (random < 1 / 3) return range; // Increase
-      if (random < 2 / 3) return -range; // Decrease
-      return 0; // Stay the same
+      if(!generalDirection.value){
+        generalDirection.value = Math.random() < 0.5 ? "increase" : "decrease";
+      }
+      if (generalDirection.value === 'increase') return range; // Increase
+      if (generalDirection.value ==='decrease') return -range; // Decrease
     };
 
     headingTarget.value += getRandomChange(1); // -1, 0, or +1
     altitudeTarget.value += getRandomChange(10);
-    airspeedTarget.value +=Math.min(getRandomChange(1),160) ;
+    //airspeedTarget.value +=Math.min(getRandomChange(1),160) ;
   }
 };
 
@@ -1204,7 +1218,7 @@ const startExam = () => {
   altitude.value = 12000;
   airspeedTarget.value = 120;
   headingTarget.value = 0;
-  altitudeTarget.value = 5000;
+  altitudeTarget.value = 12000;
   thrustLevel.value = 60;
 
   timeOnTargetAirspeed.value = 0;
