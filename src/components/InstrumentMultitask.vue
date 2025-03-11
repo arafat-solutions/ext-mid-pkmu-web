@@ -619,7 +619,7 @@ export default {
   align-items: flex-start;
   gap: 20px;
   width: 1280px;
-  margin: 60px auto;
+  margin: 60px -47px;
 }
 
 .mb-2 {
