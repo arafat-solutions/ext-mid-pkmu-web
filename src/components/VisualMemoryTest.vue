@@ -121,7 +121,7 @@ export default {
       refreshCount: 0,
       questionMarkTimer: null,
       questionMarkStartTime: null,
-      questionMarkDuration: 10,
+      questionMarkDuration: 45,
       isQuestionMarkActive: false,
       userInputs: [],
       answerIsRight: null,
@@ -731,45 +731,47 @@ export default {
             this.memoryTime = this.configBe.questionInterval;
             this.createRandomQuestion();
           } else {
-            clearInterval(this.timerInterval);
-
-            const newQuestion = this.createQuestion(4);
-            //get random 2 question
-            const randomQuestion = this.questions.splice(0, 4);
-            const targetIndexesQuestions = [0, 1, 4, 5];
-            const targetIndexesNewQuestions = [2, 3, 6, 7];
-            targetIndexesQuestions.forEach((index, i) => {
-              this.innerConfig[index] = newQuestion[i];
-            });
-            targetIndexesNewQuestions.forEach((index, i) => {
-              this.innerConfig[index] = randomQuestion[i];
-            });
-            this.questions.push(...newQuestion);
-            while (this.questionMarkPositions.length < 2) {
-              const randomIndex = Math.random() < 0.5 ? 3 : 7;
-              if (
-                this.innerConfig[randomIndex].type === "text" ||
-                this.innerConfig[randomIndex].type === "number"
-              ) {
-                this.innerConfig[randomIndex] = {
-                  type: "shape",
-                  shapeName: "questionMark",
-                  answer: this.innerConfig[randomIndex].text,
-                };
-                this.questionMarkPositions.push(randomIndex);
-              }
-            }
-            this.questionMarkPositions = this.questionMarkPositions.sort(
-              (a, b) => a - b
-            );
-            this.canAnswer = true;
-            this.isQuestionMarkActive = true;
-            this.questionMarkStartTime = Date.now();
-            this.startQuestionMarkTimer();
-            this.drawVisual();
+            this.startQuestionMark();
           }
         }
       }, 1000);
+    },
+    startQuestionMark() {
+      clearInterval(this.timerInterval);
+      const newQuestion = this.createQuestion(4);
+      //get random 2 question
+      const randomQuestion = this.questions.splice(0, 4);
+      const targetIndexesQuestions = [0, 1, 4, 5];
+      const targetIndexesNewQuestions = [2, 3, 6, 7];
+      targetIndexesQuestions.forEach((index, i) => {
+        this.innerConfig[index] = newQuestion[i];
+      });
+      targetIndexesNewQuestions.forEach((index, i) => {
+        this.innerConfig[index] = randomQuestion[i];
+      });
+      this.questions.push(...newQuestion);
+      while (this.questionMarkPositions.length < 2) {
+        const randomIndex = Math.random() < 0.5 ? 3 : 7;
+        if (
+          this.innerConfig[randomIndex].type === "text" ||
+          this.innerConfig[randomIndex].type === "number"
+        ) {
+          this.innerConfig[randomIndex] = {
+            type: "shape",
+            shapeName: "questionMark",
+            answer: this.innerConfig[randomIndex].text,
+          };
+          this.questionMarkPositions.push(randomIndex);
+        }
+      }
+      this.questionMarkPositions = this.questionMarkPositions.sort(
+        (a, b) => a - b
+      );
+      this.canAnswer = true;
+      this.isQuestionMarkActive = true;
+      this.questionMarkStartTime = Date.now();
+      this.startQuestionMarkTimer();
+      this.drawVisual();
     },
     startQuestionMarkTimer() {
       this.clearQuestionMarkTimer();
@@ -811,12 +813,7 @@ export default {
       this.questionMarkStartTime = null;
 
       if (this.testTime > 0) {
-        this.result.noOfQuestionDisplayed += 1;
-        this.createRandomQuestion();
-        this.canAnswer = false;
-        this.memoryTime = this.configBe.questionInterval;
-        this.drawVisual();
-        this.countDownMemoryTime();
+        this.startQuestionMark()
       }
     },
     formatTime(seconds) {
@@ -902,12 +899,7 @@ export default {
             this.questionMarkPositions = [];
 
             if (this.testTime > 0) {
-              this.result.noOfQuestionDisplayed += 1;
-              this.createRandomQuestion();
-              this.canAnswer = false;
-              this.memoryTime = this.configBe.questionInterval;
-              this.drawVisual();
-              this.countDownMemoryTime();
+            this.startQuestionMark()
             }
           }
         }
@@ -1229,12 +1221,7 @@ export default {
       this.questionMarkStartTime = null;
 
       if (this.testTime > 0) {
-        this.result.noOfQuestionDisplayed += 1;
-        this.createRandomQuestion();
-        this.canAnswer = false;
-        this.memoryTime = this.configBe.questionInterval;
-        this.drawVisual();
-        this.countDownMemoryTime();
+        this.startQuestionMark()
       }
     },
     handleBeforeUnload() {
