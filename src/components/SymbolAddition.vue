@@ -29,7 +29,7 @@
     Timer: {{ timeLeftAnswer }}s
   </div>
   <div v-if="!isTimesUp">
-    <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14" v-if="isConfigLoaded">
+    <div class="relative text-center justify-center items-start gap-5 w-[1280px] m-auto mt-14 right-[69px]" v-if="isConfigLoaded">
       <h2 class="font-bold">Query Bar</h2>
       <div class="border w-3/5 mx-auto mt-4 border-violet-500 rounded" v-if="queryBars.length > 0">
         <div :class="classQueryBar">
