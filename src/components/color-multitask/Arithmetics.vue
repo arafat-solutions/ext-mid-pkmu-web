@@ -264,6 +264,7 @@ export default {
 
       let correctLocationIndex = Math.floor(Math.random() * 4);
 
+      const usedValues = new Set([result]); // Track unique values, starting with the correct one
       this.optionAnswerAudios = Array(4)
         .fill(null)
         .map((_, index) => {
@@ -272,8 +273,6 @@ export default {
           }
 
           let wrongAnswer;
-          const usedValues = new Set([result]); // Track unique values, starting with the correct one
-
           do {
             wrongAnswer = result + (Math.floor(Math.random() * 21) - 10);
           } while (wrongAnswer < 0 || usedValues.has(wrongAnswer)); // Ensure uniqueness
