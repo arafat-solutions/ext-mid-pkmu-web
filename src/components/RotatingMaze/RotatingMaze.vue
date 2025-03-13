@@ -70,8 +70,13 @@
           <div class="northIndicatorMaze">U</div>
         </div>
       </div>
-      <p v-if="isTraining" class="text-2xl centered-component" style="top: 70%; position: fixed">
-        anda akan dinilai berdasarkan akurasi dan kecepatan menuju target.<br/>
+      <p
+        v-if="isTraining"
+        class="text-2xl centered-component"
+        style="top: 70%; position: fixed"
+      >
+        ANDA DIMINTA UNTUK MENGARAHKAN SIMBOL HIJAU MENUJU SIMBOL MERAH MEMALUI
+        JALUR YANG TERSEDIA<br />
         Setelah tugas berhasil dilakukan, apabila dianggap sudah memadai tekan
         tombol selesai latihan menuju ke tes aktual
       </p>
@@ -1280,8 +1285,10 @@ export default {
 .finish-button {
   position: fixed;
   bottom: 20px;
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to truly center */
+  left: 50%;
+  /* Center horizontally */
+  transform: translateX(-50%);
+  /* Adjust to truly center */
   padding: 10px 20px;
   font-size: 16px;
   background-color: #007bff;
