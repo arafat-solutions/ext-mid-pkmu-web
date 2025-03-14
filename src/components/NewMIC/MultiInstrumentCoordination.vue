@@ -269,7 +269,7 @@
         </button>
       </div>
     </div>
-    <div v-if="examRunning">
+    <div v-if="examRunning && trainingMode">
       <p>Score: {{ score }}</p>
     </div>
   </div>
@@ -821,8 +821,8 @@ const handleAudioResponse = (response) => {
   setTimeout(() => {
     canRespond.value = true;
     displayedNumbers.value = [];
+    startAudioSequence()
   }, 1000);
-
   //setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
 };
 
