@@ -226,7 +226,7 @@ function getModalMessage() {
       case "button":
         return "Anda diminta untuk MENYENTUH LAYAR KOTAK BIRU yang muncul.";
       case "acoustic":
-        return "Anda diminta untuk menekan tuas pada bagian DEPAN JOYSTICK bila mendengar audio serupa, sebanyak 3 kali  berturut-turut. (Contoh: BEEP – BEEP – BEEP, maka anda harus menekan tuas untuk merespon audio tersebut).";
+        return "Anda diminta untuk menekan tuas pada bagian DEPAN JOYSTICK bila mendengar audio serupa, <br>sebanyak 3 kali  berturut-turut. (Contoh: BEEP – BEEP – BEEP, maka anda harus menekan tuas untuk merespon audio tersebut).";
       case "keseluruhan":
         return "Anda akan melalui semua latihan sebelumnya, yaitu Tracking, Button, dan Acoustic. Apakah Anda siap untuk memulai tes?";
     }
