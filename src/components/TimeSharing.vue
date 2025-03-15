@@ -6,6 +6,7 @@
         v-show="currentComponent === 'PlaneSimulator'"
         :config="config"
         @switch-task="switchTask"
+        @test-finished="handleSubmitTest"
         ref="planeSimulatorRef"
       />
       <MathTest

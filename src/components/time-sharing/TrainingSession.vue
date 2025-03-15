@@ -29,13 +29,8 @@
       </div>
     </div>
     <KeepAlive v-else>
-      <component
-        :is="getComponentForTask(currentTask)"
-        :config="getConfigForTask(currentTask)"
-        :isTrainingMode="true"
-        @test-finished="handleTrainingFinished"
-        :isCombined="currentTaskIndex === 3"
-      >
+      <component :is="getComponentForTask(currentTask)" :config="getConfigForTask(currentTask)" :isTrainingMode="true"
+        @test-finished="handleTrainingFinished" :isCombined="isCombined">
       </component>
     </KeepAlive>
   </div>
@@ -77,7 +72,7 @@ export default {
   },
   mounted() {
     const completed = checkIfTrainingTestCompleted("Time Sharing Test 2023");
-      window.addEventListener("keydown", this.handleKeydown);
+    window.addEventListener("keydown", this.handleKeydown);
     if (completed) {
       this.$emit("training-completed");
     }
@@ -94,13 +89,13 @@ export default {
         instrument:
           'Anda diminta untuk merespon Instrumen yang indikatornya berwarna MERAH dengan menekan huruf (C N V B) pada KEYBOARD.<img src="devices/tst_3.png"/>',
         combined:
-          "Latih semua sub-tugas secara bersamaan. Beralih antara tugas dengan menggunakan tombol spasi.",
+          "Latih semua sub-tugas secara bersamaan. Gunakan tombol SPASI untuk beralih mengerjakan tugas MATH TRAINING",
       };
       return instructions[this.currentTask] || "";
     },
     startTraining() {
       this.showModal = false;
-      if(this.currentTask === 'combined'){
+      if (this.currentTask === 'combined') {
         this.currentTaskIndex = 1;
         setTimeout(() => {
           this.currentTaskIndex = 3;
@@ -177,7 +172,7 @@ export default {
         );
       }
       this.currentTaskIndex++;
-      if(this.currentTaskIndex === 3) {
+      if (this.currentTaskIndex === 3) {
         this.isCombined = true;
       }
       if (this.currentTaskIndex < this.trainingTasks.length) {
@@ -193,11 +188,11 @@ export default {
       this.$emit("training-completed");
     },
     handleSwitchTask() {
-      if (this.currentTask === "combined" || (this.currentTask === "math"&&this.isCombined)) {
-        this.currentTaskIndex =  this.currentTaskIndex === 3 ? 1 : 3;
+      if (this.currentTask === "combined" || (this.currentTask === "math" && this.isCombined)) {
+        this.currentTaskIndex = this.currentTaskIndex === 3 ? 1 : 3;
       }
     },
-     handleKeydown  (event)  {
+    handleKeydown(event) {
       if (event.key === " ") this.handleSwitchTask();
     }
   },
