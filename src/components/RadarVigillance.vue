@@ -446,7 +446,7 @@ export default {
         this.currentVisibleObjects.splice(index, 1);
         if (obj.type === this.config.targetShape) {
           this.missedTargets++;
-          this.feedbackText = "Missed target";
+          this.feedbackText = "Target terlewat!";
           this.feedbackColor = "red";
 
           // Add to userInputs for graph data
@@ -478,7 +478,7 @@ export default {
           this.userCorrectClickCount++;
           const responseTime = currentTime - targetObject.appearanceTime;
           this.responseTimes.push(responseTime);
-          this.feedbackText = `Correct! ${responseTime} ms`;
+          this.feedbackText = `Benar! ${responseTime} ms`;
           this.feedbackColor = "green";
           this.userInputs.push({
             type: "correct",
@@ -506,8 +506,8 @@ export default {
             shapeType = lastVisibleObject.type;
           }
           this.feedbackText = responseTime
-            ? `Wrong input, ${responseTime} ms`
-            : "Wrong input";
+            ? `Input Salah, ${responseTime} ms`
+            : "Input Salah";
           this.feedbackColor = "red";
           this.userInputs.push({
             type: "incorrect",

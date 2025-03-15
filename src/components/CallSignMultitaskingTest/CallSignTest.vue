@@ -1,10 +1,12 @@
 <template>
+
     <div class="callsign-test">
         <div class="input-group">
             <input type="number" v-model="userInput" ref="callsignInput" @focus="focus = true" @blur="focus = false" />
             <p>↵</p>
         </div>
         <canvas ref="callsignCanvas"></canvas>
+        <p class="feedback">{{ feedbackMessage }}</p>
     </div>
     <NumberVirtualKeyboard :active-keys="activeKeys" @key-press="handleVirtualKeyPress"
         @key-release="handleVirtualKeyRelease" />
@@ -35,6 +37,7 @@ export default {
             speech: null,
             ctx: null,
             userInput: '',
+            feedbackMessage: '', // Add feedbackMessage data property
             lastSpokenCallsign: '',
             result: {
                 right: 0,
@@ -292,9 +295,15 @@ export default {
 
             if (isAngleCorrect && isCallsignCorrect) {
                 this.updateResults('call_sign', { correct_response: 1 });
+                this.feedbackMessage = 'Benar!';
             } else {
                 this.updateResults('call_sign', { wrong_response: 1 });
+                this.feedbackMessage = 'Salah!';
             }
+
+            setTimeout(() => {
+              this.feedbackMessage = '';
+            }, 1000);
 
             this.userInput = '';
             this.activeKeys = [];

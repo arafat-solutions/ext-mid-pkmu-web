@@ -53,21 +53,7 @@
         <div class="space-y-4 mb-6">
           <p class="text-lg text-gray-700">
             Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai tes.
-            <span class="font-semibold">
-              Test ini akan berlangsung selama
-              {{ currentConfig.timePerQuestion }} detik per soal.
-            </span>
           </p>
-
-          <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
-            <p class="text-gray-700">Performa kamu akan diukur berdasarkan:</p>
-            <ul class="mt-2 space-y-1 list-disc pl-6 text-gray-600">
-              <li>Jumlah jawaban benar</li>
-              <li>Jumlah jawaban salah</li>
-              <li>Jumlah soal tidak terjawab</li>
-              <li>Rata-rata waktu respon</li>
-            </ul>
-          </div>
         </div>
 
         <div class="flex justify-center mt-6">

@@ -1,13 +1,23 @@
 <template>
   <div class="math-test-container">
-    <div class="instructions" v-if="!isTrainingMode">
+    <div class="instructions" v-if="!isTrainingMode||isCombined">
       Tekan 'Spasi' untuk beralih tugas
     </div>
     <div v-if="showQuestion" class="question">{{ displayQuestion }}</div>
     <div v-else class="waiting">Menunggu pertanyaan selanjutnya...</div>
-    <input v-model="userInput" class="input-box" readonly :disabled="!showQuestion" />
+    <input
+      v-model="userInput"
+      class="input-box"
+      readonly
+      :disabled="!showQuestion"
+    />
     <div class="virtual-keyboard">
-      <button v-for="num in 10" :key="num" @click="appendNumber(num % 10)" :disabled="!showQuestion">
+      <button
+        v-for="num in 10"
+        :key="num"
+        @click="appendNumber(num % 10)"
+        :disabled="!showQuestion"
+      >
         {{ num % 10 }}
       </button>
       <button @click="clearInput" :disabled="!showQuestion">Hapus</button>

@@ -234,7 +234,10 @@ export default {
 
       // Draw answer box with color based on answer state
       let boxColor = "#222"; // Default color
-      if (this.answerState === "correct") {
+      if(this.trainingCompleted&&this.answerState){
+        //light grey
+        boxColor = "grey";
+      }else if (this.answerState === "correct") {
         boxColor = "green";
       } else if (this.answerState === "incorrect") {
         boxColor = "red";
@@ -763,6 +766,7 @@ export default {
     },
 
     endTrainingTask() {
+      this.answerState = null;
       this.stopSimulation();
       const currentTaskIndex = this.trainingTasks.indexOf(
         this.currentTrainingTask
@@ -780,7 +784,7 @@ export default {
       this.updateLocalStorage();
       this.showInstructionModal = true;
       this.instructionModalContent =
-        "Latiihan selesai! Tes akan dimulai sekarang.";
+        "Latihan selesai! Tes akan dimulai sekarang.";
     },
 
     updateLocalStorage() {

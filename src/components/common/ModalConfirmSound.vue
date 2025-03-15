@@ -6,7 +6,7 @@
         <i class="fas fa-info-circle"></i>
       </div>
       <h2 style="font-size: 24px">{{ title }}</h2>
-      <p class="message" style="font-size: 20px">{{ message }}</p>
+      <p class="message" style="font-size: 20px" v-html="message"></p>
       <p class="instructions" style="font-size: 20px">{{ instructions }}</p>
       <div class="button-group">
         <button @click="confirm" class="confirm-btn">

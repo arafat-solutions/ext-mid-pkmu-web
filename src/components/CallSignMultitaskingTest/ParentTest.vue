@@ -212,7 +212,7 @@ export default {
           play: true,
         },
         callsign: {
-          frequency: "seldom",
+          frequency: "often",
           matches: "high",
           speed: "slow",
           play: true,

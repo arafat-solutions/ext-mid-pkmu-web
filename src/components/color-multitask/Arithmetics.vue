@@ -459,11 +459,9 @@ export default {
 }
 
 .option-button.selected {
-  background-color: #d3d3d3;
-  /* Light gray background for selected */
-  border-color: #a0a0a0;
-  /* A slightly darker gray border */
-  color: #333;
+  background-color: #0349d0;
+  /*border-color: #a0a0a0;*/
+  color: #f0f0f0;
 }
 
 .option-button.correct {
