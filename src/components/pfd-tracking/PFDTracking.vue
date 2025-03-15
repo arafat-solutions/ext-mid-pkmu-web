@@ -199,25 +199,29 @@
         >
           <div class="indicator-label">HEADING</div>
           <div class="indicator horizontal">
-            <!-- <LinearGauge -->
-            <!--   label="compass" -->
-            <!--   :value="heading" -->
-            <!--   :target="headingTarget" -->
-            <!--   :min="0" -->
-            <!--   :max="360" -->
-            <!--   :isVertical="false" -->
-            <!--   :step="1" -->
+            <LinearGauge
+              label="compass"
+              :value="heading"
+              :target="headingTarget"
+              :min="0"
+              :max="360"
+              :isVertical="false"
+              :step="1"
+            />
+
+            <!-- <Heading -->
+            <!--   class="indicator-bg" -->
+            <!--   :size="200" -->
+            <!--   :heading="Math.round(heading)" -->
             <!-- /> -->
+            <!-- <div class="target-text"> -->
+            <!--           Target: {{ Math.round(headingTarget) }}° -->
+            <!---->
+            <!--         </div> -->
 
-        <Heading
-          class="indicator-bg"
-          :size="200"
-          :heading="Math.round(heading)"
-        />
-<div class="target-text">
-          Target: {{ Math.round(headingTarget) }}°
-
-        </div>
+            <!-- <div class="target-text"> -->
+            <!--   Target: {{ Math.round(headingTarget) }}° -->
+            <!-- </div> -->
           </div>
         </div>
 
@@ -294,8 +298,6 @@ import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import LinearGauge from "./LinearGauge.vue";
-
-import {  Heading } from "vue-flight-indicators";
 
 const router = useRouter();
 
@@ -478,7 +480,8 @@ const formatTime = (time) => {
 
 const headingInputDuration = ref(0);
 const altitudeInputDuration = ref(0);
-const generalDirection = ref(null);
+const headingDirection = ref(null);
+const altitudeDirection = ref(null);
 
 // Add the moveToNextTraining function
 const moveToNextTraining = () => {
@@ -805,7 +808,7 @@ const updatePlanePosition = () => {
       };
 
       // Handle heading (X-axis) with reduced speed
-      const rawX = applyDeadzone(stick.axes[0], 0.1);
+      const rawX = applyDeadzone(stick.axes[0], 0.1) * 0.4
       if (
         !trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("heading")
@@ -819,8 +822,7 @@ const updatePlanePosition = () => {
         }
       }
 
-      // Handle altitude (Y-axis) with reduced speed
-      const rawY = applyDeadzone(stick.axes[1], 0.1);
+      const rawY = applyDeadzone(stick.axes[1], 0.1) * 0.2;
       if (
         !trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("altitude")
@@ -1116,7 +1118,7 @@ const updateIndicator = (indicator, mode) => {
       );
     }
   }
-  console.log(newTarget)
+  console.log(newTarget);
 
   // Update the target value
   //if (indicator === "airspeed") airspeedTarget.value = newTarget;
@@ -1145,30 +1147,31 @@ const startTrainingStep = () => {
 };
 
 const randomizeTargets = () => {
-  //decrease -10 all target and if target reach 0 randomize target
-  if (
-    //airspeedTarget.value <= 0 ||
-    headingTarget.value <= 0 ||
-    altitudeTarget.value <= 0
-  ) {
-    //airspeedTarget.value = Math.floor(Math.random() * (160 - 60 + 1)) + 60;
-    headingTarget.value = Math.floor(Math.random() * (360 - 0 + 1)) + 0;
-    //altitudeTarget.value =
-    //  Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000;
+  if (headingTarget.value <= 0 || altitudeTarget.value <= 0) {
+    headingTarget.value = 360;
   } else {
-    //airspeedTarget.value -= 10;
-    //make it randomize it can be decrease, increase or stay
-    const getRandomChange = (range) => {
-      if(!generalDirection.value){
-        generalDirection.value = Math.random() < 0.5 ? "increase" : "decrease";
+    const getRandomChange = (range, direction) => {
+      if (!direction.value) {
+        direction.value = Math.random() < 0.5 ? "increase" : "decrease";
       }
-      if (generalDirection.value === 'increase') return range; // Increase
-      if (generalDirection.value ==='decrease') return -range; // Decrease
+      return direction.value === "increase" ? range : -range;
     };
 
-    headingTarget.value += getRandomChange(1); // -1, 0, or +1
-    altitudeTarget.value += getRandomChange(10);
-    //airspeedTarget.value +=Math.min(getRandomChange(1),160) ;
+    // Ensure heading direction is properly set
+    if (headingTarget.value > 340) {
+      headingDirection.value = "decrease";
+    } else if (headingTarget.value < 20) {
+      headingDirection.value = "increase";
+    }
+    headingTarget.value += getRandomChange(1, headingDirection);
+
+    // Ensure altitude direction is properly set
+    if (altitudeTarget.value > 14000) {
+      altitudeDirection.value = "decrease";
+    } else if (altitudeTarget.value < 2000) {
+      altitudeDirection.value = "increase";
+    }
+    altitudeTarget.value += getRandomChange(10, altitudeDirection);
   }
 };
 
@@ -1395,7 +1398,7 @@ onMounted(() => {
   window.addEventListener("gamepaddisconnected", onGamepadDisconnected);
   window.addEventListener("keydown", handleKeyDown);
   checkGamepadConnection();
-  setInterval(randomizeTargets, 1000);
+  setInterval(randomizeTargets, 100);
   updateLoop();
 });
 
