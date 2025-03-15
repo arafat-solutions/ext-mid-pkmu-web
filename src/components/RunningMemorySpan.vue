@@ -472,8 +472,8 @@ export default {
           const speakNext = () => {
             if (index < this.utterances.length) {
               const utterance = this.utterances[index];
-              utterance.rate = 1 + (this.config.speed - 1) / 10;
-              utterance.pitch = 1.2;
+              utterance.rate = 1 ;
+              utterance.pitch = 1;
               utterance.volume = 1;
               utterance.lang = "id-ID";
               utterance.onend = () => {
