@@ -7,6 +7,7 @@
         :config="config"
         @switch-task="switchTask"
         @test-finished="handleSubmitTest"
+        :isTraining="isTraining"
         ref="planeSimulatorRef"
       />
       <MathTest
