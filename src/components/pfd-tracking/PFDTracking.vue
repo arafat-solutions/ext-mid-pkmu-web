@@ -208,7 +208,6 @@
               :isVertical="false"
               :step="1"
             />
-
             <!-- <Heading -->
             <!--   class="indicator-bg" -->
             <!--   :size="200" -->
