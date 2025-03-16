@@ -208,7 +208,7 @@
           >
             <h3>latihan Gabungan</h3>
 
-            <div class="subtasks">
+            <div class="subtasks" style="min-height:88px">
               <StringMemorization
                 v-if="currentSubtask === 'string'"
                 :key="'string'"
@@ -237,7 +237,7 @@
         <!-- Actual Test Mode -->
         <template v-else>
           <div class="timer">Sisa Waktu: {{ formatTime(remainingTime) }}</div>
-          <div class="subtasks">
+            <div class="subtasks" style="min-height:88px">
             <StringMemorization
               v-if="currentSubtask === 'string'"
               :key="'string'"
