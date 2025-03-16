@@ -29,7 +29,7 @@
               viewBox="0 0 120 120"
             ></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
-            <div class="wrong-inputs">
+            <div class="wrong-inputs" v-if="isTraining">
               Salah: {{ wrongInputs[instrument.key] }}
             </div>
           </div>
@@ -51,7 +51,7 @@
               viewBox="0 0 120 120"
             ></svg>
             <div class="instrument-key">{{ instrument.key }}</div>
-            <div class="wrong-inputs">
+            <div class="wrong-inputs" v-if="isTraining">
               Salah: {{ wrongInputs[instrument.key] }}
             </div>
           </div>
@@ -71,6 +71,10 @@ export default {
   name: "PlaneSimulator",
   emits: ["test-finished", "switch-task"],
   props: {
+    isTraining: {
+      type: Boolean,
+      default: true,
+    },
     config: {
       type: Object,
       default: () => ({}),

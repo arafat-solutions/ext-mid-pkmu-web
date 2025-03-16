@@ -56,7 +56,7 @@
                 class="checkbox__trigger visuallyhidden"
                 :class="[
                   {
-                    'wrong-answer': wrongRows[rowIndex][colIndex],
+                    'wrong-answer': wrongRows[rowIndex][colIndex]&&!isTrainingCompleted,
                     disabled: row !== currentRow,
                   },
                 ]"

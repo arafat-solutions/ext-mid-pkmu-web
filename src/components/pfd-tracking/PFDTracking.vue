@@ -208,7 +208,6 @@
               :isVertical="false"
               :step="1"
             />
-
             <!-- <Heading -->
             <!--   class="indicator-bg" -->
             <!--   :size="200" -->
@@ -219,9 +218,9 @@
             <!---->
             <!--         </div> -->
 
-            <div class="target-text">
-              Target: {{ Math.round(headingTarget) }}°
-            </div>
+            <!-- <div class="target-text"> -->
+            <!--   Target: {{ Math.round(headingTarget) }}° -->
+            <!-- </div> -->
           </div>
         </div>
 
@@ -641,13 +640,13 @@ const initSounds = () => {
 };
 
 // Add this method and call it on first user interaction
-const initAudioContext = () => {
-  if (audioContext.value === null) {
-    initSounds();
-  } else if (audioContext.value.state === "suspended") {
-    audioContext.value.resume();
-  }
-};
+//const initAudioContext = () => {
+//  if (audioContext.value === null) {
+//    initSounds();
+//  } else if (audioContext.value.state === "suspended") {
+//    audioContext.value.resume();
+//  }
+//};
 
 const updateSounds = () => {
   if (!audioContext.value || !engineGain.value) return;
@@ -1346,7 +1345,7 @@ const handleStartExam = () => {
   showStartModal.value = false;
   initSounds();
   startExam();
-  initAudioContext();
+  //initAudioContext();
 };
 
 const handleCancel = () => {
