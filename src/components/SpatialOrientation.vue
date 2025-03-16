@@ -169,7 +169,7 @@ export default {
       userInputs: [],
       questionStartTime: null,
       selectedAnswer: null,
-      questionDuration: 999999,
+      questionDuration: 25000,
       answerIsRight: null,
     };
   },
