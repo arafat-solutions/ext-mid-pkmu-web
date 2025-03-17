@@ -47,7 +47,7 @@ export default {
       console.log('logout');
       localStorage.removeItem('scheduleData');
       console.log(localStorage.getItem('scheduleData'));
-      this.$router.push('');
+      this.$router.push('/');
     },
     onMounted() {
       this.user = JSON.parse(localStorage.getItem('scheduleData')).userId;

@@ -244,7 +244,7 @@ export default {
       } else {
         this.testTime = 360;
       }
-      this.memoryTime = interval;
+      this.memoryTime = 45;
     },
     updateCanvasDimensions() {
       this.canvasWidth = this.canvasDimensions.width;
@@ -728,7 +728,7 @@ export default {
           this.drawVisual();
         } else {
           if (this.taskNo < 2) {
-            this.memoryTime = this.configBe.questionInterval;
+            this.memoryTime = 45;
             this.createRandomQuestion();
           } else {
             this.startQuestionMark();
