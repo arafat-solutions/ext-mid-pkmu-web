@@ -127,6 +127,7 @@ export default {
       isModalVisible: false,
       isButtonDisabled: false,
       isConfigLoaded: false,
+      questionTimer:null,
       isLoading: false,
       isShowAnswerBox: false,
       isTrainingCompleted: false,
@@ -219,6 +220,9 @@ export default {
       this.generateCoordinat();
     },
     endGame() {
+      clearTimeout(this.questionTimer);
+      this.questionTimer = null;
+
       clearInterval(this.tailRemoveInterval);
       this.tailRemoveInterval = null;
 
@@ -364,12 +368,14 @@ export default {
 
       this.moveToNextQuestion();
     },
-    moveToNextQuestion() {
+    cleanUp() {
       clearTimeout(this.questionTimer);
       clearInterval(this.tailRemoveInterval);
       clearInterval(this.drawLineinterval);
       clearTimeout(this.timeoutIdRemoveInterval);
-
+    },
+    moveToNextQuestion() {
+      this.cleanUp();
       if (this.config.current_question >= this.totalQuestion) {
         this.endGame();
       } else {
