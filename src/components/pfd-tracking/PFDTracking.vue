@@ -517,127 +517,127 @@ const moveToNextTraining = () => {
   }
 };
 
-const initSounds = () => {
-  try {
-    // Initialize Audio Context
-    audioContext.value = new (window.AudioContext ||
-      window.webkitAudioContext)();
-
-    // Create main gain and compressor
-    const compressor = audioContext.value.createDynamicsCompressor();
-    compressor.connect(audioContext.value.destination);
-
-    engineGain.value = audioContext.value.createGain();
-    engineGain.value.connect(compressor);
-    engineGain.value.gain.setValueAtTime(0, audioContext.value.currentTime);
-
-    // Create noise generator
-    const noiseBuffer = audioContext.value.createBuffer(
-      1,
-      audioContext.value.sampleRate * 2,
-      audioContext.value.sampleRate
-    );
-    const noise = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < noiseBuffer.length; i++) {
-      noise[i] = Math.random() * 2 - 1;
-    }
-
-    const noiseNode = audioContext.value.createBufferSource();
-    noiseNode.buffer = noiseBuffer;
-    noiseNode.loop = true;
-
-    // Create filters
-    const noiseFilter = audioContext.value.createBiquadFilter();
-    noiseFilter.type = "bandpass";
-    noiseFilter.frequency.setValueAtTime(1000, audioContext.value.currentTime);
-    noiseFilter.Q.setValueAtTime(1, audioContext.value.currentTime);
-
-    // Base engine sound (low frequency)
-    baseOscillator.value = audioContext.value.createOscillator();
-    baseOscillator.value.type = "sawtooth";
-    baseOscillator.value.frequency.setValueAtTime(
-      40,
-      audioContext.value.currentTime
-    );
-
-    // Propeller sound with modulation
-    propellerOscillator.value = audioContext.value.createOscillator();
-    propellerOscillator.value.type = "square";
-    propellerOscillator.value.frequency.setValueAtTime(
-      80,
-      audioContext.value.currentTime
-    );
-
-    // LFO for propeller modulation
-    const lfo = audioContext.value.createOscillator();
-    const lfoGain = audioContext.value.createGain();
-    lfo.frequency.setValueAtTime(2, audioContext.value.currentTime);
-    lfoGain.gain.setValueAtTime(10, audioContext.value.currentTime);
-    lfo.connect(lfoGain);
-    lfoGain.connect(propellerOscillator.value.frequency);
-
-    // Harmonics
-    harmonic1.value = audioContext.value.createOscillator();
-    harmonic1.value.type = "triangle";
-    harmonic1.value.frequency.setValueAtTime(
-      160,
-      audioContext.value.currentTime
-    );
-
-    harmonic2.value = audioContext.value.createOscillator();
-    harmonic2.value.type = "triangle";
-    harmonic2.value.frequency.setValueAtTime(
-      200,
-      audioContext.value.currentTime
-    );
-
-    // Gain nodes for mixing
-    const baseGain = audioContext.value.createGain();
-    const propellerGain = audioContext.value.createGain();
-    const harmonic1Gain = audioContext.value.createGain();
-    const harmonic2Gain = audioContext.value.createGain();
-    const noiseGain = audioContext.value.createGain();
-
-    // Adjust mix levels
-    baseGain.gain.setValueAtTime(0.8, audioContext.value.currentTime);
-    propellerGain.gain.setValueAtTime(0.3, audioContext.value.currentTime);
-    harmonic1Gain.gain.setValueAtTime(0.1, audioContext.value.currentTime);
-    harmonic2Gain.gain.setValueAtTime(0.05, audioContext.value.currentTime);
-    noiseGain.gain.setValueAtTime(0.2, audioContext.value.currentTime);
-
-    // Connect everything
-    baseOscillator.value.connect(baseGain);
-    propellerOscillator.value.connect(propellerGain);
-    harmonic1.value.connect(harmonic1Gain);
-    harmonic2.value.connect(harmonic2Gain);
-    noiseNode.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-
-    baseGain.connect(engineGain.value);
-    propellerGain.connect(engineGain.value);
-    harmonic1Gain.connect(engineGain.value);
-    harmonic2Gain.connect(engineGain.value);
-    noiseGain.connect(engineGain.value);
-
-    // Start all oscillators
-    baseOscillator.value.start();
-    propellerOscillator.value.start();
-    harmonic1.value.start();
-    harmonic2.value.start();
-    lfo.start();
-    noiseNode.start();
-
-    // Add subtle random variations to create more organic sound
-    setInterval(() => {
-      const now = audioContext.value.currentTime;
-      const slight = Math.random() * 2 - 1;
-      baseOscillator.value.frequency.setValueAtTime(40 + slight, now);
-      propellerOscillator.value.frequency.setValueAtTime(80 + slight * 2, now);
-    }, 100);
-  } catch (error) {
-    console.error("Audio system initialization failed:", error);
-  }
-};
+//const initSounds = () => {
+//  try {
+//    // Initialize Audio Context
+//    audioContext.value = new (window.AudioContext ||
+//      window.webkitAudioContext)();
+//
+//    // Create main gain and compressor
+//    const compressor = audioContext.value.createDynamicsCompressor();
+//    compressor.connect(audioContext.value.destination);
+//
+//    engineGain.value = audioContext.value.createGain();
+//    engineGain.value.connect(compressor);
+//    engineGain.value.gain.setValueAtTime(0, audioContext.value.currentTime);
+//
+//    // Create noise generator
+//    const noiseBuffer = audioContext.value.createBuffer(
+//      1,
+//      audioContext.value.sampleRate * 2,
+//      audioContext.value.sampleRate
+//    );
+//    const noise = noiseBuffer.getChannelData(0);
+//    for (let i = 0; i < noiseBuffer.length; i++) {
+//      noise[i] = Math.random() * 2 - 1;
+//    }
+//
+//    const noiseNode = audioContext.value.createBufferSource();
+//    noiseNode.buffer = noiseBuffer;
+//    noiseNode.loop = true;
+//
+//    // Create filters
+//    const noiseFilter = audioContext.value.createBiquadFilter();
+//    noiseFilter.type = "bandpass";
+//    noiseFilter.frequency.setValueAtTime(1000, audioContext.value.currentTime);
+//    noiseFilter.Q.setValueAtTime(1, audioContext.value.currentTime);
+//
+//    // Base engine sound (low frequency)
+//    baseOscillator.value = audioContext.value.createOscillator();
+//    baseOscillator.value.type = "sawtooth";
+//    baseOscillator.value.frequency.setValueAtTime(
+//      40,
+//      audioContext.value.currentTime
+//    );
+//
+//    // Propeller sound with modulation
+//    propellerOscillator.value = audioContext.value.createOscillator();
+//    propellerOscillator.value.type = "square";
+//    propellerOscillator.value.frequency.setValueAtTime(
+//      80,
+//      audioContext.value.currentTime
+//    );
+//
+//    // LFO for propeller modulation
+//    const lfo = audioContext.value.createOscillator();
+//    const lfoGain = audioContext.value.createGain();
+//    lfo.frequency.setValueAtTime(2, audioContext.value.currentTime);
+//    lfoGain.gain.setValueAtTime(10, audioContext.value.currentTime);
+//    lfo.connect(lfoGain);
+//    lfoGain.connect(propellerOscillator.value.frequency);
+//
+//    // Harmonics
+//    harmonic1.value = audioContext.value.createOscillator();
+//    harmonic1.value.type = "triangle";
+//    harmonic1.value.frequency.setValueAtTime(
+//      160,
+//      audioContext.value.currentTime
+//    );
+//
+//    harmonic2.value = audioContext.value.createOscillator();
+//    harmonic2.value.type = "triangle";
+//    harmonic2.value.frequency.setValueAtTime(
+//      200,
+//      audioContext.value.currentTime
+//    );
+//
+//    // Gain nodes for mixing
+//    const baseGain = audioContext.value.createGain();
+//    const propellerGain = audioContext.value.createGain();
+//    const harmonic1Gain = audioContext.value.createGain();
+//    const harmonic2Gain = audioContext.value.createGain();
+//    const noiseGain = audioContext.value.createGain();
+//
+//    // Adjust mix levels
+//    baseGain.gain.setValueAtTime(0.8, audioContext.value.currentTime);
+//    propellerGain.gain.setValueAtTime(0.3, audioContext.value.currentTime);
+//    harmonic1Gain.gain.setValueAtTime(0.1, audioContext.value.currentTime);
+//    harmonic2Gain.gain.setValueAtTime(0.05, audioContext.value.currentTime);
+//    noiseGain.gain.setValueAtTime(0.2, audioContext.value.currentTime);
+//
+//    // Connect everything
+//    baseOscillator.value.connect(baseGain);
+//    propellerOscillator.value.connect(propellerGain);
+//    harmonic1.value.connect(harmonic1Gain);
+//    harmonic2.value.connect(harmonic2Gain);
+//    noiseNode.connect(noiseFilter);
+//    noiseFilter.connect(noiseGain);
+//
+//    baseGain.connect(engineGain.value);
+//    propellerGain.connect(engineGain.value);
+//    harmonic1Gain.connect(engineGain.value);
+//    harmonic2Gain.connect(engineGain.value);
+//    noiseGain.connect(engineGain.value);
+//
+//    // Start all oscillators
+//    baseOscillator.value.start();
+//    propellerOscillator.value.start();
+//    harmonic1.value.start();
+//    harmonic2.value.start();
+//    lfo.start();
+//    noiseNode.start();
+//
+//    // Add subtle random variations to create more organic sound
+//    setInterval(() => {
+//      const now = audioContext.value.currentTime;
+//      const slight = Math.random() * 2 - 1;
+//      baseOscillator.value.frequency.setValueAtTime(40 + slight, now);
+//      propellerOscillator.value.frequency.setValueAtTime(80 + slight * 2, now);
+//    }, 100);
+//  } catch (error) {
+//    console.error("Audio system initialization failed:", error);
+//  }
+//};
 
 // Add this method and call it on first user interaction
 //const initAudioContext = () => {
@@ -1230,7 +1230,7 @@ const startExam = () => {
   audioResponses.value = [];
   displayedNumbers.value = [];
 
-  initSounds();
+  //initSounds();
 };
 
 // Modify endExam to cleanup sounds
@@ -1343,7 +1343,7 @@ const showStartModal = ref(true);
 // Add this method
 const handleStartExam = () => {
   showStartModal.value = false;
-  initSounds();
+  //initSounds();
   startExam();
   //initAudioContext();
 };
