@@ -589,13 +589,15 @@ export default {
 
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+      const configData = getConfigs("signal-processing-test");
       const totalQuestion = this.currentIndexQuestion + 1;
+      console.log(this.configs)
       const payload = {
         testSessionId: scheduleData.sessionId,
         userId: scheduleData.userId,
         moduleId: scheduleData.moduleId,
         batteryTestConfigId: this.batteryTestConfigId,
-        batteryTestId: scheduleData.testId,
+        batteryTestId: configData.testId,
         refreshCount: parseInt(
           localStorage.getItem("reloadCountSignalProcessing")
         ),
