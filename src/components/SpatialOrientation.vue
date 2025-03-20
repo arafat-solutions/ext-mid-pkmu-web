@@ -195,6 +195,7 @@ export default {
   },
   methods: {
     startTest() {
+      this.totalQuestionConfig = 1;
       this.answerIsRight = null;
       this.selectedAnswer = null;
       this.answer = null;
@@ -392,13 +393,6 @@ export default {
       this.totalQuestionConfig++;
       this.answerIsRight = null;
 
-      if (
-        this.isTrainingCompleted &&
-        this.totalQuestionConfig >= parseInt(this.config.number_of_question) + 1
-      ) {
-        this.totalQuestionConfig = 1;
-        this.indexConfig++;
-      }
     },
     async generateLines() {
       this.optionAnswers = [];
