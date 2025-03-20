@@ -961,7 +961,7 @@ const moveToNextConfig = () => {
 
 const updatePerformanceData = () => {
   const currentTime = Date.now();
-  if (currentTime - lastRecordedTime.value >= 1000) {
+  if (currentTime - lastRecordedTime.value >= 5000) {
     headingPerformanceData.value.push({
       type: isHeadingOutOfTarget.value ? "wrong" : "correct",
       deviations: heading.value - headingTarget.value,
