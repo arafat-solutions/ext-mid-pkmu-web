@@ -6,7 +6,7 @@
             <p>↵</p>
         </div>
         <canvas ref="callsignCanvas"></canvas>
-        <p class="feedback">{{ feedbackMessage }}</p>
+        <p class="feedback" v-if="isTraining">{{ feedbackMessage }}</p>
     </div>
     <NumberVirtualKeyboard :active-keys="activeKeys" @key-press="handleVirtualKeyPress"
         @key-release="handleVirtualKeyRelease" />
@@ -23,6 +23,7 @@ export default {
             required: true
         },
         updateResults: Function,
+        isTraining: Boolean
     },
     components: {
         NumberVirtualKeyboard
