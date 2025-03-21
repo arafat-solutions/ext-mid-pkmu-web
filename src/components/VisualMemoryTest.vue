@@ -813,7 +813,7 @@ export default {
       this.questionMarkStartTime = null;
 
       if (this.testTime > 0) {
-        this.startQuestionMark()
+        this.startQuestionMark();
       }
     },
     formatTime(seconds) {
@@ -853,6 +853,12 @@ export default {
               }
             });
           } else if (this.renderInput === 2) {
+            if (
+              this.input.input1.userInput === "" &&
+              this.input.input2.userInput === ""
+            ) {
+              return;
+            }
             let resultQuestion1 = false;
             let resultQuestion2 = false;
 
@@ -899,7 +905,7 @@ export default {
             this.questionMarkPositions = [];
 
             if (this.testTime > 0) {
-            this.startQuestionMark()
+              this.startQuestionMark();
             }
           }
         }
@@ -1130,8 +1136,6 @@ export default {
               this.$refs.input2.focus();
             }
           });
-        } else if (this.renderInput === 2) {
-          this.processAnswers();
         }
       }
     },
@@ -1221,7 +1225,7 @@ export default {
       this.questionMarkStartTime = null;
 
       if (this.testTime > 0) {
-        this.startQuestionMark()
+        this.startQuestionMark();
       }
     },
     handleBeforeUnload() {

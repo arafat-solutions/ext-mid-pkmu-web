@@ -287,7 +287,7 @@ export default {
             }
         },
         handleBackspace() {
-            this.userInput = this.userInput.slice(0, -1);
+            this.userInput = this.userInput.toString().slice(0, -1);
         },
         checkAnswer() {
             const isAngleCorrect = parseInt(this.userInput) === this.angle;

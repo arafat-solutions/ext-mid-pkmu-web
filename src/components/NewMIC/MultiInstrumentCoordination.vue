@@ -315,6 +315,7 @@ const manualInput = ref({
 
 // State
 const mode = ref("moving");
+const intervalTimer = ref(null);
 const examRunning = ref(false);
 const airspeed = ref(100);
 const heading = ref(0);
@@ -1037,7 +1038,6 @@ const updateLoop = () => {
     }
     monitorPerformance();
     updateScore();
-    updateTime();
     updatePerformanceData();
     updateSounds();
   }
@@ -1050,8 +1050,8 @@ const updateTime = () => {
   // Don't decrease time during training mode
   if (trainingMode.value) return;
 
-  timeRemaining.value -= 1 / 60;
-  config.value.totalDuration -= 1 / 60;
+  timeRemaining.value -= 1;
+  config.value.totalDuration -= 1 ;
 
   // Add explicit check for exam end
   if (config.value.totalDuration <= 0) {
@@ -1385,6 +1385,7 @@ const moveToNextTrainingStep = () => {
 
 const startActualExam = async () => {
   // Close confirmation modal
+  intervalTimer.value = setInterval(updateTime, 1000);
   showExamConfirmModal.value = false;
 
   // Reset everything
@@ -1642,6 +1643,7 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleKeyDown);
   window.removeEventListener("keyup", handleKeyUp);
   cancelAudioSequence();
+  clearInterval(intervalTimer.value);
 
   if (audioContext.value) {
     audioContext.value.close();
