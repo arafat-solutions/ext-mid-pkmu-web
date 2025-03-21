@@ -35,6 +35,7 @@
             :callsign-data="configBe.callsign"
             :update-results="updateResults"
             ref="callSignTest"
+              :isTraining="isTraining"
             class="centered-component"
           />
           <ColorTest
@@ -82,6 +83,7 @@
               ref="callSignTest"
               :callsign-data="configBe.callsign"
               :update-results="updateResults"
+              :isTraining="isTraining"
             />
           </div>
         </template>
