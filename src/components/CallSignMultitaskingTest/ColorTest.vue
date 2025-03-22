@@ -319,7 +319,6 @@ export default {
             return Math.floor(Math.random() * max);
         },
         handleKeyPress(event) {
-
             let key = event.key.toUpperCase();
 
             if ("QWER".includes(key)) {
@@ -335,6 +334,7 @@ export default {
             if (this.activeKeys.length === 3) {
                 this.processKeyPress(this.activeKeys);
                 this.handleCompletePattern();
+                this.resetPatternAndKeyboard()
             }
         },
 

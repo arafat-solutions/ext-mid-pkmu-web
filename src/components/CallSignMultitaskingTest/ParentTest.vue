@@ -214,7 +214,7 @@ export default {
           play: true,
         },
         callsign: {
-          frequency: "often",
+          frequency: "seldom",
           matches: "high",
           speed: "slow",
           play: true,
