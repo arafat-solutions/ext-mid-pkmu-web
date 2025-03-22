@@ -105,7 +105,7 @@ export default {
   },
   methods: {
     startLights() {
-      this.intervalId = setInterval(this.randomLight(), this.getInterval());
+      this.intervalId = setInterval(this.randomLight, this.getInterval());
     },
     clearAllIntervals() {
       clearInterval(this.intervalId);
