@@ -485,7 +485,7 @@ export default {
               this.responseQuestion = Date.now();
               this.isShowQuestion = true;
 
-              let intervalQuestion = 15;
+              let intervalQuestion = 20;
               this.countdownNextQuestion = setInterval(() => {
                 if (intervalQuestion > 0) {
                   intervalQuestion--;
