@@ -482,7 +482,7 @@ const isHeadingOutOfTarget = computed(() => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
   if (currentConfig?.compass === "inactive") return false;
   const diff = Math.abs(heading.value - -headingTarget.value);
-  return Math.min(diff, 360 - diff) > 5|| Math.min(diff, 360 - diff) < -5;
+  return Math.min(diff, 360 - diff) > 15|| Math.min(diff, 360 - diff) < -15;
 });
 
 const isAltitudeOutOfTarget = computed(() => {
