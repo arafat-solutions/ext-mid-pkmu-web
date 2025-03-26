@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen">
+  <div class="flex h-screen" tabindex="0" @keydown="handleKeyPress" ref="loginContainer">
     <div class="w-7/12 bg-white flex items-center justify-center relative">
       <div class="w-96 p-8 shadow-lg bg-white rounded-xl">
         <h2 class="text-2xl font-bold mb-2 text-left">Login</h2>
@@ -28,11 +28,7 @@
     </div>
 
     <div class="w-5/12 bg-[#6E4AE4] flex flex-col items-center justify-center text-white relative">
-      <div class="absolute top-4 right-4">
-        <button @click="openAdminLoginModal" class="text-[#6E4AE4] hover:text-[#5C3ED6] text-sm">
-          <i class="fas fa-cog mr-2"></i> Konfigurasi Device
-        </button>
-      </div>
+      <!-- Removed the admin button from here -->
       <img src="@/assets/image.png" alt="Background" class="absolute inset-0 w-full h-full object-cover" />
     </div>
     <AdminLoginModal ref="adminLoginModal" />
@@ -54,13 +50,60 @@ export default {
       nrp: '',
       code: '',
       loading: false,
-      error: null
+      error: null,
+      // Keyboard sequence detection
+      secretCode: ['p', 'k', 'm', 'u'],
+      userInput: [],
+      maxBufferTime: 2000, // 2 seconds between keypresses
+      lastKeyTime: 0
     };
   },
+  mounted() {
+    // Focus the container to capture keyboard events
+    this.$refs.loginContainer.focus();
+  },
   methods: {
+    handleKeyPress(event) {
+      const currentTime = new Date().getTime();
+      
+      // Reset sequence if too much time has passed since last keypress
+      if (currentTime - this.lastKeyTime > this.maxBufferTime && this.userInput.length > 0) {
+        this.userInput = [];
+      }
+      
+      this.lastKeyTime = currentTime;
+      this.userInput.push(event.key);
+      
+      // Keep only the last N keys where N is the length of the secret code
+      if (this.userInput.length > this.secretCode.length) {
+        this.userInput.shift();
+      }
+      
+      // Check if the sequence matches
+      if (this.checkSequence()) {
+        this.openAdminLoginModal();
+        this.userInput = []; // Reset after success
+      }
+    },
+    
+    checkSequence() {
+      if (this.userInput.length !== this.secretCode.length) {
+        return false;
+      }
+      
+      for (let i = 0; i < this.secretCode.length; i++) {
+        if (this.userInput[i] !== this.secretCode[i]) {
+          return false;
+        }
+      }
+      
+      return true;
+    },
+    
     openAdminLoginModal() {
       this.$refs.adminLoginModal.openModal();
     },
+    
     async login() {
       this.loading = true;
       const workstationId = localStorage.getItem('designatedWorkstation')
