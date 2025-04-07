@@ -75,7 +75,7 @@
         class="text-2xl centered-component"
         style="top: 70%; position: fixed"
       >
-        ANDA DIMINTA UNTUK MENGARAHKAN SIMBOL HIJAU MENUJU SIMBOL MERAH MEMALUI
+        ANDA DIMINTA UNTUK MENGARAHKAN SIMBOL HIJAU MENUJU SIMBOL MERAH MELALUI
         JALUR YANG TERSEDIA<br />
         Setelah tugas berhasil dilakukan, apabila dianggap sudah memadai tekan
         tombol selesai latihan menuju ke tes aktual

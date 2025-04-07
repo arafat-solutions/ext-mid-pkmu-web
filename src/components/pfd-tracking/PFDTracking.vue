@@ -1162,7 +1162,7 @@ const randomizeTargets = () => {
     } else if (headingTarget.value < 20) {
       headingDirection.value = "increase";
     }
-    headingTarget.value += getRandomChange(0.1, headingDirection);
+    headingTarget.value += getRandomChange(0.2, headingDirection);
 
     // Ensure altitude direction is properly set
     if (altitudeTarget.value > 14000) {
@@ -1170,7 +1170,7 @@ const randomizeTargets = () => {
     } else if (altitudeTarget.value < 2000) {
       altitudeDirection.value = "increase";
     }
-    altitudeTarget.value += getRandomChange(1, altitudeDirection);
+    altitudeTarget.value += getRandomChange(2, altitudeDirection);
   }
 };
 

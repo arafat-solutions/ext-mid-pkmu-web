@@ -35,14 +35,14 @@
             :callsign-data="configBe.callsign"
             :update-results="updateResults"
             ref="callSignTest"
-              :isTraining="isTraining"
-            class="centered-component"
+            :isTraining="isTraining"
           />
           <ColorTest
             v-if="currentTraining === 'color_tank' && configReady"
             :color-tank-data="configBe.color_tank"
             :update-results="updateResults"
             :finalScore="results.color_tank.final_score"
+            :isTraining="isTraining"
             class="centered-component"
           />
           <CircleTest
@@ -60,6 +60,7 @@
               v-if="configReady"
               :color-tank-data="configBe.color_tank"
               :update-results="updateResults"
+              :isTraining="isTraining"
               :finalScore="results.color_tank.final_score"
             />
           </div>
@@ -97,6 +98,7 @@
             v-if="configReady"
             :color-tank-data="configBe.color_tank"
             :update-results="updateResults"
+            :isTraining="isTraining"
             :finalScore="results.color_tank.final_score"
           />
         </div>
