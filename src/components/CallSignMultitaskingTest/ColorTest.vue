@@ -2,7 +2,7 @@
     <div class="color-test">
         <canvas ref="colorCanvas" :width="550" :height="550"></canvas>
     </div>
-    <div class="border p-2 bg-gray-200 -mt-4 w-12">{{ finalScore }}</div>
+    <div class="border p-2 bg-gray-200 -mt-4 w-12" v-if="isTraining">{{ finalScore }}</div>
     <VirtualKeyboard :active-keys="activeKeys" @key-press="handleKeyPress" @key-release="handleKeyRelease" />
 </template>
 
@@ -17,7 +17,8 @@ export default {
             required: true
         },
         updateResults: Function,
-        finalScore: Number
+        finalScore: Number,
+        isTraining: Boolean
     },
     data() {
         return {

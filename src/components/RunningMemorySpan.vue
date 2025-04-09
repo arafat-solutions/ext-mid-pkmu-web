@@ -41,7 +41,7 @@
     </div>
 
     <div class="input-simulation-container">
-      <div v-if="isShowQuestion">
+      <div v-if="isShowQuestion && !isSubmitted">
         <div class="question">
           <p class="text-question">Urutkan dari angka terakhir</p>
           <p
@@ -91,13 +91,13 @@
             <button class="digit-number" @click="appendToExpression('0')">
               0
             </button>
-            <button class="digit-number" @click="submitAnswer()">Kirim</button>
+            <button class="digit-number" @click="()=>{isSubmitted=true}">Kirim</button>
           </div>
         </div>
       </div>
 
       <div v-else style="margin-top: 20%">
-        <p class="text-question">Dengarkan angka yang disebutkan!</p>
+        <p class="text-question"> {{ isSubmitted ? "Tunggu Sampai Pertanyaan Selanjutnya!" : "Dengarkan angka yang disebutkan!" }}</p>
       </div>
     </div>
     <button
@@ -128,6 +128,7 @@ export default {
       isConfigLoaded: false,
       isLoading: false,
       isTrainingCompleted: false,
+      isSubmitted: false,
       countdownInterval: null,
       countdownNextQuestion: null,
       expression: "",
@@ -433,6 +434,7 @@ export default {
 
       // Clear feedback after delay
       setTimeout(() => {
+        this.isSubmitted = false;
         this.showFeedback = false;
         this.clearExpression();
         this.generateAudio();
