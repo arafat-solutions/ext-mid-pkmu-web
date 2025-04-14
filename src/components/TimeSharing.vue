@@ -26,13 +26,14 @@ import MathTest from "@/components/time-sharing/MathTest.vue";
 import TrainingSession from "@/components/time-sharing/TrainingSession.vue";
 import { getConfigs, getStoredIndices } from "@/utils/configs";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "SimulatorParent",
   data() {
     return {
       isTraining: true,
-      currentComponent: 'PlaneSimulator',
+      currentComponent: "PlaneSimulator",
       mathTestResults: [],
       userInputsMathTest: [],
       configs: [],
@@ -89,6 +90,11 @@ export default {
       this.setConfig(this.config);
     },
     startExam() {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Time Sharing Test",
+      };
+      patchWorkstation(updatePayload);
       this.isTraining = false;
       this.setConfig(this.config);
     },
@@ -98,12 +104,15 @@ export default {
       });
     },
     switchTask() {
-      this.currentComponent = this.currentComponent === 'PlaneSimulator' ? 'MathTest' : 'PlaneSimulator';
+      this.currentComponent =
+        this.currentComponent === "PlaneSimulator"
+          ? "MathTest"
+          : "PlaneSimulator";
     },
     handleQuestionResult(result) {
       this.mathTestResults.push(result);
       this.userInputsMathTest.push({
-        type: result.isCorrect ? 'correct' : 'wrong',
+        type: result.isCorrect ? "correct" : "wrong",
         responseTime: result.responseTime, // if missed, set response time to 1000ms
         timestamp: Date.now(),
       });
@@ -119,46 +128,44 @@ export default {
           mathTestResults: this.mathTestResults,
           graph_data: this.userInputsMathTest,
         },
-      }
+      };
 
       try {
         if (this.isTrial) {
-          this.$router.push('/module');
+          this.$router.push("/module");
           return;
         }
 
         this.isLoading = true;
 
         const API_URL = process.env.VUE_APP_API_URL;
-        const res = await fetch(`${API_URL}/api/submission`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        )
+        const res = await fetch(`${API_URL}/api/submission`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
         if (!res.ok) {
-          throw new Error('Failed Submit Test');
+          throw new Error("Failed Submit Test");
         }
       } catch (error) {
         console.error(error), "error";
       } finally {
         this.isLoading = false;
 
-        removeTestByNameAndUpdateLocalStorage('Time Sharing Test 2023');
-        localStorage.removeItem('reloadCountTimeSharing');
-        this.$router.push('/module');
+        removeTestByNameAndUpdateLocalStorage("Time Sharing Test 2023");
+        localStorage.removeItem("reloadCountTimeSharing");
+        this.$router.push("/module");
       }
-      console.log('Submit test payload:', payload);
-    }
+      console.log("Submit test payload:", payload);
+    },
   },
   components: {
     PlaneSimulator,
     MathTest,
     TrainingSession,
-  }
+  },
 };
 </script>

@@ -54,6 +54,7 @@
 </template>
 
 <script>
+import { patchWorkstation } from "@/utils/fetch";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils/index";
 
 export default {
@@ -191,6 +192,11 @@ export default {
       this.clearQuestionMarkTimer();
     },
     startTest() {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Time Sharing Test",
+      };
+      patchWorkstation(updatePayload);
       this.isShowModal = false;
       this.cleanUp();
       this.isTraining = false;
@@ -200,6 +206,11 @@ export default {
       this.isShowModal = true;
     },
     startTraining() {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Time Sharing Test",
+      };
+      patchWorkstation(updatePayload);
       this.isTraining = true;
       this.createRandomQuestion();
       this.initConfig();

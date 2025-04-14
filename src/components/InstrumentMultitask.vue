@@ -8,8 +8,12 @@
           </b>
         </h2>
 
-        <p style="font-size: 20px" class="flex flex-col items-center" v-if="!trainingCompleted"
-          v-html="instructionModalContent"></p>
+        <p
+          style="font-size: 20px"
+          class="flex flex-col items-center"
+          v-if="!trainingCompleted"
+          v-html="instructionModalContent"
+        ></p>
         <p v-else>Apakah Anda Yakin <br />akan memulai tes?</p>
 
         <button @click="startTrainingTask">
@@ -22,41 +26,84 @@
       <div v-if="timeLeft > 0 && trainingCompleted" class="timer-container">
         Time: {{ formattedTime }}
       </div>
-      <div v-show="!isTimesUp" :class="[
-        trainingCompleted ? 'column-45 mt-3' : '',
-        getCurrentTrainingTask() === 'Arithmetic' ? 'arithmetic' : '',
-      ]">
-        <HorizonTest ref="horizonTaskRef" :speed="config.horizon.speed" :minuteTime="minuteTime" :isTimesUp="isTimesUp"
-          :isPause="isPauseHorizon" :isActive="config.horizon.isActive" @getResult="horizonResult" />
-        <ArithmeticTask ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetic.difficulty"
-          :minuteTime="minuteTime" :isPause="isPauseArithmetic" :isActive="config.arithmetic.isActive"
-          v-if="config.arithmetic.isActive" :useSound="config.arithmetic.useSound"
-          :canPressAnswer="config.arithmetic.canPressAnswer" :allowSound="allowSound" @getResult="arithmeticResult"
-          :isTraining="!trainingCompleted" />
+      <div
+        v-show="!isTimesUp"
+        :class="[
+          trainingCompleted ? 'column-45 mt-3' : '',
+          getCurrentTrainingTask() === 'Arithmetic' ? 'arithmetic' : '',
+        ]"
+      >
+        <HorizonTest
+          ref="horizonTaskRef"
+          :speed="config.horizon.speed"
+          :minuteTime="minuteTime"
+          :isTimesUp="isTimesUp"
+          :isPause="isPauseHorizon"
+          :isActive="config.horizon.isActive"
+          @getResult="horizonResult"
+        />
+        <ArithmeticTask
+          ref="arithmeticTaskRef"
+          :isTimesUp="isTimesUp"
+          :difficulty="config.arithmetic.difficulty"
+          :minuteTime="minuteTime"
+          :isPause="isPauseArithmetic"
+          :isActive="config.arithmetic.isActive"
+          v-if="config.arithmetic.isActive"
+          :useSound="config.arithmetic.useSound"
+          :canPressAnswer="config.arithmetic.canPressAnswer"
+          :allowSound="allowSound"
+          @getResult="arithmeticResult"
+          :isTraining="!trainingCompleted"
+        />
       </div>
-      <div :class="trainingCompleted ? 'column-10 mt-3' : ''" :style="getCurrentTrainingTask() === 'Alert Light'
-          ? 'margin-right: 110px;'
-          : ''
-        " v-show="!isTimesUp">
-        <AlertLights :speed="config.alertLight.speed" :isTimesUp="isTimesUp" :frequency="config.alertLight.frequency"
-          :isPause="isPauseAlertLight" :isActive="config.alertLight.isActive" :isTraining="!trainingCompleted"
-          v-if="config.alertLight.isActive" @getResult="alertLightResult" />
+      <div
+        :class="trainingCompleted ? 'column-10 mt-3' : ''"
+        :style="
+          getCurrentTrainingTask() === 'Alert Light'
+            ? 'margin-right: 110px;'
+            : ''
+        "
+        v-show="!isTimesUp"
+      >
+        <AlertLights
+          :speed="config.alertLight.speed"
+          :isTimesUp="isTimesUp"
+          :frequency="config.alertLight.frequency"
+          :isPause="isPauseAlertLight"
+          :isActive="config.alertLight.isActive"
+          :isTraining="!trainingCompleted"
+          v-if="config.alertLight.isActive"
+          @getResult="alertLightResult"
+        />
       </div>
-      <div :class="[trainingCompleted ? 'column-45 mt-3 text-left' : '',
+      <div
+        :class="[
+          trainingCompleted ? 'column-45 mt-3 text-left' : '',
 
-      getCurrentTrainingTask() === 'Gauges Meter' ? 'gauges-meter' : '',
-      ]" v-show="!isTimesUp"
-:style="getCurrentTrainingTask() === 'Kombinasi'
-          ? 'max-width: 440px;'
-          : ''
+          getCurrentTrainingTask() === 'Gauges Meter' ? 'gauges-meter' : '',
+        ]"
+        v-show="!isTimesUp"
+        :style="
+          getCurrentTrainingTask() === 'Kombinasi' ? 'max-width: 440px;' : ''
         "
       >
-        <GaugesMeter :isTimesUp="isTimesUp" :isPause="isPauseGaugesMeter" :frequency="config.gaugesMeter.frequency"
-          :isActive="config.gaugesMeter.isActive" v-if="config.gaugesMeter.isActive" @getResult="gaugesMeterResult"
-          :size="50" />
+        <GaugesMeter
+          :isTimesUp="isTimesUp"
+          :isPause="isPauseGaugesMeter"
+          :frequency="config.gaugesMeter.frequency"
+          :isActive="config.gaugesMeter.isActive"
+          v-if="config.gaugesMeter.isActive"
+          @getResult="gaugesMeterResult"
+          :size="50"
+        />
       </div>
     </div>
-    <button v-if="!trainingCompleted" @click="endTrainingTask" class="finish-button">
+    <button
+      v-if="!trainingCompleted"
+      @click="endTrainingTask"
+      class="finish-button"
+    >
       Selesai Latihan
     </button>
     <div v-if="isLoading" class="loading-container">
@@ -76,6 +123,7 @@ import {
   completeTrainingTestAndUpdateLocalStorage,
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   components: {
@@ -266,9 +314,15 @@ export default {
     startTrainingTask() {
       this.showInstructionModal = false;
 
+      const updatePayload = {
+        status: "",
+        name: "Multitasking With Instrument",
+      };
       if (this.trainingCompleted) {
+        updatePayload.status = "IN_TESTING";
         this.startActualTest();
       } else {
+        updatePayload.status = "IN_TRAINING";
         switch (this.currentTrainingTask) {
           case "gaugesMeter":
             // stop audio
@@ -291,6 +345,8 @@ export default {
             break;
         }
       }
+
+      patchWorkstation(updatePayload);
     },
     startGaugesMeterTraining() {
       this.minuteTime = 99999;

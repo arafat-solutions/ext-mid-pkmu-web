@@ -53,6 +53,7 @@
 
 <script>
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   data() {
@@ -691,11 +692,20 @@ export default {
     },
 
     startTest() {
+      const updatePayload = {
+        status: "",
+        name: "Operative Multitasking Test",
+      };
+
       if (!this.trainingCompleted) {
+        updatePayload.status = "IN_TRAINING";
         this.startTrainingTask();
       } else {
+        updatePayload.status = "IN_TESTING";
         this.startActualTest();
       }
+
+      patchWorkstation(updatePayload);
     },
 
     startTrainingTask() {

@@ -32,24 +32,50 @@
   <div class="main-view" v-if="isConfigLoaded">
     <div class="timer-container">Soal: {{ taskNow }} / {{ numberOfTask }}</div>
     <div class="checkbox-grid">
-      <div v-for="(row, rowIndex) in totalRow" :key="rowIndex" class="checkbox-row">
-        <div v-for="(col, colIndex) in totalColumn" :key="colIndex" class="checkbox-item">
-          <label :for="`checkbox-${rowIndex}-${colIndex}`" v-if="col % this.stringSizeLength === 1" class="mr-2">{{
-            String.fromCharCode(96 + Math.ceil(col / this.stringSizeLength))
-          }})</label>
+      <div
+        v-for="(row, rowIndex) in totalRow"
+        :key="rowIndex"
+        class="checkbox-row"
+      >
+        <div
+          v-for="(col, colIndex) in totalColumn"
+          :key="colIndex"
+          class="checkbox-item"
+        >
+          <label
+            :for="`checkbox-${rowIndex}-${colIndex}`"
+            v-if="col % this.stringSizeLength === 1"
+            class="mr-2"
+            >{{
+              String.fromCharCode(96 + Math.ceil(col / this.stringSizeLength))
+            }})</label
+          >
           <div class="checkbox-wrapper">
             <label class="checkbox">
-              <input class="checkbox__trigger visuallyhidden" :class="[
-                {
-                  'wrong-answer':
-                    wrongRows[rowIndex][colIndex] && !isTrainingCompleted,
-                  disabled: row !== currentRow,
-                },
-              ]" type="checkbox" :id="`checkbox-${rowIndex}-${colIndex}`"
-                :disabled="row !== currentRow || currentRowDisabled" v-model="checkboxValues[rowIndex][colIndex]" />
+              <input
+                class="checkbox__trigger visuallyhidden"
+                :class="[
+                  {
+                    'wrong-answer':
+                      wrongRows[rowIndex][colIndex] && !isTrainingCompleted,
+                    disabled: row !== currentRow,
+                  },
+                ]"
+                type="checkbox"
+                :id="`checkbox-${rowIndex}-${colIndex}`"
+                :disabled="row !== currentRow || currentRowDisabled"
+                v-model="checkboxValues[rowIndex][colIndex]"
+              />
               <span class="checkbox__symbol">
-                <svg aria-hidden="true" class="icon-checkbox" width="28px" height="28px" viewBox="0 0 28 28" version="1"
-                  xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  aria-hidden="true"
+                  class="icon-checkbox"
+                  width="28px"
+                  height="28px"
+                  viewBox="0 0 28 28"
+                  version="1"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path d="M4 14l8 7L24 7"></path>
                 </svg>
               </span>
@@ -59,7 +85,9 @@
       </div>
     </div>
     <!-- add justify between -->
-    <div style="display: flex; justify-content: space-between; max-width: 924px">
+    <div
+      style="display: flex; justify-content: space-between; max-width: 924px"
+    >
       <div class="wrong-text" v-if="wrong && !isTrainingCompleted">
         {{ wrong }} jawaban salah
       </div>
@@ -68,7 +96,11 @@
         Lanjutkan
       </button>
     </div>
-    <button v-if="!isTrainingCompleted" @click="endTraining" class="finish-button">
+    <button
+      v-if="!isTrainingCompleted"
+      @click="endTraining"
+      class="finish-button"
+    >
       Selesai Latihan
     </button>
   </div>
@@ -84,6 +116,7 @@ import {
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   data() {
@@ -98,7 +131,7 @@ export default {
       taskNow: 1,
       currentTask: 1,
       numberOfTask: 10, //positive number
-      isCancelled:false,
+      isCancelled: false,
       totalRow: 10,
       stringSize: null, //AB-CD-E, AB-CD-EF, ABC-DE-FG, ABC-DEF-GH, ABC-DEF-GHJ
       includeDigits: null, //true or false
@@ -304,7 +337,7 @@ export default {
       return { correct, wrong };
     },
     cleanUp() {
-      this.isCancelled = true
+      this.isCancelled = true;
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -323,7 +356,8 @@ export default {
 
       // Speak the second utterance
       const utterance2 = this.setupSound();
-      utterance2.text = "Cocokan kombinasi huruf berikut dengan yang sudah di bacakan sebelumnya:";
+      utterance2.text =
+        "Cocokan kombinasi huruf berikut dengan yang sudah di bacakan sebelumnya:";
       await this.speakAsync(synth, utterance2);
     },
 
@@ -371,7 +405,7 @@ export default {
 
       const spellOut = (letter, delay) => {
         return new Promise((resolve) => {
-         if (this.isCancelled) return resolve();
+          if (this.isCancelled) return resolve();
           utterance.text = letter;
           synth.speak(utterance);
           setTimeout(() => {
@@ -413,7 +447,7 @@ export default {
       this.$router.push("module");
     },
     startTest() {
-      this.isCancelled = false
+      this.isCancelled = false;
       this.currentRowDisabled = false;
       this.numberOfTask = 10;
       this.canContinue = false;
@@ -428,6 +462,18 @@ export default {
       //for (const i in this.configs) {
       //  this.numberOfTask += parseInt(this.configs[i].number_of_task ?? 10);
       //}
+
+      const updatePayload = {
+        status: "",
+        name: "Acoustic Memory Test",
+      };
+      if (this.isTrainingCompleted) {
+        updatePayload.status = "IN_TESTING";
+      } else {
+        updatePayload.status = "IN_TRAINING";
+      }
+
+      patchWorkstation(updatePayload);
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -601,7 +647,7 @@ export default {
   justify-content: flex-start;
 }
 
-.checkbox-wrapper .checkbox+.checkbox {
+.checkbox-wrapper .checkbox + .checkbox {
   margin-top: var(--s-small);
 }
 
@@ -656,31 +702,35 @@ export default {
   margin: 0;
 }
 
-.checkbox-wrapper .checkbox__trigger:checked+.checkbox__symbol:after {
+.checkbox-wrapper .checkbox__trigger:checked + .checkbox__symbol:after {
   -webkit-animation: ripple 1.5s var(--e-out);
   animation: ripple 1.5s var(--e-out);
 }
 
-.checkbox-wrapper .checkbox__trigger:checked+.checkbox__symbol .icon-checkbox path {
+.checkbox-wrapper
+  .checkbox__trigger:checked
+  + .checkbox__symbol
+  .icon-checkbox
+  path {
   transition: stroke-dashoffset var(--t-base) var(--e-out);
   stroke-dashoffset: 0px;
 }
 
-.checkbox-wrapper .checkbox__trigger:focus+.checkbox__symbol {
+.checkbox-wrapper .checkbox__trigger:focus + .checkbox__symbol {
   box-shadow: 0 0 0 0.25em var(--c-primary-20-percent-opacity);
 }
 
-.checkbox-wrapper .checkbox__trigger:disabled+.checkbox__symbol {
+.checkbox-wrapper .checkbox__trigger:disabled + .checkbox__symbol {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.checkbox-wrapper .checkbox__trigger.disabled+.checkbox__symbol {
+.checkbox-wrapper .checkbox__trigger.disabled + .checkbox__symbol {
   background-color: var(--c-disabled-bg);
   border-color: var(--c-disabled-border);
 }
 
-.checkbox-wrapper .checkbox__trigger.wrong-answer+.checkbox__symbol {
+.checkbox-wrapper .checkbox__trigger.wrong-answer + .checkbox__symbol {
   border-color: red;
   /* Change border color to red for wrong answer */
   transition: border-color var(--t-base) var(--e-out);
@@ -688,7 +738,11 @@ export default {
   box-shadow: 0 0 0 0.25em rgb(255 0 0 / 20%);
 }
 
-.checkbox-wrapper .checkbox__trigger.wrong-answer+.checkbox__symbol .icon-checkbox path {
+.checkbox-wrapper
+  .checkbox__trigger.wrong-answer
+  + .checkbox__symbol
+  .icon-checkbox
+  path {
   stroke: red;
   /* Change checkbox icon color to red for wrong answer */
   transition: stroke var(--t-base) var(--e-out);

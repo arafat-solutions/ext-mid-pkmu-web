@@ -151,6 +151,7 @@ import CallSignTest from "./CallSignTest.vue";
 import ModalComponent from "./Modal.vue";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 const TRAINING_SEQUENCE = [
   "horizon",
@@ -400,6 +401,12 @@ export default {
       this.configBe.horizon = { ...horizon, play: subtask?.horizon };
     },
     handleTrainingConfirm() {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Multitasking Mix With Call Sign",
+      };
+
+      patchWorkstation(updatePayload);
       clearInterval(this.tesInterval);
       this.isTrainingModalVisible = false;
       this.setTrainingConfig(this.currentTraining);
@@ -413,6 +420,12 @@ export default {
       }
     },
     handleTestConfirm() {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Multitasking Mix With Call Sign",
+      };
+
+      patchWorkstation(updatePayload);
       clearInterval(this.tesInterval);
       this.isTestModalVisible = false;
       this.isActualTest = true;

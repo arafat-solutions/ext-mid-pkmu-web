@@ -139,6 +139,7 @@ import {
   completeTrainingTestAndUpdateLocalStorage,
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "MainView",
@@ -375,9 +376,15 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
     startTrainingTask() {
       this.showInstructionModal = false;
 
+      const updatePayload = {
+        status: "",
+        name: "Multitasking With Color",
+      };
       if (this.trainingCompleted) {
+        updatePayload.status = "IN_TESTING";
         this.startActualTest();
       } else {
+        updatePayload.status = "IN_TRAINING";
         switch (this.currentTrainingTask) {
           case "colorTank":
             this.currentSlide = 0;
@@ -397,6 +404,8 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
             break;
         }
       }
+
+      patchWorkstation(updatePayload);
     },
     startHorizonTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
@@ -733,8 +742,10 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
 .finish-button {
   position: fixed;
   bottom: 20px;
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to truly center */
+  left: 50%;
+  /* Center horizontally */
+  transform: translateX(-50%);
+  /* Adjust to truly center */
   padding: 10px 20px;
   font-size: 16px;
   background-color: #007bff;

@@ -290,6 +290,7 @@ import StringMemorization from "./StringMemory.vue";
 import AudioInformation from "./AudioInformation.vue";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "PMATraining",
@@ -347,6 +348,12 @@ export default {
     let timer;
 
     const startTraining = () => {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "PMA Test",
+      };
+
+      patchWorkstation(updatePayload);
       showModal.value = false;
       currentStep.value = "tracking_joystick";
       showModalJoystick.value = true;
@@ -411,6 +418,12 @@ export default {
     };
 
     const startActualTest = () => {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "PMA Test",
+      };
+
+      patchWorkstation(updatePayload);
       showModalCombined.value = false;
       trainingComplete.value = false;
       isActualTest.value = true;

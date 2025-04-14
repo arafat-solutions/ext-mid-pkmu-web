@@ -159,6 +159,7 @@ import {
 } from "@/utils/index";
 import { useRouter } from "vue-router";
 import Modal from "./shape-recognition/ModalConfirmation.vue";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "ShapeRecognition",
@@ -695,6 +696,12 @@ export default {
     function startTraining() {
       showTrainingModal.value = false;
       gameState.value = "training";
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Shapre Recognition",
+      };
+
+      patchWorkstation(updatePayload);
       initConfig();
       nextTick(() => {
         drawQuestions();
@@ -704,6 +711,12 @@ export default {
     function endTraining() {
       gameState.value = "idle";
       showTestModal.value = true;
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Shape Recognition",
+      };
+
+      patchWorkstation(updatePayload);
       completeTrainingTestAndUpdateLocalStorage("Shape Recognition");
       resetGameState();
     }

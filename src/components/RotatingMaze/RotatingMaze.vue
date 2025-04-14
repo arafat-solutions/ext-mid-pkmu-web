@@ -100,6 +100,7 @@ import {
 } from "@/utils/index";
 import { useRouter } from "vue-router";
 import Modal from "./ModalTraining.vue"; // Assume we have a Modal component
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "RotationMaze",
@@ -647,6 +648,12 @@ export default {
     };
 
     const startTraining = () => {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Rotating Maze",
+      };
+
+      patchWorkstation(updatePayload);
       showTrainingStartModal.value = false;
       isTraining.value = true;
       resetGame();
@@ -655,6 +662,12 @@ export default {
     };
 
     const startActualTest = () => {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Rotating Maze",
+      };
+
+      patchWorkstation(updatePayload);
       showTestStartModal.value = false;
       isTraining.value = false;
       resetGame();

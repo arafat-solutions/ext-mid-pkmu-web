@@ -297,6 +297,7 @@ import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import LinearGauge from "./LinearGauge.vue";
+import { patchWorkstation } from "@/utils/fetch";
 
 const router = useRouter();
 
@@ -807,7 +808,7 @@ const updatePlanePosition = () => {
       };
 
       // Handle heading (X-axis) with reduced speed
-      const rawX = applyDeadzone(stick.axes[0], 0.1) * 0.4
+      const rawX = applyDeadzone(stick.axes[0], 0.1) * 0.4;
       if (
         !trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("heading")
@@ -1126,6 +1127,12 @@ const updateIndicator = (indicator, mode) => {
 };
 
 const startTrainingStep = () => {
+  const updatePayload = {
+    status: "IN_TRAINING",
+    name: "PFD Tracking Test",
+  };
+
+  patchWorkstation(updatePayload);
   showInstructions.value = false;
   const activeIndicators = trainingSteps[trainingStep.value].activeIndicators;
 
@@ -1343,6 +1350,12 @@ const showStartModal = ref(true);
 // Add this method
 const handleStartExam = () => {
   showStartModal.value = false;
+  const updatePayload = {
+    status: "IN_TESTING",
+    name: "PFD Tracking Test",
+  };
+
+  patchWorkstation(updatePayload);
   //initSounds();
   startExam();
   //initAudioContext();

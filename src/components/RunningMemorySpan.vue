@@ -116,6 +116,7 @@ import {
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "RunningMemorySpan",
@@ -191,11 +192,17 @@ export default {
   methods: {
     startTest() {
       this.cleanUp();
+
+    let updatePayload = {
+      status: "",
+      name: "Running Memory Span Test",
+    };
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
-
+        updatePayload.status = "IN_TRAINING"
         this.durationTest = 9999;
       } else {
+        updatePayload.status = "IN_TESTING"
         this.setConfig(this.configs[this.indexConfig]);
 
         this.durationTest = 0;
@@ -205,6 +212,9 @@ export default {
 
         this.config.duration = this.configs[this.indexConfig].duration * 60;
       }
+
+
+      patchWorkstation(updatePayload);
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;

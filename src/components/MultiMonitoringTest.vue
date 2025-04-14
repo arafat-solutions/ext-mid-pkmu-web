@@ -114,6 +114,7 @@ import {
   completeTrainingTestAndUpdateLocalStorage,
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
+import { patchWorkstation } from "@/utils/fetch";
 
 const loading = ref(false);
 const canvasWidth = ref(700);
@@ -236,13 +237,22 @@ function getModalMessage() {
 
 function handleConfirm() {
   isModalVisible.value = false;
+  const updatePayload = {
+    status: "",
+    name: "Multi Monitoring Test",
+  };
+
   if (isTraining.value) {
+    updatePayload.status = 'IN_TRAINING'
     reset();
     startTrainingSession();
   } else {
+    updatePayload.status = 'IN_TESTING'
     reset();
     startFullTest();
   }
+
+  patchWorkstation(updatePayload);
 }
 
 function startTrainingSession() {

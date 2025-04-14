@@ -91,6 +91,7 @@ import {
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   data() {
@@ -268,11 +269,18 @@ export default {
     },
 
     startTest() {
+      const updatePayload = {
+        status: "",
+        name: "Signal Processing Test",
+      };
+
       if (!this.isTrainingCompleted) {
+        updatePayload.status = "IN_TRAINING";
         this.setConfig(this.configs[0]);
         this.minuteTime = 9999;
         this.timeLeft = this.minuteTime;
       } else {
+        updatePayload.status = "IN_TESTING";
         this.setConfig(this.configs[this.indexConfig]);
         this.minuteTime = this.configs.reduce(
           (acc, config) => acc + Number(config.duration),
@@ -280,6 +288,8 @@ export default {
         );
         this.timeLeft = this.minuteTime * 60;
       }
+
+      patchWorkstation(updatePayload);
 
       this.isModalVisible = false;
 
@@ -591,7 +601,7 @@ export default {
       const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
       const configData = getConfigs("signal-processing-test");
       const totalQuestion = this.currentIndexQuestion + 1;
-      console.log(this.configs)
+      console.log(this.configs);
       const payload = {
         testSessionId: scheduleData.sessionId,
         userId: scheduleData.userId,

@@ -81,6 +81,7 @@ import {
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   data() {
@@ -189,11 +190,17 @@ export default {
     },
     startTest() {
       clearInterval(this.countdownInterval);
+      const updatePayload = {
+        status: "",
+        name: "Radar Vigilance Test",
+      };
       if (!this.isTrainingCompleted) {
+        updatePayload.status = 'IN_TRAINING'
         this.setConfig(this.configs[0]);
 
         this.durationTest = 99999999; // make the test forever
       } else {
+        updatePayload.status = 'IN_TESTING'
         this.setConfig(this.configs[this.indexConfig]);
 
         this.durationTest = 0;
@@ -203,6 +210,9 @@ export default {
 
         this.config.duration = this.configs[this.indexConfig].duration * 60;
       }
+
+
+      patchWorkstation(updatePayload);
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;

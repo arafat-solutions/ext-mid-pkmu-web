@@ -118,6 +118,7 @@ import {
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "SpatialOrientation",
@@ -127,7 +128,7 @@ export default {
       isModalVisible: false,
       isButtonDisabled: false,
       isConfigLoaded: false,
-      questionTimer:null,
+      questionTimer: null,
       isLoading: false,
       isShowAnswerBox: false,
       isTrainingCompleted: false,
@@ -195,17 +196,23 @@ export default {
   },
   methods: {
     startTest() {
+      const updatePayload = {
+        status: "",
+        name: "Spatial Orientation",
+      };
       this.totalQuestionConfig = 1;
       this.answerIsRight = null;
       this.selectedAnswer = null;
       this.answer = null;
       if (!this.isTrainingCompleted) {
+        updatePayload.status = "IN_TRAINING";
         this.setConfig(this.configs[0]);
 
         this.config.current_question = 1;
         this.totalQuestion = 9999;
         this.questionDuration = 25000;
       } else {
+        updatePayload.status = "IN_TESTING";
         this.setConfig(this.configs[this.indexConfig]);
 
         this.config.current_question = 1;
@@ -214,6 +221,8 @@ export default {
           this.totalQuestion += parseInt(this.configs[i].number_of_question);
         }
       }
+
+      patchWorkstation(updatePayload);
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -392,7 +401,6 @@ export default {
       this.config.current_question++;
       this.totalQuestionConfig++;
       this.answerIsRight = null;
-
     },
     async generateLines() {
       this.optionAnswers = [];
@@ -582,7 +590,11 @@ export default {
       }
 
       this.answer = this.question === "left" ? this.leftTurns : this.rightTurns;
-      console.log('jawaban',this.answer,this.question === "left" ? this.leftTurns : this.rightTurns)
+      console.log(
+        "jawaban",
+        this.answer,
+        this.question === "left" ? this.leftTurns : this.rightTurns
+      );
 
       const totalOptions = 10;
       this.optionAnswers = [];
@@ -661,7 +673,7 @@ export default {
       //    this.leftTurns++;
       //  }
       //}
-      console.log(isInit)
+      console.log(isInit);
     },
     startTailDisappearance(startIndex = 0) {
       const canvas = this.$refs.lineCanvas;

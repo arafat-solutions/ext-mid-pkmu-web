@@ -77,6 +77,7 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import * as THREE from "three";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
+import { patchWorkstation } from "@/utils/fetch";
 
 // Intensity level configurations
 const ANOMALI_INTENSITY = {
@@ -370,6 +371,13 @@ export default {
       timeRemaining.value = CONFIG.TRAINING_DURATION;
       activeConfig.value = configs[0]; // Use first config for training
       userInputs.value = [];
+
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Multidimensional Coordination Test",
+      };
+
+      patchWorkstation(updatePayload);
       resetAirplanePosition();
     };
 
@@ -383,6 +391,12 @@ export default {
       timeRemaining.value = 1000;
       userInputs.value = [];
       resetAirplanePosition();
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Multidimensional Coordination Test",
+      };
+
+      patchWorkstation(updatePayload);
     };
 
     const resetAirplanePosition = () => {
