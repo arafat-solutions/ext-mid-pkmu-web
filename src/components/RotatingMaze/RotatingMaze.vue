@@ -9,10 +9,7 @@
         secepat mungkin. Sesi ini akan membantu Anda terbiasa dengan kontrol dan
         tingkat kesulitan.
       </p>
-      <button
-        @click="startTraining"
-        class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2"
-      >
+      <button @click="startTraining" class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2">
         Mulai Latihan
       </button>
     </Modal>
@@ -24,10 +21,7 @@
         Kerja bagus menyelesaikan latihan! Anda sekarang siap untuk memulai tes
         sebenarnya. Ingat, kinerja Anda dalam tes ini akan dicatat.
       </p>
-      <button
-        @click="startActualTest"
-        class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2"
-      >
+      <button @click="startActualTest" class="bg-[#6757dc] text-white px-4 py-2 rounded-lg mt-2">
         Mulai Tes
       </button>
     </Modal>
@@ -39,42 +33,29 @@
     </div>
 
     <div id="containerMaze">
-      <div
-        class="circularBaseMaze"
-        :style="{
-          position: 'fixed',
+      <div class="circularBaseMaze" :style="{
+        position: 'fixed',
+        left: '50%',
+        top: '35%',
+        transform: 'translate(-50%, -50%)',
+      }">
+        <div id="visualizerMaze" :style="{
+          width: `${mazeWidth}px`,
+          height: `${mazeHeight}px`,
+          position: 'absolute',
           left: '50%',
-          top: '35%',
-          transform: 'translate(-50%, -50%)',
-        }"
-      >
-        <div
-          id="visualizerMaze"
-          :style="{
-            width: `${mazeWidth}px`,
-            height: `${mazeHeight}px`,
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`,
-          }"
-        >
-          <div
-            id="gridMaze"
-            :style="{
-              width: `${cellSize * gridSizeX}px`,
-              height: `${cellSize * gridSizeY}px`,
-            }"
-          ></div>
+          top: '50%',
+          transform: `translate(-50%, -50%) rotate(${rotationDegree}deg)`,
+        }">
+          <div id="gridMaze" :style="{
+            width: `${cellSize * gridSizeX}px`,
+            height: `${cellSize * gridSizeY}px`,
+          }"></div>
           <div class="rotationIndicatorMaze"></div>
           <div class="northIndicatorMaze">U</div>
         </div>
       </div>
-      <p
-        v-if="isTraining"
-        class="text-2xl centered-component"
-        style="top: 70%; position: fixed"
-      >
+      <p v-if="isTraining" class="text-2xl centered-component" style="top: 70%; position: fixed">
         ANDA DIMINTA UNTUK MENGARAHKAN SIMBOL HIJAU MENUJU SIMBOL MERAH MELALUI
         JALUR YANG TERSEDIA<br />
         Setelah tugas berhasil dilakukan, apabila dianggap sudah memadai tekan
@@ -131,6 +112,8 @@ export default {
     const lastMoveTime = ref(performance.now());
     const rotationDegree = ref(0);
     const isRotating = ref(false);
+    const actualTestCount = ref(0);
+    const tempFirstResult = ref(null);
     const isRotationActive = ref(true);
     const loadingGenerating = ref(false);
     const isTraining = ref(true);
@@ -245,7 +228,7 @@ export default {
         y % 2 === 0 ||
         (x === startPos.value[0] && y === startPos.value[1]) ||
         Math.abs(x - startPos.value[0]) + Math.abs(y - startPos.value[1]) <
-          minDistance
+        minDistance
       );
       return [x, y];
     };
@@ -494,7 +477,7 @@ export default {
     const distance = (point_1, point_2) => {
       return Math.sqrt(
         Math.pow(point_2[0] - point_1[0], 2) +
-          Math.pow(point_2[1] - point_1[1], 2)
+        Math.pow(point_2[1] - point_1[1], 2)
       );
     };
 
@@ -843,7 +826,16 @@ export default {
           !isTraining.value &&
           completedMazes.value == testMazes.value
         ) {
-          await submitResult();
+          actualTestCount.value++;
+          if (actualTestCount.value < 2) {
+            tempFirstResult.value = {
+              mazecompletions: arrayMetrics.value,
+              graph_data: mazeCompletionTime.value,
+            };
+            finishTraining();
+          } else {
+            await submitResult();
+          }
         } else {
           stopRotation();
           loadingGenerating.value = true;
@@ -991,7 +983,8 @@ export default {
           testSessionId: config.value.sessionId,
           userId: config.value.userId,
           batteryTestId: config.value.testId,
-          result: {
+          result: tempFirstResult.value,
+          result2: {
             mazecompletions: arrayMetrics.value,
             graph_data: mazeCompletionTime.value,
           },
@@ -1023,9 +1016,8 @@ export default {
     const formatTime = (seconds) => {
       const minutes = Math.floor(seconds / 60);
       const remainderSeconds = seconds % 60;
-      return `${minutes}:${
-        remainderSeconds < 10 ? "0" : ""
-      }${remainderSeconds}`;
+      return `${minutes}:${remainderSeconds < 10 ? "0" : ""
+        }${remainderSeconds}`;
     };
 
     const handleBeforeUnload = () => {
@@ -1151,8 +1143,7 @@ export default {
   border-left: 20px solid white;
 
   /* Add the black border */
-  filter: drop-shadow(-2px 0 0 black) drop-shadow(0 2px 0 black)
-    drop-shadow(2px 0 0 black) drop-shadow(0 -1px 0 black);
+  filter: drop-shadow(-2px 0 0 black) drop-shadow(0 2px 0 black) drop-shadow(2px 0 0 black) drop-shadow(0 -1px 0 black);
 }
 
 @-webkit-keyframes algo_in {

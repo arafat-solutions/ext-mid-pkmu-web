@@ -148,6 +148,8 @@ export default {
       charInterval: 500, //in ms
       pauseIntervalID: null,
       checkboxValues: [],
+      actualTestCount: 0,
+      tempFirstResult: null,
       result: {
         correct: 0,
         wrong: 0,
@@ -506,7 +508,16 @@ export default {
 
           return;
         } else {
-          this.submitResult();
+            this.actualTestCount += 1;
+            if (this.actualTestCount < 2) {
+              this.tempFirstResult = {
+          total_question: this.numberOfTask,
+          correct_answer: this.result.correct,
+              };
+              this.endTraining();
+            } else {
+              this.submitResult();
+            }
           return;
         }
       }
@@ -539,7 +550,9 @@ export default {
         refreshCount: parseInt(
           localStorage.getItem("reloadCountAccousticMemory")
         ),
-        result: {
+
+        result: this.tempFirstResult,
+        result2: {
           total_question: this.numberOfTask,
           correct_answer: this.result.correct,
         },

@@ -152,6 +152,14 @@ export default {
       config: {},
       configs: [],
       moduleId: null,
+      actualTestCount: 0,
+      tempFirstResult:{
+        total_question: 0,
+        correct_answer: 0,
+        avg_response_time: 0,
+        graph_data: [],
+        response_times: 0,
+      },
       sessionId: null,
       userId: null,
       testId: null,
@@ -308,6 +316,28 @@ export default {
       this.isConfigLoaded = true;
     },
     calculatedResult() {
+      this.actualTestCount += 1;
+      if (this.actualTestCount < 2) {
+      this.tempFirstResult.total_question = this.totalQuestion;
+      this.tempFirstResult.correct_answer = this.correctAnswer;
+
+      const resultTimeResponded = this.averageResponseTime();
+      this.tempFirstResult.avg_response_time = resultTimeResponded.toFixed(2);
+
+      this.tempFirstResult.response_times = this.responseDurations.map((duration) => ({
+        responseTime: duration,
+        timestamp: Date.now(),
+      }));
+
+      this.tempFirstResult.graph_data = this.userInputs;
+        this.startExam();
+      } else {
+        this.submitResult();
+      }
+    },
+    async submitResult() {
+      try {
+        this.isLoading = true;
       this.result.total_question = this.totalQuestion;
       this.result.correct_answer = this.correctAnswer;
 
@@ -321,12 +351,6 @@ export default {
 
       this.result.graph_data = this.userInputs;
 
-      this.submitResult();
-    },
-    async submitResult() {
-      try {
-        this.isLoading = true;
-
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
           testSessionId: this.sessionId,
@@ -335,7 +359,8 @@ export default {
           refreshCount: parseInt(
             localStorage.getItem("reloadCountSpatialOrientation")
           ),
-          result: this.result,
+          result: this.tempFirstResult,
+          result2: this.result,
         };
 
         const res = await fetch(`${API_URL}/api/submission`, {

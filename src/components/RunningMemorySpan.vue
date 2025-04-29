@@ -44,13 +44,10 @@
       <div v-if="isShowQuestion && !isSubmitted">
         <div class="question">
           <p class="text-question">Urutkan dari angka terakhir</p>
-          <p
-            v-if="showFeedback && !isTrainingCompleted"
-            :class="{
-              'feedback-correct': lastAnswerCorrect,
-              'feedback-wrong': !lastAnswerCorrect,
-            }"
-          >
+          <p v-if="showFeedback && !isTrainingCompleted" :class="{
+            'feedback-correct': lastAnswerCorrect,
+            'feedback-wrong': !lastAnswerCorrect,
+          }">
             {{ lastAnswerCorrect ? "Benar!" : "Salah!" }}
           </p>
         </div>
@@ -91,7 +88,7 @@
             <button class="digit-number" @click="appendToExpression('0')">
               0
             </button>
-            <button class="digit-number" @click="()=>{isSubmitted=true}">Kirim</button>
+            <button class="digit-number" @click="() => { isSubmitted = true }">Kirim</button>
           </div>
         </div>
       </div>
@@ -100,11 +97,7 @@
         <p class="text-question"> {{ isSubmitted ? "Tunggu Sampai Pertanyaan Selanjutnya!" : "Dengarkan angka yang disebutkan!" }}</p>
       </div>
     </div>
-    <button
-      v-if="!isTrainingCompleted"
-      @click="finishTraining"
-      class="finish-button"
-    >
+    <button v-if="!isTrainingCompleted" @click="finishTraining" class="finish-button">
       Selesai Latihan
     </button>
   </div>
@@ -149,8 +142,16 @@ export default {
       responseQuestion: 0,
       responseTime: 0,
       responseDurations: [],
+      actualTestCount: 0,
       userInputs: [],
       result: {
+        total_question: 0,
+        correct_answer: 0,
+        avg_response_time: 0,
+        response_times: 0,
+        graph_data: [],
+      },
+      result2: {
         total_question: 0,
         correct_answer: 0,
         avg_response_time: 0,
@@ -193,10 +194,10 @@ export default {
     startTest() {
       this.cleanUp();
 
-    let updatePayload = {
-      status: "",
-      name: "Running Memory Span Test",
-    };
+      let updatePayload = {
+        status: "",
+        name: "Running Memory Span Test",
+      };
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
         updatePayload.status = "IN_TRAINING"
@@ -266,7 +267,27 @@ export default {
             this.finishTraining();
           } else {
             setTimeout(() => {
-              this.calculatedResult();
+              this.actualTestCount += 1
+              if (this.actualTestCount < 2) {
+
+
+                this.result.total_question = this.totalQuestion;
+                this.result.correct_answer = this.correctAnswer;
+
+                const resultTimeResonded = this.averageResponseTime();
+                this.result.avg_response_time = resultTimeResonded.toFixed(2);
+
+                this.result.response_times = this.responseDurations.map((duration) => ({
+                  responseTime: duration,
+                  timestamp: Date.now(),
+                }));
+
+                this.result.graph_data = this.userInputs;
+                this.finishTraining()
+              } else {
+
+                this.calculatedResult();
+              }
             }, 1000);
           }
         }
@@ -323,13 +344,13 @@ export default {
       this.isConfigLoaded = true;
     },
     calculatedResult() {
-      this.result.total_question = this.totalQuestion;
-      this.result.correct_answer = this.correctAnswer;
+      this.result2.total_question = this.totalQuestion;
+      this.result2.correct_answer = this.correctAnswer;
 
       const resultTimeResonded = this.averageResponseTime();
-      this.result.avg_response_time = resultTimeResonded.toFixed(2);
+      this.result2.avg_response_time = resultTimeResonded.toFixed(2);
 
-      this.result.response_times = this.responseDurations.map((duration) => ({
+      this.result2.response_times = this.responseDurations.map((duration) => ({
         responseTime: duration,
         timestamp: Date.now(),
       }));
@@ -352,6 +373,7 @@ export default {
             localStorage.getItem("reloadCountRunningMemorySpan")
           ),
           result: this.result,
+          result2: this.result2,
         };
 
         const res = await fetch(`${API_URL}/api/submission`, {
@@ -484,7 +506,7 @@ export default {
           const speakNext = () => {
             if (index < this.utterances.length) {
               const utterance = this.utterances[index];
-              utterance.rate = 1 ;
+              utterance.rate = 1;
               utterance.pitch = 1;
               utterance.volume = 1;
               utterance.lang = "id-ID";

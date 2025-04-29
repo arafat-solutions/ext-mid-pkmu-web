@@ -2,9 +2,9 @@
   <div class="training-session">
     <div v-if="showModal" class="modal">
       <div class="modal-content">
-        <h2>
+        <h2 class="capitalize">
           {{
-            currentTask.charAt(0).toUpperCase() + currentTask.slice(1)
+            currentTask==='combined1' ? 'Combined' : currentTask
           }}
           Training
         </h2>
@@ -56,7 +56,7 @@ export default {
   },
   data() {
     return {
-      trainingTasks: ["navigation", "math", "instrument", "combined"],
+      trainingTasks: ["navigation", "math", "instrument",'combined1', "combined"],
       currentTaskIndex: 0,
       showModal: true,
       showEndModal: false,
@@ -88,14 +88,16 @@ export default {
         math: 'Pada latihan ini, anda diminta untuk menjawab soal perhitungan dasar dengan cara menyentuh layar. (Contoh: 20 – 3, maka anda harus menjawab 17)<img src="devices/tst_2.png"/>',
         instrument:
           'Anda diminta untuk merespon Instrumen yang indikatornya berwarna MERAH dengan menekan huruf (C N V B) pada KEYBOARD.<img src="devices/tst_3.png"/>',
+        combined1:
+          "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
         combined:
-          "Latih semua sub-tugas secara bersamaan. Gunakan tombol SPASI untuk beralih mengerjakan tugas MATH TRAINING",
+          "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
       };
       return instructions[this.currentTask] || "";
     },
     startTraining() {
       this.showModal = false;
-      if (this.currentTask === 'combined') {
+      if (this.currentTask.includes( 'combined')) {
         this.currentTaskIndex = 1;
         setTimeout(() => {
           this.currentTaskIndex = 3;
@@ -148,6 +150,10 @@ export default {
           subtask: { navigation: false, observer: true },
         },
         math: baseConfig,
+        combined1: {
+          ...baseConfig,
+          subtask: { navigation: true, observer: true },
+        },
         combined: {
           ...baseConfig,
           subtask: { navigation: true, observer: true },
@@ -172,7 +178,7 @@ export default {
         );
       }
       this.currentTaskIndex++;
-      if (this.currentTaskIndex === 3) {
+      if (this.currentTaskIndex === 4) {
         this.isCombined = true;
       }
       if (this.currentTaskIndex < this.trainingTasks.length) {

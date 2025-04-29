@@ -117,6 +117,8 @@ export default {
       configs: [],
       duration: 0,
       isNextLevel: false,
+      actualTestCount: 0,
+      tempFirstResult: null,
       currentIndexQuestion: 0,
       isLoading: false,
       minuteTime: null,
@@ -229,7 +231,31 @@ export default {
         if (!this.isTrainingCompleted) {
           this.finishTraining;
         } else {
-          this.submitResult();
+          this.actualTestCount += 1;
+          if (this.actualTestCount < 2) {
+            const totalQuestion = this.currentIndexQuestion + 1;
+            this.tempFirstResult = {
+              totalQuestion: totalQuestion,
+              correctAnswer: this.result.correct,
+              avgResponseTIme: this.averageAnswerTime,
+              graph_data: this.userInputs,
+            };
+            this.finishTraining();
+          } else {
+            this.actualTestCount += 1;
+            if (this.actualTestCount < 2) {
+              const totalQuestion = this.currentIndexQuestion + 1;
+              this.tempFirstResult = {
+                totalQuestion: totalQuestion,
+                correctAnswer: this.result.correct,
+                avgResponseTIme: this.averageAnswerTime,
+                graph_data: this.userInputs,
+              };
+              this.finishTraining();
+            } else {
+              this.submitResult();
+            }
+          }
         }
       }
     },
@@ -286,7 +312,7 @@ export default {
           (acc, config) => acc + Number(config.duration),
           0
         );
-        this.timeLeft = this.minuteTime * 60;
+        this.timeLeft = 10;
       }
 
       patchWorkstation(updatePayload);
@@ -617,6 +643,8 @@ export default {
           avgResponseTIme: this.averageAnswerTime,
           graph_data: this.userInputs,
         },
+
+        result2: this.tempFirstResult,
       };
 
       return payload;

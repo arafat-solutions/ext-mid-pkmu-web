@@ -106,6 +106,8 @@ export default {
     // Refs for template
     const container = ref(null);
     const canvas = ref(null);
+    const actualTestCount = ref(0);
+    const tempFirstResult = ref(null);
     let animationFrameId = null;
 
     // Get test configuration from storage
@@ -397,6 +399,7 @@ export default {
       };
 
       patchWorkstation(updatePayload);
+      animate()
     };
 
     const resetAirplanePosition = () => {
@@ -443,7 +446,8 @@ export default {
         userId: scheduleData.userId,
         moduleId: scheduleData.moduleId,
         batteryTestId: test.id,
-        result: scores,
+        result: tempFirstResult.value,
+        result2: scores,
       };
 
       console.log("Simulation completed! Final scores:", scores);
@@ -522,7 +526,40 @@ export default {
           if (isTrainingMode.value) {
             showTestModal.value = true;
           } else {
-            finishSim();
+            actualTestCount.value++;
+            if (actualTestCount.value < 3) {
+              const alignmentScore = userInputs.value.filter(
+                (input) => input.type === "correct"
+              ).length;
+              const totalInputs = userInputs.value.length;
+              const accuracyPercentage = (alignmentScore / totalInputs) * 100;
+
+              const avgDeviations = userInputs.value.reduce(
+                (acc, curr) => {
+                  acc.x += Math.abs(curr.deviations.x);
+                  acc.y += Math.abs(curr.deviations.y);
+                  acc.z += Math.abs(curr.deviations.z);
+                  return acc;
+                },
+                { x: 0, y: 0, z: 0 }
+              );
+
+              avgDeviations.x /= totalInputs;
+              avgDeviations.y /= totalInputs;
+              avgDeviations.z /= totalInputs;
+
+              tempFirstResult.value = {
+                alignmentScore,
+                accuracyPercentage,
+                totalAttempts: totalInputs,
+                averageDeviations: avgDeviations,
+                timeSpent: totalTestDuration - timeRemaining.value,
+                graph_data: userInputs.value,
+              };
+              openModalActualTest();
+            } else {
+              finishSim();
+            }
             cancelAnimationFrame(animationFrameId);
           }
           return;
@@ -760,6 +797,9 @@ export default {
       animate,
       isTrainingMode,
       openModalActualTest,
+      timeRemaining,
+      startTime,
+      actualTestCount
     };
   },
 };

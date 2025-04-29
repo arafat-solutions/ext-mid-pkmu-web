@@ -377,6 +377,8 @@ const currentStep = ref(null);
 const performanceMetrics = ref({});
 const showTrainingModal = ref(false); // Training step modal
 const showExamConfirmModal = ref(false);
+const actualTestCount = ref(0);
+const tempFirstResult = ref(null);
 
 const TRAINING_STEPS = [
   {
@@ -385,34 +387,31 @@ const TRAINING_STEPS = [
     instructions: `
       <div class="training-instructions">
         <img src="/devices/mic.png" alt="Panduan Joystick" class="instruction-image" style="display: block; margin: 0 auto;" />
-<p>
-Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk menyesuaikan target yang ditentukan.</p>
+        <p>Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
     activeControls: ["compass"],
-    feedbackThreshold: 5, // seconds to maintain correct direction before positive feedback
+    feedbackThreshold: 5,
   },
   {
     id: "joystick2",
     title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
-      <img src="/devices/mic_2.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
-<p>Pada latihan ini Anda diminta untuk menggerakan JOYSTICK ATAS atau BAWAH untuk menyesuaikan target yang ditentukan.
-</p>
+        <img src="/devices/mic_2.png" alt="Panduan Joystick Vertikal" class="instruction-image" style="display: block; margin: 0 auto" />
+        <p>Pada latihan ini Anda diminta untuk menggerakan JOYSTICK ATAS atau BAWAH untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
     activeControls: ["altimeter"],
     feedbackThreshold: 3,
   },
-
   {
     id: "throttle",
     title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
-      <img src="/devices/mic_3.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
-<p>Pada latihan ini Anda diminta untuk menggerakan THRUSTER DEPAN atau BELAKANG untuk menyesuaikan target yang ditentukan.</p>
+        <img src="/devices/mic_3.png" alt="Panduan Thruster" class="instruction-image" style="display: block; margin: 0 auto" />
+        <p>Pada latihan ini Anda diminta untuk menggerakan THRUSTER DEPAN atau BELAKANG untuk menyesuaikan target yang ditentukan.</p>
       </div>
     `,
     activeControls: ["airspeed"],
@@ -420,35 +419,55 @@ Pada latihan ini Anda diminta untuk menggerakan JOYSTICK KANAN atau KIRI untuk m
   },
   {
     id: "numbers",
-    title: "Latihan Tes Angka",
+    title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
-      <img src="/devices/mic_4.png" alt="Panduan Throttle" class="instruction-image" style="display: block; margin: 0 auto" />
-<p>Pada latihan ini Anda diminta untuk mendengarkan urutan angka, bila mendengar 3 urutan GENAP atau GANJIL. Maka pilihlah jawaban yang sesuai.
-(contoh: 3 – 7 – 11, maka jawabannya GANJIL).</p>
+        <img src="/devices/mic_4.png" alt="Panduan Tes Angka" class="instruction-image" style="display: block; margin: 0 auto" />
+        <p>Pada latihan ini Anda diminta untuk mendengarkan urutan angka. Bila mendengar 3 angka GENAP atau GANJIL berturut-turut, pilih jawaban yang sesuai.<br/>
+        (Contoh: 3 – 7 – 11, maka jawabannya GANJIL).</p>
       </div>
     `,
     activeControls: ["audio"],
     feedbackThreshold: 2,
   },
+  // Gradual Combination Steps
   {
-    id: "combined",
+    id: "gradual_1",
     title: "LATIHAN",
     instructions: `
       <div class="training-instructions">
-        <h2>Latihan Semua Kontrol</h2>
-        <ul>
-          <li>Kontrol semua aspek pesawat sambil mendengarkan angka</li>
-          <li>Prioritaskan kontrol pesawat</li>
-          <li>Jawab pertanyaan angka saat Anda siap</li>
-        </ul>
+        <h2>Latihan Gabungan</h2>
+<p>Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.</p>
+      </div>
+    `,
+    activeControls: ["compass", "altimeter"],
+    feedbackThreshold: 6,
+  },
+  {
+    id: "gradual_2",
+    title: "LATIHAN",
+    instructions: `
+     <div class="training-instructions">
+        <h2>Latihan Gabungan</h2>
+<p>Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.</p>
+      </div>
+    `,
+    activeControls: ["compass", "altimeter", "airspeed"],
+    feedbackThreshold: 7,
+  },
+  {
+    id: "gradual_3",
+    title: "LATIHAN: Semua Kontrol + Angka",
+    instructions: `
+     <div class="training-instructions">
+        <h2>Latihan Gabungan</h2>
+<p>Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.</p>
       </div>
     `,
     activeControls: ["compass", "altimeter", "airspeed", "audio"],
     feedbackThreshold: 8,
   },
 ];
-
 const checkDirectionFollowing = () => {
   const currentStep = TRAINING_STEPS[currentTrainingStep.value];
 
@@ -482,7 +501,7 @@ const isHeadingOutOfTarget = computed(() => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
   if (currentConfig?.compass === "inactive") return false;
   const diff = Math.abs(heading.value - -headingTarget.value);
-  return Math.min(diff, 360 - diff) > 15|| Math.min(diff, 360 - diff) < -15;
+  return Math.min(diff, 360 - diff) > 15 || Math.min(diff, 360 - diff) < -15;
 });
 
 const isAltitudeOutOfTarget = computed(() => {
@@ -822,7 +841,7 @@ const handleAudioResponse = (response) => {
   setTimeout(() => {
     canRespond.value = true;
     displayedNumbers.value = [];
-    startAudioSequence()
+    startAudioSequence();
   }, 1000);
   //setTimeout(startAudioSequence, AUDIO_TEST.SEQUENCE_PAUSE);
 };
@@ -1051,7 +1070,7 @@ const updateTime = () => {
   if (trainingMode.value) return;
 
   timeRemaining.value -= 1;
-  config.value.totalDuration -= 1 ;
+  config.value.totalDuration -= 1;
 
   // Add explicit check for exam end
   if (config.value.totalDuration <= 0) {
@@ -1382,6 +1401,12 @@ const moveToNextTrainingStep = () => {
     showExamConfirmModal.value = true;
   }
 };
+const resetPerformanceDate=() => {
+  headingPerformanceData.value = [];
+  airspeedPerformanceData.value = [];
+  altitudePerformanceData.value = [];
+  userInputs.value = [];
+};
 
 const startActualExam = async () => {
   // Close confirmation modal
@@ -1437,7 +1462,55 @@ const endExam = () => {
   cancelAudioSequence();
   cleanupSounds();
 
+  actualTestCount.value += 1;
+  if (actualTestCount.value <2) {
+    const performanceByConfig = config.value.configs.map((cfg, index) => {
+      return {
+        configId: cfg.id,
+        airspeedData: airspeedPerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        headingData: headingPerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        altitudeData: altitudePerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        audioResponses: audioResponses.value.filter(
+          (r) => r.configIndex === index
+        ),
+      };
+    });
+    tempFirstResult.value = {
+      graph_data: userInputs.value,
+      timeOnTargetAirspeed: timeOnTargetAirspeed.value,
+      timeOnTargetHeading: timeOnTargetHeading.value,
+      timeOnTargetAltitude: timeOnTargetAltitude.value,
+      audioTest: performanceByConfig.map((perf) => ({
+        responses: perf.audioResponses,
+        averageResponseTime:
+          perf.audioResponses.reduce(
+            (acc, curr) => acc + curr.responseTime,
+            0
+          ) / (perf.audioResponses.length || 1),
+        correctResponses: perf.audioResponses.filter((r) => r.correct).length,
+        totalResponses: perf.audioResponses.length,
+        missedResponses: perf.audioResponses.filter(
+          (r) => r.response === "none"
+        ).length,
+      })),
+      thrustData: {
+        averageThrust: thrustLevel.value,
+        verticalSpeedImpact: verticalSpeed.value,
+      },
+    };
+   resetPerformanceDate()
+    cancelAudioSequence();
+    showExamConfirmModal.value = true;
+  } else {
   sendPerformanceData();
+  }
+
 };
 
 const initConfig = async () => {
@@ -1494,7 +1567,8 @@ const sendPerformanceData = async () => {
       testSessionId: config.value.sessionId,
       userId: config.value.userId,
       batteryTestId: config.value.batteryTestId,
-      result: {
+      result: tempFirstResult.value,
+      result2: {
         // multi_graph_data: performanceByConfig.map(perf => ({
         //     heading: perf.headingData,
         //     airspeed: perf.airspeedData,

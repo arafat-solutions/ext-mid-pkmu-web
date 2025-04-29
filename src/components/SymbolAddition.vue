@@ -26,7 +26,7 @@
 
   <div class="timer-container">
     <span v-if="!isTimesUp && isTrainingCompleted">
-      Task: {{ currentTask }} / {{ numberOfTask }}
+      Soal: {{ currentTask }} / {{ numberOfTask }}
       <br />
     </span>
     Timer: {{ timeLeftAnswer }}s
@@ -168,6 +168,8 @@ export default {
       answers: [],
       currentWrong: null,
       currentRowDisabled: false,
+      actualTestCount: 0,
+      tempFirstResult:null,
       result: {
         correct: 0,
         wrong: 0,
@@ -225,7 +227,23 @@ export default {
           this.result.correct = 0;
           this.result.wrong = 0;
         } else {
+          this.actualTestCount += 1
+          if(this.actualTestCount < 2){
+
+      const totalQuestion = this.numberOfTask * this.choicesLength;
+      const skippedQuestion =
+        totalQuestion - this.result.correct - this.result.wrong;
+this.tempFirstResult ={
+          correctAnswer: this.result.correct,
+          totalQuestion: totalQuestion,
+          skippedQuestion: skippedQuestion,
+          incorrectAnswer: this.result.wrong,
+        }
+            this.finishTraining();
+          }else{
+
           this.submitResult();
+          }
         }
       }
     },
@@ -492,6 +510,7 @@ export default {
     },
     generatePayloadForSubmit() {
       const scheduleData = JSON.parse(localStorage.getItem("scheduleData"));
+      const config = scheduleData.tests.find((t) => t.name === 'Symbol Addition');
       const totalQuestion = this.numberOfTask * this.choicesLength;
       const skippedQuestion =
         totalQuestion - this.result.correct - this.result.wrong;
@@ -499,16 +518,17 @@ export default {
         testSessionId: scheduleData.sessionId,
         userId: scheduleData.userId,
         moduleId: scheduleData.moduleId,
-        batteryTestId: scheduleData.testId,
+        batteryTestId: config.id,
         refreshCount: parseInt(
           localStorage.getItem("reloadCountSymbolAddition")
         ),
-        result: {
+        result: this.tempFirstResult,
+        result2:{
           correctAnswer: this.result.correct,
           totalQuestion: totalQuestion,
           skippedQuestion: skippedQuestion,
           incorrectAnswer: this.result.wrong,
-        },
+        }
       };
 
       return payload;

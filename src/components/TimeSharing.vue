@@ -1,4 +1,14 @@
 <template>
+  <div v-if="showEndModal" class="modal">
+    <div class="modal-content">
+      <h2>Latihan Selesai</h2>
+      <p>
+        Anda telah menyelesaikan sesi latihan. Apakah Anda siap untuk memulai
+        tes yang sebenarnya?
+      </p>
+      <button @click="startExam" class="button start-button">Mulai Tes</button>
+    </div>
+  </div>
   <div>
     <training-session v-if="isTraining" @training-completed="startExam" />
     <div v-else>
@@ -36,10 +46,13 @@ export default {
       currentComponent: "PlaneSimulator",
       mathTestResults: [],
       userInputsMathTest: [],
+      showEndModal: false,
       configs: [],
       trainingConfigs: [],
       indexConfig: 0,
       indexTrainingConfig: 0,
+      actualTestCount: 0,
+      tempFirstResult: null,
       config: {
         id: "",
         arithmetics: {
@@ -90,6 +103,7 @@ export default {
       this.setConfig(this.config);
     },
     startExam() {
+      this.showEndModal = false;
       const updatePayload = {
         status: "IN_TESTING",
         name: "Time Sharing Test",
@@ -97,6 +111,10 @@ export default {
       patchWorkstation(updatePayload);
       this.isTraining = false;
       this.setConfig(this.config);
+      if(this.$refs.planeSimulatorRef){
+        this.$refs.planeSimulatorRef.initializeGame();
+      }
+
     },
     setConfig(config) {
       this.$nextTick(() => {
@@ -118,48 +136,61 @@ export default {
       });
     },
     async handleSubmitTest(results) {
-      const payload = {
-        moduleId: this.moduleId,
-        testSessionId: this.sessionId,
-        userId: this.userId,
-        batteryTestId: this.testId,
-        result: {
+      this.actualTestCount++;
+      if (this.actualTestCount < 2) {
+        this.showEndModal = true;
+        this.tempFirstResult = {
           ...results,
           mathTestResults: this.mathTestResults,
           graph_data: this.userInputsMathTest,
-        },
-      };
-
-      try {
-        if (this.isTrial) {
-          this.$router.push("/module");
-          return;
-        }
-
-        this.isLoading = true;
-
-        const API_URL = process.env.VUE_APP_API_URL;
-        const res = await fetch(`${API_URL}/api/submission`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        };
+        this.mathTestResults = [];
+        this.userInputsMathTest = [];
+      } else {
+        const payload = {
+          moduleId: this.moduleId,
+          testSessionId: this.sessionId,
+          userId: this.userId,
+          batteryTestId: this.testId,
+          result: this.tempFirstResult,
+          result2: {
+            ...results,
+            mathTestResults: this.mathTestResults,
+            graph_data: this.userInputsMathTest,
           },
-          body: JSON.stringify(payload),
-        });
+        };
 
-        if (!res.ok) {
-          throw new Error("Failed Submit Test");
+        try {
+          if (this.isTrial) {
+            this.$router.push("/module");
+            return;
+          }
+
+          this.isLoading = true;
+
+          const API_URL = process.env.VUE_APP_API_URL;
+          const res = await fetch(`${API_URL}/api/submission`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed Submit Test");
+          }
+        } catch (error) {
+          console.error(error), "error";
+        } finally {
+          this.isLoading = false;
+
+          removeTestByNameAndUpdateLocalStorage("Time Sharing Test 2023");
+          localStorage.removeItem("reloadCountTimeSharing");
+          this.$router.push("/module");
         }
-      } catch (error) {
-        console.error(error), "error";
-      } finally {
-        this.isLoading = false;
-
-        removeTestByNameAndUpdateLocalStorage("Time Sharing Test 2023");
-        localStorage.removeItem("reloadCountTimeSharing");
-        this.$router.push("/module");
+        console.log("Submit test payload:", payload);
       }
-      console.log("Submit test payload:", payload);
     },
   },
   components: {
@@ -169,3 +200,58 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.modal-content p {
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.button {
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.start-button {
+  background-color: #4caf50;
+}
+</style>

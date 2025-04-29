@@ -6,7 +6,9 @@
       </div>
       <div
         class="instructions"
-        v-if="config.subtask.navigation && config.subtask.observer"
+        v-if="
+          config.subtask.navigation && config.subtask.observer && isCombined
+        "
       >
         Tekan 'Spasi' untuk menukar tugas
       </div>
@@ -72,6 +74,10 @@ export default {
   emits: ["test-finished", "switch-task"],
   props: {
     isTraining: {
+      type: Boolean,
+      default: true,
+    },
+    isCombined: {
       type: Boolean,
       default: true,
     },
@@ -151,12 +157,31 @@ export default {
   },
   methods: {
     initializeGame() {
+      this.resetGame();
       this.setRandomObstacleConfig();
       if (this.config.subtask.observer) {
         this.initGauges();
       }
       this.startGameLoops();
       this.setupEventListeners();
+    },
+    resetGame() {
+      this.plane.x = 400;
+      this.plane.targetX = 400;
+      this.plane.y = 200;
+      this.plane.angle = 0;
+      this.obstacles = [];
+      this.collisionCount = 0;
+      this.lastCollisionTime = 0;
+      this.isPaused = false;
+      this.isCollision = false;
+      this.remainingTime = this.duration;
+      this.joystickState.x = 0;
+      this.joystickState.y = 0;
+      this.gaugeLateTime.C = 0;
+      this.gaugeLateTime.V = 0;
+      this.gaugeLateTime.N = 0;
+      this.gaugeLateTime.B = 0;
     },
     startGameLoops() {
       if (this.config.subtask.navigation) {
@@ -227,7 +252,6 @@ export default {
           this.obstacleSpeed = 3;
           break;
       }
-
 
       // gauge cluster
       this.gaugeSpeed = this.config.observer.speed;
@@ -590,7 +614,8 @@ export default {
 
       // Generate initial set of obstacles
       for (let i = 0; i < numberOfObstacles; i++) {
-        const width = Math.floor(Math.random() * (maxWidth - minWidth)) + minWidth;
+        const width =
+          Math.floor(Math.random() * (maxWidth - minWidth)) + minWidth;
         obstacleData.push({ width, x: 0 });
         totalWidth += width;
       }
@@ -618,9 +643,12 @@ export default {
           obstacleData[i].x = Math.floor(Math.random() * (availableSpace / 2));
         } else {
           // For subsequent obstacles, ensure there's at least minGap to maxGap space from the previous one
-          const minX = obstacleData[i - 1].x + obstacleData[i - 1].width + minGap;
-          const maxX =
-            Math.min(canvasWidth - obstacleData[i].width, minX + maxGap);
+          const minX =
+            obstacleData[i - 1].x + obstacleData[i - 1].width + minGap;
+          const maxX = Math.min(
+            canvasWidth - obstacleData[i].width,
+            minX + maxGap
+          );
           if (minX < maxX) {
             obstacleData[i].x =
               Math.floor(Math.random() * (maxX - minX + 1)) + minX;
