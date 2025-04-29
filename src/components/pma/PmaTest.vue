@@ -134,14 +134,18 @@
 
       <!-- Combined Training Instructions Modal -->
       <div
-        v-if="currentStep === 'combined_training' && showModalCombined"
+        v-if="currentStep.includes('combined_training') && showModalCombined"
         class="modal"
       >
         <div class="modal-content">
           <h2>LATIHAN GABUNGAN</h2>
 
           <div class="instruction-content">
-            <p>Lakukan semua tugas latihan secara bersamaan</p>
+            <p>
+              Pada tahap ini, peserta akan menjalankan gabungan dari subtask
+              sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua
+              digabungkan dalam satu sesi.
+            </p>
           </div>
           <button @click="startCombinedTraining" class="start-btn">
             Mulai latihan Gabungan
@@ -203,14 +207,17 @@
           </div>
 
           <div
-            v-if="currentStep === 'combined_training'"
+            v-if="currentStep.includes('combined_training')"
             class="combined-training-section"
           >
             <h3>latihan Gabungan</h3>
 
-            <div class="subtasks" style="min-height:88px">
+            <div class="subtasks" style="min-height: 88px">
               <StringMemorization
-                v-if="currentSubtask === 'string'"
+                v-if="
+                  currentSubtask === 'string' &&
+                  currentStep === 'combined_training'
+                "
                 :key="'string'"
                 :training-mode="true"
                 @update-score="updateStringScore"
@@ -237,7 +244,7 @@
         <!-- Actual Test Mode -->
         <template v-else>
           <div class="timer">Sisa Waktu: {{ formatTime(remainingTime) }}</div>
-            <div class="subtasks" style="min-height:88px">
+          <div class="subtasks" style="min-height: 88px">
             <StringMemorization
               v-if="currentSubtask === 'string'"
               :key="'string'"
@@ -290,6 +297,7 @@ import StringMemorization from "./StringMemory.vue";
 import AudioInformation from "./AudioInformation.vue";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "PMATraining",
@@ -300,6 +308,8 @@ export default {
   },
   setup() {
     const showModal = ref(true);
+    const actualTestCount = ref(0);
+    const tempFirstResult = ref(null);
     const showModalJoystick = ref(false);
     const showModalThruster = ref(false);
     const showModalCombined = ref(false);
@@ -347,6 +357,12 @@ export default {
     let timer;
 
     const startTraining = () => {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "PMA Test",
+      };
+
+      patchWorkstation(updatePayload);
       showModal.value = false;
       currentStep.value = "tracking_joystick";
       showModalJoystick.value = true;
@@ -392,7 +408,14 @@ export default {
         } else {
           clearInterval(timer);
           if (isActualTest.value) {
-            submit();
+            actualTestCount.value += 1;
+            if (actualTestCount.value < 2) {
+              tempFirstResult.value = scores.value;
+              resetScores();
+              trainingComplete.value = true;
+            } else {
+              submit();
+            }
           } else {
             if (currentStep.value === "tracking_joystick") {
               currentStep.value = "tracking_thruster";
@@ -410,7 +433,28 @@ export default {
       }, 1000);
     };
 
+    const resetScores = () => {
+      scores.value = {
+        tracking: {
+          circle_correct_position: 0,
+          circle_wrong_position: 0,
+          dot_correct_position: 0,
+          dot_wrong_position: 0,
+          pill_correct_position: 0,
+          pill_wrong_position: 0,
+        },
+        string: 0,
+        audio: 0,
+      };
+    };
+
     const startActualTest = () => {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "PMA Test",
+      };
+
+      patchWorkstation(updatePayload);
       showModalCombined.value = false;
       trainingComplete.value = false;
       isActualTest.value = true;
@@ -438,7 +482,8 @@ export default {
           testSessionId: sessionId.value,
           userId: userId.value,
           batteryTestId: testId.value,
-          result: scores.value,
+          result: tempFirstResult.value,
+          result2: scores.value,
           isTraining: true,
         };
 
@@ -493,6 +538,10 @@ export default {
         showModalString.value = true;
         startTimer();
       } else if (currentStep.value === "string") {
+        currentStep.value = "combined_training_first";
+        showModalCombined.value = true;
+        startTimer();
+      } else if (currentStep.value === "combined_training_first") {
         currentStep.value = "combined_training";
         showModalCombined.value = true;
         startTimer();
@@ -745,6 +794,7 @@ li {
 .modal-content {
   font-size: 24px;
 }
+
 .instruction-content {
   font-size: 20px;
 }

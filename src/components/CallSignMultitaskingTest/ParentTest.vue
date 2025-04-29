@@ -21,43 +21,54 @@
     <div :class="contentLayoutClass">
       <!-- Training Mode -->
       <div v-if="isTraining" class="training-container">
-        <div v-if="currentTraining !== 'combined'" class="training-container">
+        <div
+          v-if="currentTraining.length === 1"
+          class="training-container"
+          :class="[
+            getGridColsClass,
+            {
+              grid: currentTraining.length > 1,
+              'gap-4': currentTraining.length > 1,
+            },
+          ]"
+        >
+
           <HorizonTest
-            v-if="currentTraining === 'horizon' && configReady"
+            v-if="currentTraining.includes('horizon') && configReady"
             :horizon-data="configBe.horizon"
             :update-results="updateResults"
             class="centered-component"
-            style="margin: auto; max-width: 370px; width: 100%"
-            :trainingCompleted="false"
           />
+
           <CallSignTest
-            v-if="currentTraining === 'callsign' && configReady"
+            v-if="currentTraining.includes('callsign') && configReady"
             :callsign-data="configBe.callsign"
             :update-results="updateResults"
             ref="callSignTest"
             :isTraining="isTraining"
           />
+
           <ColorTest
-            v-if="currentTraining === 'color_tank' && configReady"
+            v-if="currentTraining.includes('color_tank') && configReady"
             :color-tank-data="configBe.color_tank"
             :update-results="updateResults"
             :finalScore="results.color_tank.final_score"
             :isTraining="isTraining"
             class="centered-component"
           />
+
           <CircleTest
-            v-if="currentTraining === 'circle_test' && configReady"
+            v-if="currentTraining.includes('circle_test') && configReady"
             :alert-lights-data="configBe.alert_lights"
             :update-results="updateResults"
             :update-result-light-avg-time="updateResultLightAvgTime"
             class="centered-component"
-            style="margin: auto; max-width: 370px; width: 100%"
           />
         </div>
         <template v-else>
           <div class="left-side">
             <ColorTest
-              v-if="configReady"
+              v-if="currentTraining.includes('color_tank') && configReady"
               :color-tank-data="configBe.color_tank"
               :update-results="updateResults"
               :isTraining="isTraining"
@@ -66,21 +77,21 @@
           </div>
           <div class="right-side">
             <CircleTest
-              v-if="configReady"
+              v-if="currentTraining.includes('circle_test') && configReady"
               :alert-lights-data="configBe.alert_lights"
               :update-results="updateResults"
               :update-result-light-avg-time="updateResultLightAvgTime"
               style="margin-bottom: 20px"
             />
             <HorizonTest
-              v-if="configReady"
+              v-if="currentTraining.includes('horizon') && configReady"
               :horizon-data="configBe.horizon"
               :update-results="updateResults"
               :trainingCompleted="false"
               :alertOnRight="true"
             />
             <CallSignTest
-              v-if="configReady"
+              v-if="currentTraining.includes('callsign') && configReady"
               ref="callSignTest"
               :callsign-data="configBe.callsign"
               :update-results="updateResults"
@@ -99,6 +110,7 @@
             :color-tank-data="configBe.color_tank"
             :update-results="updateResults"
             :isTraining="isTraining"
+            ref="colorTankTest"
             :finalScore="results.color_tank.final_score"
           />
         </div>
@@ -151,13 +163,16 @@ import CallSignTest from "./CallSignTest.vue";
 import ModalComponent from "./Modal.vue";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 const TRAINING_SEQUENCE = [
   "horizon",
   "callsign",
   "color_tank",
   "circle_test",
-  "combined",
+  ["horizon", "callsign"],
+  ["horizon", "callsign", "color_tank"],
+  ["horizon", "callsign", "color_tank",'circle_test'],
 ];
 const TRAINING_TIME = 999999; // 1 minute for each training
 
@@ -165,27 +180,31 @@ const TRAINING_INSTRUCTIONS = {
   horizon: {
     title: "Latihan Horizon",
     description:
-      "Anda diminta untuk mengarahkan garis penerbang dengan JOYSTICK mengikuti pergerakan target sampai berwarna HIJAU hingga selesai.<img style='border:1px solid gray;margin:auto' src='devices/mmwcs.png'/>",
+      "Anda diminta untuk mengarahkan garis penerbang dengan JOYSTICK mengikuti pergerakan target sampai berwarna HIJAU hingga selesai.",
+    img: "<img style='border:1px solid gray;margin:auto' src='devices/mmwcs.png'/>",
   },
   callsign: {
     title: "Latihan Call Sign",
     description:
-      "Pada latihan ini, Anda akan mendengar beberapa panggilan. Tugas Anda adalah merespon hanya ketika mendengar panggilan yang sesuai dengan call sign Anda. Gunakan tombol spasi untuk merespon. Latihan ini akan berlangsung selama 1 menit.<img style='border:1px solid gray;margin:auto' src='devices/mmwcs_2.png'/>",
+      "Pada latihan ini, Anda akan mendengar beberapa panggilan. Tugas Anda adalah merespon hanya ketika mendengar panggilan yang sesuai dengan call sign Anda. Gunakan tombol spasi untuk merespon. Latihan ini akan berlangsung selama 1 menit.",
+    img: "<img style='border:1px solid gray;margin:auto' src='devices/mmwcs_2.png'/>",
   },
   color_tank: {
     title: "Latihan Color Tank",
     description:
-      "Anda diminta untuk mengisi tank bagian bawah (ASDF), dari tank bagian atas (QWER) dengan cara menekan salah satu tank yang berada diatas lalu menekan 2 tank yang berada di bawah dengan warna yang sama. (Contoh: Tank yang kosong berwarna MERAH, maka anda harus menyentuh huruf R (TANK ATAS MERAH), lalu menyentuh D & F (TANK BAWAH MERAH). <img style='border:1px solid gray;margin:auto' src='devices/mmwcs_3.png'/>",
+      "Anda diminta untuk mengisi tank bagian bawah (ASDF), dari tank bagian atas (QWER) dengan cara menekan salah satu tank yang berada diatas lalu menekan 2 tank yang berada di bawah dengan warna yang sama. (Contoh: Tank yang kosong berwarna MERAH, maka anda harus menyentuh huruf R (TANK ATAS MERAH), lalu menyentuh D & F (TANK BAWAH MERAH).",
+    img: "<img style='border:1px solid gray;margin:auto' src='devices/mmwcs_3.png'/>",
   },
   circle_test: {
     title: "Latihan Rambu Peringatan",
     description:
-      "Anda diminta untuk merespon bila huruf berwarna MERAH maka TEKAN HURUF WARNA MERAH pada layar, bila huruf berwarna KUNING maka ABAIKAN. <img style='border:1px solid gray;margin:auto' src='devices/mmwcs_4.png'/>",
+      "Anda diminta untuk merespon bila huruf berwarna MERAH maka TEKAN HURUF WARNA MERAH pada layar, bila huruf berwarna KUNING maka ABAIKAN.",
+    img: "<img style='border:1px solid gray;margin:auto' src='devices/mmwcs_4.png'/>",
   },
   combined: {
     title: "Latihan Gabungan",
     description:
-      "Latihan gabungan akan menggabungkan semua tugas yang telah Anda latih sebelumnya. Anda akan melalui semua tugas yang telah Anda latih sebelumnya dalam satu sesi.",
+      "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
   },
 };
 
@@ -205,7 +224,7 @@ export default {
       tesInterval: null,
       isTraining: true,
       isActualTest: false,
-      currentTraining: "",
+      currentTraining: [],
       trainingIndex: 0,
       isTrainingModalVisible: true,
       isTestModalVisible: false,
@@ -257,6 +276,29 @@ export default {
           final_score: 120,
         },
       },
+      tempFirstResult: {
+        horizon: {
+          correct_time: 0,
+        },
+        alert_lights: {
+          wrong_response: 0,
+          correct_response: 0,
+          total_alert_count: 0,
+          total_warning_count: 0,
+          avg_response_time: 0,
+        },
+        call_sign: {
+          wrong_response: 0,
+          correct_response: 0,
+          total_match_count: 0,
+        },
+        color_tank: {
+          correct_button_combination: 0,
+          below_line_responses: 0,
+          total_occurrences: 0,
+          final_score: 120,
+        },
+      },
       configs: [],
       indexConfig: 0,
       moduleId: "",
@@ -265,18 +307,27 @@ export default {
       testId: "",
       configReady: false,
       refreshCount: 0,
+      actualTestCount: 0,
     };
   },
   computed: {
+    getGridColsClass() {
+      const len = this.currentTraining.length;
+      if (len === 1) return "grid-cols-1";
+      if (len === 2) return "grid-cols-2";
+      if (len === 3) return "grid-cols-3";
+      if (len >= 4) return "grid-cols-4";
+      return "";
+    },
     currentModalTitle() {
-      return this.currentTraining
-        ? TRAINING_INSTRUCTIONS[this.currentTraining].title
-        : "";
+      return this.currentTraining.length === 1
+        ? TRAINING_INSTRUCTIONS[this.currentTraining[0]].title
+        : TRAINING_INSTRUCTIONS.combined.title;
     },
     currentModalDescription() {
-      return this.currentTraining
-        ? TRAINING_INSTRUCTIONS[this.currentTraining].description
-        : "";
+      return this.currentTraining.length === 1
+        ? TRAINING_INSTRUCTIONS[this.currentTraining[0]].description
+        : TRAINING_INSTRUCTIONS.combined.description;
     },
     contentLayoutClass() {
       return this.isTraining ? "content-training" : "content-test";
@@ -298,7 +349,7 @@ export default {
     window.addEventListener("keyup", this.handleKeyUp);
 
     // Start with first training
-    this.currentTraining = TRAINING_SEQUENCE[0];
+    this.currentTraining = [TRAINING_SEQUENCE[0]];
   },
   beforeUnmount() {
     window.removeEventListener("keydown", this.handleKeyDown);
@@ -328,7 +379,13 @@ export default {
               this.indexConfig++;
               this.startNextTest();
             } else {
-              await this.submitResult();
+              this.actualTestCount++;
+              if (this.actualTestCount < 2) {
+                this.isTestModalVisible = true;
+                this.tempFirstResult = this.results;
+              } else {
+                await this.submitResult();
+              }
             }
           }
         }
@@ -336,15 +393,16 @@ export default {
     },
     handleTrainingComplete() {
       this.trainingIndex++;
-
       if (this.trainingIndex < TRAINING_SEQUENCE.length) {
-        // Move to next training
-        this.currentTraining = TRAINING_SEQUENCE[this.trainingIndex];
+        this.currentTraining = Array.isArray(
+          TRAINING_SEQUENCE[this.trainingIndex]
+        )
+          ? TRAINING_SEQUENCE[this.trainingIndex]
+          : [TRAINING_SEQUENCE[this.trainingIndex]];
         this.testTime = TRAINING_TIME;
         this.isTrainingModalVisible = true;
         this.resetResults();
       } else {
-        // All training complete, prepare for actual test
         this.isTraining = false;
         this.isTestModalVisible = true;
         this.resetResults();
@@ -400,19 +458,30 @@ export default {
       this.configBe.horizon = { ...horizon, play: subtask?.horizon };
     },
     handleTrainingConfirm() {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Multitasking Mix With Call Sign",
+      };
+
+      patchWorkstation(updatePayload);
       clearInterval(this.tesInterval);
       this.isTrainingModalVisible = false;
-      this.setTrainingConfig(this.currentTraining);
+      this.currentTraining.forEach((training) =>
+        this.setTrainingConfig(training)
+      );
       this.countDownTime();
 
-      if (
-        this.currentTraining === "callsign" ||
-        this.currentTraining === "combined"
-      ) {
+      if (this.currentTraining.includes("callsign")) {
         this.$refs.callSignTest?.startSpeechTest();
       }
     },
     handleTestConfirm() {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Multitasking Mix With Call Sign",
+      };
+
+      patchWorkstation(updatePayload);
       clearInterval(this.tesInterval);
       this.isTestModalVisible = false;
       this.isActualTest = true;
@@ -420,7 +489,7 @@ export default {
       // sum durations from config.duration
       this.testTime = 360;
       this.countDownTime();
-
+      this.$refs.colorTankTest.initializeTest();
       if (this.configBe.callsign.play) {
         this.$refs.callSignTest?.startSpeechTest();
       }
@@ -455,7 +524,8 @@ export default {
           userId: this.userId,
           moduleId: this.moduleId,
           batteryTestId: this.testId,
-          result: this.results,
+          result: this.tempFirstResult,
+          result2: this.results,
           refreshCount: this.refreshCount,
         };
 
@@ -471,11 +541,13 @@ export default {
           throw new Error(`Error: ${response.statusText}`);
         }
 
-        removeTestByNameAndUpdateLocalStorage(
-          "Multitasking Mix With Call Sign"
-        );
-        localStorage.removeItem("refreshCallsignMultitaskTest");
-        this.$router.push("/module");
+        if (this.actualTestCount > 1) {
+          removeTestByNameAndUpdateLocalStorage(
+            "Multitasking Mix With Call Sign"
+          );
+          localStorage.removeItem("refreshCallsignMultitaskTest");
+          this.$router.push("/module");
+        }
       } catch (error) {
         console.error(error);
       } finally {

@@ -81,6 +81,7 @@ import {
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
 import { getConfigs } from "@/utils/configs";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   data() {
@@ -107,6 +108,8 @@ export default {
       radarInterval: null,
       objectInterval: null,
       countdownInterval: null,
+      actualTestCount: 0,
+      tempFirstResult: null,
 
       //For Config
       config: {},
@@ -174,7 +177,7 @@ export default {
   },
   methods: {
     getTargetShape() {
-      console.log(this.config.targetShape)
+      console.log(this.config.targetShape);
       switch (this.config.targetShape) {
         case "circle":
           return "lingkaran";
@@ -189,11 +192,17 @@ export default {
     },
     startTest() {
       clearInterval(this.countdownInterval);
+      const updatePayload = {
+        status: "",
+        name: "Radar Vigilance Test",
+      };
       if (!this.isTrainingCompleted) {
+        updatePayload.status = "IN_TRAINING";
         this.setConfig(this.configs[0]);
 
         this.durationTest = 99999999; // make the test forever
       } else {
+        updatePayload.status = "IN_TESTING";
         this.setConfig(this.configs[this.indexConfig]);
 
         this.durationTest = 0;
@@ -203,6 +212,8 @@ export default {
 
         this.config.duration = this.configs[this.indexConfig].duration * 60;
       }
+
+      patchWorkstation(updatePayload);
 
       this.isModalTrainingVisible = false;
       this.isModalVisible = false;
@@ -313,30 +324,52 @@ export default {
       this.isConfigLoaded = true;
     },
     calculatedResult() {
-      this.result.total_all_shape_object = this.totalAllShapeObject;
-      this.result.total_object = this.detectedObject;
-      this.result.corrected_object = this.userCorrectClickCount;
-      this.result.missed_object =
-        this.detectedObject - this.userCorrectClickCount;
-      this.result.false_positives = this.falsePositives;
+      this.actualTestCount += 1;
+      if (this.actualTestCount < 2) {
+        this.tempFirstResult.total_all_shape_object = this.totalAllShapeObject;
+        this.tempFirstResult.total_object = this.detectedObject;
+        this.tempFirstResult.corrected_object = this.userCorrectClickCount;
+        this.tempFirstResult.missed_object =
+          this.detectedObject - this.userCorrectClickCount;
+        this.tempFirstResult.false_positives = this.falsePositives;
 
-      // get avg from array of userInputs[i].responseTime
-      this.result.avg_response_time =
-        this.userInputs.reduce((acc, curr) => {
-          if (curr.responseTime) {
-            return acc + curr.responseTime;
-          }
-          return acc;
-        }, 0) / this.userInputs.length;
+        // get avg from array of userInputs[i].responseTime
+        this.result.avg_response_time =
+          this.userInputs.reduce((acc, curr) => {
+            if (curr.responseTime) {
+              return acc + curr.responseTime;
+            }
+            return acc;
+          }, 0) / this.userInputs.length;
 
-      // Include graph data in the result
-      this.result.graph_data = this.userInputs;
-
-      this.submitResult();
+        // Include graph data in the result
+        this.tempFirstResult.graph_data = this.userInputs;
+        this.finishTraining();
+      } else {
+        this.submitResult();
+      }
     },
     async submitResult() {
       try {
         this.isLoading = true;
+        this.result.total_all_shape_object = this.totalAllShapeObject;
+        this.result.total_object = this.detectedObject;
+        this.result.corrected_object = this.userCorrectClickCount;
+        this.result.missed_object =
+          this.detectedObject - this.userCorrectClickCount;
+        this.result.false_positives = this.falsePositives;
+
+        // get avg from array of userInputs[i].responseTime
+        this.result.avg_response_time =
+          this.userInputs.reduce((acc, curr) => {
+            if (curr.responseTime) {
+              return acc + curr.responseTime;
+            }
+            return acc;
+          }, 0) / this.userInputs.length;
+
+        // Include graph data in the result
+        this.result.graph_data = this.userInputs;
 
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
@@ -346,7 +379,8 @@ export default {
           refreshCount: parseInt(
             localStorage.getItem("reloadCountRadarVigilance")
           ),
-          result: this.result,
+          result: this.tempFirstResult,
+          result2: this.result,
         };
 
         const res = await fetch(`${API_URL}/api/submission`, {

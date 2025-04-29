@@ -75,6 +75,22 @@ export default {
             this.startDecreaseAnimation()
 
         },
+    resetTest() {
+      this.currentHeights =[  // Initialize the current heights for each rectangle
+                [100, 100, 100],
+                [100, 100, 100],
+                [100, 100, 100],
+                [100, 100, 100]
+            ]
+      this.finishedDecreasing = [];
+      this.colorsInProgress = [];
+      this.selectedColor = null;
+      // reset all
+      this.colorDecreaseHistory = [];
+      this.activeKeys = [];
+      this.currentPattern = [];
+      },
+
         initVisual() {
             const canvas = this.$refs.colorCanvas;
             this.ctx = canvas.getContext("2d");
@@ -87,6 +103,7 @@ export default {
             }
             this.currentDescendSpeed = this.colorTankData?.descend_speed || 'medium'; // Set default if undefined
             this.decreaseInterval = DECREASE_INTERVAL[this.colorTankData?.speed] || 20000; // Set default if undefined
+            this.resetTest()
         },
 
         drawVisual() {

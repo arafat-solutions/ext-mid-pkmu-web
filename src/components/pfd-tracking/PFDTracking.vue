@@ -44,6 +44,7 @@
             <div class="modal-body">
               <img
                 :src="trainingSteps[trainingStep].imagePath"
+                v-if="trainingSteps[trainingStep].imagePath"
                 alt="Training instruction"
                 class="w-full h-auto max-h-64 object-contain mb-4 rounded"
               />
@@ -297,6 +298,7 @@ import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import LinearGauge from "./LinearGauge.vue";
+import { patchWorkstation } from "@/utils/fetch";
 
 const router = useRouter();
 
@@ -328,6 +330,8 @@ const airspeed = ref(100);
 const heading = ref(0);
 const altitude = ref(12000);
 // const currentTime = ref(new Date());
+const actualTestCount = ref(0);
+const tempFirstResult = ref(null);
 const airspeedTarget = ref(140);
 const headingTarget = ref(150);
 const altitudeTarget = ref(12000);
@@ -389,10 +393,10 @@ const trainingSteps = [
         <div class="bg-gray-800 p-4 rounded-lg">
             <h3 class="text-lg font-bold mb-2">Kontrol Joystick:</h3>
             <ul class="list-disc pl-6 space-y-2">
-            <li>Gerakkan joystick ke <span class="font-bold text-blue-400">KIRI</span> untuk menambah angka arah</li>
-            <li>Gerakkan joystick ke <span class="font-bold text-blue-400">KANAN</span> untuk mengurangi angka arah</li>
-            <li>Arah saat ini ditampilkan dalam derajat (0-360°)</li>
-            <li>Penanda biru menunjukkan target arah Anda</li>
+              <li>Gerakkan joystick ke <span class="font-bold text-blue-400">KIRI</span> untuk menambah angka arah</li>
+              <li>Gerakkan joystick ke <span class="font-bold text-blue-400">KANAN</span> untuk mengurangi angka arah</li>
+              <li>Arah saat ini ditampilkan dalam derajat (0-360°)</li>
+              <li>Penanda biru menunjukkan target arah Anda</li>
             </ul>
         </div>
       </div>
@@ -409,10 +413,10 @@ const trainingSteps = [
         <div class="bg-gray-800 p-4 rounded-lg">
             <h3 class="text-lg font-bold mb-2">Kontrol Joystick:</h3>
             <ul class="list-disc pl-6 space-y-2">
-            <li>Tarik joystick ke <span class="font-bold text-blue-400">BELAKANG</span> untuk menambah ketinggian</li>
-            <li>Dorong joystick ke <span class="font-bold text-blue-400">DEPAN</span> untuk menurunkan ketinggian</li>
-            <li>Ketinggian ditampilkan dalam satuan kaki (0-10.000ft)</li>
-            <li>Penanda biru menunjukkan target ketinggian Anda</li>
+              <li>Tarik joystick ke <span class="font-bold text-blue-400">BELAKANG</span> untuk menambah ketinggian</li>
+              <li>Dorong joystick ke <span class="font-bold text-blue-400">DEPAN</span> untuk menurunkan ketinggian</li>
+              <li>Ketinggian ditampilkan dalam satuan kaki (0-10.000ft)</li>
+              <li>Penanda biru menunjukkan target ketinggian Anda</li>
             </ul>
         </div>
       </div>
@@ -432,14 +436,45 @@ const trainingSteps = [
             <li>Gerakkan throttle ke <span class="font-bold text-blue-400">DEPAN</span> untuk menambah kecepatan</li>
             <li>Gerakkan throttle ke <span class="font-bold text-blue-400">BELAKANG</span> untuk mengurangi kecepatan</li>
             <li>Kecepatan ditampilkan dalam knot (60-160 knot)</li>
-            <li>Ingat: Perubahan kecepatan bersifat bertahap dan dipengaruhi oleh ketinggian</li>
+            <li>Perubahan kecepatan bersifat bertahap dan dipengaruhi oleh ketinggian</li>
           </ul>
         </div>
       </div>
     `,
   },
-];
+  // Gradual Combination Training
+  {
+    title: "Combined",
+    instruction:
+      "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
+    activeIndicators: ["heading", "altitude"],
+    imagePath: "",
+    content: `
+      <div class="space-y-4">
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <h3 class="text-lg font-bold mb-2">Kontrol Gabungan:</h3>
+<p>Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.</p>
+        </div>
+      </div>
+    `,
+  },
+  {
+    title: "Combined Heading + Altitude + Airspeed Training",
+    instruction:
+      "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
+    activeIndicators: ["heading", "altitude", "airspeed"],
+    imagePath: "",
+    content: `
+      <div class="space-y-4">
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <h3 class="text-lg font-bold mb-2">Kontrol Gabungan :</h3>
+<p>Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.</p>
 
+        </div>
+      </div>
+    `,
+  },
+];
 // Computed properties
 const isAirspeedOutOfTarget = computed(() => {
   const currentConfig = config.value.configs[currentConfigIndex.value];
@@ -807,7 +842,7 @@ const updatePlanePosition = () => {
       };
 
       // Handle heading (X-axis) with reduced speed
-      const rawX = applyDeadzone(stick.axes[0], 0.1) * 0.4
+      const rawX = applyDeadzone(stick.axes[0], 0.1) * 0.4;
       if (
         !trainingMode.value ||
         trainingSteps[trainingStep.value].activeIndicators.includes("heading")
@@ -1126,6 +1161,12 @@ const updateIndicator = (indicator, mode) => {
 };
 
 const startTrainingStep = () => {
+  const updatePayload = {
+    status: "IN_TRAINING",
+    name: "PFD Tracking Test",
+  };
+
+  patchWorkstation(updatePayload);
   showInstructions.value = false;
   const activeIndicators = trainingSteps[trainingStep.value].activeIndicators;
 
@@ -1238,7 +1279,57 @@ const endExam = () => {
   examRunning.value = false;
   timeRemaining.value = 0; // Ensure timeRemaining is set to zero
   cleanupSounds();
-  sendPerformanceData();
+  actualTestCount.value += 1;
+  if (actualTestCount.value < 2) {
+    const performanceByConfig = config.value.configs.map((cfg, index) => {
+      return {
+        configId: cfg.id,
+        airspeedData: airspeedPerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        headingData: headingPerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        altitudeData: altitudePerformanceData.value.filter(
+          (d) => d.configIndex === index
+        ),
+        audioResponses: audioResponses.value.filter(
+          (r) => r.configIndex === index
+        ),
+      };
+    });
+    tempFirstResult.value = {
+      multi_graph_data: performanceByConfig.map((perf) => ({
+        heading: perf.headingData,
+        airspeed: perf.airspeedData,
+        altitude: perf.altitudeData,
+      })),
+      timeOnTargetAirspeed: timeOnTargetAirspeed.value,
+      timeOnTargetHeading: timeOnTargetHeading.value,
+      timeOnTargetAltitude: timeOnTargetAltitude.value,
+      audioTest: performanceByConfig.map((perf) => ({
+        responses: perf.audioResponses,
+        averageResponseTime:
+          perf.audioResponses.reduce(
+            (acc, curr) => acc + curr.responseTime,
+            0
+          ) / (perf.audioResponses.length || 1),
+        correctResponses: perf.audioResponses.filter((r) => r.correct).length,
+        totalResponses: perf.audioResponses.length,
+        missedResponses: perf.audioResponses.filter(
+          (r) => r.response === "none"
+        ).length,
+      })),
+      thrustData: {
+        averageThrust: thrustLevel.value,
+        verticalSpeedImpact: verticalSpeed.value,
+      },
+    };
+    resetPerformanceDate();
+    showStartModal.value = true;
+  } else {
+    sendPerformanceData();
+  }
 };
 
 const initConfig = async () => {
@@ -1287,7 +1378,8 @@ const sendPerformanceData = async () => {
       testSessionId: config.value.sessionId,
       batteryTestId: config.value.id,
       userId: config.value.userId,
-      result: {
+      result: tempFirstResult.value,
+      result2: {
         multi_graph_data: performanceByConfig.map((perf) => ({
           heading: perf.headingData,
           airspeed: perf.airspeedData,
@@ -1336,6 +1428,16 @@ const sendPerformanceData = async () => {
     loading.value = false;
   }
 };
+const resetPerformanceDate = () => {
+  timeOnTargetAirspeed.value = 0;
+  timeOnTargetHeading.value = 0;
+  timeOnTargetAltitude.value = 0;
+  audioResponses.value = [];
+  displayedNumbers.value = [];
+  headingPerformanceData.value = [];
+  airspeedPerformanceData.value = [];
+  altitudePerformanceData.value = [];
+};
 
 // Add this to your state declarations
 const showStartModal = ref(true);
@@ -1343,6 +1445,12 @@ const showStartModal = ref(true);
 // Add this method
 const handleStartExam = () => {
   showStartModal.value = false;
+  const updatePayload = {
+    status: "IN_TESTING",
+    name: "PFD Tracking Test",
+  };
+
+  patchWorkstation(updatePayload);
   //initSounds();
   startExam();
   //initAudioContext();

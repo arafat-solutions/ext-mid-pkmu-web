@@ -159,6 +159,7 @@ import {
 } from "@/utils/index";
 import { useRouter } from "vue-router";
 import Modal from "./shape-recognition/ModalConfirmation.vue";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "ShapeRecognition",
@@ -183,6 +184,9 @@ export default {
     const showTrainingModal = ref(true);
     const showTestModal = ref(false);
     const currentConfigIndex = ref(0);
+    const actualTestCount = ref(0);
+    const tempFirstResult = ref(null);
+
     const currentConfig = ref({
       size: "",
       variation: 0,
@@ -350,7 +354,16 @@ export default {
           if (gameState.value === "training") {
             endTraining();
           } else {
-            submitResult();
+            actualTestCount.value++;
+            if (actualTestCount.value < 2) {
+              tempFirstResult.value = {
+                ...quizMetrics.value,
+                graph_data: userInputs.value,
+              };
+              endTraining();
+            } else {
+              submitResult();
+            }
           }
         }
       }, 1000);
@@ -619,7 +632,8 @@ export default {
           testSessionId: config.value.sessionId,
           userId: config.value.userId,
           batteryTestId: config.value.testId,
-          result: {
+          result: tempFirstResult.value,
+          result2: {
             ...quizMetrics.value,
             graph_data: userInputs.value,
           },
@@ -673,7 +687,16 @@ export default {
             } else {
               // configs length should be always 3, mudah, sedang, sulit
               if (currentConfigIndex.value === 2) {
-                submitResult();
+            actualTestCount.value++;
+            if (actualTestCount.value < 2) {
+              tempFirstResult.value = {
+                ...quizMetrics.value,
+                graph_data: userInputs.value,
+              };
+              endTraining();
+            } else {
+              submitResult();
+            }
               } else {
                 currentConfigIndex.value++;
                 initConfig();
@@ -695,6 +718,12 @@ export default {
     function startTraining() {
       showTrainingModal.value = false;
       gameState.value = "training";
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Shapre Recognition",
+      };
+
+      patchWorkstation(updatePayload);
       initConfig();
       nextTick(() => {
         drawQuestions();
@@ -704,6 +733,12 @@ export default {
     function endTraining() {
       gameState.value = "idle";
       showTestModal.value = true;
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Shape Recognition",
+      };
+
+      patchWorkstation(updatePayload);
       completeTrainingTestAndUpdateLocalStorage("Shape Recognition");
       resetGameState();
     }

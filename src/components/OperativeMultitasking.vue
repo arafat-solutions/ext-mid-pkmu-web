@@ -53,6 +53,7 @@
 
 <script>
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   data() {
@@ -122,7 +123,16 @@ export default {
       nearThreshold: 30, // Distance threshold for "near" cursor state
       trainingCompleted: false,
       currentTrainingTask: null,
-      trainingTasks: ["navigation", "math", "alertLight", "combined"],
+      trainingTasks: [
+        "navigation",
+        "math",
+        "alertLight",
+        "combined1",
+        "combined",
+      ],
+
+      actualTestCount: 0,
+      tempFirstResult: null,
       showInstructionModal: false,
       instructionModalContent: "",
       trainingDuration: 99999989, // 15 seconds for each training task
@@ -198,6 +208,8 @@ export default {
           return "Lampu Peringatan";
         case "combined":
           return "Gabungan";
+        case "combined1":
+          return "Gabungan";
       }
     },
 
@@ -234,10 +246,10 @@ export default {
 
       // Draw answer box with color based on answer state
       let boxColor = "#222"; // Default color
-      if(this.trainingCompleted&&this.answerState){
+      if (this.trainingCompleted && this.answerState) {
         //light grey
         boxColor = "grey";
-      }else if (this.answerState === "correct") {
+      } else if (this.answerState === "correct") {
         boxColor = "green";
       } else if (this.answerState === "incorrect") {
         boxColor = "red";
@@ -683,7 +695,10 @@ export default {
         math: "Pada latihan ini Anda akan diminta untuk menggerakan THRUSTER dan JOYSTICK mengikuti objek berupa TITIK PUTIH hingga GARIS BIDIK menunjukkan warna HIJAU ditambah dengan menjawab SOAL ARITMATIKA DASAR dengan benar. <img src='devices/omt_3.png'/>",
         alertLight:
           "Pada latihan ini anda  akan diminta menekan LAMPU PERINGATAN yang menyala dengan warna MERAH. <img src='devices/omt_2.png'/>",
-        combined: "Latihan gabungan dari ketiga tugas sebelumnya.",
+        combined:
+          "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
+        combined1:
+          "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
       };
 
       this.instructionModalContent = instructions[this.currentTrainingTask];
@@ -691,11 +706,20 @@ export default {
     },
 
     startTest() {
+      const updatePayload = {
+        status: "",
+        name: "Operative Multitasking Test",
+      };
+
       if (!this.trainingCompleted) {
+        updatePayload.status = "IN_TRAINING";
         this.startTrainingTask();
       } else {
+        updatePayload.status = "IN_TESTING";
         this.startActualTest();
       }
+
+      patchWorkstation(updatePayload);
     },
 
     startTrainingTask() {
@@ -712,6 +736,9 @@ export default {
           break;
         case "combined":
           this.startCombinedTraining();
+          break;
+        case "combined1":
+          this.startCombined1Training();
           break;
       }
     },
@@ -752,6 +779,17 @@ export default {
       this.lastQuestionTime = performance.now();
       this.gameLoop(performance.now());
       setTimeout(() => this.endTrainingTask(), 120000); // 2 minutes for combined training
+    },
+
+    startCombined1Training() {
+      this.resetSimulation();
+      this.activeTasks = { navigation: true, math: true, alertLight: false };
+      setInterval(this.moveTargets, 50);
+      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.generateNewQuestion();
+      this.lastQuestionTime = performance.now();
+      this.gameLoop(performance.now());
+      setTimeout(() => this.endTrainingTask(), 120000);
     },
 
     resetSimulation() {
@@ -894,9 +932,42 @@ export default {
           this.timeRemaining--;
         } else {
           clearInterval(this.timerInterval);
-          this.endSimulation();
+
+          this.actualTestCount += 1;
+          if (this.actualTestCount < 2) {
+            this.tempFirstResult = {
+            averageResponseTime: this.averageResponseTime,
+            mispresses: this.mispresses,
+            correctPresses: this.correctPresses,
+            correctAnswers: this.correctAnswers,
+            incorrectAnswers: this.incorrectAnswers,
+            leftAimedTime: this.leftAimedTime,
+            rightAimedTime: this.rightAimedTime,
+            graph_data: {
+              alert: this.alertResponses,
+              math: this.mathResponses,
+              navigation: this.navigationResponses,
+            },
+          };
+            this.resetResult();
+            this.completeTraining();
+          } else {
+            this.endSimulation();
+          }
         }
       }, 1000);
+    },
+
+     resetResult() {
+      this.mispresses = 0;
+      this.correctPresses = 0;
+      this.correctAnswers = 0;
+      this.incorrectAnswers = 0;
+      this.leftAimedTime = 0;
+      this.rightAimedTime = 0;
+      this.alertResponses = [];
+      this.mathResponses = [];
+      this.navigationResponses = [];
     },
 
     async endSimulation() {
@@ -914,8 +985,9 @@ export default {
         const payload = {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
-          batteryTestConfigId: this.config.batteryTestConfigId,
-          result: {
+          batteryTestId : this.config.batteryTestConfigId,
+          result:this.tempFirstResult,
+          result2: {
             averageResponseTime: this.averageResponseTime,
             mispresses: this.mispresses,
             correctPresses: this.correctPresses,
@@ -976,7 +1048,7 @@ export default {
     this.config = scheduleData;
     this.config.sessionId = scheduleData.sessionId;
     this.config.userId = scheduleData.userId;
-    this.config.batteryTestConfigId = config?.id;
+    this.config.batteryTestConfigId = operativeTest?.id;
     this.targetSpeed = this.getSpeed("medium");
     this.duration = config.duration * 60; // Default to 5 minutes if not specified
 

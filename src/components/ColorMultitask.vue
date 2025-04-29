@@ -10,7 +10,7 @@
             <button
               @click="prevSlide"
               :disabled="currentSlide == 0"
-              v-if="currentslide > 0"
+              v-if="currentSlide > 0"
               class="nav-button disabled:opacity-50 disabled:cursor-not-allowed"
             >
               : Sebelum
@@ -66,7 +66,8 @@
           v-if="
             currentTrainingTask === 'colorTank' ||
             trainingCompleted ||
-            currentTrainingTask == 'combined'
+            currentTrainingTask == 'combined' ||
+            currentTrainingTask.includes('colorTank')
           "
         />
       </div>
@@ -94,7 +95,8 @@
             v-if="
               currentTrainingTask === 'horizon' ||
               trainingCompleted ||
-              currentTrainingTask == 'combined'
+              currentTrainingTask == 'combined' ||
+              currentTrainingTask.includes('horizon')
             "
             :horizon-data="config.horizon"
             :update-results="updateResults"
@@ -115,7 +117,8 @@
           v-if="
             currentTrainingTask === 'arithmetic' ||
             trainingCompleted ||
-            currentTrainingTask == 'combined'
+            currentTrainingTask == 'combined' ||
+            currentTrainingTask.includes('arithmetic')
           "
         />
       </div>
@@ -139,6 +142,7 @@ import {
   completeTrainingTestAndUpdateLocalStorage,
   removeTestByNameAndUpdateLocalStorage,
 } from "@/utils/index";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "MainView",
@@ -155,8 +159,27 @@ export default {
       currentTrainingTask: null,
       instructionModalContent: "",
 
-      trainingTasks: ["colorTank", "horizon", "arithmetic", "combined"],
-
+      trainingTasks: [
+        "colorTank",
+        "horizon",
+        "arithmetic",
+        ["colorTank", "horizon"],
+        "combined",
+      ],
+      actualTestCount: 0,
+      tempFirstResult: {
+        arithmetics: {
+          total_questions: null,
+          correct_answer: null,
+          avg_response_time: null,
+        },
+        horizon: {
+          correct_time: null, // in seconds
+        },
+        color_tank: {
+          final_score: null,
+        },
+      },
       isPauseArithmetics: false,
       isPauseColorTank: false,
       isPauseHorizon: false,
@@ -365,19 +388,31 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
           <img src="/devices/mwc_horizon.png" alt="Headset instruction" style="width: 200px; display: block; margin: 20px auto;">`,
         ],
         combined: [
-          `<b style="font-size:24px;">SubTask Kombinasi</b> <br> Peserta harus menjalankan semua subtask sebelumnya secara bersamaan.`,
+          `<b style="font-size:24px;">Subtask Kombinasi</b><br>
+Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.`,
         ],
       };
 
-      this.instructionModalContent = instructions[this.currentTrainingTask];
+      this.instructionModalContent =
+        instructions[
+          Array.isArray(this.currentTrainingTask)
+            ? "combined"
+            : this.currentTrainingTask
+        ];
       this.showInstructionModal = true;
     },
     startTrainingTask() {
       this.showInstructionModal = false;
 
+      const updatePayload = {
+        status: "",
+        name: "Multitasking With Color",
+      };
       if (this.trainingCompleted) {
+        updatePayload.status = "IN_TESTING";
         this.startActualTest();
       } else {
+        updatePayload.status = "IN_TRAINING";
         switch (this.currentTrainingTask) {
           case "colorTank":
             this.currentSlide = 0;
@@ -397,6 +432,8 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
             break;
         }
       }
+
+      patchWorkstation(updatePayload);
     },
     startHorizonTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
@@ -476,6 +513,7 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
       completeTrainingTestAndUpdateLocalStorage("Multitasking With Color");
     },
     startActualTest() {
+      console.log("lah");
       this.showTimer = true;
       this.result = {
         arithmetics: {
@@ -528,7 +566,21 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
             this.config.duration--;
           } else {
             clearInterval(this.countdownInterval);
-            this.submitResult();
+            this.actualTestCount += 1;
+            if (this.actualTestCount < 2) {
+              this.tempFirstResult = this.result;
+
+              this.isPauseHorizon = true;
+              this.isPauseColorTank = true;
+              this.isPauseArithmetics = true;
+
+              this.config.horizon.is_active = false;
+              this.config.arithmetics.is_active = false;
+              this.config.color_tank.is_active = false;
+              this.completeTraining();
+            } else {
+              this.submitResult();
+            }
           }
         }, 1000);
       }
@@ -558,7 +610,8 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
           refreshCount: parseInt(
             localStorage.getItem("reloadCountColorTankMultitask")
           ),
-          result: this.result,
+          result: this.tempFirstResult,
+          result2: this.result,
         };
 
         const res = await fetch(`${API_URL}/api/submission`, {
@@ -733,8 +786,10 @@ Menunjukkan pengisian tangki warna <b>HIJAU</b> yaitu tangki <b>F</b>. Meski tan
 .finish-button {
   position: fixed;
   bottom: 20px;
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust to truly center */
+  left: 50%;
+  /* Center horizontally */
+  transform: translateX(-50%);
+  /* Adjust to truly center */
   padding: 10px 20px;
   font-size: 16px;
   background-color: #007bff;

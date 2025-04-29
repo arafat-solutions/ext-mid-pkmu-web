@@ -64,12 +64,14 @@
 
 <script>
 import EventBus from "@/eventBus";
+import { patchWorkstation } from "@/utils/fetch";
 
 export default {
   name: "RadarVigilanceMenu",
   data() {
     return {
       selectedTestTitle: "Test anda telah selesai",
+      realName: "",
       selectedTestDescription:
         "Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan",
       url: "",
@@ -108,18 +110,32 @@ export default {
         .join("")
         .toUpperCase();
       this.selectedTestTitle = `Instruksi Test ${shortenedTestName}`;
+      this.realName = test.name;
       this.url = test.testUrl;
       this.slidesPath = `/instructions_slides/${test.name}`;
 
       this.selectedTestDescription = test.description.split("=====");
-      console.log("Total slides:", this.selectedTestDescription.length);
       this.totalSlides = this.selectedTestDescription.length;
+
+      const updatePayload = {
+        status: "IN_INSTRUCTION",
+        name: this.realName,
+      };
+
+      patchWorkstation(updatePayload);
     },
     handleTestCompleted() {
       this.selectedTestTitle = "Test anda telah selesai";
+      this.realName = "";
       this.selectedTestDescription =
         "Terimakasih atas partisipasinya, anda dapat meninggalkan ruangan";
       this.totalSlides = 0;
+      const updatePayload = {
+        status: "FINISHED",
+        name: "FINISHED",
+      };
+
+      patchWorkstation(updatePayload);
     },
     scanInstructionsSlides(slidesPath) {
       const slides = require.context(slidesPath, false, /\.(png|jpe?g|svg)$/);

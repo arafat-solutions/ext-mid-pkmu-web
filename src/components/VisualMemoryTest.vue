@@ -54,6 +54,7 @@
 </template>
 
 <script>
+import { patchWorkstation } from "@/utils/fetch";
 import { removeTestByNameAndUpdateLocalStorage } from "@/utils/index";
 
 export default {
@@ -69,6 +70,7 @@ export default {
       loading: false,
       memoryTime: 0,
       testTime: 0,
+      actualTestCount: 0,
       renderInput: 0,
       taskNo: 0,
       input: {
@@ -119,6 +121,7 @@ export default {
       timerInterval: null,
       tesInterval: null,
       refreshCount: 0,
+      tempFirstResult: 0,
       questionMarkTimer: null,
       questionMarkStartTime: null,
       questionMarkDuration: 45,
@@ -191,6 +194,11 @@ export default {
       this.clearQuestionMarkTimer();
     },
     startTest() {
+      const updatePayload = {
+        status: "IN_TESTING",
+        name: "Time Sharing Test",
+      };
+      patchWorkstation(updatePayload);
       this.isShowModal = false;
       this.cleanUp();
       this.isTraining = false;
@@ -200,6 +208,11 @@ export default {
       this.isShowModal = true;
     },
     startTraining() {
+      const updatePayload = {
+        status: "IN_TRAINING",
+        name: "Time Sharing Test",
+      };
+      patchWorkstation(updatePayload);
       this.isTraining = true;
       this.createRandomQuestion();
       this.initConfig();
@@ -716,7 +729,16 @@ export default {
           this.drawVisual();
         } else {
           clearInterval(this.tesInterval);
-          await this.submitResult();
+          this.actualTestCount += 1;
+          if (this.actualTestCount < 2) {
+            this.tempFirstResult = {
+              ...this.result,
+              graph_data: this.userInputs,
+            };
+            this.openModal();
+          } else {
+            await this.submitResult();
+          }
         }
       }, 1000);
     },
@@ -1093,7 +1115,8 @@ export default {
           testSessionId: this.configBe.sessionId,
           userId: this.configBe.userId,
           batteryTestId: this.configBe.testId,
-          result: { ...this.result, graph_data: this.userInputs },
+          result: this.tempFirstResult,
+          result2: { ...this.result, graph_data: this.userInputs },
           refreshCount: this.refreshCount,
         };
         const response = await fetch(`${API_URL}/api/submission`, {
@@ -1107,7 +1130,7 @@ export default {
         if (!response.ok) {
           throw new Error(`Error: ${response.statusText}`);
         }
-        removeTestByNameAndUpdateLocalStorage("Visual Memory Test");
+          removeTestByNameAndUpdateLocalStorage("Visual Memory Test");
         // Remove the refresh count in localStorage after successful submission
         localStorage.removeItem("refreshCountVisualMemoryTest");
         this.$router.push("/module");
