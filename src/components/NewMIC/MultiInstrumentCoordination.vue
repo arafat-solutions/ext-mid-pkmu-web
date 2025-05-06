@@ -281,6 +281,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { Altimeter, Airspeed, Heading } from "vue-flight-indicators";
 import AnalogClock from "./AnalogClock.vue";
 import { useRouter } from "vue-router";
+import { patchWorkstation } from "@/utils/fetch";
 
 // Constants for movement speed
 const MOVEMENT_SPEED = {
@@ -1283,6 +1284,12 @@ const handleStartExam = () => {
 };
 
 const startTrainingStep = () => {
+  const updatePayload = {
+    status: "IN_TRAINING",
+    name: "Multi Instrument Koordination",
+  };
+
+  patchWorkstation(updatePayload);
   showTrainingModal.value = false;
 
   // Configure controls based on current training step
@@ -1401,7 +1408,7 @@ const moveToNextTrainingStep = () => {
     showExamConfirmModal.value = true;
   }
 };
-const resetPerformanceDate=() => {
+const resetPerformanceDate = () => {
   headingPerformanceData.value = [];
   airspeedPerformanceData.value = [];
   altitudePerformanceData.value = [];
@@ -1409,6 +1416,12 @@ const resetPerformanceDate=() => {
 };
 
 const startActualExam = async () => {
+  const updatePayload = {
+    status: "IN_TESTING",
+    name: "Multi Instrument Koordination",
+  };
+
+  patchWorkstation(updatePayload);
   // Close confirmation modal
   intervalTimer.value = setInterval(updateTime, 1000);
   showExamConfirmModal.value = false;
@@ -1463,7 +1476,7 @@ const endExam = () => {
   cleanupSounds();
 
   actualTestCount.value += 1;
-  if (actualTestCount.value <2) {
+  if (actualTestCount.value < 2) {
     const performanceByConfig = config.value.configs.map((cfg, index) => {
       return {
         configId: cfg.id,
@@ -1504,13 +1517,12 @@ const endExam = () => {
         verticalSpeedImpact: verticalSpeed.value,
       },
     };
-   resetPerformanceDate()
+    resetPerformanceDate();
     cancelAudioSequence();
     showExamConfirmModal.value = true;
   } else {
-  sendPerformanceData();
+    sendPerformanceData();
   }
-
 };
 
 const initConfig = async () => {
