@@ -24,7 +24,8 @@ const fetchData = async (endpoint, method = "GET", body = null) => {
 };
 
 const patchWorkstation = async (data) => {
-  const id = localStorage.getItem("designatedWorkstation");
+  let id = localStorage.getItem("designatedWorkstation");
+  id = String(id).replace(/^0+/, "");
   return await fetchData(`/api/scheduling/workstation/${id}`, "PATCH", data);
 };
 
