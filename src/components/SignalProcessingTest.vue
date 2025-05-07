@@ -6,18 +6,24 @@
       </h2>
 
       <div class="mb-4" style="font-size: 20px">
-        <p class="mb-2">
-          <strong>Untuk blok merah:</strong>
-          {{ ruleOptions[currentRuleSet.red] }}
+        <p class="mb-2" v-if="actualTestCount >= 1">
+          Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+          untuk melihat perkembangan pemahaman Anda.
         </p>
-        <p class="mb-2">
-          <strong>Untuk blok hijau:</strong>
-          {{ ruleOptions[currentRuleSet.green] }}
-        </p>
-        <p class="mb-2">
-          <strong>Untuk blok biru:</strong>
-          {{ ruleOptions[currentRuleSet.blue] }}
-        </p>
+        <template v-else>
+          <p class="mb-2">
+            <strong>Untuk blok merah:</strong>
+            {{ ruleOptions[currentRuleSet.red] }}
+          </p>
+          <p class="mb-2">
+            <strong>Untuk blok hijau:</strong>
+            {{ ruleOptions[currentRuleSet.green] }}
+          </p>
+          <p class="mb-2">
+            <strong>Untuk blok biru:</strong>
+            {{ ruleOptions[currentRuleSet.blue] }}
+          </p>
+        </template>
       </div>
 
       <p class="mb-4 text-center" style="font-size: 20px">
@@ -113,6 +119,7 @@ export default {
       },
       isModalTrainingVisible: false,
       isModalVisible: true,
+      isTrainingCompleted: false,
       indexConfig: 0,
       configs: [],
       duration: 0,
@@ -312,7 +319,7 @@ export default {
           (acc, config) => acc + Number(config.duration),
           0
         );
-        this.timeLeft = 10;
+        this.timeLeft = this.minuteTime * 60;
       }
 
       patchWorkstation(updatePayload);
