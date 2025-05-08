@@ -274,11 +274,19 @@
 
       <div v-if="trainingComplete" class="completion-modal modal">
         <div class="modal-content">
-          <h2>latihan Selesai</h2>
-          <p>
-            Anda telah menyelesaikan sesi latihan. Siap untuk memulai tes yang
-            sebenarnya?
+          <p v-if="actualTestCount >= 1">
+            <strong style="font-size: 24px">
+              Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+              untuk melihat perkembangan pemahaman Anda.
+            </strong>
           </p>
+          <template v-else>
+            <h2>latihan Selesai</h2>
+            <p>
+              Anda telah menyelesaikan sesi latihan. Siap untuk memulai tes yang
+              sebenarnya?
+            </p>
+          </template>
           <div class="button-group">
             <button @click="startActualTest" class="start-btn">
               Mulai Tes
@@ -556,6 +564,7 @@ export default {
 
     return {
       showModal,
+      actualTestCount,
       showModalJoystick,
       showModalThruster,
       showModalString,

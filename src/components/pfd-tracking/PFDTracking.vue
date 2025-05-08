@@ -7,17 +7,25 @@
           <div class="modal-content">
             <h2 class="modal-title">PFD Tracking Test</h2>
             <div class="modal-body">
-              <p>Dalam ujian ini, anda perlu:</p>
-              <ul class="modal-list">
-                <li>
-                  Mengendalikan indikator pesawat menggunakan joystick dan
-                  thruster
-                </li>
-                <li>Menjaga indikator dalam rentang target</li>
-              </ul>
-              <p class="modal-footer-text">
-                Klik Ya saat anda siap untuk memulai.
+              <p v-if="actualTestCount >= 1">
+                <strong style="font-size: 24px">
+                  Tes pertama telah selesai, anda akan melakukan tes yang sama
+                  lagi untuk melihat perkembangan pemahaman Anda.
+                </strong>
               </p>
+              <template v-else>
+                <p>Dalam ujian ini, anda perlu:</p>
+                <ul class="modal-list">
+                  <li>
+                    Mengendalikan indikator pesawat menggunakan joystick dan
+                    thruster
+                  </li>
+                  <li>Menjaga indikator dalam rentang target</li>
+                </ul>
+                <p class="modal-footer-text">
+                  Klik Ya saat anda siap untuk memulai.
+                </p>
+              </template>
             </div>
             <div class="modal-footer">
               <button

@@ -12,7 +12,7 @@
     <ModalComponent
       :visible="isTestModalVisible"
       :title="'Mulai Tes Aktual'"
-      :description="'Anda akan memulai tes yang sebenarnya. Tes ini akan menggabungkan semua tugas yang telah Anda latih sebelumnya. Apakah Anda siap untuk memulai?'"
+      :description="actualTestCount >= 1?'Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk melihat perkembangan pemahaman Anda.':'Anda akan memulai tes yang sebenarnya. Tes ini akan menggabungkan semua tugas yang telah Anda latih sebelumnya. Apakah Anda siap untuk memulai?'"
       @confirm="handleTestConfirm"
       @cancel="handleCancel"
     />

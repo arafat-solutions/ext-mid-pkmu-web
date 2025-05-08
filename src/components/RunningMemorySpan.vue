@@ -21,6 +21,10 @@
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
+      <p v-if="actualTestCount>=1">
+        Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk
+        melihat perkembangan pemahaman Anda.
+      </p>
       <p>
         <strong>Apakah anda yakin akan memulai test?</strong>
       </p>

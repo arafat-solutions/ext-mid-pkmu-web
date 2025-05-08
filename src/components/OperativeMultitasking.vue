@@ -822,7 +822,7 @@ export default {
       this.updateLocalStorage();
       this.showInstructionModal = true;
       this.instructionModalContent =
-        "Latihan selesai! Tes akan dimulai sekarang.";
+        this.actualTestCount>=1?"Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk melihat perkembangan pemahaman Anda.":"Latihan selesai! Tes akan dimulai sekarang.";
     },
 
     updateLocalStorage() {

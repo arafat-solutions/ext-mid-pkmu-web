@@ -8,7 +8,11 @@
           <div class="modal-content">
             <h1 class="modal-title">Mulai Tes</h1>
             <div class="modal-body">
-              <p class="mb-4">
+              <p v-if="actualTestCount >= 1">
+                Tes pertama telah selesai, anda akan melakukan tes yang sama
+                lagi untuk melihat perkembangan pemahaman Anda.
+              </p>
+              <p class="mb-4" v-else>
                 Anda akan memulai tes sesungguhnya. Dalam tes ini:
               </p>
             </div>

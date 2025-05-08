@@ -20,6 +20,12 @@
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
+      <p v-if="actualTestCount >= 1">
+        <strong style="font-size: 24px">
+          Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+          untuk melihat perkembangan pemahaman Anda.
+        </strong>
+      </p>
       <p>
         <strong style="font-size: 24px"
           >Apakah anda yakin akan memulai tes?</strong
@@ -153,7 +159,7 @@ export default {
       configs: [],
       moduleId: null,
       actualTestCount: 0,
-      tempFirstResult:{
+      tempFirstResult: {
         total_question: 0,
         correct_answer: 0,
         avg_response_time: 0,
@@ -318,18 +324,20 @@ export default {
     calculatedResult() {
       this.actualTestCount += 1;
       if (this.actualTestCount < 2) {
-      this.tempFirstResult.total_question = this.totalQuestion;
-      this.tempFirstResult.correct_answer = this.correctAnswer;
+        this.tempFirstResult.total_question = this.totalQuestion;
+        this.tempFirstResult.correct_answer = this.correctAnswer;
 
-      const resultTimeResponded = this.averageResponseTime();
-      this.tempFirstResult.avg_response_time = resultTimeResponded.toFixed(2);
+        const resultTimeResponded = this.averageResponseTime();
+        this.tempFirstResult.avg_response_time = resultTimeResponded.toFixed(2);
 
-      this.tempFirstResult.response_times = this.responseDurations.map((duration) => ({
-        responseTime: duration,
-        timestamp: Date.now(),
-      }));
+        this.tempFirstResult.response_times = this.responseDurations.map(
+          (duration) => ({
+            responseTime: duration,
+            timestamp: Date.now(),
+          })
+        );
 
-      this.tempFirstResult.graph_data = this.userInputs;
+        this.tempFirstResult.graph_data = this.userInputs;
         this.startExam();
       } else {
         this.submitResult();
@@ -338,18 +346,18 @@ export default {
     async submitResult() {
       try {
         this.isLoading = true;
-      this.result.total_question = this.totalQuestion;
-      this.result.correct_answer = this.correctAnswer;
+        this.result.total_question = this.totalQuestion;
+        this.result.correct_answer = this.correctAnswer;
 
-      const resultTimeResponded = this.averageResponseTime();
-      this.result.avg_response_time = resultTimeResponded.toFixed(2);
+        const resultTimeResponded = this.averageResponseTime();
+        this.result.avg_response_time = resultTimeResponded.toFixed(2);
 
-      this.result.response_times = this.responseDurations.map((duration) => ({
-        responseTime: duration,
-        timestamp: Date.now(),
-      }));
+        this.result.response_times = this.responseDurations.map((duration) => ({
+          responseTime: duration,
+          timestamp: Date.now(),
+        }));
 
-      this.result.graph_data = this.userInputs;
+        this.result.graph_data = this.userInputs;
 
         const API_URL = process.env.VUE_APP_API_URL;
         const payload = {
