@@ -51,8 +51,12 @@
         <h2 class="text-2xl font-bold mb-4 text-gray-800">Mulai tes</h2>
 
         <div class="space-y-4 mb-6">
-          <p class="text-lg text-gray-700">
+          <p class="text-lg text-gray-700" v-if="actualTestCount === 0">
             Kamu sudah menyelesaikan latihan. Sekarang, kamu akan memulai tes.
+          </p>
+          <p class="text-lg text-gray-700" v-else>
+            Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+            untuk melihat perkembangan pemahaman Anda.
           </p>
         </div>
 
@@ -687,16 +691,16 @@ export default {
             } else {
               // configs length should be always 3, mudah, sedang, sulit
               if (currentConfigIndex.value === 2) {
-            actualTestCount.value++;
-            if (actualTestCount.value < 2) {
-              tempFirstResult.value = {
-                ...quizMetrics.value,
-                graph_data: userInputs.value,
-              };
-              endTraining();
-            } else {
-              submitResult();
-            }
+                actualTestCount.value++;
+                if (actualTestCount.value < 2) {
+                  tempFirstResult.value = {
+                    ...quizMetrics.value,
+                    graph_data: userInputs.value,
+                  };
+                  endTraining();
+                } else {
+                  submitResult();
+                }
               } else {
                 currentConfigIndex.value++;
                 initConfig();
@@ -804,6 +808,7 @@ export default {
     return {
       shapes,
       shapeCanvas,
+      actualTestCount,
       buttonCanvases,
       checkAnswer,
       drawQuestions,

@@ -17,7 +17,11 @@
     <!-- Actual Test Start Modal -->
     <Modal v-if="showTestStartModal" @close="startActualTest">
       <h2 style="font-size: 24px"><b>Siap untuk memulai tes?</b></h2>
-      <p style="font-size: 20px; max-width: 50%">
+      <p v-if="actualTestCount>=1">
+        Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk
+        melihat perkembangan pemahaman Anda.
+      </p>
+      <p v-else style="font-size: 20px; max-width: 50%">
         Kerja bagus menyelesaikan latihan! Anda sekarang siap untuk memulai tes
         sebenarnya. Ingat, kinerja Anda dalam tes ini akan dicatat.
       </p>
@@ -1053,6 +1057,7 @@ export default {
       config,
       loadingSubmit,
       setGridProperties,
+      actualTestCount,
       placeToCell,
       generateGrid,
       clear,

@@ -14,7 +14,13 @@
           v-if="!trainingCompleted"
           v-html="instructionModalContent"
         ></p>
-        <p v-else>Apakah Anda Yakin <br />akan memulai tes?</p>
+        <p v-else>
+          <span v-if="actualTestCount >= 1">
+            Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+            untuk melihat perkembangan pemahaman Anda.
+          </span>
+          <span v-else> Apakah Anda Yakin <br />akan memulai tes? </span>
+        </p>
 
         <button @click="startTrainingTask">
           {{ trainingCompleted ? "Mulai Tes" : "Mulai Latihan" }}
@@ -312,10 +318,16 @@ export default {
           "Anda diminta untuk merespon bila huruf berwarna MERAH dengan menyentuh layar, bila huruf berwarna KUNING maka abaikan. <img style='border:1px solid gray' src='devices/imt_2.png'/>",
         horizon:
           "Anda diminta untuk mengarahkan garis penerbang dengan menggunakan JOYSTICK mengikuti pergerakan target sampai berwarna HIJAU hingga tes selesai. <img style='border:1px solid gray' src='devices/imt_1.png'/>",
-        combined: "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
+        combined:
+          "Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subtask akan ditambahkan secara bertahap hingga semua digabungkan dalam satu sesi.",
       };
 
-      this.instructionModalContent = instructions[Array.isArray(this.currentTrainingTask)?"combined":this.currentTrainingTask];
+      this.instructionModalContent =
+        instructions[
+          Array.isArray(this.currentTrainingTask)
+            ? "combined"
+            : this.currentTrainingTask
+        ];
       this.showInstructionModal = true;
     },
     startTrainingTask() {

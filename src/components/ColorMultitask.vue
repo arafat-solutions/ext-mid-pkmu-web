@@ -32,7 +32,11 @@
         </div>
       </div>
       <div v-else>
-        <p>
+        <p v-if="actualTestCount >= 1">
+          Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+          untuk melihat perkembangan pemahaman Anda.
+        </p>
+        <p v-else>
           Anda Telah menyelesaikan semua latihan. setelah ini, anda akan memulai
           test yang sesungguhnya. Pastikan kondisi anda dalam kondisi prima dan
           tanpa distraksi, test ini tidak dapat di pause.

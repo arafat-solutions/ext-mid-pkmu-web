@@ -1,28 +1,52 @@
 <template>
   <div class="relative h-full">
-    <ModalConfirmSound :visible="isModalVisible" :title="getModalTitle()" :message="getModalMessage()"
-      @confirm="handleConfirm" @clickPlaySound="playExampleSound" @cancel="handleCancel" :isAcoustic="currentTrainingTask === 'acoustic' ||
+    <ModalConfirmSound
+      :visible="isModalVisible"
+      :title="getModalTitle()"
+      :message="getModalMessage()"
+      @confirm="handleConfirm"
+      @clickPlaySound="playExampleSound"
+      @cancel="handleCancel"
+      :isAcoustic="
+        currentTrainingTask === 'acoustic' ||
         currentTrainingTask.includes('acoustic')
-        " />
+      "
+    />
     <div class="bg-black h-full w-full flex justify-center items-center">
-      <canvas ref="canvas" class="border border-white" :width="canvasWidth" :height="canvasHeight"></canvas>
+      <canvas
+        ref="canvas"
+        class="border border-white"
+        :width="canvasWidth"
+        :height="canvasHeight"
+      ></canvas>
     </div>
-    <div class="absolute top-0 left-0 w-full flex justify-center" v-if="!isTraining">
-      <div class="bg-[#6757dc] text-white w-[300px] h-[60px] rounded-b-2xl flex justify-center items-center space-x-2">
+    <div
+      class="absolute top-0 left-0 w-full flex justify-center"
+      v-if="!isTraining"
+    >
+      <div
+        class="bg-[#6757dc] text-white w-[300px] h-[60px] rounded-b-2xl flex justify-center items-center space-x-2"
+      >
         <p>Waktu: {{ formatTime(config.duration) }}</p>
       </div>
     </div>
 
     <!-- target message -->
-    <div v-if="
-      targetMessage &&
-      isTraining &&
-      (currentTrainingTask == 'tracking' ||
-        currentTrainingTask == 'keseluruhan' ||
-        currentTrainingTask.includes('tracking') ||
-        currentTrainingTask.includes('tracking'))
-    " class="absolute bottom-[9.5rem] w-full flex justify-center">
-      <div class="flex justify-center items-center space-x-2" style="color: green">
+    <div
+      v-if="
+        targetMessage &&
+        isTraining &&
+        (currentTrainingTask == 'tracking' ||
+          currentTrainingTask == 'keseluruhan' ||
+          currentTrainingTask.includes('tracking') ||
+          currentTrainingTask.includes('tracking'))
+      "
+      class="absolute bottom-[9.5rem] w-full flex justify-center"
+    >
+      <div
+        class="flex justify-center items-center space-x-2"
+        style="color: green"
+      >
         <p class="text-3xl flex items-center">
           {{ targetMessage }}
         </p>
@@ -30,13 +54,19 @@
     </div>
 
     <!-- button message -->
-    <div v-if="
-      isTraining &&
-      (currentTrainingTask == 'button' ||
-        currentTrainingTask == 'keseluruhan' ||
-        currentTrainingTask.includes('button'))
-    " class="absolute bottom-[7.5rem] w-full flex justify-center">
-      <div class="flex justify-center items-center space-x-2" style="color: green">
+    <div
+      v-if="
+        isTraining &&
+        (currentTrainingTask == 'button' ||
+          currentTrainingTask == 'keseluruhan' ||
+          currentTrainingTask.includes('button'))
+      "
+      class="absolute bottom-[7.5rem] w-full flex justify-center"
+    >
+      <div
+        class="flex justify-center items-center space-x-2"
+        style="color: green"
+      >
         <p class="text-3xl flex items-center">
           Hilangkan kotak biru atau merah dengan menekan layar sentuh.
         </p>
@@ -44,24 +74,39 @@
     </div>
 
     <!-- acoustic message -->
-    <div v-if="
-      acousticMessage &&
-      isTraining &&
-      (currentTrainingTask == 'acoustic' ||
-        currentTrainingTask == 'keseluruhan')
-    " class="absolute bottom-[5.5rem] w-full flex justify-center">
-      <div class="flex justify-center items-center space-x-2" :style="{ color: acousticMessageColor }">
+    <div
+      v-if="
+        acousticMessage &&
+        isTraining &&
+        (currentTrainingTask == 'acoustic' ||
+          currentTrainingTask == 'keseluruhan')
+      "
+      class="absolute bottom-[5.5rem] w-full flex justify-center"
+    >
+      <div
+        class="flex justify-center items-center space-x-2"
+        :style="{ color: acousticMessageColor }"
+      >
         <p class="text-3xl flex items-center">
           {{ acousticMessage }}
         </p>
       </div>
     </div>
-    <button v-if="isTraining" @click="endTrainingSession" class="finish-button" style="width: 200px; height: 70px">
+    <button
+      v-if="isTraining"
+      @click="endTrainingSession"
+      class="finish-button"
+      style="width: 200px; height: 70px"
+    >
       Selesai Latihan
     </button>
-    <div v-if="loading"
-      class="w-screen h-screen bg-white absolute top-0 left-0 z-30 flex justify-center items-center flex-col">
-      <div class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"></div>
+    <div
+      v-if="loading"
+      class="w-screen h-screen bg-white absolute top-0 left-0 z-30 flex justify-center items-center flex-col"
+    >
+      <div
+        class="w-20 h-20 border-[12px] border-[#5b4ac4] border-t-[#cecece] rounded-full animate-spin"
+      ></div>
       <p class="mt-12 text-2xl">Your result is submitting...</p>
     </div>
   </div>
@@ -172,10 +217,11 @@ const gamepadIndex = ref(null);
 
 function getModalTitle() {
   if (isTraining.value) {
-    return `Mulai Latihan ${Array.isArray(currentTrainingTask.value)
+    return `Mulai Latihan ${
+      Array.isArray(currentTrainingTask.value)
         ? "Gabungan"
         : currentTrainingTask.value
-      } `;
+    } `;
   }
   return "Mulai Test";
 }
@@ -201,7 +247,9 @@ function getModalMessage() {
         return "Anda akan melalui semua latihan sebelumnya, yaitu Tracking, Button, dan Acoustic. Apakah Anda siap untuk memulai tes?";
     }
   }
-  return "Apakah Anda siap untuk memulai tes?";
+  return actualTestCount.value >= 1
+    ? "Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk melihat perkembangan pemahaman Anda."
+    : "Apakah Anda siap untuk memulai tes?";
 }
 
 function handleConfirm() {
@@ -278,11 +326,13 @@ function countDownTestTime() {
             ...metrics.value,
             graph_data: userInputs.value,
             tracking_task: {
-              correctTime: Number(metrics.value.tracking_task.correctTime.toFixed(2)),
+              correctTime: Number(
+                metrics.value.tracking_task.correctTime.toFixed(2)
+              ),
             },
           };
 
-          resetResult()
+          resetResult();
           endTrainingSession();
         } else {
           submitResult();
@@ -947,8 +997,8 @@ onUnmounted(() => {
     canvas.value.removeEventListener("touchstart", handleInteraction);
     // canvas.value.removeEventListener("mousemove", handleMouseMove);
     window.removeEventListener("keydown", handleKeydown);
-    canvas.value.removeEventListener("mouseenter", () => { });
-    canvas.value.removeEventListener("mouseleave", () => { });
+    canvas.value.removeEventListener("mouseenter", () => {});
+    canvas.value.removeEventListener("mouseleave", () => {});
 
     window.removeEventListener("gamepadconnected", onGamepadConnected);
     window.removeEventListener("gamepaddisconnected", onGamepadDisconnected);

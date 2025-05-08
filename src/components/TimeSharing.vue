@@ -1,8 +1,12 @@
 <template>
   <div v-if="showEndModal" class="modal">
     <div class="modal-content">
-      <h2>Latihan Selesai</h2>
-      <p>
+      <h2 v-if="actualTestCount == 0">Latihan Selesai</h2>
+      <p v-if="actualTestCount >= 1">
+        Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk
+        melihat perkembangan pemahaman Anda.
+      </p>
+      <p v-else>
         Anda telah menyelesaikan sesi latihan. Apakah Anda siap untuk memulai
         tes yang sebenarnya?
       </p>
@@ -111,10 +115,9 @@ export default {
       patchWorkstation(updatePayload);
       this.isTraining = false;
       this.setConfig(this.config);
-      if(this.$refs.planeSimulatorRef){
+      if (this.$refs.planeSimulatorRef) {
         this.$refs.planeSimulatorRef.initializeGame();
       }
-
     },
     setConfig(config) {
       this.$nextTick(() => {
@@ -202,7 +205,6 @@ export default {
 </script>
 
 <style scoped>
-
 .modal {
   position: fixed;
   top: 0;
@@ -215,6 +217,7 @@ export default {
   align-items: center;
   z-index: 1000;
 }
+
 .modal-content {
   background-color: white;
   padding: 20px;

@@ -37,13 +37,23 @@
     <div v-if="showTestModal" class="modal">
       <div class="modal-content">
         <h2 style="font-size: 24px">Mulai Test</h2>
-        <p style="font-size: 20px">
-          Latihan telah selesai! Anda akan memulai tes yang sebenarnya.
+        <p v-if="actualTestCount >= 1">
+          <strong style="font-size: 24px">
+            Tes pertama telah selesai, anda akan melakukan tes yang sama lagi
+            untuk melihat perkembangan pemahaman Anda.
+          </strong>
         </p>
-        <p style="font-size: 20px">
-          Tes akan berlangsung sesuai dengan waktu yang ditentukan.
-        </p>
-        <p style="font-size: 20px">Ingat untuk tetap fokus dan konsentrasi.</p>
+        <template v-else>
+          <p style="font-size: 20px">
+            Latihan telah selesai! Anda akan memulai tes yang sebenarnya.
+          </p>
+          <p style="font-size: 20px">
+            Tes akan berlangsung sesuai dengan waktu yang ditentukan.
+          </p>
+          <p style="font-size: 20px">
+            Ingat untuk tetap fokus dan konsentrasi.
+          </p>
+        </template>
         <button @click="startActualTest" class="modal-button">Mulai Tes</button>
       </div>
     </div>
@@ -399,7 +409,7 @@ export default {
       };
 
       patchWorkstation(updatePayload);
-      animate()
+      animate();
     };
 
     const resetAirplanePosition = () => {
@@ -799,7 +809,7 @@ export default {
       openModalActualTest,
       timeRemaining,
       startTime,
-      actualTestCount
+      actualTestCount,
     };
   },
 };
