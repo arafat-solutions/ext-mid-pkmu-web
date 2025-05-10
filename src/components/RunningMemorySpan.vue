@@ -258,6 +258,7 @@ export default {
       this.correctAnswer = 0;
       this.responseDurations = [];
       this.userInputs = [];
+      this.indexConfig = 0;
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {

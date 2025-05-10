@@ -60,6 +60,7 @@
           <CircleTest
             v-if="currentTraining.includes('circle_test') && configReady"
             :alert-lights-data="configBe.alert_lights"
+            :isTraining="isTraining"
             :update-results="updateResults"
             :update-result-light-avg-time="updateResultLightAvgTime"
             class="centered-component"
@@ -79,6 +80,7 @@
             <CircleTest
               v-if="currentTraining.includes('circle_test') && configReady"
               :alert-lights-data="configBe.alert_lights"
+              :isTraining="isTraining"
               :update-results="updateResults"
               :update-result-light-avg-time="updateResultLightAvgTime"
               style="margin-bottom: 20px"
@@ -118,6 +120,7 @@
           <CircleTest
             v-if="configReady"
             :alert-lights-data="configBe.alert_lights"
+            :isTraining="isTraining"
             :update-results="updateResults"
             :update-result-light-avg-time="updateResultLightAvgTime"
           />

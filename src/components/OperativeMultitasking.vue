@@ -778,7 +778,7 @@ export default {
       this.generateNewQuestion();
       this.lastQuestionTime = performance.now();
       this.gameLoop(performance.now());
-      setTimeout(() => this.endTrainingTask(), 120000); // 2 minutes for combined training
+      setTimeout(() => this.endTrainingTask(), this.trainingDuration); // 2 minutes for combined training
     },
 
     startCombined1Training() {
@@ -789,7 +789,7 @@ export default {
       this.generateNewQuestion();
       this.lastQuestionTime = performance.now();
       this.gameLoop(performance.now());
-      setTimeout(() => this.endTrainingTask(), 120000);
+      setTimeout(() => this.endTrainingTask(), this.trainingDuration);
     },
 
     resetSimulation() {
