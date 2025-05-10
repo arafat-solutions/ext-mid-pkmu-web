@@ -1,6 +1,9 @@
 <template>
     <div class="circle-test">
         <canvas ref="circleCanvas"></canvas>
+    <div v-if="notification.show&&isTraining" :class="['notification', notification.type]">
+      {{ notification.message }}
+    </div>
     </div>
 </template>
 
@@ -32,6 +35,7 @@ export default {
             type: Object,
             required: true
         },
+        isTraining: Boolean,
         updateResults: Function,
         updateResultLightAvgTime: Function
     },
@@ -44,7 +48,12 @@ export default {
             setInterval: 0,
             redStartTime: null,
             correctResponseTimes: [],
-        };
+            notification: {
+                message: '',
+                type: '', // 'success' or 'error'
+                show: false
+            }
+                    };
     },
     mounted() {
         this.initializeTest();
@@ -188,6 +197,7 @@ export default {
             if (index === this.activeIndex) {
                 if (fillColor === COLORS.RED) {
                     this.updateResults('alert_lights', { correct_response: 1 });
+                    this.showNotification('Benar!', 'success');
                     if (this.redStartTime !== null) {
                         const responseTime = performance.now() - this.redStartTime;
                         this.correctResponseTimes.push(responseTime);
@@ -195,6 +205,7 @@ export default {
                     }
                 } else if (fillColor === COLORS.YELLOW) {
                     this.updateResults('alert_lights', { wrong_response: 1 });
+                    this.showNotification('Salah!', 'success');
                 }
 
                 // Turn off the light immediately
@@ -223,6 +234,17 @@ export default {
             const avg = (sum / this.correctResponseTimes.length) / 1000;
             return Number(avg.toFixed(2))
         },
+
+    showNotification(message, type = "success") {
+      this.notification = {
+        message,
+        type,
+        show: true,
+      };
+      setTimeout(() => {
+        this.notification.show = false;
+      }, 1500);
+    },
     }
 };
 </script>
@@ -230,5 +252,22 @@ export default {
 <style scoped>
 canvas {
     border: none;
+}
+.notification {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    z-index: 1000;
+}
+.notification.success {
+    background-color: green;
+}
+.notification.error {
+    background-color: red;
 }
 </style>
