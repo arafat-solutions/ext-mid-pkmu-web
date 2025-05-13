@@ -100,16 +100,28 @@
 
     <!-- Feedback Message -->
     <Transition name="fade">
-      <div
-        v-if="showFeedback"
-        class="feedback-message"
-        :class="
-          userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
-        "
-      >
-        {{ feedbackMessage }}
-      </div>
+      <template>
+        <div
+          v-if="showFeedback"
+          class="feedback-message"
+          :class="
+            userFollowingDirection ? 'feedback-correct' : 'feedback-incorrect'
+          "
+        >
+          {{ feedbackMessage }}
+        </div>
+      </template>
     </Transition>
+    <div
+      v-if="feedbackMessageNumber"
+      :class="{
+        feedback: true,
+        correct: feedbackMessageNumber === 'Benar',
+        wrong: feedbackMessageNumber !== 'Benar',
+      }"
+    >
+      {{ feedbackMessageNumber }}
+    </div>
 
     <button
       v-if="trainingMode && examRunning"
@@ -309,6 +321,7 @@ const MOVEMENT_SPEED = {
 
 //  manual input
 const controlMode = ref("joystick");
+const feedbackMessageNumber = ref(null);
 const manualInput = ref({
   up: false, // Increase altitude
   down: false, // Decrease altitude
@@ -462,7 +475,7 @@ const TRAINING_STEPS = [
   },
   {
     id: "gradual_3",
-    title: "LATIHAN: Semua Kontrol + Angka",
+    title: "LATIHAN",
     instructions: `
      <div class="training-instructions">
         <h2>Latihan Gabungan</h2>
@@ -834,8 +847,13 @@ const handleAudioResponse = (response) => {
     correct: isCorrect,
     configIndex: currentConfigIndex.value,
   });
+  if (trainingMode.value) {
+    feedbackMessageNumber.value = isCorrect ? "Benar" : "Salah";
 
-  // graph data
+    setTimeout(() => {
+      feedbackMessageNumber.value = null;
+    }, 2000);
+  } // graph data
   userInputs.value.push({
     type: isCorrect ? "correct" : "wrong",
     responseTime,
@@ -2152,5 +2170,29 @@ onUnmounted(() => {
 
 .bg-gray-500 {
   background-color: #6b7280;
+}
+
+.feedback.correct {
+  background-color: #4caf50;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.2em;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.feedback.wrong {
+  padding: 8px;
+  border-radius: 5px;
+  background-color: #f44336;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 1.2em;
+}
+
+.feedback {
+  position: fixed;
+  bottom: 100px;
+  left: 48%;
 }
 </style>

@@ -13,7 +13,7 @@
           @click="confirm"
           class="bg-[#7e57c2] text-white px-4 py-3 border-none rounded-md cursor-pointer font-bold"
         >
-          Mulai Latihan
+          {{isTraining?"Mulai Latihan":"Mulai Tes"}}
         </button>
       </div>
     </div>
@@ -25,6 +25,10 @@ export default {
   name: "ModalComponent",
   props: {
     visible: {
+      type: Boolean,
+      default: false,
+    },
+    isTraining: {
       type: Boolean,
       default: false,
     },

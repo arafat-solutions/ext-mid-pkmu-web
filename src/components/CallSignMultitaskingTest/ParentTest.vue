@@ -5,6 +5,7 @@
       :visible="isTrainingModalVisible"
       :title="currentModalTitle"
       :description="currentModalDescription"
+      :isTraining="isTraining"
       @confirm="handleTrainingConfirm"
       @cancel="handleCancel"
     />
@@ -12,6 +13,7 @@
     <ModalComponent
       :visible="isTestModalVisible"
       :title="'Mulai Tes Aktual'"
+      :isTraining="isTraining"
       :description="actualTestCount >= 1?'Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk melihat perkembangan pemahaman Anda.':'Anda akan memulai tes yang sebenarnya. Tes ini akan menggabungkan semua tugas yang telah Anda latih sebelumnya. Apakah Anda siap untuk memulai?'"
       @confirm="handleTestConfirm"
       @cancel="handleCancel"
@@ -384,6 +386,9 @@ export default {
             } else {
               this.actualTestCount++;
               if (this.actualTestCount < 2) {
+                  if(this.$refs.callSignTest){
+                    this.$refs.callSignTest.cleanup();
+                  }
                 this.isTestModalVisible = true;
                 this.tempFirstResult = this.results;
               } else {
@@ -396,6 +401,9 @@ export default {
     },
     handleTrainingComplete() {
       this.trainingIndex++;
+      if(this.$refs.callSignTest){
+        this.$refs.callSignTest.cleanup();
+      }
       if (this.trainingIndex < TRAINING_SEQUENCE.length) {
         this.currentTraining = Array.isArray(
           TRAINING_SEQUENCE[this.trainingIndex]
@@ -475,6 +483,7 @@ export default {
       this.countDownTime();
 
       if (this.currentTraining.includes("callsign")) {
+        this.$refs.callSignTest?.initializeTest();
         this.$refs.callSignTest?.startSpeechTest();
       }
     },

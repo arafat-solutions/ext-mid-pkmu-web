@@ -183,6 +183,7 @@ export default {
       this.pressAnswerAudio(key);
     },
     generateNumbers() {
+      console.log("generateNumbers");
       let num1, num2;
       if (this.difficulty === "hard") {
         num1 = Math.floor(Math.random() * 90) + 10;

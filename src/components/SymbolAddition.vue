@@ -502,7 +502,7 @@ this.tempFirstResult ={
       for (let [index, radioValue] of this.radioValues[rowIndex].entries()) {
         if (radioValue === this.answers[rowIndex][index]) {
           this.result.correct++;
-        } else if (radioValue && radioValue !== this.answers[rowIndex][index]) {
+        } else if (radioValue !== this.answers[rowIndex][index]) {
           this.result.wrong++;
           wrong++;
         }
