@@ -374,6 +374,7 @@ function endTrainingSession() {
   metrics.value.button_task.correct_answer = 0;
   metrics.value.button_task.total_question = 0;
   userInputs.value = [];
+  reset()
 
   if (currentTrainingTask.value === "keseluruhan") {
     completeTrainingTestAndUpdateLocalStorage("Multi Monitoring Test");

@@ -39,6 +39,7 @@ export default {
       },
       questionTimer: null,
       intervalTimer: null,
+      intervalCycle:null,
       isQuestionActive: false,
       canAnswer: true,
       selectedAnswer: null,
@@ -65,6 +66,7 @@ export default {
   beforeUnmount() {
     if (this.questionTimer) clearTimeout(this.questionTimer);
     if (this.intervalTimer) clearTimeout(this.intervalTimer);
+    if(this.intervalCycle) clearTimeout(this.intervalCycle);
     window.removeEventListener('keyup', this.handleKeyPress);
     if (this.useSound) {
       window.speechSynthesis.cancel();
@@ -125,7 +127,7 @@ export default {
         this.showFeedback = true;
 
         // Wait 5 seconds to show feedback, then start next question
-        setTimeout(() => {
+       this.intervalCycle = setTimeout(() => {
           this.startQuestionCycle();
         }, 5000);
       }, 15000);
@@ -153,7 +155,7 @@ export default {
 
       // Clear current question timer and set timeout for next question
       clearTimeout(this.questionTimer);
-      setTimeout(() => {
+      this.intervalCycle= setTimeout(() => {
         this.startQuestionCycle();
       }, 5000);
     },
@@ -309,7 +311,16 @@ export default {
     },
     stop() {
       window.speechSynthesis.cancel();
-    }
+    },
+    cleanup() {
+      if (this.questionTimer) clearTimeout(this.questionTimer);
+      if (this.intervalTimer) clearTimeout(this.intervalTimer);
+      if(this.intervalCycle) clearTimeout(this.intervalCycle);
+      window.removeEventListener('keyup', this.handleKeyPress);
+      if (this.useSound) {
+        window.speechSynthesis.cancel();
+      }
+    },
   }
 };
 </script>

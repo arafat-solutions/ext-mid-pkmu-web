@@ -494,6 +494,8 @@ Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subta
         this.$refs.arithmeticTaskRef.stop();
       }
 
+      this.config.arithmetics.is_active = false;
+
       // stop sound and reset the game
       // this.$refs.colorTankTaskRef.stop();
       // this.$refs.horizonTaskRef.reset();

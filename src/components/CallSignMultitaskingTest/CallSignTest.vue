@@ -45,6 +45,7 @@ export default {
       matchesCall: 0,
       speech: null,
       ctx: null,
+      disableInput: false,
       userInput: "",
       feedbackMessage: "", // Add feedbackMessage data property
       lastSpokenCallsign: "",
@@ -167,6 +168,7 @@ export default {
       this.angle = formattedAngle;
     },
     speak(callsign) {
+
       if (!window.speechSynthesis) {
         console.warn("Browser doesn't support text-to-speech.");
         return;
@@ -229,6 +231,8 @@ export default {
       }
 
       window.speechSynthesis.speak(this.speech);
+
+      this.disableInput = false
 
       // Check if speech actually started
       setTimeout(() => {
@@ -327,6 +331,7 @@ export default {
       }
     },
     handleVirtualKeyPress({ key }) {
+      if(this.disableInput) return
       if (key === "↵") {
         this.focus = true;
         this.$refs.callsignInput.focus();
@@ -351,6 +356,7 @@ export default {
         this.focus = true;
         this.$refs.callsignInput.focus();
       } else {
+        this.disableInput = true
         this.checkAnswer();
       }
     },

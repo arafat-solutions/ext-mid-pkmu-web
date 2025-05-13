@@ -534,6 +534,10 @@ export default {
     },
     endTrainingTask() {
       clearInterval(this.interval);
+
+      if (this.config.arithmetic.isActive) {
+        this.$refs.arithmeticTaskRef.cleanup();
+      }
       this.interval = null;
       this.isPauseHorizon = true;
       this.isPauseAlertLight = true;
@@ -546,9 +550,6 @@ export default {
       this.config.gaugesMeter.isActive = false;
 
       this.allowSound = true;
-      if (this.config.arithmetic.isActive) {
-        this.$refs.arithmeticTaskRef.stop();
-      }
 
       const currentTaskIndex = this.trainingTasks.indexOf(
         this.currentTrainingTask
