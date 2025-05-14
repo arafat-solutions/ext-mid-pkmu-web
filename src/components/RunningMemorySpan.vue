@@ -91,6 +91,16 @@
               @click="
                 () => {
                   isSubmitted = true;
+                  showFeedback = true;
+
+                  const reverseAudios = [...audios];
+                  let checkAnswer =
+                    answer.length === reverseAudios.length &&
+                    answer.every(
+                      (value, index) => value === reverseAudios[index]
+                    );
+
+                  lastAnswerCorrect = checkAnswer;
                 }
               "
             >
@@ -108,16 +118,16 @@
               : "Dengarkan angka yang disebutkan!"
           }}
         </p>
-        <p
-          v-if="showFeedback && !isTrainingCompleted"
-          :class="{
-            'feedback-correct': lastAnswerCorrect,
-            'feedback-wrong': !lastAnswerCorrect,
-          }"
-        >
-          {{ lastAnswerCorrect ? "Benar!" : "Salah!" }}
-        </p>
       </div>
+      <p
+        v-if="showFeedback && !isTrainingCompleted"
+        :class="{
+          'feedback-correct': lastAnswerCorrect,
+          'feedback-wrong': !lastAnswerCorrect,
+        }"
+      >
+        {{ lastAnswerCorrect ? "Benar!" : "Salah!" }}
+      </p>
     </div>
     <button
       v-if="!isTrainingCompleted"
@@ -461,7 +471,7 @@ export default {
       clearInterval(this.countdownNextQuestion);
       this.totalQuestion++;
 
-      const reverseAudios = [...this.audios].reverse();
+      const reverseAudios = [...this.audios];
       let checkAnswer =
         this.answer.length === reverseAudios.length &&
         this.answer.every((value, index) => value === reverseAudios[index]);

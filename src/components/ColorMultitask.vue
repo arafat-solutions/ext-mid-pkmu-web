@@ -4,24 +4,15 @@
       <div v-if="!trainingCompleted">
         <div v-html="instructionModalContent[currentSlide]"></div>
         <div class="navigation-buttons">
-          <div
-            style="display: flex; justify-content: space-between; width: 100%"
-          >
-            <button
-              @click="prevSlide"
-              :disabled="currentSlide == 0"
-              v-if="currentSlide > 0"
-              class="nav-button disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+          <div style="display: flex; justify-content: space-between; width: 100%">
+            <button @click="prevSlide" :disabled="currentSlide == 0" v-if="currentSlide > 0"
+              class="nav-button disabled:opacity-50 disabled:cursor-not-allowed">
               : Sebelum
             </button>
             <div v-else></div>
             <div>
-              <button
-                v-if="currentSlide === instructionModalContent.length - 1"
-                @click="startTrainingTask"
-                class="finish-button"
-              >
+              <button v-if="currentSlide === instructionModalContent.length - 1" @click="startTrainingTask"
+                class="finish-button">
                 Mulai Latihan
               </button>
               <button v-else @click="nextSlide" class="nav-button">
@@ -58,22 +49,14 @@
 
     <div class="horizon-tank">
       <div style="margin-bottom: 90px">
-        <ColorTank
-          ref="colorTankTaskRef"
-          :isTimesUp="isTimesUp"
-          :speed="config.color_tank.speed"
-          :coloredLowerTank="config.color_tank.colored_lower_tank"
-          :isNegativeScore="config.color_tank.negative_score"
-          :isPause="isPauseColorTank"
-          :isActive="config.color_tank.is_active"
-          @getResult="colorTankResult"
-          v-if="
+        <ColorTank ref="colorTankTaskRef" :isTimesUp="isTimesUp" :speed="config.color_tank.speed"
+          :coloredLowerTank="config.color_tank.colored_lower_tank" :isNegativeScore="config.color_tank.negative_score"
+          :isPause="isPauseColorTank" :isActive="config.color_tank.is_active" @getResult="colorTankResult" v-if="
             currentTrainingTask === 'colorTank' ||
             trainingCompleted ||
             currentTrainingTask == 'combined' ||
             currentTrainingTask.includes('colorTank')
-          "
-        />
+          " />
       </div>
       <div class="horizon-section">
         <!-- <Horizon
@@ -90,49 +73,28 @@
             currentTrainingTask == 'combined'
           "
         /> -->
-        <div
-          :style="
-            currentTrainingTask === 'horizon' ? 'min-width: 440px' : 'auto'
-          "
-        >
-          <HorizonTest
-            v-if="
-              currentTrainingTask === 'horizon' ||
-              trainingCompleted ||
-              currentTrainingTask == 'combined' ||
-              currentTrainingTask.includes('horizon')
-            "
-            :horizon-data="config.horizon"
-            :update-results="updateResults"
-            :trainingCompleted="trainingCompleted"
-            class="centered-component"
-          />
+        <div :style="currentTrainingTask === 'horizon' ? 'min-width: 440px' : 'auto'
+          ">
+          <HorizonTest v-if="
+            currentTrainingTask === 'horizon' ||
+            trainingCompleted ||
+            currentTrainingTask == 'combined' ||
+            currentTrainingTask.includes('horizon')
+          " :horizon-data="config.horizon" :update-results="updateResults" :trainingCompleted="trainingCompleted"
+            class="centered-component" />
         </div>
-        <Arithmetics
-          ref="arithmeticTaskRef"
-          :isTimesUp="isTimesUp"
-          :difficulty="config.arithmetics.difficulty"
-          :duration="config.duration"
-          :isPause="isPauseArithmetics"
-          :isActive="config.arithmetics.is_active"
-          :useSound="config.arithmetics.sound"
-          :isTraining="!trainingCompleted"
-          @getResult="arithmeticResult"
-          v-if="
+        <Arithmetics ref="arithmeticTaskRef" :isTimesUp="isTimesUp" :difficulty="config.arithmetics.difficulty"
+          :duration="config.duration" :isPause="isPauseArithmetics" :isActive="config.arithmetics.is_active"
+          :useSound="config.arithmetics.sound" :isTraining="!trainingCompleted" @getResult="arithmeticResult" v-if="
             currentTrainingTask === 'arithmetic' ||
             trainingCompleted ||
             currentTrainingTask == 'combined' ||
             currentTrainingTask.includes('arithmetic')
-          "
-        />
+          " />
       </div>
     </div>
   </div>
-  <button
-    v-if="!trainingCompleted && !showInstructionModal"
-    @click="endTrainingTask"
-    class="finish-button"
-  >
+  <button v-if="!trainingCompleted && !showInstructionModal" @click="endTrainingTask" class="finish-button">
     Selesai Latihan dan Lanjutkan ke Tes Berikutnya
   </button>
 </template>
@@ -399,9 +361,9 @@ Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subta
 
       this.instructionModalContent =
         instructions[
-          Array.isArray(this.currentTrainingTask)
-            ? "combined"
-            : this.currentTrainingTask
+        Array.isArray(this.currentTrainingTask)
+          ? "combined"
+          : this.currentTrainingTask
         ];
       this.showInstructionModal = true;
     },
@@ -417,24 +379,42 @@ Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subta
         this.startActualTest();
       } else {
         updatePayload.status = "IN_TRAINING";
-        switch (this.currentTrainingTask) {
-          case "colorTank":
-            this.currentSlide = 0;
-            this.startColorTankTraining();
-            break;
-          case "arithmetic":
-            this.currentSlide = 0;
-            this.startArithmeticTraining();
-            break;
-          case "horizon":
-            this.currentSlide = 0;
-            this.startHorizonTraining();
-            break;
-          case "combined":
-            this.currentSlide = 0;
-            this.startCombinedTraining();
-            break;
+        if (Array.isArray(this.currentTrainingTask)) {
+          this.currentTrainingTask.forEach((task) => {
+            switch (task) {
+              case "colorTank":
+                this.startColorTankTraining();
+                break;
+              case "arithmetic":
+                this.startArithmeticTraining();
+                break;
+              case "horizon":
+                this.startHorizonTraining();
+                break;
+            }
+          });
+        } else {
+
+          switch (this.currentTrainingTask) {
+            case "colorTank":
+              this.currentSlide = 0;
+              this.startColorTankTraining();
+              break;
+            case "arithmetic":
+              this.currentSlide = 0;
+              this.startArithmeticTraining();
+              break;
+            case "horizon":
+              this.currentSlide = 0;
+              this.startHorizonTraining();
+              break;
+            case "combined":
+              this.currentSlide = 0;
+              this.startCombinedTraining();
+              break;
+          }
         }
+
       }
 
       patchWorkstation(updatePayload);
