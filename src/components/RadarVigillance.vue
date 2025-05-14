@@ -203,6 +203,7 @@ export default {
     },
     startTest() {
       clearInterval(this.countdownInterval);
+      this.indexConfig = 0
       const updatePayload = {
         status: "",
         name: "Radar Vigilance Test",
