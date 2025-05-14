@@ -21,7 +21,7 @@
 
   <div v-if="isModalVisible" class="modal-overlay">
     <div class="modal-content">
-      <p v-if="actualTestCount>=1">
+      <p v-if="actualTestCount >= 1">
         Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk
         melihat perkembangan pemahaman Anda.
       </p>
@@ -48,12 +48,6 @@
       <div v-if="isShowQuestion && !isSubmitted">
         <div class="question">
           <p class="text-question">Urutkan dari angka terakhir</p>
-          <p v-if="showFeedback && !isTrainingCompleted" :class="{
-            'feedback-correct': lastAnswerCorrect,
-            'feedback-wrong': !lastAnswerCorrect,
-          }">
-            {{ lastAnswerCorrect ? "Benar!" : "Salah!" }}
-          </p>
         </div>
 
         <div class="calculator">
@@ -92,16 +86,44 @@
             <button class="digit-number" @click="appendToExpression('0')">
               0
             </button>
-            <button class="digit-number" @click="() => { isSubmitted = true }">Kirim</button>
+            <button
+              class="digit-number"
+              @click="
+                () => {
+                  isSubmitted = true;
+                }
+              "
+            >
+              Kirim
+            </button>
           </div>
         </div>
       </div>
 
       <div v-else style="margin-top: 20%">
-        <p class="text-question"> {{ isSubmitted ? "Tunggu Sampai Pertanyaan Selanjutnya!" : "Dengarkan angka yang disebutkan!" }}</p>
+        <p class="text-question">
+          {{
+            isSubmitted
+              ? "Tunggu Sampai Pertanyaan Selanjutnya!"
+              : "Dengarkan angka yang disebutkan!"
+          }}
+        </p>
+        <p
+          v-if="showFeedback && !isTrainingCompleted"
+          :class="{
+            'feedback-correct': lastAnswerCorrect,
+            'feedback-wrong': !lastAnswerCorrect,
+          }"
+        >
+          {{ lastAnswerCorrect ? "Benar!" : "Salah!" }}
+        </p>
       </div>
     </div>
-    <button v-if="!isTrainingCompleted" @click="finishTraining" class="finish-button">
+    <button
+      v-if="!isTrainingCompleted"
+      @click="finishTraining"
+      class="finish-button"
+    >
       Selesai Latihan
     </button>
   </div>
@@ -204,10 +226,10 @@ export default {
       };
       if (!this.isTrainingCompleted) {
         this.setConfig(this.configs[0]);
-        updatePayload.status = "IN_TRAINING"
+        updatePayload.status = "IN_TRAINING";
         this.durationTest = 9999;
       } else {
-        updatePayload.status = "IN_TESTING"
+        updatePayload.status = "IN_TESTING";
         this.setConfig(this.configs[this.indexConfig]);
 
         this.durationTest = 0;
@@ -217,7 +239,6 @@ export default {
 
         this.config.duration = this.configs[this.indexConfig].duration * 60;
       }
-
 
       patchWorkstation(updatePayload);
 
@@ -248,7 +269,7 @@ export default {
       }
     },
     finishTraining() {
-      this.cleanUp()
+      this.cleanUp();
       this.isTrainingCompleted = true;
       completeTrainingTestAndUpdateLocalStorage("Running Memory Span Test");
 
@@ -272,25 +293,24 @@ export default {
             this.finishTraining();
           } else {
             setTimeout(() => {
-              this.actualTestCount += 1
+              this.actualTestCount += 1;
               if (this.actualTestCount < 2) {
-
-
                 this.result.total_question = this.totalQuestion;
                 this.result.correct_answer = this.correctAnswer;
 
                 const resultTimeResonded = this.averageResponseTime();
                 this.result.avg_response_time = resultTimeResonded.toFixed(2);
 
-                this.result.response_times = this.responseDurations.map((duration) => ({
-                  responseTime: duration,
-                  timestamp: Date.now(),
-                }));
+                this.result.response_times = this.responseDurations.map(
+                  (duration) => ({
+                    responseTime: duration,
+                    timestamp: Date.now(),
+                  })
+                );
 
                 this.result.graph_data = this.userInputs;
-                this.finishTraining()
+                this.finishTraining();
               } else {
-
                 this.calculatedResult();
               }
             }, 1000);
