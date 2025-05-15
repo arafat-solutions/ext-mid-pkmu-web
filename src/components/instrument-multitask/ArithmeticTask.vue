@@ -305,6 +305,8 @@ export default {
         return 'kurang';
       } else if (operator === ':') {
         return 'bagi';
+      } else if (operator === 'x') {
+        return 'kali';
       }
 
       return operator;

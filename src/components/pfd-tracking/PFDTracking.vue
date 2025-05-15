@@ -538,7 +538,7 @@ const moveToNextTraining = () => {
       trainingSteps[trainingStep.value].activeIndicators.includes("heading")
     ) {
       heading.value = 180;
-      headingTarget.value = 270;
+      headingTarget.value = 175;
     }
     if (
       trainingSteps[trainingStep.value].activeIndicators.includes("altitude")
@@ -1181,7 +1181,7 @@ const startTrainingStep = () => {
   // Reset parameters based on active indicators
   if (activeIndicators.includes("heading")) {
     heading.value = 180;
-    headingTarget.value = 270;
+    headingTarget.value = 175;
   }
   if (activeIndicators.includes("altitude")) {
     altitude.value = 12000;
@@ -1265,10 +1265,10 @@ const startExam = () => {
 
   // Reset all parameters
   airspeed.value = 120;
-  heading.value = 0;
+  heading.value = 180;
   altitude.value = 12000;
   airspeedTarget.value = 120;
-  headingTarget.value = 0;
+  headingTarget.value = 175;
   altitudeTarget.value = 12000;
   thrustLevel.value = 60;
 
