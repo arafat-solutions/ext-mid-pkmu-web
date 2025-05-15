@@ -89,16 +89,19 @@
             <div v-if="indexColumn % 2 === 0">&nbsp;</div>
             <div v-else>
               <div
-                :class="
-                  this.radioValues[indexRow][Math.floor(indexColumn / 2)] !==
-                    this.answers[indexRow][Math.floor(indexColumn / 2)] &&
-                  this.currentRowDisabled &&
-                  indexRow + 1 === currentRow &&
-                  this.radioValues[indexRow][Math.floor(indexColumn / 2)]
-                    ? 'border border-red-600 rounded'
-                    : ''
-                "
-              >
+              :class="[
+        (
+          (
+            radioValues[indexRow][Math.floor(indexColumn / 2)] !== answers[indexRow][Math.floor(indexColumn / 2)] ||
+            radioValues[indexRow][Math.floor(indexColumn / 2)] == null
+          ) &&
+          currentRowDisabled &&
+          indexRow + 1 === currentRow &&
+          radioValues[indexRow][Math.floor(indexColumn / 2)] !== undefined
+        )
+          ? 'border border-red-600 rounded'
+          : ''
+      ]">
                 <input
                   :name="`answer-${indexRow}-${indexColumn}`"
                   type="radio"

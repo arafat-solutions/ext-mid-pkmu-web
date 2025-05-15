@@ -165,6 +165,8 @@ export default {
       }
     },
     randomLight() {
+      this.feedbackMessage = ""; // Clear feedback message after 2 seconds
+      this.selectedLightIndex = null; // Clear selected light index after 2 seconds
       if (this.isTimesUp) {
         this.checkMissed(true);
         this.clearAllIntervals();
@@ -189,6 +191,8 @@ export default {
               this.result.missed++;
             }
             this.result.answerTimes.push(null);
+            this.feedbackMessage = ""; // Clear feedback message after 2 seconds
+            this.selectedLightIndex = null; // Clear selected light index after 2 seconds
           }
         }, 5000);
 
@@ -198,24 +202,26 @@ export default {
       this.checkMissed();
     },
     turnOffLight(index) {
-      if (this.lights[index].color !== "off") {
-        const now = Date.now();
-        this.result.answerTimes.push(now);
-        if (this.lights[index].color === "red") {
-          this.result.correct++;
-          this.feedbackMessage = "Benar!";
-        } else {
-          this.result.wrong++;
-          this.feedbackMessage = "Salah!";
-        }
-        this.lights[index].color = "off";
-        this.lights[index].litTime = null;
-        this.selectedLightIndex = index; // Set the selected light index
-        setTimeout(() => {
-          this.feedbackMessage = ""; // Clear feedback message after 2 seconds
-          this.selectedLightIndex = null; // Clear selected light index after 2 seconds
-        }, 2000);
+      if(this.selectedLightIndex){
+        return
       }
+        const now = Date.now();
+      this.result.answerTimes.push(now);
+      if (this.lights[index].color === "red") {
+        this.result.correct++;
+        this.feedbackMessage = "Benar!";
+      } else {
+        this.result.wrong++;
+        this.feedbackMessage = "Salah!";
+      }
+      this.lights[index].color = "off";
+      this.lights[index].litTime = null;
+      this.selectedLightIndex = index; // Set the selected light index
+      //setTimeout(() => {
+      //  this.feedbackMessage = ""; // Clear feedback message after 2 seconds
+      //  this.selectedLightIndex = null; // Clear selected light index after 2 seconds
+      //}, 2000);
+
     },
     handleKeyPress(event) {
       if (
