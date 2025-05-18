@@ -98,7 +98,7 @@
           currentRowDisabled &&
           indexRow + 1 === currentRow &&
           radioValues[indexRow][Math.floor(indexColumn / 2)] !== undefined
-        )
+        )&&!isTrainingCompleted
           ? 'border border-red-600 rounded'
           : ''
       ]">
@@ -257,6 +257,7 @@ this.tempFirstResult ={
   },
   methods: {
     finishTraining() {
+      this.reset()
       this.stopCountdown();
       this.isTrainingCompleted = true;
       this.timeLeftAnswer = 45;
@@ -295,6 +296,22 @@ this.tempFirstResult ={
       }, 500);
 
       this.startCountdown();
+    },
+    reset(){
+      this.currentTask = 1;
+      this.currentRowDisabled = false;
+      this.currentWrong = null;
+      this.result.correct = 0;
+      this.result.wrong = 0;
+      this.timeLeftAnswer = 45;
+      this.isModalVisible = false;
+      this.isModalTrainingVisible = false;
+      this.radioValues = [];
+      this.questions = [];
+      this.answers = [];
+      this.queryBars = [];
+      this.start = 0;
+      console.log('reseted')
     },
     startExam() {
       if (!this.isTrainingCompleted) {
@@ -454,18 +471,20 @@ this.tempFirstResult ={
       for (let i = 0; i < this.numberOfTaskInConfig; i++) {
         // Initialize each row as an empty array
         this.questions[this.start] = [];
-        const symbolsLength = this.currentQueryBar.length;
+          const queryBar = this.queryBars[Math.floor(this.start / this.totalRow)];
+        const symbolsLength = queryBar.length;
 
         for (let j = 0; j < 8; j++) {
-          // Add a random symbol
-          const randomSymbolIndex = Math.floor(Math.random() * symbolsLength);
+          const randomSymbol = queryBar[Math.floor(Math.random() * symbolsLength)];
+          //console.log('queryBar',randomSymbol,Math.floor(this.start / this.totalRow),this.start)
           this.questions[this.start].push(
-            this.currentQueryBar[randomSymbolIndex]
+            randomSymbol
           );
 
-          // Add a random number
           this.questions[this.start].push(this.getRandomNumberQuestion());
         }
+
+      //console.log('question',this.questions[this.start],this.start)
 
         // Add the final random symbol
         const finalRandomSymbolIndex = Math.floor(
