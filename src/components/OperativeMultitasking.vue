@@ -136,6 +136,9 @@ export default {
       showInstructionModal: false,
       instructionModalContent: "",
       trainingDuration: 99999989, // 15 seconds for each training task
+      moveTargetInterval: null,
+      changeDirectionInterval: null,
+      randomLightInterval: null,
       activeTasks: {
         navigation: false,
         math: false,
@@ -746,8 +749,11 @@ export default {
     startNavigationTraining() {
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: false, alertLight: false };
-      setInterval(this.moveTargets, 50);
-      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.moveTargetInterval = setInterval(this.moveTargets, 50);
+      this.changeDirectionInterval = setInterval(
+        this.changeTargetDirections,
+        this.directionChangeInterval
+      );
       this.gameLoop(performance.now());
       setTimeout(() => this.endTrainingTask(), this.trainingDuration);
     },
@@ -764,7 +770,7 @@ export default {
     startAlertLightTraining() {
       this.resetSimulation();
       this.activeTasks = { navigation: false, math: false, alertLight: true };
-      setInterval(this.activateRandomLight, 10000);
+      this.randomLightInterval = setInterval(this.activateRandomLight, 10000);
       this.gameLoop(performance.now());
       setTimeout(() => this.endTrainingTask(), this.trainingDuration);
     },
@@ -772,9 +778,12 @@ export default {
     startCombinedTraining() {
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: true, alertLight: true };
-      setInterval(this.activateRandomLight, 10000);
-      setInterval(this.moveTargets, 50);
-      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.randomLightInterval = setInterval(this.activateRandomLight, 10000);
+      this.moveTargetInterval = setInterval(this.moveTargets, 50);
+      this.changeDirectionInterval = setInterval(
+        this.changeTargetDirections,
+        this.directionChangeInterval
+      );
       this.generateNewQuestion();
       this.lastQuestionTime = performance.now();
       this.gameLoop(performance.now());
@@ -784,8 +793,11 @@ export default {
     startCombined1Training() {
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: true, alertLight: false };
-      setInterval(this.moveTargets, 50);
-      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.moveTargetInterval = setInterval(this.moveTargets, 50);
+      this.changeDirectionInterval = setInterval(
+        this.changeTargetDirections,
+        this.directionChangeInterval
+      );
       this.generateNewQuestion();
       this.lastQuestionTime = performance.now();
       this.gameLoop(performance.now());
@@ -804,6 +816,8 @@ export default {
     },
 
     endTrainingTask() {
+      console.log('lah')
+      this.resetIntervals()
       this.answerState = null;
       this.stopSimulation();
       const currentTaskIndex = this.trainingTasks.indexOf(
@@ -817,12 +831,23 @@ export default {
       }
     },
 
+  resetIntervals() {
+
+      console.log('loh')
+    clearInterval(this.moveTargetInterval);
+    clearInterval(this.changeDirectionInterval);
+    clearInterval(this.randomLightInterval);
+    clearInterval(this.timerInterval);
+  },
+
     completeTraining() {
       this.trainingCompleted = true;
       this.updateLocalStorage();
       this.showInstructionModal = true;
       this.instructionModalContent =
-        this.actualTestCount>=1?"Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk melihat perkembangan pemahaman Anda.":"Latihan selesai! Tes akan dimulai sekarang.";
+        this.actualTestCount >= 1
+          ? "Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk melihat perkembangan pemahaman Anda."
+          : "Latihan selesai! Tes akan dimulai sekarang.";
     },
 
     updateLocalStorage() {
@@ -840,9 +865,12 @@ export default {
       this.showInstructionModal = false;
       this.resetSimulation();
       this.activeTasks = { navigation: true, math: true, alertLight: true };
-      setInterval(this.activateRandomLight, 10000);
-      setInterval(this.moveTargets, 50);
-      setInterval(this.changeTargetDirections, this.directionChangeInterval);
+      this.randomLightInterval = setInterval(this.activateRandomLight, 10000);
+      this.moveTargetInterval = setInterval(this.moveTargets, 50);
+      this.changeDirectionInterval = setInterval(
+        this.changeTargetDirections,
+        this.directionChangeInterval
+      );
       this.generateNewQuestion();
       this.lastQuestionTime = performance.now();
       this.lastDeviationCheck = performance.now();
@@ -931,24 +959,24 @@ export default {
         if (this.timeRemaining > 0) {
           this.timeRemaining--;
         } else {
-          clearInterval(this.timerInterval);
+      this.resetIntervals()
 
           this.actualTestCount += 1;
           if (this.actualTestCount < 2) {
             this.tempFirstResult = {
-            averageResponseTime: this.averageResponseTime,
-            mispresses: this.mispresses,
-            correctPresses: this.correctPresses,
-            correctAnswers: this.correctAnswers,
-            incorrectAnswers: this.incorrectAnswers,
-            leftAimedTime: this.leftAimedTime,
-            rightAimedTime: this.rightAimedTime,
-            graph_data: {
-              alert: this.alertResponses,
-              math: this.mathResponses,
-              navigation: this.navigationResponses,
-            },
-          };
+              averageResponseTime: this.averageResponseTime,
+              mispresses: this.mispresses,
+              correctPresses: this.correctPresses,
+              correctAnswers: this.correctAnswers,
+              incorrectAnswers: this.incorrectAnswers,
+              leftAimedTime: this.leftAimedTime,
+              rightAimedTime: this.rightAimedTime,
+              graph_data: {
+                alert: this.alertResponses,
+                math: this.mathResponses,
+                navigation: this.navigationResponses,
+              },
+            };
             this.resetResult();
             this.completeTraining();
           } else {
@@ -958,7 +986,7 @@ export default {
       }, 1000);
     },
 
-     resetResult() {
+    resetResult() {
       this.mispresses = 0;
       this.correctPresses = 0;
       this.correctAnswers = 0;
@@ -985,8 +1013,8 @@ export default {
         const payload = {
           testSessionId: this.config.sessionId,
           userId: this.config.userId,
-          batteryTestId : this.config.batteryTestConfigId,
-          result:this.tempFirstResult,
+          batteryTestId: this.config.batteryTestConfigId,
+          result: this.tempFirstResult,
           result2: {
             averageResponseTime: this.averageResponseTime,
             mispresses: this.mispresses,

@@ -380,19 +380,7 @@ Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subta
       } else {
         updatePayload.status = "IN_TRAINING";
         if (Array.isArray(this.currentTrainingTask)) {
-          this.currentTrainingTask.forEach((task) => {
-            switch (task) {
-              case "colorTank":
-                this.startColorTankTraining();
-                break;
-              case "arithmetic":
-                this.startArithmeticTraining();
-                break;
-              case "horizon":
-                this.startHorizonTraining();
-                break;
-            }
-          });
+            this.startFirstCombinedTraining()
         } else {
 
           switch (this.currentTrainingTask) {
@@ -452,6 +440,21 @@ Pada tahap ini, peserta akan menjalankan gabungan dari subtask sebelumnya. Subta
       this.config.horizon.is_active = false;
 
       this.$refs.arithmeticTaskRef.generateNumbers();
+    },
+
+    startFirstCombinedTraining() {
+      this.config.duration = 1 * 60000; // basically forever until the user ends it
+      this.isPauseArithmetics = true;
+      this.isPauseColorTank = false;
+      this.isPauseHorizon = false;
+
+      this.config.arithmetics.is_active = false;
+      this.config.color_tank.is_active = true;
+      this.config.horizon.is_active = true;
+
+      this.$refs.colorTankTaskRef?.initLowerTank();
+      this.$refs.colorTankTaskRef?.initScore();
+      this.$refs.colorTankTaskRef?.start();
     },
     startCombinedTraining() {
       this.config.duration = 1 * 60000; // basically forever until the user ends it
