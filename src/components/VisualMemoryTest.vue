@@ -228,6 +228,7 @@ export default {
     initializeTest() {
       this.questions = [];
       this.taskNo = 0;
+      this.questionMarkPositions = []
       this.createRandomQuestion();
       this.initConfig();
       this.initVisual();
