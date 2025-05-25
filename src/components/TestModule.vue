@@ -67,7 +67,7 @@ import EventBus from "@/eventBus";
 import { patchWorkstation } from "@/utils/fetch";
 
 export default {
-  name: "RadarVigilanceMenu",
+  name: "TestModule",
   data() {
     return {
       selectedTestTitle: "Test anda telah selesai",

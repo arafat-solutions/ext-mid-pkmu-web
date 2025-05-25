@@ -6,18 +6,6 @@
         :width="canvasDimensions.width"
         :height="canvasDimensions.height"
       ></canvas>
-      <p
-        v-if="answerIsRight === true && isTraining"
-        class="text-green-500 text-3xl mt-16"
-      >
-        Benar!
-      </p>
-      <p
-        v-if="answerIsRight === false && isTraining"
-        class="text-red-500 text-3xl mt-16"
-      >
-        Salah!
-      </p>
     </div>
     <div class="timer" v-if="!isTraining">
       <p>Waktu:</p>
@@ -27,11 +15,13 @@
       v-if="input.input1.visible"
       :style="input.input1.style"
       v-model="input.input1.userInput"
+      :disabled="input.input1.borderColor !== 'black'"
       ref="input1"
     />
     <input
       v-if="input.input2.visible"
       :style="input.input2.style"
+      :disabled="input.input2.borderColor !== 'black'"
       v-model="input.input2.userInput"
       ref="input2"
     />
@@ -45,7 +35,7 @@
   </div>
   <div v-if="isShowModal === true" class="modal-overlay">
     <div class="modal-content">
-      <p v-if="actualTestCount>=1">
+      <p v-if="actualTestCount >= 1">
         Tes pertama telah selesai, anda akan melakukan tes yang sama lagi untuk
         melihat perkembangan pemahaman Anda.
       </p>
@@ -87,6 +77,7 @@ export default {
             width: "0px",
             height: "0px",
           },
+          borderColor: "black",
           userInput: "",
         },
         input2: {
@@ -98,11 +89,13 @@ export default {
             width: "0px",
             height: "0px",
           },
+          borderColor: "black",
           userInput: "",
         },
       },
       innerConfig: [],
       questions: [],
+      showFeedbackTimeout: null,
       questionMarkPositions: [],
       canAnswer: false,
       result: {
@@ -131,7 +124,6 @@ export default {
       questionMarkDuration: 45,
       isQuestionMarkActive: false,
       userInputs: [],
-      answerIsRight: null,
       isTraining: true, // New state variable for training phase
     };
   },
@@ -181,18 +173,13 @@ export default {
     window.removeEventListener("beforeunload", this.handleBeforeUnload);
   },
   methods: {
-    setAnswerIsRight(value) {
-      this.answerIsRight = value;
-      setTimeout(() => {
-        this.answerIsRight = null;
-      }, 4000);
-    },
     initVisual() {
       const canvas = this.$refs.visualCanvas;
       this.ctx = canvas.getContext("2d");
     },
 
     cleanUp() {
+      clearTimeout(this.showFeedbackTimeout);
       clearInterval(this.tesInterval);
       clearInterval(this.timerInterval);
       this.clearQuestionMarkTimer();
@@ -228,6 +215,33 @@ export default {
     initializeTest() {
       this.questions = [];
       this.taskNo = 0;
+      this.questionMarkPositions = [];
+      this.input = {
+        input1: {
+          visible: false,
+          style: {
+            position: "absolute",
+            top: "0px",
+            left: "0px",
+            width: "0px",
+            height: "0px",
+          },
+          borderColor: "black",
+          userInput: "",
+        },
+        input2: {
+          visible: false,
+          style: {
+            position: "absolute",
+            top: "0px",
+            left: "0px",
+            width: "0px",
+            height: "0px",
+          },
+          borderColor: "black",
+          userInput: "",
+        },
+      };
       this.createRandomQuestion();
       this.initConfig();
       this.initVisual();
@@ -719,11 +733,14 @@ export default {
 
       const position = positions[inputType];
 
-      input.style.position = "fixed";
-      input.style.top = `${position.top}px`;
-      input.style.left = `${position.left}px`;
-      input.style.width = `100px`;
-      input.style.height = `20px`;
+      input.style = {
+        position: "fixed",
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `100px`,
+        height: `20px`,
+        border: `2px solid ${input.borderColor}`, // Use dynamic border color
+      };
       input.visible = true;
     },
     countDownTestTime() {
@@ -823,18 +840,15 @@ export default {
         timestamp: Date.now(),
       });
 
-      // Reset question mark related states
       this.isQuestionMarkActive = false;
       this.renderInput = 0;
       this.input.input1.visible = false;
       this.input.input2.visible = false;
       this.input.input1.userInput = "";
       this.input.input2.userInput = "";
-
-      // Count as unanswered
+      this.input.input1.borderColor = "black"; // Reset border color
+      this.input.input2.borderColor = "black"; // Reset border color
       this.result.unansweredQuestion += 1;
-
-      // Clear positions and move to next question
       this.questionMarkPositions = [];
       this.questionMarkStartTime = null;
 
@@ -904,6 +918,14 @@ export default {
               resultQuestion2 = true;
             }
 
+            // Set input border colors based on correctness during training
+            if (this.isTraining) {
+              input1.borderColor = resultQuestion1 ? "green" : "red";
+              input2.borderColor = resultQuestion2 ? "green" : "red";
+              this.drawInput({ input: input1, inputType: "input1" });
+              this.drawInput({ input: input2, inputType: "input2" });
+            }
+
             if (resultQuestion1 && resultQuestion2) {
               this.result.correctAnswer += 1;
               this.userInputs.push({
@@ -911,27 +933,44 @@ export default {
                 responseTime,
                 timestamp: Date.now(),
               });
-              this.setAnswerIsRight(true);
             } else {
               this.userInputs.push({
                 type: "wrong",
                 responseTime,
                 timestamp: Date.now(),
               });
-              this.setAnswerIsRight(false);
             }
 
-            this.renderInput = 0;
-            input1.visible = false;
-            input2.visible = false;
-            input1.userInput = "";
-            input2.userInput = "";
-            resultQuestion1 = false;
-            resultQuestion2 = false;
-            this.questionMarkPositions = [];
-
-            if (this.testTime > 0) {
-              this.startQuestionMark();
+            if (this.isTraining) {
+              this.showFeedbackTimeout = setTimeout(() => {
+                if (this.testTime > 0) {
+                  this.renderInput = 0;
+                  input1.visible = false;
+                  input2.visible = false;
+                  input1.userInput = "";
+                  input2.userInput = "";
+                  input1.borderColor = "black"; // Reset border color
+                  input2.borderColor = "black"; // Reset border color
+                  resultQuestion1 = false;
+                  resultQuestion2 = false;
+                  this.questionMarkPositions = [];
+                  this.startQuestionMark();
+                }
+              }, 4000);
+            } else {
+              if (this.testTime > 0) {
+                this.renderInput = 0;
+                input1.visible = false;
+                input2.visible = false;
+                input1.userInput = "";
+                input2.userInput = "";
+                input1.borderColor = "black"; // Reset border color
+                input2.borderColor = "black"; // Reset border color
+                resultQuestion1 = false;
+                resultQuestion2 = false;
+                this.questionMarkPositions = [];
+                this.startQuestionMark();
+              }
             }
           }
         }
@@ -939,19 +978,49 @@ export default {
     },
     createQuestion(count = 1) {
       const arrQuestion = [];
+      const questionRefferences = this.questions.filter(
+        (q, index) => index % 2 === 0
+      );
+      const textRefference = questionRefferences.filter(
+        (q) => q.type === "text"
+      );
+      const shapeRefference = questionRefferences
+        .filter((q) => q.type === "shape")
+        .map((q) => `${q.shapeName}-${q.color}`);
+      const usedTextRefs = new Set(textRefference); // To track unique text references
+      const usedShapeCombos = new Set(shapeRefference); // To track shapeName-color combos
 
       for (let i = 0; i < count; i++) {
-        //if index odd assign number else assign either text or symbol
         if (i % 2 !== 0) {
           arrQuestion.push(this.generateRandomNumbers());
         } else {
           if (Math.random() < 0.5) {
-            arrQuestion.push(this.getRandomShape());
+            let ref;
+            let attempts = 0;
+            do {
+              ref = this.generateRandomLetters().text;
+              attempts++;
+            } while (usedTextRefs.has(ref) && attempts < 100);
+
+            usedTextRefs.add(ref);
+            arrQuestion.push({ type: "text", text: ref });
           } else {
-            arrQuestion.push(this.generateRandomLetters());
+            let shapeObj;
+            let comboKey;
+            let attempts = 0;
+
+            do {
+              shapeObj = this.getRandomShape();
+              comboKey = `${shapeObj.shapeName}-${shapeObj.color}`;
+              attempts++;
+            } while (usedShapeCombos.has(comboKey) && attempts < 100);
+
+            usedShapeCombos.add(comboKey);
+            arrQuestion.push(shapeObj);
           }
         }
       }
+
       return arrQuestion;
     },
 
@@ -1134,7 +1203,7 @@ export default {
         if (!response.ok) {
           throw new Error(`Error: ${response.statusText}`);
         }
-          removeTestByNameAndUpdateLocalStorage("Visual Memory Test");
+        removeTestByNameAndUpdateLocalStorage("Visual Memory Test");
         // Remove the refresh count in localStorage after successful submission
         localStorage.removeItem("refreshCountVisualMemoryTest");
         this.$router.push("/module");
@@ -1233,14 +1302,12 @@ export default {
           responseTime,
           timestamp: Date.now(),
         });
-        this.setAnswerIsRight(true);
       } else {
         this.userInputs.push({
           type: "wrong",
           responseTime: responseTime,
           timestamp: Date.now(),
         });
-        this.setAnswerIsRight(false);
       }
 
       this.renderInput = 0;
@@ -1327,7 +1394,8 @@ canvas {
 }
 
 input {
-  border: 1px solid black;
+  border: 2px solid;
+  /* Border style to allow dynamic color */
   padding: 5px;
 }
 
