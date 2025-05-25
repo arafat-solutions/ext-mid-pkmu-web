@@ -180,6 +180,9 @@ export default {
 
     this.initConfig();
   },
+  unmounted() {
+    this.cleanUp();
+  },
   computed: {
     isTimesUp() {
       return this.timeLeft < 1;
