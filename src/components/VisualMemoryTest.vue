@@ -939,19 +939,50 @@ export default {
     },
     createQuestion(count = 1) {
       const arrQuestion = [];
+      const questionRefferences = this.questions.filter(
+        (q, index) => index % 2 === 0
+      );
+      const textRefference = questionRefferences.filter(
+        (q) => q.type === "text"
+      );
+      const shapeRefference = questionRefferences.filter(
+        (q) => q.type === "shape"
+      ).map((q) => `${q.shapeName}-${q.color}`);
+      const usedTextRefs = new Set(textRefference); // To track unique text references
+      const usedShapeCombos = new Set(shapeRefference); // To track shapeName-color combos
 
       for (let i = 0; i < count; i++) {
-        //if index odd assign number else assign either text or symbol
         if (i % 2 !== 0) {
           arrQuestion.push(this.generateRandomNumbers());
         } else {
           if (Math.random() < 0.5) {
-            arrQuestion.push(this.getRandomShape());
+            let ref;
+            let attempts = 0;
+            do {
+              ref = this.generateRandomLetters().text;
+              attempts++;
+            } while (usedTextRefs.has(ref) && attempts < 100);
+
+            usedTextRefs.add(ref);
+            arrQuestion.push({ type: "text", text: ref });
           } else {
-            arrQuestion.push(this.generateRandomLetters());
+            let shapeObj;
+            let comboKey;
+            let attempts = 0;
+
+            do {
+              shapeObj = this.getRandomShape();
+              comboKey = `${shapeObj.shapeName}-${shapeObj.color}`;
+              attempts++;
+            } while (usedShapeCombos.has(comboKey) && attempts < 100);
+
+            usedShapeCombos.add(comboKey);
+            arrQuestion.push(shapeObj);
           }
         }
       }
+
+
       return arrQuestion;
     },
 
